@@ -45,7 +45,33 @@ async function sessionFor(db, token) {
 async function requireSession(db, token) { const s = await sessionFor(db, token); if (!s) fail('Your secure session has expired. Please sign in again.'); return s; }
 async function requireAdmin(db, token) { const s = await requireSession(db, token); if (s.role !== 'ADMIN') fail('Administrator access is required.'); return s; }
 async function log(db, userId, action, detail='', clientInfo={}) {
-  try { const ref=db.ref(LOGS); const value=(await ref.get()).val() || {}; const rows=Array.isArray(value.logs)?value.logs:[]; rows.push({id:randomUUID(),at:iso(),userId:clean(userId,60)||'SYSTEM',action:clean(action,60),detail:clean(detail,1000),page:clean(clientInfo?.page,80),platform:clean(clientInfo?.platform,40)}); await ref.set({version:2,updatedAt:iso(),logs:rows.slice(-250)}); } catch(e) { console.warn('Audit log write skipped:', e?.message); }
+  try {
+    const ref = db.ref(LOGS);
+    const value = (await ref.get()).val() || {};
+    const rows = Array.isArray(value.logs) ? value.logs : [];
+    const info = clientInfo && typeof clientInfo === 'object' ? clientInfo : {};
+    const actor = normalizeUserId(userId) || 'SYSTEM';
+    const details = clean(detail || info.details || '', 1000);
+    // The Admin UI consumes the legacy Code.gs schema: actor/details/deviceType/etc.
+    // Keep userId/detail aliases as well for any clients already using the newer schema.
+    rows.push({
+      id: randomUUID(), at: iso(), actor, userId: actor,
+      action: clean(action, 60).toUpperCase(), details, detail: details,
+      deviceType: clean(info.deviceType, 40),
+      deviceLabel: clean(info.deviceLabel, 80),
+      appMode: clean(info.appMode, 80),
+      browser: clean(info.browser, 80), os: clean(info.os, 80),
+      platform: clean(info.platform, 40), screen: clean(info.screen, 40),
+      language: clean(info.language, 40), online: clean(info.online, 20),
+      visibility: clean(info.visibility, 20), runtimeMode: clean(info.runtimeMode, 80),
+      page: clean(info.page, 80), path: clean(info.path, 300),
+      userAgent: clean(info.userAgent, 500),
+      extra: info.extra && typeof info.extra === 'object' ? info.extra : {}
+    });
+    await ref.set({ version: 2, updatedAt: iso(), logs: rows.slice(-250) });
+  } catch (e) {
+    console.warn('Audit log write skipped:', e?.message);
+  }
 }
 async function chatEnvelope(db, auth) {
   const all=asList((await db.ref(CHAT).get()).val());
@@ -73,7 +99,15 @@ export default async function handler(req,res) {
     if(action==='action') return res.status(200).json(await dispatch(db,clean(payload.method,100),Array.isArray(payload.args)?payload.args:[]));
     if(action==='login') return res.status(200).json(await login(db,payload.username,payload.password,payload.clientInfo));
     if(action==='loginState') return res.status(200).json(await loginState(db,payload.token));
-    if(action==='logout') { const token=clean(payload.token,300); if(token) await db.ref(`${SESSIONS}/${tokenHash(token)}`).remove(); return res.status(200).json({ok:true,authenticated:false,version:VERSION}); }
+    if(action==='logout') {
+      const token = clean(payload.token, 300);
+      if (token) {
+        const auth = await sessionFor(db, token);
+        if (auth) await log(db, auth.userId, 'LOGOUT', 'Signed out safely.', payload.clientInfo || {});
+        await db.ref(`${SESSIONS}/${tokenHash(token)}`).remove();
+      }
+      return res.status(200).json({ok:true,authenticated:false,version:VERSION});
+    }
     return res.status(400).json({ok:false,error:`Unknown API action: ${action}`});
   } catch(error) { console.error('Vercel API action failed:',action,error?.message||error); return res.status(200).json({ok:false,error:clean(error?.message||'Unable to process request',300),version:VERSION}); }
 }
@@ -122,7 +156,34 @@ async function dispatch(db, method, a) {
     case 'reactUserNote': {const s=await requireSession(db,tokenAt(2));const ref=db.ref(NOTES),rows=asList((await ref.get()).val());let found=false;const next=rows.map(n=>{if(n.id!==a[0])return n;found=true;const r={...(n.reactions||{})},emoji=clean(a[1],16),users=Array.isArray(r[emoji])?r[emoji]:[];r[emoji]=users.includes(s.userId)?users.filter(x=>x!==s.userId):[...users,s.userId];return {...n,reactions:r,updatedAt:iso()};});if(!found)throw Error('Note was not found.');await ref.set(Object.fromEntries(next.map(x=>[x.id,x])));return await notesEnvelope(db,s);}
     case 'markUserNotesRead': {const s=await requireSession(db,tokenAt(1));const readAt=clean(a[0],80)||iso();await db.ref(`${NOTES_STATE}/${s.userId}`).update({readAt});return await notesEnvelope(db,s,{readAt});}
     case 'markUserSavedNoteOpened': {const s=await requireSession(db,tokenAt(1));const stateRef=db.ref(`${NOTES_STATE}/${s.userId}`);const state=(await stateRef.get()).val()||{};const ids=Array.isArray(state.savedUnreadNoteIds)?state.savedUnreadNoteIds:[];await stateRef.update({savedUnreadNoteIds:ids.filter(x=>x!==a[0]),lastOpenedNoteId:clean(a[0],100)});return await notesEnvelope(db,s);}
-    case 'getAdminControlData': {const s=await requireAdmin(db,tokenAt(0));const users=await readUsers(db);const settings=(await db.ref(SETTINGS).get()).val()||{};const logs=asList((await db.ref(LOGS).get()).val()?.logs).reverse();return {ok:true,isAdmin:true,users:users.map(u=>({id:normalizeUserId(u.userId||u.id),name:clean(u.displayName||u.userId,80),role:clean(u.role,30),active:u.active!==false,deleted:u.deleted===true})),broadcast:settings.broadcast||{enabled:false,message:''},maintenance:settings.maintenance||{enabled:false,message:''},chatControl:settings.chatControl||{locked:false},logs,version:VERSION,admin:{id:s.userId,name:clean(s.user.displayName||s.userId),role:s.role}};}
+    case 'getAdminControlData': {
+      const s = await requireAdmin(db, tokenAt(0));
+      const users = await readUsers(db);
+      const settings = (await db.ref(SETTINGS).get()).val() || {};
+      const logs = asList((await db.ref(LOGS).get()).val()?.logs).map(row => {
+        row = row && typeof row === 'object' ? row : {};
+        return {
+          ...row,
+          actor: clean(row.actor || row.userId || 'SYSTEM', 60),
+          details: clean(row.details || row.detail || '', 1000),
+          deviceType: clean(row.deviceType || '', 40),
+          deviceLabel: clean(row.deviceLabel || '', 80),
+          appMode: clean(row.appMode || '', 80),
+          browser: clean(row.browser || '', 80),
+          os: clean(row.os || '', 80),
+          platform: clean(row.platform || '', 40),
+          screen: clean(row.screen || '', 40),
+          language: clean(row.language || '', 40),
+          online: clean(row.online || '', 20),
+          visibility: clean(row.visibility || '', 20),
+          runtimeMode: clean(row.runtimeMode || '', 80),
+          page: clean(row.page || '', 80),
+          path: clean(row.path || '', 300),
+          userAgent: clean(row.userAgent || '', 500)
+        };
+      }).filter(row => row.at && row.action).slice(-250).reverse();
+      return {ok:true,isAdmin:true,users:users.map(u=>({id:normalizeUserId(u.userId||u.id),name:clean(u.displayName||u.userId,80),role:clean(u.role,30),active:u.active!==false,deleted:u.deleted===true})),broadcast:settings.broadcast||{enabled:false,message:''},maintenance:settings.maintenance||{enabled:false,message:''},chatControl:settings.chatControl||{locked:false},logs,version:VERSION,admin:{id:s.userId,name:clean(s.user.displayName||s.userId),role:s.role}};
+    }
     case 'adminAddAuthUser': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]), name=clean(a[2],80), role=normalizeUserId(a[3])==='ADMIN'?'ADMIN':'USER', pass=normalizePassword(a[4]);if(!id||pass.length<4)throw Error('Username and password (minimum 4 characters) are required.');const users=await readUsers(db);if(users.some(u=>normalizeUserId(u.userId||u.id)===id))throw Error('User already exists.');const salt=randomUUID()+randomUUID();users.push({userId:id,displayName:name||id,role,salt,passwordHash:buildPasswordHash(salt,pass,10000),passwordIterations:10000,active:true,createdAt:iso()});await writeUsers(db,users);await log(db,s.userId,'ADMIN_ADD_USER',`Added user ${id}.`,a[5]);return {ok:true,version:VERSION};}
     case 'adminResetAuthPassword': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]),pass=normalizePassword(a[2]);if(pass.length<4)throw Error('Password must be at least 4 characters.');let changed=false;const users=(await readUsers(db)).map(u=>{if(normalizeUserId(u.userId||u.id)!==id)return u;changed=true;const salt=randomUUID()+randomUUID();return {...u,salt,passwordHash:buildPasswordHash(salt,pass,10000),passwordIterations:10000,sessionsRevokedAt:iso(),updatedAt:iso()};});if(!changed)throw Error('User was not found.');await writeUsers(db,users);await log(db,s.userId,'ADMIN_RESET_PASSWORD',`Reset password for ${id}.`,a[3]);return {ok:true,version:VERSION};}
     case 'adminSetAuthUserActive': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]);let changed=false;const users=(await readUsers(db)).map(u=>{if(normalizeUserId(u.userId||u.id)!==id)return u;changed=true;return {...u,active:!!a[2],sessionsRevokedAt:a[2]?u.sessionsRevokedAt:iso(),updatedAt:iso()};});if(!changed)throw Error('User was not found.');await writeUsers(db,users);await log(db,s.userId,'ADMIN_SET_USER_ACTIVE',`${id}: ${!!a[2]}`,a[3]);return {ok:true,version:VERSION};}
