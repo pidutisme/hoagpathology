@@ -9401,7 +9401,7 @@
                       <div class="setting-box"><strong>App Name</strong><span>LabApp</span></div>
                       <div class="setting-box"><strong>App Type</strong><span>SPA Single Page Application</span></div>
                       <div class="setting-box"><strong>Department</strong><span>HOAG Pathology</span></div>
-                      <div class="setting-box"><strong>Platform</strong><span>Google Apps Script Web App</span></div>
+                      <div class="setting-box"><strong>Platform</strong><span>GitHub + Vercel</span></div>
                       <div class="setting-box"><strong>Time Zone</strong><span>Asia/Kuala_Lumpur</span></div>
                       <div class="setting-box"><strong>Version</strong><span id="aboutAppVersion">2.1.4</span></div>
                     </div>
@@ -9993,10 +9993,10 @@
     }
   
     /* +----------------------------------+
-     * + hasAppsScript                    +
+     * + hasVercelBackend                 +
      * +----------------------------------+ */
-    function hasAppsScript() {
-      return !!(window.google && window.google.script && window.google.script.run);
+    function hasVercelBackend() {
+      return true; // Backend actions are served by Vercel API.
     }
 
 
@@ -10023,6 +10023,42 @@
         throw new Error(data && data.error ? data.error : 'API request failed.');
       }
       return data;
+    }
+
+    // Fluent replacement for Vercel API's former runner. Calls go to Vercel only.
+    // It preserves existing success/failure callback behavior while passing the
+    // method name and positional arguments to the single API dispatcher.
+    const hoagApi = {
+      run: new Proxy({}, {
+        get: function (_target, property) {
+          if (property === 'withSuccessHandler') return function (callback) {
+            const chain = { success: typeof callback === 'function' ? callback : function () {}, failure: function () {} };
+            return new Proxy({}, { get: function (_t, method) {
+              if (method === 'withSuccessHandler') return function (fn) { chain.success = fn; return this; };
+              if (method === 'withFailureHandler') return function (fn) { chain.failure = fn; return this; };
+              return function () { invokeVercelAction(String(method), Array.prototype.slice.call(arguments), chain); };
+            }});
+          };
+          if (property === 'withFailureHandler') return function (callback) {
+            const chain = { success: function () {}, failure: typeof callback === 'function' ? callback : function () {} };
+            return new Proxy({}, { get: function (_t, method) {
+              if (method === 'withSuccessHandler') return function (fn) { chain.success = fn; return this; };
+              if (method === 'withFailureHandler') return function (fn) { chain.failure = fn; return this; };
+              return function () { invokeVercelAction(String(method), Array.prototype.slice.call(arguments), chain); };
+            }});
+          };
+          return function () { invokeVercelAction(String(property), Array.prototype.slice.call(arguments), { success: function () {}, failure: function () {} }); };
+        }
+      })
+    };
+
+    function invokeVercelAction(action, args, handlers) {
+      hoagApiRequest('action', { method: action, args: args }).then(function (result) {
+        if (handlers && handlers.success) handlers.success(result);
+      }).catch(function (error) {
+        if (handlers && handlers.failure) handlers.failure(error);
+        else console.warn('Vercel API action failed:', action, error && error.message ? error.message : error);
+      });
     }
   
     /* +----------------------------------+
@@ -10927,9 +10963,9 @@
       async function loadDashboard() {
         try {
           var envelope;
-          if (hasAppsScript()) {
+          if (hasVercelBackend()) {
             envelope = await new Promise(function (resolve, reject) {
-              google.script.run
+              hoagApi.run
                 .withSuccessHandler(resolve)
                 .withFailureHandler(reject)
                 .getDashboardData();
@@ -11243,7 +11279,7 @@
         var requestKey = userId + '|' + sessionNonce;
         if (!options.freshLogin && lastRenderedKey === requestKey && cleanText(nodes.text.textContent)) return;
 
-        /* Render immediately. This path never waits for Apps Script or an API. */
+        /* Render immediately. This path never waits for Vercel API or an API. */
         var selected = QUOTE_POOL[hashSeed(requestKey) % QUOTE_POOL.length];
         clear();
         render(selected.q, selected.a);
@@ -11798,14 +11834,14 @@
        * + recordSuccessfulLoginAfterUnlock_ +
        * +-----------------------------------+ */
       function recordSuccessfulLoginAfterUnlock_(options) {
-        if (!options || !options.freshLogin || !hasAppsScript()) return;
+        if (!options || !options.freshLogin || !hasVercelBackend()) return;
         var token = getStoredToken();
         if (!token) return;
 
         var clientInfo = typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo ? ActivityTracker.getClientInfo({ page: 'login' }) : {};
         if (options.loginServerMs != null) clientInfo.loginServerMs = String(options.loginServerMs);
 
-        google.script.run
+        hoagApi.run
           .withFailureHandler(function (error) {
             console.warn('Login metadata update failed:', error && error.message ? error.message : error);
           })
@@ -12080,15 +12116,15 @@
           return;
         }
   
-        if (!hasAppsScript()) {
-          setChangeMessage('Password change requires the deployed Google Apps Script web app.', 'error');
+        if (!hasVercelBackend()) {
+          setChangeMessage('Password change service is unavailable. Please try again.', 'error');
           return;
         }
   
         setChangeBusy(true);
         setChangeMessage('', '');
   
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             setChangeBusy(false);
             if (!envelope || envelope.ok === false) {
@@ -12248,6 +12284,8 @@ if (token) {
     console.warn('Vercel logout request failed:', error);
   });
 }
+        lock(message || '', type || '');
+      }
   
       /* +----------------------------------+
        * + init                             +
@@ -12331,11 +12369,11 @@ if (token) {
        * +----------------------------------+ */
       function signInWithLabAppToken() {
         if (signingIn || !init()) return;
-        if (!hasAppsScript() || !Auth || !Auth.getToken || !Auth.getToken()) return;
+        if (!hasVercelBackend() || !Auth || !Auth.getToken || !Auth.getToken()) return;
         if (lastTokenFailureAt && Date.now() - lastTokenFailureAt < tokenRetryDelayMs) return;
 
         signingIn = true;
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.firebaseToken) {
               signingIn = false;
@@ -12556,9 +12594,9 @@ if (token) {
         options = options || {};
         var dedupeMs = Number(options.dedupeMs || defaultDedupeMs);
         if (shouldSkip(action, details, dedupeMs)) return;
-        if (!hasAppsScript() || !Auth || !Auth.getToken || !Auth.getToken()) return;
+        if (!hasVercelBackend() || !Auth || !Auth.getToken || !Auth.getToken()) return;
   
-        google.script.run
+        hoagApi.run
           .withFailureHandler(function () {})
           .logClientActivity(Auth.getToken(), action, details, getClientInfo(extra || {}));
       }
@@ -14333,12 +14371,12 @@ if (token) {
         // faster server/API load fill the rest of the year.
         if (mergeOfficialHolidaySupplementalData(year)) buildMonthCalendar();
 
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           loadHolidayDataForYearFromBrowser(year);
           return;
         }
 
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             var serverAdded = mergeHolidayData(envelope, year);
             var supplementalAdded = mergeOfficialHolidaySupplementalData(year);
@@ -14347,7 +14385,7 @@ if (token) {
             state.holidayYearsLoaded[year] = loaded;
 
             if (loaded) {
-              rememberHolidayLoadSource(year, (envelope && envelope.fromCache ? 'Cached ' : '') + ((envelope && envelope.sourceName) || 'Apps Script holiday service') + ' + official supplement table');
+              rememberHolidayLoadSource(year, (envelope && envelope.fromCache ? 'Cached ' : '') + ((envelope && envelope.sourceName) || 'Vercel holiday service') + ' + official supplement table');
               writeHolidayDataToClientCache(year, buildHolidayEnvelopeFromState(year, state.holidayLoadSources[year]));
               buildMonthCalendar();
               return;
@@ -15548,7 +15586,7 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function scheduleCloudPoll() {
         stopCloudPoll();
-        if (!hasAppsScript() || !activeRosterStorageId) return;
+        if (!hasVercelBackend() || !activeRosterStorageId) return;
         state.rosterCloudPollTimer = setTimeout(function () {
           state.rosterCloudPollTimer = null;
           if (document.hidden || !$('calendar') || !$('calendar').classList.contains('active') || hasRosterEditInProgress() || state.rosterInputSaveTimer || state.rosterCloudSaveTimer || state.rosterCloudLoading || state.rosterCloudSaving) {
@@ -15568,7 +15606,7 @@ function exportMonthlySchedulePdfs() {
         var normalized = normalizeRoster(roster);
         var json = stableJson(normalized);
         var requestRevision = state.rosterLocalRevision;
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           setSyncStatus('Local only', 'offline');
           return;
         }
@@ -15589,7 +15627,7 @@ function exportMonthlySchedulePdfs() {
         stopCloudPoll();
         state.rosterCloudSaving = true;
         setSyncStatus('Saving...', 'saving');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (result) {
             state.rosterCloudSaving = false;
             if (requestStorageId !== getRosterStorageUserId()) return;
@@ -15645,7 +15683,7 @@ function exportMonthlySchedulePdfs() {
       function localSave() {
         clearTimeout(state.rosterCloudSaveTimer);
         stopCloudPoll();
-        setSyncStatus(hasAppsScript() ? 'Pending save...' : 'Local only', hasAppsScript() ? 'saving' : 'offline');
+        setSyncStatus(hasVercelBackend() ? 'Pending save...' : 'Local only', hasVercelBackend() ? 'saving' : 'offline');
         state.rosterCloudSaveTimer = setTimeout(function () {
           state.rosterCloudSaveTimer = null;
           saveCloudRoster(readAllLocalRoster());
@@ -15664,7 +15702,7 @@ function exportMonthlySchedulePdfs() {
           return;
         }
         if (state.rosterCloudLoading) return;
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           state.rosterLastSavedJson = stableJson(readAllLocalRoster());
           state.rosterCloudUpdatedAt = '';
           setSyncStatus('Local only', 'offline');
@@ -15674,7 +15712,7 @@ function exportMonthlySchedulePdfs() {
         stopCloudPoll();
         state.rosterCloudLoading = true;
         if (!options.silent) setSyncStatus('Syncing...', 'saving');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             var cloud;
             if (requestStorageId !== getRosterStorageUserId()) {
@@ -15720,7 +15758,7 @@ function exportMonthlySchedulePdfs() {
             }
             state.rosterCloudLoading = false;
             console.warn('Roster cloud envelope load failed, trying legacy load:', error && error.message ? error.message : error);
-            google.script.run
+            hoagApi.run
               .withSuccessHandler(function (legacyEnvelope) {
                 var cloud;
                 if (requestStorageId !== getRosterStorageUserId()) return;
@@ -17513,11 +17551,11 @@ function exportMonthlySchedulePdfs() {
         if (!latestIncoming) return;
         var syncedValue = new Date(syncedReadAtByChat[chatId] || '').getTime();
         if (!Number.isNaN(syncedValue) && syncedValue >= latestIncoming) return;
-        if (readSyncLoadingByChat[chatId] || !hasAppsScript() || !isChatAuthReady()) return;
+        if (readSyncLoadingByChat[chatId] || !hasVercelBackend() || !isChatAuthReady()) return;
   
         readSyncLoadingByChat[chatId] = true;
         syncedReadAtByChat[chatId] = new Date(latestIncoming).toISOString();
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             delete readSyncLoadingByChat[chatId];
             if (!envelope || envelope.ok === false) {
@@ -17932,7 +17970,7 @@ function exportMonthlySchedulePdfs() {
         if (!visibleMessages.length) {
           var empty = document.createElement('div');
           empty.className = 'live-chat-empty';
-          empty.textContent = isChatLocked() ? 'Live chat is locked by admin.' : (isDirectChatId(activeChatId) ? 'No personal messages yet. Start this chat.' : (hasAppsScript() ? 'No messages yet. Start the team chat.' : 'Local preview only. Deploy in Apps Script to sync team messages.'));
+          empty.textContent = isChatLocked() ? 'Live chat is locked by admin.' : (isDirectChatId(activeChatId) ? 'No personal messages yet. Start this chat.' : (hasVercelBackend() ? 'No messages yet. Start the team chat.' : 'Team chat service is unavailable. Please try again.'));
           host.appendChild(empty);
           return;
         }
@@ -18237,10 +18275,10 @@ function exportMonthlySchedulePdfs() {
        * + hydrateFirebaseStartupFromAppsScript +
        * +--------------------------------------+ */
       function hydrateFirebaseStartupFromAppsScript() {
-        if (firebaseLegacyHydrationRequested || firebaseLegacyHydrationLoading || !hasAppsScript() || !isChatAuthReady()) return false;
+        if (firebaseLegacyHydrationRequested || firebaseLegacyHydrationLoading || !hasVercelBackend() || !isChatAuthReady()) return false;
         firebaseLegacyHydrationRequested = true;
         firebaseLegacyHydrationLoading = true;
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             firebaseLegacyHydrationLoading = false;
             if (!envelope || envelope.ok === false) {
@@ -18262,10 +18300,10 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function hydrateDirectChatFromAppsScript(chatId) {
         chatId = String(chatId || '');
-        if (!isDirectChatId(chatId) || legacyHydrationRequestedByChat[chatId] || legacyHydrationLoadingByChat[chatId] || !hasAppsScript() || !isChatAuthReady()) return false;
+        if (!isDirectChatId(chatId) || legacyHydrationRequestedByChat[chatId] || legacyHydrationLoadingByChat[chatId] || !hasVercelBackend() || !isChatAuthReady()) return false;
         legacyHydrationRequestedByChat[chatId] = true;
         legacyHydrationLoadingByChat[chatId] = true;
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             legacyHydrationLoadingByChat[chatId] = false;
             if (!envelope || envelope.ok === false) {
@@ -18436,12 +18474,12 @@ function exportMonthlySchedulePdfs() {
       function syncChatReactionViaAppsScript(messageId, emoji) {
         messageId = String(messageId || '');
         emoji = String(emoji || '').trim().slice(0, 12);
-        if (!messageId || !emoji || !hasAppsScript() || !isChatAuthReady()) {
+        if (!messageId || !emoji || !hasVercelBackend() || !isChatAuthReady()) {
           clearPendingChatReaction(messageId);
           requestChatRefresh(250);
           return false;
         }
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             if (!envelope || envelope.ok === false) {
               clearPendingChatReaction(messageId);
@@ -18658,7 +18696,7 @@ function exportMonthlySchedulePdfs() {
           return;
         }
         loading = true;
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           loading = false;
           messages = readLocalMessages();
           chatUsers = normalizeChatUsers([{ id: currentUser.id || currentUser.key || 'LOCAL', name: currentUser.name || 'You', role: currentUser.role || 'USER', active: true, lastSeenAt: new Date().toISOString(), lastSeenPage: 'local' }]);
@@ -18669,7 +18707,7 @@ function exportMonthlySchedulePdfs() {
           return;
         }
   
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             loading = false;
             if (!envelope || envelope.ok === false) {
@@ -18743,7 +18781,7 @@ function exportMonthlySchedulePdfs() {
         resizeInput(input);
         setComposerBusy(true);
 
-        if (!hasAppsScript() && canUseFirebaseChat()) {
+        if (!hasVercelBackend() && canUseFirebaseChat()) {
           try {
             var firebaseUser = firebase.auth().currentUser;
             var messageRef = FirebaseBridge.getDatabase().ref('labapp/liveChat/messages').push();
@@ -18799,7 +18837,7 @@ function exportMonthlySchedulePdfs() {
           return;
         }
   
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           var localUser = currentUser || { name: 'You', email: '', key: 'local' };
           var localRows = readLocalMessages();
           var localCreatedAt = new Date().toISOString();
@@ -18830,7 +18868,7 @@ function exportMonthlySchedulePdfs() {
           return;
         }
   
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             setComposerBusy(false);
             if (!envelope || envelope.ok === false) {
@@ -19485,7 +19523,7 @@ function exportMonthlySchedulePdfs() {
         Object.keys(targetReactions).forEach(function (emojiKey) {
           if (!previousEmoji && targetReactions[emojiKey].indexOf(currentIdForReaction) !== -1) previousEmoji = emojiKey;
         });
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           var localMessage = targetMessage;
           if (localMessage) {
             localMessage.reactions = localMessage.reactions || {};
@@ -19585,7 +19623,7 @@ function exportMonthlySchedulePdfs() {
         }
         var targetId = messageMenuTargetId;
         closeMessageMenu();
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           messages = messages.map(function (row) {
             if (row.id !== targetId) return row;
             row.deletedAt = new Date().toISOString();
@@ -19599,7 +19637,7 @@ function exportMonthlySchedulePdfs() {
           render();
           return;
         }
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             if (!envelope || envelope.ok === false) {
               setStatus(envelope && envelope.error ? envelope.error : 'Delete failed', 'error');
@@ -20663,12 +20701,12 @@ function exportMonthlySchedulePdfs() {
       function syncNoteReactionViaAppsScript(noteId, emoji) {
         noteId = normalizeNoteId(noteId);
         emoji = String(emoji || '').trim().slice(0, 12);
-        if (!noteId || !emoji || !hasAppsScript() || !isNotesAuthReady()) {
+        if (!noteId || !emoji || !hasVercelBackend() || !isNotesAuthReady()) {
           clearPendingNoteReaction(noteId);
           requestNotesRefresh(250);
           return false;
         }
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             if (!envelope || envelope.ok === false) {
               clearPendingNoteReaction(noteId);
@@ -20988,14 +21026,14 @@ function exportMonthlySchedulePdfs() {
       function syncNotesReadAt(readAtIso) {
         readAtIso = normalizeIsoTime(readAtIso);
         if (syncFirebaseNotesReadAt(readAtIso)) return;
-        if (!readAtIso || !hasAppsScript() || !(typeof Auth !== 'undefined' && Auth && Auth.getToken)) return;
+        if (!readAtIso || !hasVercelBackend() || !(typeof Auth !== 'undefined' && Auth && Auth.getToken)) return;
         if (notesReadSyncLoading) {
           notesReadSyncPending = readAtIso;
           return;
         }
         notesReadSyncLoading = true;
         notesReadSyncPending = '';
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             notesReadSyncLoading = false;
             if (envelope && envelope.ok !== false) mergeServerNotesReadAt(envelope.readAt || readAtIso);
@@ -21105,13 +21143,13 @@ function exportMonthlySchedulePdfs() {
       function syncSavedNoteOpened(noteId) {
         noteId = normalizeNoteId(noteId);
         if (syncFirebaseSavedNoteOpened(noteId)) return;
-        if (!noteId || !hasAppsScript() || !(typeof Auth !== 'undefined' && Auth && Auth.getToken)) return;
+        if (!noteId || !hasVercelBackend() || !(typeof Auth !== 'undefined' && Auth && Auth.getToken)) return;
         if (savedNoteOpenSyncLoading) {
           if (savedNoteOpenSyncPending.indexOf(noteId) === -1) savedNoteOpenSyncPending.push(noteId);
           return;
         }
         savedNoteOpenSyncLoading = true;
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             savedNoteOpenSyncLoading = false;
             if (envelope && envelope.ok !== false) {
@@ -21186,7 +21224,7 @@ function exportMonthlySchedulePdfs() {
       function scheduleNextPoll() {
         stopPolling();
         if (firebaseNotesListening || startFirebaseNotesListener()) return;
-        if (document.hidden || !hasAppsScript() || !isNotesAuthReady()) return;
+        if (document.hidden || !hasVercelBackend() || !isNotesAuthReady()) return;
         pollTimer = window.setTimeout(function () {
           loadNotes(true);
         }, getNotesPollIntervalMs());
@@ -21204,7 +21242,7 @@ function exportMonthlySchedulePdfs() {
           }
           return;
         }
-        if (document.hidden || !hasAppsScript() || !isNotesAuthReady()) return;
+        if (document.hidden || !hasVercelBackend() || !isNotesAuthReady()) return;
         pollTimer = window.setTimeout(function () {
           loadNotes(true);
         }, Math.max(0, Number(delayMs) || 0));
@@ -21215,7 +21253,7 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function startPolling() {
         stopPolling();
-        if (document.hidden || !hasAppsScript() || !isNotesAuthReady()) return;
+        if (document.hidden || !hasVercelBackend() || !isNotesAuthReady()) return;
         if (startFirebaseNotesListener()) return;
         loadNotes(true);
       }
@@ -21562,7 +21600,7 @@ function exportMonthlySchedulePdfs() {
         if (!notes.length) {
           var empty = document.createElement('div');
           empty.className = 'notes-empty';
-          empty.textContent = hasAppsScript() ? 'No saved notes yet. Add a title, write a note, then press Save Note.' : 'Local preview only. Add a title, write a note, then press Save Note.';
+          empty.textContent = hasVercelBackend() ? 'No saved notes yet. Add a title, write a note, then press Save Note.' : 'Local preview only. Add a title, write a note, then press Save Note.';
           nodes.list.appendChild(empty);
           return;
         }
@@ -21681,7 +21719,7 @@ function exportMonthlySchedulePdfs() {
        * + hydrateFirebaseNotesFromAppsScript +
        * +------------------------------------+ */
       function hydrateFirebaseNotesFromAppsScript() {
-        if (firebaseLegacyNotesHydrationRequested || firebaseLegacyNotesHydrationLoading || !hasAppsScript() || !isNotesAuthReady()) return false;
+        if (firebaseLegacyNotesHydrationRequested || firebaseLegacyNotesHydrationLoading || !hasVercelBackend() || !isNotesAuthReady()) return false;
         firebaseLegacyNotesHydrationRequested = true;
         firebaseLegacyNotesHydrationLoading = true;
         if (canUseFirebaseNotes()) {
@@ -21704,7 +21742,7 @@ function exportMonthlySchedulePdfs() {
        * + runFirebaseNotesLegacyHydration  +
        * +----------------------------------+ */
       function runFirebaseNotesLegacyHydration() {
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             firebaseLegacyNotesHydrationLoading = false;
             if (!envelope || envelope.ok === false) {
@@ -21823,9 +21861,9 @@ function exportMonthlySchedulePdfs() {
           return;
         }
         loading = true;
-        if (isNotesPageActive() || !loaded) setStatus(hasAppsScript() ? 'Loading notes...' : 'Local preview only', hasAppsScript() ? 'saving' : 'error');
+        if (isNotesPageActive() || !loaded) setStatus(hasVercelBackend() ? 'Loading notes...' : 'Local preview only', hasVercelBackend() ? 'saving' : 'error');
   
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           loading = false;
           notes = readLocalNotes();
           loaded = true;
@@ -21836,7 +21874,7 @@ function exportMonthlySchedulePdfs() {
           return;
         }
   
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             loading = false;
             if (!envelope || envelope.ok === false) {
@@ -21913,7 +21951,7 @@ function exportMonthlySchedulePdfs() {
         setBusy(true);
         setStatus(isEditing ? 'Updating note...' : 'Saving note...', 'saving');
   
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           var localRows = readLocalNotes();
           var now = new Date().toISOString();
           if (isEditing && targetNote) {
@@ -21956,7 +21994,7 @@ function exportMonthlySchedulePdfs() {
           return;
         }
 
-        var runner = google.script.run
+        var runner = hoagApi.run
           .withSuccessHandler(function (envelope) {
             setBusy(false);
             if (!envelope || envelope.ok === false) {
@@ -21998,7 +22036,7 @@ function exportMonthlySchedulePdfs() {
           setBusy(true);
           setStatus('Deleting note...', 'saving');
   
-          if (!hasAppsScript()) {
+          if (!hasVercelBackend()) {
             writeLocalNotes(notes.filter(function (row) { return row.id !== noteId; }));
             selectedNoteId = '';
             setBusy(false);
@@ -22009,7 +22047,7 @@ function exportMonthlySchedulePdfs() {
             return;
           }
 
-          google.script.run
+          hoagApi.run
             .withSuccessHandler(function (envelope) {
               setBusy(false);
               if (!envelope || envelope.ok === false) {
@@ -22152,7 +22190,7 @@ function exportMonthlySchedulePdfs() {
         if (!noteId || !emoji) return;
         rememberPendingNoteReaction(noteId, emoji);
         applyNoteReactionLocal(noteId, emoji);
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           clearPendingNoteReaction(noteId);
           writeLocalNotes(notes);
           return;
@@ -22573,12 +22611,12 @@ function exportMonthlySchedulePdfs() {
        * + refreshNotice                    +
        * +----------------------------------+ */
       function refreshNotice() {
-        if (!hasAppsScript() || !Auth.getToken()) {
+        if (!hasVercelBackend() || !Auth.getToken()) {
           setNotice(null);
           return;
         }
   
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             if (envelope && envelope.ok !== false) setNotice(envelope);
           })
@@ -22816,7 +22854,7 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function scheduleAdminPolling() {
         stopAdminPolling();
-        if (document.hidden || !isSettingsPageActive() || !isAdmin() || !hasAppsScript() || adminBusy) return;
+        if (document.hidden || !isSettingsPageActive() || !isAdmin() || !hasVercelBackend() || adminBusy) return;
         adminPollTimer = window.setTimeout(function () {
           adminPollTimer = null;
           loadAdminData(true);
@@ -22828,7 +22866,7 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function requestAdminRefresh(delayMs) {
         stopAdminPolling();
-        if (document.hidden || !isSettingsPageActive() || !isAdmin() || !hasAppsScript()) return;
+        if (document.hidden || !isSettingsPageActive() || !isAdmin() || !hasVercelBackend()) return;
         adminPollTimer = window.setTimeout(function () {
           adminPollTimer = null;
           loadAdminData(true);
@@ -22844,9 +22882,9 @@ function exportMonthlySchedulePdfs() {
           renderMode();
           return;
         }
-        if (!hasAppsScript()) {
+        if (!hasVercelBackend()) {
           stopAdminPolling();
-          setStatus('Admin control requires the deployed Google Apps Script web app.', 'error');
+          setStatus('Admin control service is unavailable. Please try again.', 'error');
           return;
         }
         if (adminLoading || adminBusy) {
@@ -22856,7 +22894,7 @@ function exportMonthlySchedulePdfs() {
   
         adminLoading = true;
         if (!silent) setStatus('Loading admin control...', '');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             adminLoading = false;
             renderAdminData(envelope, '', { silent: !!silent });
@@ -22897,7 +22935,7 @@ function exportMonthlySchedulePdfs() {
         }
         setAdminBusy(true);
         setStatus('Resetting password...', '');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             if (nodes.resetPassword) nodes.resetPassword.value = '';
             handleAdminEnvelope(envelope, 'Password reset completed.');
@@ -22925,7 +22963,7 @@ function exportMonthlySchedulePdfs() {
         }
         setAdminBusy(true);
         setStatus('Adding user...', '');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) {
             if (envelope && envelope.ok !== false) {
               [nodes.addUsername, nodes.addDisplayName, nodes.addPassword].forEach(function (node) { if (node) node.value = ''; });
@@ -22948,7 +22986,7 @@ function exportMonthlySchedulePdfs() {
         if (adminBusy) return;
         setAdminBusy(true);
         setStatus('Saving broadcast...', '');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) { handleAdminEnvelope(envelope, 'Broadcast saved.'); })
           .withFailureHandler(function (error) {
             setAdminBusy(false);
@@ -22965,7 +23003,7 @@ function exportMonthlySchedulePdfs() {
         if (adminBusy) return;
         setAdminBusy(true);
         setStatus('Saving maintenance mode...', '');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) { handleAdminEnvelope(envelope, 'Maintenance setting saved.'); })
           .withFailureHandler(function (error) {
             setAdminBusy(false);
@@ -22982,7 +23020,7 @@ function exportMonthlySchedulePdfs() {
         if (adminBusy) return;
         setAdminBusy(true);
         setStatus('Saving chat control...', '');
-        google.script.run
+        hoagApi.run
           .withSuccessHandler(function (envelope) { handleAdminEnvelope(envelope, nodes.chatLocked && nodes.chatLocked.checked ? 'Live chat locked.' : 'Live chat opened.'); })
           .withFailureHandler(function (error) {
             setAdminBusy(false);
@@ -23000,7 +23038,7 @@ function exportMonthlySchedulePdfs() {
           if (adminBusy) return;
           setAdminBusy(true);
           setStatus('Clearing live chat...', '');
-          google.script.run
+          hoagApi.run
             .withSuccessHandler(function (envelope) { handleAdminEnvelope(envelope, 'Live chat cleared.'); })
             .withFailureHandler(function (error) {
               setAdminBusy(false);
@@ -23019,7 +23057,7 @@ function exportMonthlySchedulePdfs() {
           if (adminBusy) return;
           setAdminBusy(true);
           setStatus('Clearing notes...', '');
-          google.script.run
+          hoagApi.run
             .withSuccessHandler(function (envelope) { handleAdminEnvelope(envelope, 'Saved notes cleared.'); })
             .withFailureHandler(function (error) {
               setAdminBusy(false);
@@ -23043,7 +23081,7 @@ function exportMonthlySchedulePdfs() {
           requestAppConfirm('Delete User?', 'Delete user ' + userId + '? This cannot be undone.', function () {
             setAdminBusy(true);
             setStatus('Deleting user...', '');
-            google.script.run
+            hoagApi.run
               .withSuccessHandler(function (envelope) { handleAdminEnvelope(envelope, 'User deleted.'); })
               .withFailureHandler(function (error) {
                 setAdminBusy(false);
@@ -23059,7 +23097,7 @@ function exportMonthlySchedulePdfs() {
           var nextActive = !(current && current.active);
           setAdminBusy(true);
           setStatus(nextActive ? 'Activating user...' : 'Deactivating user...', '');
-          google.script.run
+          hoagApi.run
             .withSuccessHandler(function (envelope) { handleAdminEnvelope(envelope, nextActive ? 'User activated.' : 'User deactivated.'); })
             .withFailureHandler(function (error) {
               setAdminBusy(false);
