@@ -9996,6 +9996,36 @@
     function hasAppsScript() {
       return !!(window.google && window.google.script && window.google.script.run);
     }
+       
+const HOAG_API_URL = '/api/bridge';
+
+async function hoagApiRequest(action, payload = {}) {
+  const response = await fetch(HOAG_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: action,
+      payload: payload
+    })
+  });
+
+  const text = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error('API returned an invalid response.');
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || 'API request failed.');
+  }
+
+  return data;
+}
   
     /* +----------------------------------+
      * + safeParse                        +
