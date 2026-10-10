@@ -1,3 +1,4 @@
+
 import { firebaseDb } from "../lib/firebase-admin.js";
 
 export default async function handler(req, res) {
@@ -15,23 +16,20 @@ export default async function handler(req, res) {
 
     const snapshot = await db
       .ref("labapp/auth/users/users")
-      .once("value");
+      .get();
 
     const users = snapshot.val() || {};
 
     const metadata = Object.entries(users).map(([key, user]) => ({
       key,
-      hasUserId: !!user?.userId,
-      hasSalt: !!user?.salt,
-      hasPasswordHash: !!user?.passwordHash,
+      hasUserId: Boolean(user?.userId),
+      hasSalt: Boolean(user?.salt),
+      hasPasswordHash: Boolean(user?.passwordHash),
       passwordIterations:
         user?.passwordIterations ??
         user?.hashIterations ??
         null,
-      active:
-        user?.active ??
-        user?.isActive ??
-        null
+      active: user?.active ?? user?.isActive ?? null
     }));
 
     return res.status(200).json({
@@ -41,10 +39,7 @@ export default async function handler(req, res) {
       users: metadata
     });
   } catch (error) {
-    console.error(
-      "auth-users-test failed:",
-      error.message
-    );
+    console.error("auth-users-test failed:", error.message);
 
     return res.status(500).json({
       ok: false,
