@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/firebase-admin.js";
+import { firebaseDb } from "../lib/firebase-admin.js";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const db = getDatabase();
+    const db = firebaseDb();
 
     const snapshot = await db
       .ref("labapp/auth/users/users")
@@ -41,7 +41,10 @@ export default async function handler(req, res) {
       users: metadata
     });
   } catch (error) {
-    console.error("auth-users-test failed:", error);
+    console.error(
+      "auth-users-test failed:",
+      error.message
+    );
 
     return res.status(500).json({
       ok: false,
