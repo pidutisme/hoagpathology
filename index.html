@@ -9082,6 +9082,68 @@
     word-break: normal;
   }
 }
+
+/* Mobile calendar and roster editor overflow fix; desktop unchanged. */
+@media (max-width: 760px) {
+  #calendar .calendar-mini-day-staff,
+  #calendar .calendar-mini-day-staff *,
+  #calendar .calendar-mini-day-staff-current,
+  #calendar .calendar-mini-day-staff-original,
+  #calendar .calendar-mini-day-staff-assigned {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    line-height: 1.15 !important;
+    font-size: 7px !important;
+    letter-spacing: -0.02em !important;
+    text-align: center !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+  }
+  #calendar .daily-roster-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+  #calendar .daily-roster-row,
+  #calendar .daily-roster-row.is-assigned,
+  #calendar .daily-roster-row.is-editing-assignment {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  #calendar .daily-roster-row > *,
+  #calendar .daily-roster-row input,
+  #calendar .daily-roster-row select,
+  #calendar .daily-roster-row textarea,
+  #calendar .daily-roster-row .daily-roster-staff-pair,
+  #calendar .daily-roster-row .daily-roster-assign-btn,
+  #calendar .daily-roster-row .roster-delete-btn {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  #calendar .daily-roster-row input,
+  #calendar .daily-roster-row select,
+  #calendar .daily-roster-row textarea,
+  #calendar .daily-roster-row button {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
 </style>
 </head>
 
