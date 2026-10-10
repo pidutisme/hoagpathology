@@ -1,6 +1,6 @@
 {
   "name": "hoagpathology",
-  "version": "2.1.7",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "engines": {
