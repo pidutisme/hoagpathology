@@ -9996,36 +9996,32 @@
     function hasAppsScript() {
       return !!(window.google && window.google.script && window.google.script.run);
     }
-       
-const HOAG_API_URL = '/api/bridge';
 
-async function hoagApiRequest(action, payload = {}) {
-  const response = await fetch(HOAG_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      action: action,
-      payload: payload
-    })
-  });
 
-  const text = await response.text();
+    /* Vercel bridge for browser-hosted deployment */
+    async function hoagApiRequest(action, payload) {
+      const response = await fetch('/api/bridge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: String(action || ''),
+          payload: payload && typeof payload === 'object' ? payload : {}
+        })
+      });
 
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error('API returned an invalid response.');
-  }
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (error) {
+        throw new Error('API returned an invalid response.');
+      }
 
-  if (!response.ok) {
-    throw new Error(data.error || 'API request failed.');
-  }
-
-  return data;
-}
+      if (!response.ok) {
+        throw new Error(data && data.error ? data.error : 'API request failed.');
+      }
+      return data;
+    }
   
     /* +----------------------------------+
      * + safeParse                        +
@@ -11944,13 +11940,7 @@ async function hoagApiRequest(action, payload = {}) {
        * +----------------------------------+ */
       function checkStoredSession() {
         var token = getStoredToken();
-  
-        if (!hasAppsScript()) {
-          clearStoredSession();
-          lock('Login requires the deployed Google Apps Script web app.', 'error');
-          return;
-        }
-  
+
         if (!token) {
           lock('', '');
           return;
@@ -11962,27 +11952,31 @@ async function hoagApiRequest(action, payload = {}) {
           verifyStoredSessionInBackground_(token);
           return;
         }
-  
+
         setBusy(true, 'Checking...');
         setLoginMessage('Checking secure session...', '');
-  
-        google.script.run
-          .withSuccessHandler(function (envelope) { handleEnvelope(envelope, { freshLogin: false }); })
-          .withFailureHandler(function (error) {
+
+        hoagApiRequest('loginState', { token: token })
+          .then(function (envelope) {
+            handleEnvelope(envelope, { freshLogin: false });
+          })
+          .catch(function (error) {
             clearStoredSession();
             lock(error && error.message ? error.message : 'Unable to verify your session.', 'error');
           })
-          .getLoginState(token);
+          .finally(function () {
+            setBusy(false);
+          });
       }
-  
+
       /* +----------------------------------+
        * + verifyStoredSessionInBackground_ +
        * +----------------------------------+ */
       function verifyStoredSessionInBackground_(token) {
-        if (!token || !hasAppsScript()) return;
+        if (!token) return;
 
-        google.script.run
-          .withSuccessHandler(function (envelope) {
+        hoagApiRequest('loginState', { token: token })
+          .then(function (envelope) {
             if (token !== getStoredToken()) return;
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
@@ -11995,12 +11989,11 @@ async function hoagApiRequest(action, payload = {}) {
               ActivityTracker.track('SESSION_RESUME', 'Verified saved login session.', { page: 'session' }, { dedupeMs: 60000 });
             }
           })
-          .withFailureHandler(function (error) {
+          .catch(function (error) {
             if (token !== getStoredToken()) return;
             clearStoredSession();
             lock(error && error.message ? error.message : 'Unable to verify your session.', 'error');
-          })
-          .getLoginState(token);
+          });
       }
 
       /* +----------------------------------+
@@ -12009,32 +12002,36 @@ async function hoagApiRequest(action, payload = {}) {
       function submitLogin(event) {
         event.preventDefault();
         if (busy) return;
-  
+
         var username = nodes.username ? nodes.username.value : '';
         var password = nodes.password ? nodes.password.value : '';
-  
+
         if (!String(username || '').trim() || !String(password || '').trim()) {
           setLoginMessage('Please enter your username and password.', 'error');
           return;
         }
-  
-        if (!hasAppsScript()) {
-          setLoginMessage('Login requires the deployed Google Apps Script web app.', 'error');
-          return;
-        }
-  
+
         setBusy(true);
         setLoginMessage('', '');
         loginRequestId += 1;
         var requestId = loginRequestId;
         startLoginTimeout_(requestId);
-  
-        google.script.run
-          .withSuccessHandler(function (envelope) {
+
+        var clientInfo = typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo
+          ? ActivityTracker.getClientInfo({ page: 'login', platform: 'web', source: 'vercel' })
+          : { page: 'login', platform: 'web', source: 'vercel' };
+
+        hoagApiRequest('login', {
+          username: username,
+          password: password,
+          clientInfo: clientInfo
+        })
+          .then(function (envelope) {
             if (requestId !== loginRequestId) return;
             clearLoginTimeout_();
             setBusy(false);
-            if (!envelope || envelope.ok === false) {
+
+            if (!envelope || envelope.ok === false || !envelope.authenticated) {
               clearStoredSession();
               setLoginMessage(envelope && envelope.error ? envelope.error : 'Invalid username or password.', 'error');
               if (nodes.password) {
@@ -12043,17 +12040,20 @@ async function hoagApiRequest(action, payload = {}) {
               }
               return;
             }
-            handleEnvelope(envelope, { freshLogin: true, loginServerMs: envelope.loginServerMs });
+
+            handleEnvelope(envelope, {
+              freshLogin: true,
+              loginServerMs: envelope.loginServerMs
+            });
           })
-          .withFailureHandler(function (error) {
+          .catch(function (error) {
             if (requestId !== loginRequestId) return;
             clearLoginTimeout_();
             setBusy(false);
             setLoginMessage(error && error.message ? error.message : 'Login failed. Please try again.', 'error');
-          })
-          .loginUser(username, password, typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo ? ActivityTracker.getClientInfo({ page: 'login' }) : {});
+          });
       }
-  
+
       /* +----------------------------------+
        * + submitPasswordChange             +
        * +----------------------------------+ */
