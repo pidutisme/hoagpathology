@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { firebaseDb } from "../lib/firebase-admin.js";
 import {
   normalizeUserId,
@@ -9,9 +10,9 @@ const SESSION_SECONDS = 21600;
 
 function createToken() {
   return (
-    crypto.randomUUID() +
+    randomUUID() +
     "." +
-    crypto.randomUUID() +
+    randomUUID() +
     "." +
     Date.now()
   );
@@ -97,7 +98,6 @@ export default async function handler(req, res) {
       expiresIn: SESSION_SECONDS,
       user: publicUser(userEntry)
     });
-
   } catch (error) {
     console.error(
       "login-test failed:",
