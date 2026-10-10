@@ -1,7 +1,8 @@
-
 import { firebaseDb } from "../lib/firebase-admin.js";
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+
   if (req.method !== "GET") {
     return res.status(405).json({
       ok: false,
@@ -12,42 +13,42 @@ export default async function handler(req, res) {
   try {
     const db = firebaseDb();
 
-    const paths = [
-      "labapp/auth/users",
-      "labapp/roster/team",
-      "labapp/liveChat/messages",
-      "labapp/notes/items",
-      "labapp/notes/userState",
-      "labapp/systemLogs"
-    ];
+    const snapshot = await db
+      .ref("labapp/auth/users/users")
+      .get();
 
-    const results = {};
+    const users = snapshot.val() || {};
 
-    for (const path of paths) {
-      const snapshot = await db.ref(path).get();
-
-      results[path] = {
-        readable: true,
-        exists: snapshot.exists(),
-        type: snapshot.exists()
-          ? (Array.isArray(snapshot.val())
-              ? "array"
-              : typeof snapshot.val())
-          : "empty"
-      };
-    }
+    const metadata = Object.entries(users).map(([key, user]) => ({
+      key,
+      hasUserId: !!user?.userId,
+      hasSalt: !!user?.salt,
+      hasPasswordHash: !!user?.passwordHash,
+      passwordIterations:
+        user?.passwordIterations ??
+        user?.hashIterations ??
+        null,
+      active:
+        user?.active ??
+        user?.isActive ??
+        null
+    }));
 
     return res.status(200).json({
       ok: true,
-      service: "Firebase Admin SDK",
-      checks: results
+      testType: "read-only-auth-metadata",
+      userCount: metadata.length,
+      users: metadata
     });
   } catch (error) {
-    console.error("Firebase path check failed:", error.message);
+    console.error(
+      "auth-users-test failed:",
+      error.message
+    );
 
     return res.status(500).json({
       ok: false,
-      error: error.message
+      error: "Firebase read failed"
     });
   }
 }
