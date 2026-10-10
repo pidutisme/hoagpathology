@@ -5,10 +5,15 @@
  * dashboard   -> Vercel
  * login       -> /api/login
  * loginState  -> /api/login-state
+ * logout      -> Firebase session revocation
  * other actions -> Apps Script (temporary migration bridge)
  */
 
+import { createHash } from "node:crypto";
+import { firebaseDb } from "../lib/firebase-admin.js";
+
 const APP_ORIGIN = "https://hoagpathology.vercel.app";
+const SESSION_PATH = "labapp/auth/sessions";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
@@ -122,7 +127,34 @@ export default async function handler(req, res) {
       return res.status(apiResponse.status).json(responseData);
     }
 
-    // 3. Temporary forwarding for features not yet migrated
+    // 3. Logout: revoke only the supplied token's Firebase session
+    if (action === "logout") {
+      const token = String(payload.token || "").trim();
+
+      if (!token || token.length > 300) {
+        return res.status(200).json({
+          ok: true,
+          authenticated: false,
+          version: "2.1.4"
+        });
+      }
+
+      const tokenHash = createHash("sha256")
+        .update(`token\n${token}`, "utf8")
+        .digest("hex");
+
+      await firebaseDb()
+        .ref(`${SESSION_PATH}/${tokenHash}`)
+        .remove();
+
+      return res.status(200).json({
+        ok: true,
+        authenticated: false,
+        version: "2.1.4"
+      });
+    }
+
+    // 4. Temporary forwarding for features not yet migrated
     const target = process.env.APPS_SCRIPT_URL;
 
     if (!target) {
