@@ -11678,22 +11678,21 @@
       /* +----------------------------------+
        * + checkServerSession               +
        * +----------------------------------+ */
-      function checkServerSession() {
+      async function checkServerSession() {
         var token = getStoredToken();
         if (document.hidden) return;
-        if (!token || !state.authUserId || !hasAppsScript() || sessionCheckBusy) return;
+        if (!token || !state.authUserId || sessionCheckBusy) return;
         sessionCheckBusy = true;
-        google.script.run
-          .withSuccessHandler(function (envelope) {
-            sessionCheckBusy = false;
-            if (!envelope || envelope.ok === false || !envelope.authenticated) {
-              forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
-            }
-          })
-          .withFailureHandler(function () {
-            sessionCheckBusy = false;
-          })
-          .getLoginState(token);
+        try {
+          var envelope = await hoagApiRequest('loginState', { token: token });
+          if (!envelope || envelope.ok === false || !envelope.authenticated) {
+            forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
+          }
+        } catch (error) {
+          console.warn('Session verification failed:', error);
+        } finally {
+          sessionCheckBusy = false;
+        }
       }
   
       /* +----------------------------------+
@@ -11701,7 +11700,7 @@
        * +----------------------------------+ */
       function startSessionWatchdog() {
         stopSessionWatchdog();
-        if (!hasAppsScript()) return;
+        if (!getStoredToken()) return;
         sessionCheckTimer = window.setInterval(checkServerSession, SESSION_CHECK_MS);
         if (!sessionVisibilityBound) {
           sessionVisibilityBound = true;
