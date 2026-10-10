@@ -1,10 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { getAuth } from 'firebase-admin/auth';
 import { getApps } from 'firebase-admin/app';
 import { firebaseDb } from '../lib/firebase-admin.js';
 import { normalizeUserId, normalizePassword, buildPasswordHash, verifyPassword } from '../lib/auth.js';
 
-const VERSION = '2.1.4';
+const require = createRequire(import.meta.url);
+const VERSION = require('../package.json').version || '2.1.4';
 const TZ = 'Asia/Kuala_Lumpur';
 const USERS = 'labapp/auth/users';
 const SESSIONS = 'labapp/auth/sessions';
