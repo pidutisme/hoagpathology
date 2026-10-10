@@ -12,20 +12,21 @@ export default async function handler(req, res) {
   try {
     const db = firebaseDb();
 
-    // Read-only test: do not modify existing database data.
-    await db.ref(".info/connected").get();
+    // Uji sambungan menggunakan root reference tanpa membaca semua data.
+    await db.ref("/").get();
 
     return res.status(200).json({
       ok: true,
       service: "Firebase Admin SDK",
-      message: "Firebase connection test completed"
+      message: "Firebase connection successful"
     });
   } catch (error) {
-  console.error("Firebase connection test failed:", error);
+    console.error("Firebase connection test failed:", error);
 
-  return res.status(500).json({
-    ok: false,
-    error: error.message,
-    code: error.code || null
-  });
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+      code: error.code || null
+    });
+  }
 }
