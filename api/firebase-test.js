@@ -21,11 +21,11 @@ export default async function handler(req, res) {
       message: "Firebase connection test completed"
     });
   } catch (error) {
-    console.error("Firebase connection test failed:", error.message);
+  console.error("Firebase connection test failed:", error);
 
-    return res.status(500).json({
-      ok: false,
-      error: "Firebase connection failed. Check server configuration."
-    });
-  }
+  return res.status(500).json({
+    ok: false,
+    error: error.message,
+    code: error.code || null
+  });
 }
