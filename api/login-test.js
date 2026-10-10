@@ -1,3 +1,4 @@
+```js
 import { randomUUID } from "node:crypto";
 import { firebaseDb } from "../lib/firebase-admin.js";
 import {
@@ -6,30 +7,13 @@ import {
   verifyPassword
 } from "../lib/auth.js";
 
-const SESSION_SECONDS = 21600;
-
-function createToken() {
-  return (
-    randomUUID() +
-    "." +
-    randomUUID() +
-    "." +
-    Date.now()
-  );
-}
-
-function publicUser(user) {
-  return {
-    id: String(user.userId || ""),
-    name: String(user.displayName || user.name || ""),
-    role: String(user.role || "")
-  };
-}
-
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Pragma", "no-cache");
 
   if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+
     return res.status(405).json({
       ok: false,
       error: "Method not allowed"
@@ -58,12 +42,13 @@ export default async function handler(req, res) {
 
     const users = snapshot.val() || {};
 
-    const userEntry = Object.values(users).find(
-      user =>
-        normalizeUserId(user?.userId) === userId
+    const user = Object.values(users).find(
+      record =>
+        record &&
+        normalizeUserId(record.userId) === userId
     );
 
-    if (!userEntry || userEntry.active === false) {
+    if (!user || user.active !== true) {
       return res.status(401).json({
         ok: false,
         authenticated: false,
@@ -71,12 +56,9 @@ export default async function handler(req, res) {
       });
     }
 
-    const passwordCheck = verifyPassword(
-      userEntry,
-      password
-    );
+    const passwordValid = verifyPassword(user, password);
 
-    if (!passwordCheck) {
+    if (!passwordValid) {
       return res.status(401).json({
         ok: false,
         authenticated: false,
@@ -84,24 +66,30 @@ export default async function handler(req, res) {
       });
     }
 
-    const token = createToken();
-
-    const expiresAt = new Date(
-      Date.now() + SESSION_SECONDS * 1000
-    ).toISOString();
+    // TEST ONLY:
+    // This token is not saved or validated as a server-side session.
+    const testToken =
+      randomUUID() + "." +
+      randomUUID() + "." +
+      Date.now();
 
     return res.status(200).json({
       ok: true,
       authenticated: true,
-      token,
-      expiresAt,
-      expiresIn: SESSION_SECONDS,
-      user: publicUser(userEntry)
+      testOnly: true,
+      message: "Credentials verified successfully.",
+      testToken,
+      user: {
+        id: String(user.userId || ""),
+        name: String(user.displayName || user.name || ""),
+        role: String(user.role || "")
+      }
     });
   } catch (error) {
+    // Do not log the submitted username, password or token.
     console.error(
       "login-test failed:",
-      error.message
+      error?.message || "Unknown error"
     );
 
     return res.status(500).json({
@@ -111,3 +99,4 @@ export default async function handler(req, res) {
     });
   }
 }
+```
