@@ -12237,12 +12237,17 @@
           FirebaseBridge.signOut();
         }
   
-        if (hasAppsScript() && token) {
-          google.script.run.logoutUser(token, typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo ? ActivityTracker.getClientInfo({ page: reason || 'logout' }) : {});
-        }
-  
-        lock(message || 'Signed out safely.', type || 'ok');
-      }
+if (token) {
+  hoagApiRequest('logout', {
+    token: token,
+    clientInfo: typeof ActivityTracker !== 'undefined' &&
+      ActivityTracker.getClientInfo
+      ? ActivityTracker.getClientInfo({ page: reason || 'logout' })
+      : {}
+  }).catch(function (error) {
+    console.warn('Vercel logout request failed:', error);
+  });
+}
   
       /* +----------------------------------+
        * + init                             +
