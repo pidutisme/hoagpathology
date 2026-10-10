@@ -1,4 +1,4 @@
-```js
+
 import { randomUUID } from "node:crypto";
 import { firebaseDb } from "../lib/firebase-admin.js";
 import {
@@ -8,20 +8,25 @@ import {
 } from "../lib/auth.js";
 
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("Pragma", "no-cache");
+  res.setHeader("X-Content-Type-Options", "nosniff");
 
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
 
     return res.status(405).json({
       ok: false,
-      error: "Method not allowed"
+      authenticated: false,
+      error: "Method not allowed. Use POST."
     });
   }
 
   try {
-    const body = req.body || {};
+    const body =
+      req.body && typeof req.body === "object"
+        ? req.body
+        : {};
 
     const userId = normalizeUserId(body.username);
     const password = normalizePassword(body.password);
@@ -40,10 +45,20 @@ export default async function handler(req, res) {
       .ref("labapp/auth/users/users")
       .get();
 
-    const users = snapshot.val() || {};
+    if (!snapshot.exists()) {
+      console.error("login-test: users path is empty");
+
+      return res.status(500).json({
+        ok: false,
+        authenticated: false,
+        error: "Login system error"
+      });
+    }
+
+    const users = snapshot.val();
 
     const user = Object.values(users).find(
-      record =>
+      (record) =>
         record &&
         normalizeUserId(record.userId) === userId
     );
@@ -66,8 +81,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // TEST ONLY:
-    // This token is not saved or validated as a server-side session.
+    // TEST ONLY: this token is not a real session.
     const testToken =
       randomUUID() + "." +
       randomUUID() + "." +
@@ -81,12 +95,14 @@ export default async function handler(req, res) {
       testToken,
       user: {
         id: String(user.userId || ""),
-        name: String(user.displayName || user.name || ""),
+        name: String(
+          user.displayName || user.name || ""
+        ),
         role: String(user.role || "")
       }
     });
   } catch (error) {
-    // Do not log the submitted username, password or token.
+    // Never log passwords, tokens or submitted credentials.
     console.error(
       "login-test failed:",
       error?.message || "Unknown error"
@@ -99,4 +115,3 @@ export default async function handler(req, res) {
     });
   }
 }
-```
