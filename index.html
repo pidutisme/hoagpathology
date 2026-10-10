@@ -10924,25 +10924,28 @@
       /* +----------------------------------+
        * + loadDashboard                    +
        * +----------------------------------+ */
-      function loadDashboard() {
-        if (!hasAppsScript()) {
+      async function loadDashboard() {
+        try {
+          var envelope;
+          if (hasAppsScript()) {
+            envelope = await new Promise(function (resolve, reject) {
+              google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .getDashboardData();
+            });
+          } else {
+            envelope = await hoagApiRequest('dashboard', {});
+          }
+
+          if (!envelope || envelope.ok === false) {
+            throw new Error(envelope && envelope.error ? envelope.error : 'Dashboard data unavailable.');
+          }
+          renderDashboard(envelope);
+        } catch (error) {
+          console.warn('Dashboard load failed:', error && error.message ? error.message : error);
           renderDashboard({ ok: true, boardTitle: 'HOAG PATHOLOGY' });
-          return;
         }
-        google.script.run
-          .withSuccessHandler(function (envelope) {
-            if (envelope && envelope.ok === false) {
-              console.warn('Dashboard load failed:', envelope.error || envelope);
-              renderDashboard({ ok: true, boardTitle: 'HOAG PATHOLOGY' });
-              return;
-            }
-            renderDashboard(envelope || {});
-          })
-          .withFailureHandler(function (error) {
-            console.warn('Dashboard load failed:', error && error.message ? error.message : error);
-            renderDashboard({ ok: true, boardTitle: 'HOAG PATHOLOGY' });
-          })
-          .getDashboardData();
       }
   
       /* +----------------------------------+
