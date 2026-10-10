@@ -1,7 +1,7 @@
 import {
   buildPasswordHash,
   normalizePassword,
-  normalizePasswordIterations
+  verifyPassword
 } from "../lib/auth.js";
 
 export default async function handler(req, res) {
@@ -14,40 +14,47 @@ export default async function handler(req, res) {
     });
   }
 
-  const testPassword = "Synthetic-Test-Only-123!";
-  const testSalt = "synthetic-salt-for-testing-only";
+  const password = "Synthetic-Test-Only-123!";
+  const salt = "synthetic-salt-for-testing-only";
 
-  const expected = {
-    2500: "REPLACE_AFTER_BASELINE",
-    10000: "REPLACE_AFTER_BASELINE"
-  };
-
-  const cases = [2500, 10000].map(iterations => {
-    const hash = buildPasswordHash(
-      testSalt,
-      testPassword,
+  const testCases = [2500, 10000].map(iterations => {
+    const passwordHash = buildPasswordHash(
+      salt,
+      password,
       iterations
     );
 
+    const user = {
+      userId: "SYNTHETIC",
+      salt,
+      passwordHash,
+      passwordIterations: iterations
+    };
+
     return {
       iterations,
-      hashLength: hash.length,
-      validHex: /^[a-f0-9]{64}$/.test(hash),
-      iterationLimit: normalizePasswordIterations(iterations),
-      hash
+      correctPassword: verifyPassword(
+        user,
+        password
+      ),
+      wrongPassword: verifyPassword(
+        user,
+        "Definitely-Wrong-Password!"
+      ),
+      normalizedPassword: normalizePassword(
+        "  " + password + "  "
+      )
     };
   });
 
   return res.status(200).json({
-    ok: cases.every(
+    ok: testCases.every(
       item =>
-        item.hashLength === 64 &&
-        item.validHex &&
-        item.iterationLimit === item.iterations
+        item.correctPassword === true &&
+        item.wrongPassword === false &&
+        item.normalizedPassword === password
     ),
-    testType: "synthetic-only",
-    passwordNormalizationWorks:
-      normalizePassword("  Test  ") === "Test",
-    cases
+    testType: "synthetic-verify-only",
+    cases: testCases
   });
 }
