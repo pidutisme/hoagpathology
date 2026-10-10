@@ -9145,6 +9145,48 @@
   }
 }
 </style>
+<style id="mobile-profile-card-centering-v5">
+/* V5 mobile-only: center document link cards even when labels wrap to three lines. */
+@media (max-width: 760px) {
+  #profile .profile-link-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto auto !important;
+    justify-items: center !important;
+    align-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    row-gap: 5px !important;
+    padding: 12px 8px !important;
+  }
+  #profile .profile-link-card::before {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    justify-self: center !important;
+    align-self: center !important;
+    margin: 0 auto !important;
+  }
+  #profile .profile-link-card strong {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+  #profile .profile-link-card span {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    text-align: center !important;
+  }
+}
+</style>
 </head>
 
 <body class="auth-locked">
@@ -23536,45 +23578,3 @@ function exportMonthlySchedulePdfs() {
 </body>
 
 </html>
-
-
-/* V5 mobile-only: center document link cards even when labels wrap to three lines. */
-@media (max-width: 760px) {
-  #profile .profile-link-card {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto auto !important;
-    justify-items: center !important;
-    align-content: center !important;
-    align-items: center !important;
-    text-align: center !important;
-    row-gap: 5px !important;
-    padding: 12px 8px !important;
-  }
-  #profile .profile-link-card::before {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    justify-self: center !important;
-    align-self: center !important;
-    margin: 0 auto !important;
-  }
-  #profile .profile-link-card strong {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    align-self: center !important;
-    justify-self: center !important;
-    width: 100% !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    text-align: center !important;
-  }
-  #profile .profile-link-card span {
-    grid-column: 1 !important;
-    grid-row: 3 !important;
-    align-self: center !important;
-    justify-self: center !important;
-    width: 100% !important;
-    min-height: 0 !important;
-    text-align: center !important;
-  }
-}
