@@ -8958,13 +8958,15 @@
       }
     }
 
-    /* Mobile: keep the workspace in view and use a collapsible navigation drawer. */
+    /* Mobile-only navigation drawer; let the document scroll naturally. */
     @media (max-width: 980px) {
+      html, body { height: auto !important; min-height: 100% !important; overflow-x: hidden !important; overflow-y: auto !important; }
+      body { position: relative !important; touch-action: pan-y pinch-zoom; }
       .app {
         display: block !important;
-        height: var(--apk-vh, 100dvh) !important;
-        min-height: 0 !important;
-        overflow: hidden !important;
+        height: auto !important;
+        min-height: 100svh !important;
+        overflow: visible !important;
         padding: 8px !important;
       }
       .sidebar {
@@ -8991,21 +8993,41 @@
       .nav { overflow: auto !important; display: grid !important; grid-template-columns: 1fr !important; }
       .mobile-nav-toggle {
         display: flex; align-items: center; justify-content: center; gap: 8px;
-        position: fixed; z-index: 10060; top: max(10px, env(safe-area-inset-top)); left: 10px;
-        min-height: 42px; padding: 0 14px; border: 1px solid var(--year-page-card-border);
+        position: fixed; z-index: 10060; top: max(6px, env(safe-area-inset-top)); left: 8px;
+        min-height: 34px; padding: 0 10px; font-size: 13px; border: 1px solid var(--year-page-card-border);
         border-radius: 999px; color: var(--text); background: var(--year-page-card-bg);
         box-shadow: 0 4px 16px rgba(20,40,80,.18); font-weight: 800;
       }
-      .main { width: 100% !important; height: 100% !important; min-height: 0 !important; overflow: hidden !important; padding-top: 48px !important; }
-      .pages, .page { height: 100% !important; min-height: 0 !important; overflow: hidden !important; }
-      .page.active { display: flex !important; flex-direction: column !important; }
+      .main { width: 100% !important; height: auto !important; min-height: 0 !important; overflow: visible !important; padding-top: 48px !important; }
+      .pages, .page { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+      .page.active { display: block !important; }
       .page-scroll, .dashboard-scroll, #calendar .page-scroll {
-        flex: 1 1 auto !important; min-height: 0 !important; height: auto !important;
-        overflow-x: hidden !important; overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+        flex: none !important; min-height: 0 !important; height: auto !important; max-height: none !important;
+        overflow: visible !important; overflow-x: hidden !important; overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch; overscroll-behavior: auto;
+        padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
       }
     }
+    body.auth-locked .mobile-nav-toggle { display: none !important; }
     @media (min-width: 981px) { .mobile-nav-toggle { display: none !important; } }
+
+    /* Mobile calendar: make staff names readable and allow wrapping instead of clipping. */
+    @media (max-width: 760px) {
+      #calendar .calendar-mini-day-staff,
+      #calendar .calendar-mini-day-staff-original,
+      #calendar .calendar-mini-day-staff-assigned,
+      #calendar .calendar-mini-day-staff-current {
+        font-size: clamp(9px, 2.7vw, 11px) !important;
+        line-height: 1.15 !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        overflow-wrap: anywhere !important;
+        word-break: normal !important;
+      }
+      #calendar .calendar-mini-day { min-width: 0 !important; }
+      #calendar .calendar-full-grid { grid-template-rows: repeat(6, minmax(66px, auto)) !important; grid-auto-rows: minmax(66px, auto) !important; }
+    }
 
 </style>
 </head>
