@@ -13,5 +13,3 @@ In GitHub repository **Settings -> Actions -> General -> Workflow permissions**,
 ## Expected behavior
 
 Current version starts at `2.1.4`. A normal push to `main` triggers a bot commit changing it to `2.1.5`; the Vercel production deployment for that commit displays `2.1.5`. The next normal push increments it to `2.1.6`. Preview deployments do not run this workflow unless they also result from a push to `main`.
-
-Auto-version test: 2.1.6
