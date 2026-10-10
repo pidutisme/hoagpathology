@@ -1,0 +1,78 @@
+
+name: Auto Version
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "package.json"
+      - ".github/workflows/auto-version.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Increment patch version
+        id: version
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const file = "package.json";
+          const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+          const current = String(pkg.version || "1.0.1");
+          const match = current.match(/^(\d+)\.(\d+)\.(\d+)$/);
+
+          if (!match) {
+            throw new Error(`Invalid version format: ${current}`);
+          }
+
+          const next = `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+          pkg.version = next;
+
+          fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `previous=${current}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `next=${next}\n`);
+
+          console.log(`Version: ${current} -> ${next}`);
+          NODE
+
+      - name: Commit and push updated version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add package.json
+
+          if git diff --cached --quiet; then
+            echo "No version changes to commit."
+            exit 1
+          fi
+
+          git commit -m "chore: bump version to ${{ steps.version.outputs.next }}"
+          git push origin HEAD:main
+
+      - name: Summary
+        run: |
+          echo "## Hoag Pathology Version Updated" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Previous: ${{ steps.version.outputs.previous }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- New: ${{ steps.version.outputs.next }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: main" >> "$GITHUB_STEP_SUMMARY"

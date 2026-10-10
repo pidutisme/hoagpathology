@@ -8957,6 +8957,56 @@
         touch-action: pan-y;
       }
     }
+
+    /* Mobile: keep the workspace in view and use a collapsible navigation drawer. */
+    @media (max-width: 980px) {
+      .app {
+        display: block !important;
+        height: var(--apk-vh, 100dvh) !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        padding: 8px !important;
+      }
+      .sidebar {
+        position: fixed !important;
+        z-index: 10050 !important;
+        top: max(8px, env(safe-area-inset-top)) !important;
+        bottom: max(8px, env(safe-area-inset-bottom)) !important;
+        left: 8px !important;
+        width: min(88vw, 360px) !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: auto !important;
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        transform: translateX(calc(-100% - 20px));
+        transition: transform .22s ease;
+        box-shadow: 0 12px 40px rgba(0,0,0,.22) !important;
+      }
+      body.mobile-nav-open .sidebar { transform: translateX(0); }
+      body.mobile-nav-open::after {
+        content: ""; position: fixed; inset: 0; z-index: 10040;
+        background: rgba(15, 23, 42, .36);
+      }
+      .nav { overflow: auto !important; display: grid !important; grid-template-columns: 1fr !important; }
+      .mobile-nav-toggle {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        position: fixed; z-index: 10060; top: max(10px, env(safe-area-inset-top)); left: 10px;
+        min-height: 42px; padding: 0 14px; border: 1px solid var(--year-page-card-border);
+        border-radius: 999px; color: var(--text); background: var(--year-page-card-bg);
+        box-shadow: 0 4px 16px rgba(20,40,80,.18); font-weight: 800;
+      }
+      .main { width: 100% !important; height: 100% !important; min-height: 0 !important; overflow: hidden !important; padding-top: 48px !important; }
+      .pages, .page { height: 100% !important; min-height: 0 !important; overflow: hidden !important; }
+      .page.active { display: flex !important; flex-direction: column !important; }
+      .page-scroll, .dashboard-scroll, #calendar .page-scroll {
+        flex: 1 1 auto !important; min-height: 0 !important; height: auto !important;
+        overflow-x: hidden !important; overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+      }
+    }
+    @media (min-width: 981px) { .mobile-nav-toggle { display: none !important; } }
+
 </style>
 </head>
 
@@ -23312,6 +23362,40 @@ function exportMonthlySchedulePdfs() {
     }, { once: true });
   })(window, document);
     </script>
+
+<script>
+(function () {
+  function setupMobileNavigation() {
+    if (document.querySelector('.mobile-nav-toggle')) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mobile-nav-toggle';
+    button.setAttribute('aria-label', 'Open navigation menu');
+    button.setAttribute('aria-expanded', 'false');
+    button.innerHTML = '<span aria-hidden="true">☰</span><span>MENU</span>';
+    document.body.appendChild(button);
+    function closeMenu() {
+      document.body.classList.remove('mobile-nav-open');
+      button.setAttribute('aria-expanded', 'false');
+      button.setAttribute('aria-label', 'Open navigation menu');
+    }
+    button.addEventListener('click', function () {
+      var open = document.body.classList.toggle('mobile-nav-open');
+      button.setAttribute('aria-expanded', String(open));
+      button.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+    });
+    document.addEventListener('click', function (event) {
+      if (window.matchMedia('(max-width: 980px)').matches && event.target.closest('.nav-btn')) closeMenu();
+      if (event.target === document.body && document.body.classList.contains('mobile-nav-open')) closeMenu();
+    });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeMenu(); });
+    window.addEventListener('resize', function () { if (window.innerWidth > 980) closeMenu(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupMobileNavigation, { once: true });
+  else setupMobileNavigation();
+})();
+</script>
+
 </body>
 
 </html>
