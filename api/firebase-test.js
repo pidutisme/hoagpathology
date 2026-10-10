@@ -12,21 +12,42 @@ export default async function handler(req, res) {
   try {
     const db = firebaseDb();
 
-    // Uji sambungan menggunakan root reference tanpa membaca semua data.
-    await db.ref("/").get();
+    const paths = [
+      "labapp/auth/users",
+      "labapp/roster/team",
+      "labapp/liveChat/messages",
+      "labapp/notes/items",
+      "labapp/notes/userState",
+      "labapp/systemLogs"
+    ];
+
+    const results = {};
+
+    for (const path of paths) {
+      const snapshot = await db.ref(path).get();
+
+      results[path] = {
+        readable: true,
+        exists: snapshot.exists(),
+        type: snapshot.exists()
+          ? (Array.isArray(snapshot.val())
+              ? "array"
+              : typeof snapshot.val())
+          : "empty"
+      };
+    }
 
     return res.status(200).json({
       ok: true,
       service: "Firebase Admin SDK",
-      message: "Firebase connection successful"
+      checks: results
     });
   } catch (error) {
-    console.error("Firebase connection test failed:", error);
+    console.error("Firebase path check failed:", error.message);
 
     return res.status(500).json({
       ok: false,
-      error: error.message,
-      code: error.code || null
+      error: error.message
     });
   }
 }
