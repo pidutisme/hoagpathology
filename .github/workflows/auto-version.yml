@@ -1,13 +1,7 @@
-
 name: Auto Version
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "package.json"
-      - ".github/workflows/auto-version.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -47,8 +41,15 @@ jobs:
 
           fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
 
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `previous=${current}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `next=${next}\n`);
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `previous=${current}\n`
+          );
+
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `next=${next}\n`
+          );
 
           console.log(`Version: ${current} -> ${next}`);
           NODE
