@@ -9144,6 +9144,36 @@
     text-overflow: ellipsis;
   }
 }
+
+    /* FINAL MOBILE FIX - fit full staff names inside date cards */
+    @media (max-width: 760px) {
+      #calendar .calendar-mini-day-staff {
+        padding: 0 2px !important;
+        gap: 1px !important;
+      }
+
+      #calendar .calendar-mini-day-staff-current,
+      #calendar .calendar-mini-day-staff-assigned {
+        font-size: 8.5px !important;
+        line-height: 1.05 !important;
+        letter-spacing: -0.18px !important;
+        font-weight: 950 !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        word-break: normal !important;
+      }
+
+      #calendar .calendar-mini-day-staff-original {
+        font-size: 7.5px !important;
+        line-height: 1 !important;
+        letter-spacing: -0.15px !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        word-break: normal !important;
+      }
+    }
 </style>
 <style id="mobile-profile-card-centering-v6">
 /* V6 mobile-only: keep document link cards vertically stacked and centered.
