@@ -9273,7 +9273,7 @@
     <div class="noscript-warning">
       <strong>LabApp requires JavaScript.</strong><br/>
     Please enable JavaScript to use routing, calendar, roster auto-save, and theme.<br/>
-      <span>LabApp needs JavaScript enabled to load the dashboard, calendar, and roster modules.</span>
+      <span>LabLink App needs JavaScript enabled to load the dashboard, calendar, and roster modules.</span>
     </div>
   </noscript>
   <div aria-label="LabApp login" aria-modal="true" class="auth-screen" id="authScreen" role="dialog">
@@ -9341,7 +9341,7 @@
     <aside class="sidebar">
       <div class="brand">
         <h1>LabApp</h1>
-        <p>SPA Single Page Application</p>
+        <p>Laboratory Operations System</p>
       </div>
       <nav class="nav">
         <button class="nav-btn active" data-page="dashboard" type="button">DASHBOARD</button>
@@ -9761,10 +9761,10 @@
                     <p>System information and configuration center for reviewing LabApp details, application settings,
                       and operational controls.</p>
                     <div class="setting-grid">
-                      <div class="setting-box"><strong>App Name</strong><span>LabApp</span></div>
-                      <div class="setting-box"><strong>App Type</strong><span>SPA Single Page Application</span></div>
+                      <div class="setting-box"><strong>App Name</strong><span>LabLink App</span></div>
+                      <div class="setting-box"><strong>App Type</strong><span>Laboratory Operations System</span></div>
                       <div class="setting-box"><strong>Department</strong><span>HOAG Pathology</span></div>
-                      <div class="setting-box"><strong>Platform</strong><span>GitHub + Vercel</span></div>
+                      <div class="setting-box"><strong>Platform</strong><span>GitHub + Vercel + Firebase</span></div>
                       <div class="setting-box"><strong>Time Zone</strong><span>Asia/Kuala_Lumpur</span></div>
                       <div class="setting-box"><strong>Version</strong><span id="aboutAppVersion">2.1.4</span></div>
                     </div>
@@ -16200,7 +16200,7 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function exportRoster() {
         var payload = JSON.stringify({
-          app: 'LabApp | HOAG Pathology',
+          app: 'LabLink App | HOAG Pathology',
           type: 'daily-roster-export',
           userId: getRosterStorageUserId(),
           exportedAt: new Date().toISOString(),
