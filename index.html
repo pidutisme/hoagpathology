@@ -9145,45 +9145,87 @@
   }
 }
 </style>
-<style id="mobile-profile-card-centering-v5">
-/* V5 mobile-only: center document link cards even when labels wrap to three lines. */
+<style id="mobile-profile-card-centering-v6">
+/* V6 mobile-only: keep document link cards vertically stacked and centered.
+   Prevent long titles/descriptions from colliding inside short grid rows. */
 @media (max-width: 760px) {
-  #profile .profile-link-card {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto auto !important;
-    justify-items: center !important;
-    align-content: center !important;
+  #profile .profile-link-grid,
+  #access .access-link-grid {
+    grid-auto-rows: clamp(104px, 17vw, 128px) !important;
+    align-items: stretch !important;
+    align-content: start !important;
+  }
+
+  #profile .profile-link-card,
+  #access .access-link-card {
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
+    justify-content: center !important;
+    justify-items: center !important;
     text-align: center !important;
-    row-gap: 5px !important;
-    padding: 12px 8px !important;
-  }
-  #profile .profile-link-card::before {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    justify-self: center !important;
-    align-self: center !important;
-    margin: 0 auto !important;
-  }
-  #profile .profile-link-card strong {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    align-self: center !important;
-    justify-self: center !important;
+    gap: 4px !important;
     width: 100% !important;
+    height: 100% !important;
+    min-height: 104px !important;
+    padding: 8px 7px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  #profile .profile-link-card::before,
+  #access .access-link-card::before {
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    margin: 0 auto 1px !important;
+    border-radius: 50% !important;
+    display: grid !important;
+    place-items: center !important;
+    font-size: 17px !important;
+    line-height: 1 !important;
+  }
+
+  #profile .profile-link-card strong,
+  #access .access-link-card strong {
+    display: -webkit-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
     min-height: 0 !important;
     margin: 0 !important;
-    text-align: center !important;
-  }
-  #profile .profile-link-card span {
-    grid-column: 1 !important;
-    grid-row: 3 !important;
+    padding: 0 !important;
     align-self: center !important;
-    justify-self: center !important;
-    width: 100% !important;
-    min-height: 0 !important;
     text-align: center !important;
+    font-size: 10.5px !important;
+    line-height: 1.15 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  #profile .profile-link-card span,
+  #access .access-link-card span {
+    display: -webkit-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    align-self: center !important;
+    text-align: center !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    overflow-wrap: anywhere !important;
   }
 }
 </style>
