@@ -1,0 +1,10 @@
+{
+  "name": "LabLink App",
+  "short_name": "LabLink",
+  "description": "HOAG Pathology Laboratory Operations System",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#2563eb"
+}

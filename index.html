@@ -6,6 +6,7 @@
 <html>
 
 <head>
+<link rel="manifest" href="/manifest.json">
   <!-- +----------------------------------+
        + HEAD AND PRE-AUTH BOOTSTRAP      +
        +----------------------------------+ -->
@@ -23645,6 +23646,14 @@ function exportMonthlySchedulePdfs() {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupMobileNavigation, { once: true });
   else setupMobileNavigation();
 })();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(() => console.log("LabLink Service Worker registered"))
+      .catch((error) => console.error("Service Worker error:", error));
+  });
+}
 </script>
 
 </body>
