@@ -1,12 +1,13 @@
 {
   "name": "HOAG Pathology",
-"short_name": "HOAG",
+  "short_name": "HOAG",
   "description": "HOAG Pathology Laboratory Operations System",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f5f7fb",
   "theme_color": "#2563eb",
+
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,6 +20,21 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop-login.png",
+      "sizes": "2048x766",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "723x1195",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ]
 }
