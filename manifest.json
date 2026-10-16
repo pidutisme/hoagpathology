@@ -26,7 +26,7 @@
   "screenshots": [
     {
       "src": "/screenshot-desktop-login.png",
-      "sizes": "1760x1100",
+      "sizes": "1760x766",
       "type": "image/png",
       "form_factor": "wide"
     },
