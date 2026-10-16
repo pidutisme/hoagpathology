@@ -1,6 +1,6 @@
 {
-  "name": "LabLink App",
-  "short_name": "LabLink",
+  "name": "HOAG Pathology",
+"short_name": "HOAG",
   "description": "HOAG Pathology Laboratory Operations System",
   "start_url": "/",
   "scope": "/",
