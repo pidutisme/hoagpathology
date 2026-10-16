@@ -8987,6 +8987,11 @@
         box-shadow: 0 12px 40px rgba(0,0,0,.22) !important;
       }
       body.mobile-nav-open .sidebar { transform: translateX(0); }
+      /* Hide the floating MENU button while the sidebar is open.
+         It reappears automatically when the sidebar closes. */
+      body.mobile-nav-open .mobile-nav-toggle {
+        display: none !important;
+      }
       body.mobile-nav-open::after {
         content: ""; position: fixed; inset: 0; z-index: 10040;
         background: rgba(15, 23, 42, .36);
