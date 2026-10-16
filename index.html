@@ -8976,7 +8976,7 @@
         top: max(8px, env(safe-area-inset-top)) !important;
         bottom: max(8px, env(safe-area-inset-bottom)) !important;
         left: 8px !important;
-        width: min(78vw, 320px) !important;
+        width: min(88vw, 360px) !important;
         height: auto !important;
         max-height: none !important;
         overflow: auto !important;
@@ -9155,7 +9155,7 @@
 
       #calendar .calendar-mini-day-staff-current,
       #calendar .calendar-mini-day-staff-assigned {
-        font-size: 7.5px !important;
+        font-size: 7px !important;
         line-height: 1.05 !important;
         letter-spacing: -0.18px !important;
         font-weight: 950 !important;
@@ -9166,7 +9166,7 @@
       }
 
       #calendar .calendar-mini-day-staff-original {
-        font-size: 7.5px !important;
+        font-size: 7px !important;
         line-height: 1 !important;
         letter-spacing: -0.15px !important;
         white-space: nowrap !important;
@@ -9175,79 +9175,6 @@
         word-break: normal !important;
       }
     }
-
-/* =========================================================
-   FINAL MOBILE SIDEBAR FIT - all Android viewport sizes
-   Desktop is untouched. Keep sidebar compact and scale contents
-   from the actual viewport width instead of device DPI.
-   ========================================================= */
-@media (max-width: 980px) {
-  html {
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
-
-  .sidebar {
-    width: min(230px, 64vw) !important;
-    max-width: calc(100vw - 16px) !important;
-    padding: 10px !important;
-    gap: 7px !important;
-    box-sizing: border-box !important;
-  }
-
-  .brand h1 {
-    font-size: clamp(18px, 5vw, 24px) !important;
-    line-height: 1.05 !important;
-  }
-
-  .brand p {
-    margin-top: 3px !important;
-    font-size: clamp(9px, 2.5vw, 11px) !important;
-    line-height: 1.2 !important;
-  }
-
-  .nav {
-    gap: 5px !important;
-    padding: 3px 4px 3px 1px !important;
-  }
-
-  .nav button {
-    min-height: 32px !important;
-    height: 32px !important;
-    padding: 5px 9px !important;
-    font-size: clamp(10px, 2.5vw, 11.5px) !important;
-    line-height: 1 !important;
-    box-sizing: border-box !important;
-  }
-
-  .sidebar-footer {
-    padding: 7px !important;
-    gap: 5px !important;
-    font-size: clamp(9px, 2.5vw, 11px) !important;
-  }
-
-  .theme-toggle {
-    height: 32px !important;
-  }
-
-  .theme-toggle-knob {
-    width: 24px !important;
-    height: 24px !important;
-  }
-}
-
-@media (max-width: 360px) {
-  .sidebar {
-    width: min(220px, 62vw) !important;
-  }
-
-  .nav button {
-    min-height: 30px !important;
-    height: 30px !important;
-    padding: 4px 8px !important;
-    font-size: 10px !important;
-  }
-}
 </style>
 <style id="mobile-profile-card-centering-v6">
 /* V6 mobile-only: keep document link cards vertically stacked and centered.
@@ -9330,6 +9257,108 @@
     -webkit-line-clamp: 2 !important;
     line-clamp: 2 !important;
     overflow-wrap: anywhere !important;
+  }
+}
+</style>
+
+<style>
+/* =========================================================
+   V3 MOBILE SIDEBAR + FINAL 3 FIXES
+   Desktop untouched. Mobile only.
+   ========================================================= */
+@media (max-width: 980px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* V3 sidebar overall look - keep width/layout */
+  .sidebar {
+    width: min(230px, 64vw) !important;
+    max-width: calc(100vw - 16px) !important;
+    padding: 10px !important;
+    gap: 7px !important;
+    box-sizing: border-box !important;
+  }
+
+  .brand h1 {
+    font-size: clamp(18px, 5vw, 24px) !important;
+    line-height: 1.05 !important;
+  }
+
+  .brand p {
+    margin-top: 3px !important;
+    font-size: clamp(9px, 2.5vw, 11px) !important;
+    line-height: 1.2 !important;
+  }
+
+  /* FIX 3: menu boxes compact, but no huge gaps */
+  .nav {
+    gap: 5px !important;
+    padding: 3px 4px 3px 1px !important;
+    align-content: start !important;
+    justify-content: start !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .nav button {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 5px 9px !important;
+    font-size: clamp(10px, 2.5vw, 11.5px) !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+    align-self: start !important;
+  }
+
+  .sidebar-footer {
+    padding: 7px !important;
+    gap: 5px !important;
+    font-size: clamp(9px, 2.5vw, 11px) !important;
+  }
+
+  .theme-toggle { height: 32px !important; }
+  .theme-toggle-knob { width: 24px !important; height: 24px !important; }
+
+  /* FIX 1: MENU button vertically centered in the gap between URL bar and content */
+  .mobile-nav-toggle {
+    top: max(18px, env(safe-area-inset-top) + 12px) !important;
+  }
+
+  /* FIX 2: document owns the page scrollbar; don't create a nested calendar scrollbar */
+  #calendar .calendar-panel,
+  #calendar .calendar-content-inner,
+  #calendar .calendar-roster-shell,
+  #calendar .calendar-roster-board,
+  #calendar .calendar-month-panel,
+  #calendar .daily-roster-panel,
+  #calendar .daily-roster-card,
+  #calendar .page-scroll {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    max-height: none !important;
+  }
+
+  #calendar .daily-roster-list {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  #calendar .daily-roster-list::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav button {
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 4px 8px !important;
+    font-size: 10px !important;
   }
 }
 </style>
