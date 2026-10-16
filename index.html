@@ -9374,6 +9374,62 @@
   }
 }
 </style>
+
+<style id="mobile-final-floating-calendar-fix-v7">
+/* V7 mobile final: slightly smaller floating ON CALL card on ALL mobile pages + calendar scrollbar fix. */
+@media (max-width: 760px) {
+  .today-floating-card {
+    width: min(210px, calc(100vw - 40px)) !important;
+    min-height: 88px !important;
+    padding: 10px 12px 9px !important;
+    gap: 4px !important;
+    border-radius: 20px !important;
+  }
+  .today-floating-date,
+  .today-floating-duty {
+    font-size: 8.5px !important;
+    line-height: 1.05 !important;
+  }
+  .today-floating-name {
+    font-size: 21px !important;
+    line-height: .95 !important;
+  }
+  .today-floating-card::after {
+    top: 8px !important;
+    width: 36px !important;
+    height: 3px !important;
+  }
+
+  /* The calendar itself should never become a nested scrolling box on mobile. */
+  #calendar .calendar-panel,
+  #calendar .calendar-single-panel,
+  #calendar .calendar-content-inner,
+  #calendar .calendar-roster-shell,
+  #calendar .calendar-roster-board,
+  #calendar .calendar-month-panel,
+  #calendar .calendar-month-panel > *,
+  #calendar .calendar-full-grid {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    max-height: none !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  #calendar .calendar-panel::-webkit-scrollbar,
+  #calendar .calendar-single-panel::-webkit-scrollbar,
+  #calendar .calendar-content-inner::-webkit-scrollbar,
+  #calendar .calendar-roster-shell::-webkit-scrollbar,
+  #calendar .calendar-roster-board::-webkit-scrollbar,
+  #calendar .calendar-month-panel::-webkit-scrollbar,
+  #calendar .calendar-month-panel > *::-webkit-scrollbar,
+  #calendar .calendar-full-grid::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+}
+</style>
+
 </head>
 
 <body class="auth-locked">
