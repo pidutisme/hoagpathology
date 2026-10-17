@@ -8483,9 +8483,8 @@
       display: grid;
       place-items: center;
       padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden !important;
+      -webkit-overflow-scrolling: auto;
       background: var(--bg);
       background-image: radial-gradient(circle at 18% 12%, rgba(255, 255, 255, .70), transparent 30%), radial-gradient(circle at 84% 86%, rgba(35, 103, 242, .075), transparent 34%);
       backdrop-filter: none;
@@ -8543,9 +8542,8 @@
       box-shadow: var(--year-page-card-shadow);
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden !important;
+      -webkit-overflow-scrolling: auto;
       scrollbar-width: none;
     }
 
