@@ -14,7 +14,7 @@
     "electron-builder": "26.0.12"
   },
   "scripts": {
-    "desktop:dist": "electron-builder --win nsis"
+    "desktop:dist": "electron-builder --win nsis --publish never"
   },
   "main": "desktop/main.cjs",
   "build": {
