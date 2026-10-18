@@ -8,5 +8,45 @@
   },
   "dependencies": {
     "firebase-admin": "^13.5.0"
+  },
+  "devDependencies": {
+    "electron": "39.0.0",
+    "electron-builder": "26.0.12"
+  },
+  "scripts": {
+    "desktop:dist": "electron-builder --win nsis"
+  },
+  "main": "desktop/main.cjs",
+  "build": {
+    "appId": "com.hoagpathology.desktop",
+    "productName": "Hoag Pathology",
+    "artifactName": "Hoag-Pathology-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "desktop/main.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "desktop/config.json",
+        "to": "desktop-config.json"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "desktop/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "desktop/icon.ico",
+      "uninstallerIcon": "desktop/icon.ico",
+      "installerHeaderIcon": "desktop/icon.ico"
+    }
   }
 }
