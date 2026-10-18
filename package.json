@@ -47,6 +47,7 @@
       "installerIcon": "desktop/icon.ico",
       "uninstallerIcon": "desktop/icon.ico",
       "installerHeaderIcon": "desktop/icon.ico"
-    }
+    },
+    "publish": "never"
   }
 }
