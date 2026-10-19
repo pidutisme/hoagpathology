@@ -10282,7 +10282,7 @@
   	    Object.freeze({ input: 'Sabah', regions: Object.freeze(['Sabah']) })
   	  ]);
 
-      var holidayClientCacheVersion = 'v11-terms-ms-hari';
+      var holidayClientCacheVersion = 'v12-target-regions-only';
       var holidayClientCacheMaxAgeMs = 12 * 60 * 60 * 1000;
 
       var officialHolidaySupplementalRows = Object.freeze([
@@ -14325,6 +14325,35 @@ if (token) {
   
   
       /* +----------------------------------+
+       * + isAllowedHolidayRegion           +
+       * +----------------------------------+ */
+      function isAllowedHolidayRegion(region) {
+        var value = cleanText(region).toUpperCase();
+        return value === 'NATIONAL' ||
+          value === 'SELANGOR' ||
+          value === 'WP KUALA LUMPUR' ||
+          value === 'KUALA LUMPUR' ||
+          value === 'WILAYAH PERSEKUTUAN KUALA LUMPUR' ||
+          value === 'FEDERAL TERRITORY KUALA LUMPUR';
+      }
+
+      /* +----------------------------------+
+       * + filterAllowedHolidayRegions      +
+       * +----------------------------------+ */
+      function filterAllowedHolidayRegions(regions) {
+        var output = [];
+        (Array.isArray(regions) ? regions : []).map(cleanText).filter(Boolean).forEach(function (region) {
+          var value = region.toUpperCase();
+          var canonical = '';
+          if (value === 'NATIONAL') canonical = 'National';
+          else if (value === 'SELANGOR') canonical = 'Selangor';
+          else if (value === 'WP KUALA LUMPUR' || value === 'KUALA LUMPUR' || value === 'WILAYAH PERSEKUTUAN KUALA LUMPUR' || value === 'FEDERAL TERRITORY KUALA LUMPUR') canonical = 'WP Kuala Lumpur';
+          if (canonical && isAllowedHolidayRegion(canonical) && output.indexOf(canonical) === -1) output.push(canonical);
+        });
+        return output;
+      }
+
+      /* +----------------------------------+
        * + mergeHolidayData                 +
        * +----------------------------------+ */
       function mergeHolidayData(envelope, expectedYear) {
@@ -14337,9 +14366,13 @@ if (token) {
           if (!holiday || !isHolidayDateInYear(holiday.date, targetYear)) return;
           var cleanName = cleanText(holiday.name);
           if (!cleanName) return;
-          var regions = Array.isArray(holiday.regions) ? holiday.regions.map(cleanText).filter(Boolean) : [];
+          var regions = filterAllowedHolidayRegions(holiday.regions);
+          // CALENDAR ONLY: National + Kuala Lumpur + Selangor.
+          // Holidays belonging exclusively to other states are ignored.
+          if (!regions.length) return;
           var displayName = getHolidayDisplayName(holiday.displayName || cleanName);
-          var displayRegions = cleanText(holiday.displayRegions || getHolidayDisplayRegions(regions));
+          // Always derive the badge from the filtered regions so no other state can appear.
+          var displayRegions = getHolidayDisplayRegions(regions);
           if (!state.holidaysByDate[holiday.date]) state.holidaysByDate[holiday.date] = [];
           var exists = state.holidaysByDate[holiday.date].some(function (item) {
             return cleanText(item && item.name) === cleanName && cleanText(item && item.displayRegions) === displayRegions;
@@ -14824,8 +14857,7 @@ if (token) {
         var sources = [
           { url: 'https://publicholidays.com.my/', region: '' },
           { url: 'https://publicholidays.com.my/selangor/', region: 'Selangor' },
-          { url: 'https://publicholidays.com.my/kuala-lumpur/', region: 'WP Kuala Lumpur' },
-          { url: 'https://publicholidays.com.my/sabah/', region: 'Sabah' }
+          { url: 'https://publicholidays.com.my/kuala-lumpur/', region: 'WP Kuala Lumpur' }
         ];
         return Promise.all(sources.map(function (source) {
           return fetchPublicHolidayReaderSource(year, source);
