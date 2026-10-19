@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "index.html"
+    paths-ignore:
+      - "package.json"
+      - "package-lock.json"
 
   workflow_dispatch:
 
@@ -29,9 +30,12 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Increment patch version
+      - name: Determine version bump
         id: version
         shell: bash
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
@@ -46,8 +50,43 @@ jobs:
             throw new Error(`Invalid version format: ${current}`);
           }
 
-          const next =
-            `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+          const major = Number(match[1]);
+          const minor = Number(match[2]);
+          const patch = Number(match[3]);
+
+          const message = String(process.env.COMMIT_MESSAGE || "").trim();
+          const eventName = String(process.env.EVENT_NAME || "");
+
+          let bump = "patch";
+
+          if (eventName === "workflow_dispatch") {
+            bump = "patch";
+          } else if (/^BREAKING:/i.test(message) || /BREAKING CHANGE:/i.test(message)) {
+            bump = "major";
+          } else if (/^feat(?:\([^)]+\))?!:/i.test(message) || /^feat(?:\([^)]+\))?:/i.test(message)) {
+            bump = "minor";
+          } else if (/^fix(?:\([^)]+\))?:/i.test(message)) {
+            bump = "patch";
+          } else {
+            bump = "patch";
+          }
+
+          let nextMajor = major;
+          let nextMinor = minor;
+          let nextPatch = patch;
+
+          if (bump === "major") {
+            nextMajor++;
+            nextMinor = 0;
+            nextPatch = 0;
+          } else if (bump === "minor") {
+            nextMinor++;
+            nextPatch = 0;
+          } else {
+            nextPatch++;
+          }
+
+          const next = `${nextMajor}.${nextMinor}.${nextPatch}`;
 
           pkg.version = next;
 
@@ -66,6 +105,13 @@ jobs:
             `next=${next}\n`
           );
 
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `bump=${bump}\n`
+          );
+
+          console.log(`Commit: ${message || "(manual run)"}`);
+          console.log(`Bump: ${bump}`);
           console.log(`Version: ${current} -> ${next}`);
           NODE
 
@@ -88,15 +134,13 @@ jobs:
           fi
 
           git commit -m "chore: bump version to ${{ steps.version.outputs.next }}"
-
           git push origin HEAD:main
 
       - name: Create version tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag -a "v${{ steps.version.outputs.next }}" \
-            -m "Release v${{ steps.version.outputs.next }}"
+          git tag -a "v${{ steps.version.outputs.next }}"             -m "Release v${{ steps.version.outputs.next }}"
 
           git push origin "v${{ steps.version.outputs.next }}"
 
@@ -106,6 +150,6 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Previous: ${{ steps.version.outputs.previous }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- New: ${{ steps.version.outputs.next }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Bump: ${{ steps.version.outputs.bump }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: ${{ github.event.head_commit.message }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Tag: v${{ steps.version.outputs.next }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Main branch updated." >> "$GITHUB_STEP_SUMMARY"
-          echo "- Windows installer workflow should start automatically from the new tag." >> "$GITHUB_STEP_SUMMARY"
