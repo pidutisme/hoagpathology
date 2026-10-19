@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,6 +25,7 @@ jobs:
 
       - name: Increment patch version
         id: version
+        shell: bash
         run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
@@ -38,7 +40,8 @@ jobs:
             throw new Error(`Invalid version format: ${current}`);
           }
 
-          const next = `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+          const next =
+            `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
 
           pkg.version = next;
 
@@ -65,6 +68,8 @@ jobs:
           npm install --package-lock-only --ignore-scripts
 
       - name: Commit and push updated version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -77,9 +82,12 @@ jobs:
           fi
 
           git commit -m "chore: bump version to ${{ steps.version.outputs.next }}"
+
           git push origin HEAD:main
 
       - name: Create version tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git tag -a "v${{ steps.version.outputs.next }}" \
             -m "Release v${{ steps.version.outputs.next }}"
@@ -93,4 +101,5 @@ jobs:
           echo "- Previous: ${{ steps.version.outputs.previous }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- New: ${{ steps.version.outputs.next }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Tag: v${{ steps.version.outputs.next }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Windows installer workflow will now start automatically." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Main branch updated." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Windows installer workflow should start from the new tag." >> "$GITHUB_STEP_SUMMARY"
