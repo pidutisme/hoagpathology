@@ -13189,9 +13189,10 @@ if (token) {
         extra = extra && typeof extra === 'object' ? extra : {};
         var ua = String(navigator.userAgent || '');
         var platform = String(navigator.platform || '');
+        var isElectron = /Electron\/\d+/i.test(ua);
         var deviceType = detectDeviceType(ua);
         var os = detectOs(ua, platform);
-        var appMode = deviceType === 'APK WEBVIEW' ? 'APK WebView' : (deviceType === 'WEBVIEW' ? 'WebView' : 'Browser');
+        var appMode = isElectron ? 'Desktop App' : (deviceType === 'APK WEBVIEW' ? 'APK WebView' : (deviceType === 'WEBVIEW' ? 'WebView' : 'Browser'));
         var width = window.screen && window.screen.width ? window.screen.width : window.innerWidth;
         var height = window.screen && window.screen.height ? window.screen.height : window.innerHeight;
         var screenText = String(width || '') + 'x' + String(height || '') + '@' + String(window.devicePixelRatio || 1);
@@ -13212,7 +13213,7 @@ if (token) {
           timezone: (typeof Intl !== 'undefined' && Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions ? Intl.DateTimeFormat().resolvedOptions().timeZone : '') || '',
           online: navigator.onLine !== false ? 'online' : 'offline',
           visibility: document.hidden ? 'hidden' : 'visible',
-          runtimeMode: (typeof WebView !== 'undefined' && WebView && typeof WebView.getRuntimeMode === 'function') ? WebView.getRuntimeMode() : appMode,
+          runtimeMode: isElectron ? 'Electron' : ((typeof WebView !== 'undefined' && WebView && typeof WebView.getRuntimeMode === 'function') ? WebView.getRuntimeMode() : appMode),
           connectionType: connection && connection.effectiveType ? connection.effectiveType : '',
           page: page,
           path: window.location ? window.location.pathname : '',
@@ -16649,8 +16650,10 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function detectWebViewMode() {
         var ua = navigator.userAgent || '';
+        var isElectron = /Electron\/\d+/i.test(ua);
         var isAndroid = /Android/i.test(ua);
         var isWebView = /; wv\)/i.test(ua) || /\bwv\b/i.test(ua) || (/Version\/\d+(?:\.\d+)?.*Chrome\//i.test(ua) && isAndroid);
+        if (isElectron) return 'electron';
         if (isWebView && isAndroid) return 'apk-webview';
         if (isWebView) return 'webview';
         return 'browser';
@@ -16664,8 +16667,9 @@ function exportMonthlySchedulePdfs() {
         var ua = navigator.userAgent || '';
         var mode = detectWebViewMode();
         root.classList.add('apk-webview-ready');
+        root.classList.toggle('electron-app', mode === 'electron');
         root.classList.toggle('android-webview', mode === 'apk-webview');
-        root.classList.toggle('embedded-webview', mode === 'apk-webview' || mode === 'webview');
+        root.classList.toggle('embedded-webview', mode === 'apk-webview' || mode === 'webview' || mode === 'electron');
         root.classList.toggle('touch-device', /Mobile|Android|iPhone|iPad|iPod/i.test(ua) || Number(navigator.maxTouchPoints || 0) > 0);
         root.setAttribute('data-runtime-mode', mode);
       }
