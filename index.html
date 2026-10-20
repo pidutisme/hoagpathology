@@ -8992,7 +8992,10 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
         <label>LOT NO.<input id="inventoryLotInput" type="text" maxlength="80" placeholder="e.g. 2804"></label>
       </div>
       <div class="inventory-form-grid">
+        <label>MOVEMENT DATE<input id="inventoryMovementDateInput" type="date" required></label>
         <label>EXPIRY<input id="inventoryExpiryInput" type="date"></label>
+      </div>
+      <div class="inventory-form-grid">
         <label>STAFF<select id="inventoryStaffInput"></select></label>
       </div>
       <label id="inventoryLotSelectWrap" hidden>STOCK OUT LOT<select id="inventoryLotSelect"></select></label>
@@ -18996,10 +18999,10 @@ function exportMonthlySchedulePdfs() {
      * + Lot-level stock / movement       +
      * +----------------------------------+ */
     var Inventory = (function () {
-      var STORAGE_KEY = 'labAppInventoryV1';
+      var STORAGE_KEY = 'labAppInventoryV2';
       var initialized = false;
       var dbPath = 'labapp/inventory';
-      var data = { version: 1, items: [], transactions: [], monthlyPrices: {} };
+      var data = { version: 4, items: [], transactions: [], monthlyPrices: {}, monthlySnapshots: {} };
       var currentView = 'ITEMS';
       var selectedPriceMonth = new Date().toISOString().slice(0,7);
       var staffNames = ['SHOUNNA', 'LIZA', 'JAYANTHI', 'SURIANI', 'TOMMY', 'JAPIDI', 'NAZRAN'];
@@ -19016,6 +19019,8 @@ function exportMonthlySchedulePdfs() {
       function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
       function money(v){return 'RM'+Number(v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
       function nowIso(){return new Date().toISOString();}
+      function localDateKey(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+      function isoForMovementDate(dateKey){var p=String(dateKey||'').split('-');if(p.length!==3)return nowIso();var n=new Date();var d=new Date(Number(p[0]),Number(p[1])-1,Number(p[2]),n.getHours(),n.getMinutes(),n.getSeconds(),0);return isNaN(d.getTime())?nowIso():d.toISOString();}
       function id(){return 'inv-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);}
       function getUserName(){return cleanText(state.authUserDisplayName||'')||'UNKNOWN';}
       function normalize(){
@@ -19023,12 +19028,12 @@ function exportMonthlySchedulePdfs() {
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
-        data.version=1;
+        if(!data.monthlySnapshots||typeof data.monthlySnapshots!=='object'||Array.isArray(data.monthlySnapshots)) data.monthlySnapshots={};
+        data.version=4;
       }
       function seed(){
         if(data.items.length) return;
-        data.items=seedItems.map(function(x,i){return {id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:Number(x[4]),minStock:Number(x[5]),active:true};});
-        seedOutsourceTransactions();
+        data.items=seedItems.map(function(x,i){return {id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:0,minStock:Number(x[5]),active:true};});
       }
       function seedOutsourceTransactions(){
         var movement=[
@@ -19049,7 +19054,7 @@ function exportMonthlySchedulePdfs() {
           var key=String(x[2]||'').trim().toLowerCase();
           var item=byName[key];
           if(!item){
-            item={id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:Number(x[4]),minStock:Number(x[5]),active:true};
+            item={id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:0,minStock:Number(x[5]),active:true};
             data.items.push(item); byName[key]=item; changed=true;
           }else{
             var price=Number(x[3]);
@@ -19059,8 +19064,7 @@ function exportMonthlySchedulePdfs() {
             if(item.minStock==null || item.minStock===''){item.minStock=Number(x[5]);changed=true;}
           }
         });
-        seedOutsourceTransactions();
-        if(changed) data.version=3;
+        if(changed) data.version=4;
         return changed;
       }
       function currentMonthKey(){return new Date().toISOString().slice(0,7);}
@@ -19169,6 +19173,14 @@ function exportMonthlySchedulePdfs() {
         });
         return {lastBalance:lastBalance,stockIn:stockIn,stockOut:stockOut,closing:lastBalance+stockIn-stockOut};
       }
+      function saveMonthlySnapshot(monthKey){
+        normalize();
+        var categories=['BIOCHEMISTRY','HAEMATOLOGY','MICROBIOLOGY','URINE/STOOL ANALYSIS','ETC','CONSUMABLES','OUTSOURCE INDENT'];
+        var snap={categories:{},total:{lastBalance:0,stockIn:0,stockOut:0,closing:0},savedAt:nowIso()};
+        categories.forEach(function(c){var st=monthlyMovementStats(monthKey,c);snap.categories[c]=st;snap.total.lastBalance+=st.lastBalance;snap.total.stockIn+=st.stockIn;snap.total.stockOut+=st.stockOut;snap.total.closing+=st.closing;});
+        data.monthlySnapshots[monthKey]=snap;
+        return snap;
+      }
       function renderMonthlyMovement(){
         normalize();
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();
@@ -19180,16 +19192,19 @@ function exportMonthlySchedulePdfs() {
           if(!q)return true;
           return data.items.some(function(i){return i.active!==false&&i.category===c&&[i.name,i.category].join(' ').toLowerCase().indexOf(q)!==-1;});
         });
-        var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category, based on the movement records for the selected month.</span></div><select id="inventoryPriceMonth" aria-label="Movement month">';
-        var now=new Date();
-        for(var m=0;m<12;m++){var d=new Date(now.getFullYear(),m,1);var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');html+='<option value="'+key+'"'+(key===month?' selected':'')+'>'+esc(monthLabel(key))+'</option>';}
+        var snap=saveMonthlySnapshot(month);
+        var movementMonths=data.transactions.map(function(t){return String(t.at||'').slice(0,7);}).filter(Boolean);
+        var keys=Object.keys(data.monthlySnapshots||{}).concat(movementMonths,[currentMonthKey()]).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).sort().reverse();
+        var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category. Monthly records are saved for review from the month selector.</span></div><select id="inventoryPriceMonth" aria-label="Movement month">';
+        keys.forEach(function(key){html+='<option value="'+key+'"'+(key===month?' selected':'')+'>'+esc(monthLabel(key))+'</option>';});
         html+='</select></div>';
-        html+='<table class="inventory-table monthly-movement-table"><thead><tr><th>ACTIVITY</th><th>LAST MONTH BALANCE</th><th>STOCK IN (RM)</th><th>STOCK OUT (RM)</th><th>CLOSING BALANCE</th><th>FORMULA CHECK</th></tr></thead><tbody>';
+        html+='<table class="inventory-table monthly-movement-table"><thead><tr><th>ACTIVITY</th><th>LAST MONTH BALANCE</th><th>STOCK IN (RM)</th><th>STOCK OUT (RM)</th><th>CLOSING BALANCE</th></tr></thead><tbody>';
         var total={lastBalance:0,stockIn:0,stockOut:0,closing:0};
-        visible.forEach(function(c){var st=monthlyMovementStats(month,c);total.lastBalance+=st.lastBalance;total.stockIn+=st.stockIn;total.stockOut+=st.stockOut;total.closing+=st.closing;html+='<tr><td class="inventory-item-name">'+esc(c)+'</td><td class="inventory-money">'+money(st.lastBalance)+'</td><td class="inventory-money movement-in">'+money(st.stockIn)+'</td><td class="inventory-money movement-out">'+money(st.stockOut)+'</td><td class="inventory-money">'+money(st.closing)+'</td><td class="formula-ok">✓</td></tr>';});
-        html+='<tr class="inventory-total-row"><td>TOTAL</td><td class="inventory-money">'+money(total.lastBalance)+'</td><td class="inventory-money movement-in">'+money(total.stockIn)+'</td><td class="inventory-money movement-out">'+money(total.stockOut)+'</td><td class="inventory-money">'+money(total.closing)+'</td><td class="formula-ok">✓</td></tr></tbody></table>';
+        visible.forEach(function(c){var st=snap.categories[c]||{lastBalance:0,stockIn:0,stockOut:0,closing:0};total.lastBalance+=st.lastBalance;total.stockIn+=st.stockIn;total.stockOut+=st.stockOut;total.closing+=st.closing;html+='<tr><td class="inventory-item-name">'+esc(c)+'</td><td class="inventory-money">'+money(st.lastBalance)+'</td><td class="inventory-money movement-in">'+money(st.stockIn)+'</td><td class="inventory-money movement-out">'+money(st.stockOut)+'</td><td class="inventory-money">'+money(st.closing)+'</td></tr>';});
+        html+='<tr class="inventory-total-row"><td>TOTAL</td><td class="inventory-money">'+money(total.lastBalance)+'</td><td class="inventory-money movement-in">'+money(total.stockIn)+'</td><td class="inventory-money movement-out">'+money(total.stockOut)+'</td><td class="inventory-money">'+money(total.closing)+'</td></tr></tbody></table>';
         if(!visible.length)html='<div class="inventory-empty">No monthly movement data matches the current filter.</div>';
         ($('inventoryTableWrap')||{}).innerHTML=html;
+        saveLocal();
       }
       function render(){normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
       function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');Router.renderBackButton('inventory');render();populateForm();}
@@ -19206,8 +19221,8 @@ function exportMonthlySchedulePdfs() {
 
       function updateLotSelect(){var item=getItem(($('inventoryItemInput')||{}).value);var wrap=$('inventoryLotSelectWrap');var sel=$('inventoryLotSelect');if(!item||!sel)return;var lots=lotsForItem(item.id);sel.innerHTML='<option value="">AUTO FEFO</option>'+lots.map(function(l){return '<option value="'+esc(l.lotNo)+'">'+esc(l.lotNo)+' · '+l.qty+' available'+(l.expiry?' · exp '+esc(l.expiry):'')+'</option>';}).join('');if(wrap)wrap.hidden=(($('inventoryMovementType')||{}).value!=='OUT');}
       function setMode(type){var m=$('inventoryMovementType');if(m)m.value=type;var title=$('inventoryModalTitle');if(title)title.textContent=type==='IN'?'STOCK IN':'STOCK OUT';var submit=$('inventorySubmitBtn');if(submit)submit.textContent=type==='IN'?'SAVE STOCK IN':'SAVE STOCK OUT';var lotInput=$('inventoryLotInput');if(lotInput)lotInput.required=type==='IN';var lotWrap=$('inventoryLotSelectWrap');if(lotWrap)lotWrap.hidden=type!=='OUT';var fefo=$('inventoryFefoWrap');if(fefo)fefo.hidden=type!=='OUT';var msg=$('inventoryFormMessage');if(msg)msg.textContent='';updateLotSelect();}
-      function showModal(type){var modal=$('inventoryModal');if(!modal)return;modal.hidden=false;setMode(type);syncItemCustom();var item=$('inventoryItemTrigger');if(item)item.focus();}
-      function closeModal(){var modal=$('inventoryModal');if(modal)modal.hidden=true;closeItemCustom();var form=$('inventoryMovementForm');if(form)form.reset();syncItemCustom();setMode('IN');}
+      function showModal(type){var modal=$('inventoryModal');if(!modal)return;modal.hidden=false;setMode(type);var dateInput=$('inventoryMovementDateInput');if(dateInput&&!dateInput.value)dateInput.value=localDateKey();syncItemCustom();var item=$('inventoryItemTrigger');if(item)item.focus();}
+      function closeModal(){var modal=$('inventoryModal');if(modal)modal.hidden=true;closeItemCustom();var form=$('inventoryMovementForm');if(form)form.reset();var dateInput=$('inventoryMovementDateInput');if(dateInput)dateInput.value=localDateKey();syncItemCustom();setMode('IN');}
       function allocations(itemId,qty,preferredLot,fefo){
         var lots=lotsForItem(itemId);if(preferredLot){var found=lots.find(function(l){return l.lotNo===preferredLot;});return found&&found.qty>=qty?[{lotNo:found.lotNo,qty:qty,expiry:found.expiry}]:null;}
         if(!fefo){return lots.length&&lots[0].qty>=qty?[{lotNo:lots[0].lotNo,qty:qty,expiry:lots[0].expiry}]:null;}
@@ -19215,12 +19230,16 @@ function exportMonthlySchedulePdfs() {
       }
       function submitMovement(e){
         e.preventDefault();var type=($('inventoryMovementType')||{}).value||'IN';var itemId=($('inventoryItemInput')||{}).value;var qty=Math.floor(Number(($('inventoryQtyInput')||{}).value));var item=getItem(itemId);var msg=$('inventoryFormMessage');if(msg)msg.textContent='';if(!item||!qty||qty<1){if(msg)msg.textContent='Please select an item and enter a valid quantity.';return;}
-        var staff=(($('inventoryStaffInput')||{}).value)||getUserName();var notes=(($('inventoryNotesInput')||{}).value)||'';var lot=cleanText(($('inventoryLotInput')||{}).value);var expiry=(($('inventoryExpiryInput')||{}).value)||'';
+        var staff=(($('inventoryStaffInput')||{}).value)||getUserName();var notes=(($('inventoryNotesInput')||{}).value)||'';var lot=cleanText(($('inventoryLotInput')||{}).value);var expiry=(($('inventoryExpiryInput')||{}).value)||'';var movementDate=(($('inventoryMovementDateInput')||{}).value)||localDateKey();
+        if(!movementDate){if(msg)msg.textContent='Please select the Stock In / Stock Out date.';return;}
         if(type==='IN'&&!lot){if(msg)msg.textContent='Lot No. is required for every Stock In.';return;}
+        var movementAt=isoForMovementDate(movementDate);
         var tx=[];
-        if(type==='IN'){tx=[{id:id(),itemId:itemId,type:'IN',qty:qty,lotNo:lot,expiry:expiry,staff:staff,notes:notes,at:nowIso()}];}
-        else {var preferred=(($('inventoryLotSelect')||{}).value)||'';var useFefo=(($('inventoryFefoInput')||{}).checked)!==false;var a=allocations(itemId,qty,preferred,useFefo);if(!a){if(msg)msg.textContent='Insufficient stock for the selected item/lot. Check the LOT STOCK view.';return;}tx=a.map(function(x){return {id:id(),itemId:itemId,type:'OUT',qty:x.qty,lotNo:x.lotNo==='OPENING / NO LOT'?'':x.lotNo,expiry:x.expiry||'',staff:staff,notes:notes+(a.length>1?' [FEFO allocation]':''),at:nowIso()};});}
-        Array.prototype.push.apply(data.transactions,tx);persist();closeModal();render();
+        if(type==='IN'){tx=[{id:id(),itemId:itemId,type:'IN',qty:qty,lotNo:lot,expiry:expiry,staff:staff,notes:notes,at:movementAt}];}
+        else {var preferred=(($('inventoryLotSelect')||{}).value)||'';var useFefo=(($('inventoryFefoInput')||{}).checked)!==false;var a=allocations(itemId,qty,preferred,useFefo);if(!a){if(msg)msg.textContent='Insufficient stock for the selected item/lot. Check the LOT STOCK view.';return;}tx=a.map(function(x){return {id:id(),itemId:itemId,type:'OUT',qty:x.qty,lotNo:x.lotNo==='OPENING / NO LOT'?'':x.lotNo,expiry:x.expiry||'',staff:staff,notes:notes+(a.length>1?' [FEFO allocation]':''),at:movementAt};});}
+        Array.prototype.push.apply(data.transactions,tx);
+        var affectedMonths={};tx.forEach(function(t){affectedMonths[String(t.at||'').slice(0,7)]=true;});affectedMonths[currentMonthKey()]=true;Object.keys(affectedMonths).forEach(function(k){saveMonthlySnapshot(k);});
+        persist();closeModal();render();
       }
       function bind(){
         if(initialized)return;initialized=true;
@@ -19235,10 +19254,23 @@ function exportMonthlySchedulePdfs() {
         document.querySelectorAll('[data-inventory-close]').forEach(function(n){n.addEventListener('click',closeModal);});
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();});
       }
+      function resetInventoryForFreshStart(){
+        var flagKey='labAppInventoryFreshResetV2';
+        var done=safeStorageGet(flagKey)==='1';
+        if(done)return false;
+        data.transactions=[];
+        data.monthlySnapshots={};
+        data.items.forEach(function(item){item.openingStock=0;});
+        safeStorageSet(flagKey,'1');
+        return true;
+      }
       function load(force){
-        bind();var had=loadLocal();if(!had)seed();mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
-        if(force||!had){loadRemote().then(function(found){mergeSeedCatalog();persist();render();});}
-        else loadRemote().then(function(found){if(mergeSeedCatalog())persist();render();});
+        bind();var had=loadLocal();if(!had)seed();mergeSeedCatalog();var freshReset=resetInventoryForFreshStart();ensureCurrentMonthPrices();if(freshReset||!had)persist();render();
+        loadRemote().then(function(found){
+          if(!found){if(freshReset)persist();render();return;}
+          if(freshReset){data.transactions=[];data.monthlySnapshots={};data.items.forEach(function(item){item.openingStock=0;});}
+          mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
+        });
       }
       function init(){load(false);}
       return {init:init,open:open,load:load,render:render};
