@@ -10618,13 +10618,9 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
        * + getStoredToken                   +
        * +----------------------------------+ */
       function getStoredToken() {
-        var token = safeSessionGet(TOKEN_KEY) || safeStorageGet(TOKEN_KEY) || '';
-        if (token) {
-          /* Keep a local backup so a WebView refresh/recreation cannot lose the session. */
-          safeSessionSet(TOKEN_KEY, token);
-          return token;
-        }
-        return '';
+        /* Authentication is intentionally session-only.
+           Closing the browser/tab/app requires a fresh username + password. */
+        return safeSessionGet(TOKEN_KEY) || '';
       }
 
       /* +----------------------------------+
@@ -10645,7 +10641,7 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
        * + getStoredPublicUser_             +
        * +----------------------------------+ */
       function getStoredPublicUser_() {
-        var raw = safeSessionGet(USER_KEY) || safeStorageGet(USER_KEY) || '';
+        var raw = safeSessionGet(USER_KEY) || '';
         if (!raw) return null;
 
         var payload = safeParse(raw);
@@ -10674,7 +10670,6 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
           version: cleanText(envelope.version)
         });
         safeSessionSet(USER_KEY, payload);
-        safeStorageSet(USER_KEY, payload);
         return true;
       }
   
@@ -10685,7 +10680,6 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
         var token = envelope.token || '';
         safeSessionSet(TOKEN_KEY, token);
-        safeStorageSet(TOKEN_KEY, token);
         storePublicAuthUser_(envelope);
       }
   
@@ -11424,6 +11418,10 @@ if (token) {
        * + init                             +
        * +----------------------------------+ */
       function init() {
+        /* Remove legacy persistent auth credentials created by older builds.
+           From this version onward, login state exists only for this app session. */
+        safeStorageRemove(TOKEN_KEY);
+        safeStorageRemove(USER_KEY);
         cacheDomNodes();
         Theme.suspendForLogin();
   
