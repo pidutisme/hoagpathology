@@ -8101,15 +8101,16 @@
 }
 
 /* SETTINGS ICONS — colorful single-tone accents */
-#settings .setting-box:nth-child(1) .settings-card-icon svg { stroke:#2563eb !important; }
-#settings .setting-box:nth-child(2) .settings-card-icon svg { stroke:#7c3aed !important; }
-#settings .setting-box:nth-child(3) .settings-card-icon svg { stroke:#f59e0b !important; }
-#settings .setting-box:nth-child(4) .settings-card-icon svg { stroke:#10b981 !important; }
-#settings .setting-box:nth-child(5) .settings-card-icon svg { stroke:#06b6d4 !important; }
-#settings .setting-box:nth-child(6) .settings-card-icon svg { stroke:#ef4444 !important; }
-#settings .settings-extra-card:nth-child(1) .settings-extra-icon svg { stroke:#3b82f6 !important; }
-#settings .settings-extra-card:nth-child(2) .settings-extra-icon svg { stroke:#0ea5e9 !important; }
-#settings .settings-extra-card:nth-child(3) .settings-extra-icon svg { stroke:#8b5cf6 !important; }
+#settings .setting-box:nth-child(1) .settings-card-icon svg { stroke:#2563eb !important; color:#2563eb !important; }
+#settings .setting-box:nth-child(2) .settings-card-icon svg { stroke:#7c3aed !important; color:#7c3aed !important; }
+#settings .setting-box:nth-child(3) .settings-card-icon svg { stroke:#f97316 !important; color:#f97316 !important; }
+#settings .setting-box:nth-child(4) .settings-card-icon svg { stroke:#16a34a !important; color:#16a34a !important; }
+#settings .setting-box:nth-child(5) .settings-card-icon svg { stroke:#0891b2 !important; color:#0891b2 !important; }
+#settings .setting-box:nth-child(6) .settings-card-icon svg { stroke:#dc2626 !important; color:#dc2626 !important; }
+#settings .settings-extra-card:nth-child(1) .settings-extra-icon svg { stroke:#2563eb !important; color:#2563eb !important; }
+#settings .settings-extra-card:nth-child(2) .settings-extra-icon svg { stroke:#0891b2 !important; color:#0891b2 !important; }
+#settings .settings-extra-card:nth-child(3) .settings-extra-icon svg { stroke:#9333ea !important; color:#9333ea !important; }
+#settings .setting-box .settings-card-icon svg, #settings .settings-extra-icon svg { opacity:1 !important; }
 #settings .settings-card-icon, #settings .settings-extra-icon { background:rgba(255,255,255,.34) !important; }
 body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings-extra-icon { background:rgba(255,255,255,.05) !important; }
 
@@ -10421,6 +10422,8 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
     var Auth = (function () {
       var TOKEN_KEY = 'labAppAuthTokenV1';
       var USER_KEY = 'labAppAuthUserV1';
+      var UPDATE_BYPASS_KEY = 'labAppUpdateInProgressV1';
+      var UPDATE_BYPASS_USER_KEY = 'labAppUpdateUserV1';
       var IDLE_TIMEOUT_MS = 15 * 60 * 1000;
       var IDLE_WARNING_MS = 60 * 1000;
       var SESSION_CHECK_MS = 5 * 60 * 1000;
@@ -11086,9 +11089,33 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
       }
   
       /* +----------------------------------+
+       * + consumeUpdateResume              +
+       * +----------------------------------+ */
+      function consumeUpdateResume_() {
+        try {
+          if (!safeStorageGet(UPDATE_BYPASS_KEY)) return null;
+          safeStorageRemove(UPDATE_BYPASS_KEY);
+          var raw = safeStorageGet(UPDATE_BYPASS_USER_KEY);
+          safeStorageRemove(UPDATE_BYPASS_USER_KEY);
+          var user = raw ? safeParse(raw) : null;
+          return normalizePublicAuthUser_(user);
+        } catch (error) {
+          console.warn('Update resume state read failed:', error);
+          return null;
+        }
+      }
+
+      /* +----------------------------------+
        * + checkStoredSession               +
        * +----------------------------------+ */
       function checkStoredSession() {
+        var updateResumeUser = consumeUpdateResume_();
+        if (updateResumeUser && getStoredToken()) {
+          /* UPDATE must never force a fresh login. Resume the existing local session
+             first; the normal 5-minute watchdog can still verify it later. */
+          unlock(updateResumeUser, { freshLogin: false, optimisticResume: true, updateResume: true });
+          return;
+        }
         var token = getStoredToken();
 
         if (!token) {
@@ -18655,61 +18682,47 @@ if ("serviceWorker" in navigator) {
       if(copy) copy.textContent='Updating…';
 
       try {
-        /*
-         * REAL APP UPDATE:
-         * 1. Verify that the latest index.html is reachable from the deployed site.
-         * 2. Ask the Service Worker to update itself.
-         * 3. Reload the CURRENT WINDOW only. The application is NOT closed.
-         *
-         * IMPORTANT:
-         * - Never clear localStorage/sessionStorage.
-         * - Never unregister the Service Worker.
-         * - Never call logout.
-         * - The existing LabApp session remains available to the normal auth
-         *   resume flow after the reload.
-         */
         var updateUrl = window.location.href.split('#')[0];
         var latestResponse = await fetch(updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'update=' + Date.now(), {
           method:'GET',
           cache:'no-store',
           credentials:'same-origin',
-          headers:{
-            'Cache-Control':'no-cache, no-store, max-age=0',
-            'Pragma':'no-cache'
-          }
+          headers:{'Cache-Control':'no-cache, no-store, max-age=0','Pragma':'no-cache'}
         });
-
         if(!latestResponse.ok) throw new Error('HTTP ' + latestResponse.status);
-
-        /* Make sure the response really contains the application shell. */
         var latestHtml = await latestResponse.text();
-        if(!latestHtml || latestHtml.indexOf('settingsUpdateButton') === -1) {
-          throw new Error('Latest application shell could not be verified.');
-        }
+        if(!latestHtml || latestHtml.indexOf('settingsUpdateButton') === -1) throw new Error('Latest application shell could not be verified.');
 
-        /* Update the Service Worker when supported. */
         if('serviceWorker' in navigator){
           try {
             var registration = await navigator.serviceWorker.getRegistration();
             if(registration) await registration.update();
-          } catch(swError) {
-            console.warn('Service Worker update check failed:', swError);
-            /* A normal reload below can still fetch the latest app shell. */
+          } catch(swError) { console.warn('Service Worker update check failed:', swError); }
+        }
+
+        /* Persist a one-shot resume marker BEFORE reloading. This is intentionally
+           separate from the real auth token: UPDATE can refresh the app shell
+           without making the auth layer perform a fresh login verification. */
+        try {
+          var currentUser = (window.LabApp && window.LabApp.Auth && window.LabApp.Auth.getUser)
+            ? window.LabApp.Auth.getUser() : null;
+          var token = (window.LabApp && window.LabApp.Auth && window.LabApp.Auth.getToken)
+            ? window.LabApp.Auth.getToken() : '';
+          if(token && currentUser && currentUser.id) {
+            localStorage.setItem('labAppUpdateInProgressV1','1');
+            localStorage.setItem('labAppUpdateUserV1', JSON.stringify(currentUser));
           }
+        } catch(storageError) {
+          console.warn('Update resume marker failed:', storageError);
         }
 
         if(copy) copy.textContent='Update ready ✓';
-
-        /*
-         * Reload in-place so the NEW HTML/CSS/JS from GitHub/Vercel is actually
-         * executed. This does NOT close the Windows/WebView application.
-         * Session/local storage are deliberately untouched, so the existing
-         * authenticated session can resume normally.
-         */
         window.setTimeout(function(){
+          /* Reload the page inside the existing WebView/window. The app itself is
+             never closed, and the auth token is deliberately preserved. */
           var freshUrl = updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'app_update=' + Date.now();
           window.location.replace(freshUrl);
-        }, 250);
+        }, 180);
       } catch(error) {
         console.warn('Application update failed:', error);
         if(copy) copy.textContent='Update failed — try again';
@@ -18722,11 +18735,8 @@ if ("serviceWorker" in navigator) {
     });
   }
 
-  if(document.readyState==='loading') {
-    document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once:true });
-  } else {
-    bindSettingsUpdate();
-  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once:true });
+  else bindSettingsUpdate();
 })();
 </script>
 </body>
