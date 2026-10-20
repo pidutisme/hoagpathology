@@ -1170,6 +1170,105 @@
       gap: var(--page-title-description-gap);
     }
 
+    .settings-content-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      align-content: start;
+      gap: 18px;
+      overflow: auto;
+      padding: 18px 6px 24px;
+    }
+
+    .settings-content-grid .setting-grid {
+      padding: 0;
+      overflow: visible;
+    }
+
+    .settings-extra-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .settings-extra-card {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-height: 76px;
+      padding: 14px 16px;
+      border: 1px solid var(--year-page-card-border);
+      border-radius: 22px;
+      background: var(--year-page-card-bg);
+      box-shadow: var(--year-page-card-shadow);
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .settings-extra-card:hover {
+      transform: translate3d(0, -3px, 0);
+      z-index: 2;
+      border-color: rgba(95, 126, 255, .34);
+      box-shadow: var(--year-page-card-hover-shadow);
+    }
+
+    .settings-extra-icon {
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(95, 126, 255, .18);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .28);
+      color: var(--primary);
+      font-size: 21px;
+      font-weight: 800;
+    }
+
+    .settings-extra-copy {
+      min-width: 0;
+    }
+
+    .settings-extra-copy strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--primary);
+      font-size: var(--type-small);
+      letter-spacing: .01em;
+    }
+
+    .settings-extra-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: var(--type-body);
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      overflow-wrap: anywhere;
+    }
+
+    .settings-last-updated {
+      padding: 2px 4px 0;
+      color: var(--muted);
+      font-size: var(--type-small);
+    }
+
+    .settings-last-updated strong {
+      color: var(--text);
+    }
+
+    body.dark-mode .settings-extra-icon {
+      background: rgba(255, 255, 255, .045);
+      border-color: rgba(143, 176, 255, .18);
+    }
+
+    @media (max-width: 900px) {
+      .settings-extra-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .settings-admin-panel {
       height: 100%;
       min-height: 0;
@@ -8193,16 +8292,33 @@
 <div class="panel">
 <div class="content-inner">
 <div class="settings-standard-panel" id="settingsStandardPanel">
-<h3>SETTING</h3>
+<h3>SETTINGS</h3>
 <p>System information and configuration center for reviewing LabApp details, application settings,
                       and operational controls.</p>
+<div class="settings-content-grid">
 <div class="setting-grid">
-<div class="setting-box"><strong>App Name</strong><span>LabLink App</span></div>
-<div class="setting-box"><strong>App Type</strong><span>Laboratory Operations System</span></div>
+<div class="setting-box"><strong>App Name</strong><span>HOAG Pathology</span></div>
+<div class="setting-box"><strong>App Type</strong><span>Laboratory Management System</span></div>
 <div class="setting-box"><strong>Department</strong><span>HOAG Pathology</span></div>
-<div class="setting-box"><strong>Platform</strong><span>GitHub + Vercel + Firebase</span></div>
-<div class="setting-box"><strong>Time Zone</strong><span>Asia/Kuala_Lumpur</span></div>
-<div class="setting-box"><strong>Version</strong><span id="aboutAppVersion">2.1.4</span></div>
+<div class="setting-box"><strong>Platform</strong><span>Android + Web + Windows</span></div>
+<div class="setting-box"><strong>Time Zone</strong><span>Asia/Kuala_Lumpur (GMT+8)</span></div>
+<div class="setting-box"><strong>Version</strong><span id="aboutAppVersion">2.1.7</span></div>
+</div>
+<div class="settings-extra-grid">
+<div class="settings-extra-card">
+<div class="settings-extra-icon" aria-hidden="true">↻</div>
+<div class="settings-extra-copy"><strong>UPDATE</strong><span>Check for latest version</span></div>
+</div>
+<div class="settings-extra-card">
+<div class="settings-extra-icon" aria-hidden="true">☁</div>
+<div class="settings-extra-copy"><strong>DATA &amp; SYNC</strong><span>GitHub + Firebase + Vercel</span></div>
+</div>
+<div class="settings-extra-card">
+<div class="settings-extra-icon" aria-hidden="true">ⓘ</div>
+<div class="settings-extra-copy"><strong>ABOUT</strong><span>HOAG Pathology Application</span></div>
+</div>
+</div>
+<div class="settings-last-updated">Last Updated: <strong>21 October 2026</strong></div>
 </div>
 </div>
 <div class="settings-admin-panel" hidden="" id="settingsAdminPanel">
