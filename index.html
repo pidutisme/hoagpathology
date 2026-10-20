@@ -8473,6 +8473,75 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
   }
 }
 </style>
+
+<style id="inventory-card-crop-final-fix">
+/* FINAL INVENTORY LAYOUT FIX — prevent top cards / toolbar from being cropped.
+   Only the inventory table is allowed to scroll. */
+#inventory,
+#inventory.page,
+#inventory.page.active,
+#inventory .page-scroll.inventory-scroll,
+#inventory .inventory-shell {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  overflow-x:hidden !important;
+}
+#inventory .inventory-shell { overflow-y:hidden !important; }
+#inventory .inventory-head,
+#inventory .inventory-kpis,
+#inventory .inventory-toolbar,
+#inventory .inventory-alerts {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+#inventory .inventory-kpis {
+  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+  gap:12px !important;
+}
+#inventory .inventory-kpi {
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  box-sizing:border-box !important;
+}
+#inventory .inventory-toolbar {
+  grid-template-columns:minmax(220px,1fr) repeat(3,minmax(145px,180px)) !important;
+  gap:10px !important;
+}
+#inventory .inventory-search-wrap,
+#inventory .inventory-select {
+  min-width:0 !important;
+  max-width:none !important;
+  box-sizing:border-box !important;
+}
+#inventory .inventory-table-wrap {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  overflow-y:auto !important;
+  overflow-x:auto !important;
+}
+@media (max-width:1200px) and (min-width:981px) {
+  #inventory .inventory-kpis { grid-template-columns:repeat(5,minmax(0,1fr)) !important; gap:8px !important; }
+  #inventory .inventory-toolbar { grid-template-columns:minmax(190px,1fr) repeat(3,minmax(125px,1fr)) !important; gap:8px !important; }
+  #inventory .inventory-kpi { padding:12px !important; }
+}
+@media (max-width:980px) {
+  #inventory .inventory-kpis { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  #inventory .inventory-toolbar { grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; }
+  #inventory .inventory-search-wrap { grid-column:1/-1 !important; }
+}
+@media (max-width:560px) {
+  #inventory .inventory-kpis { grid-template-columns:1fr !important; }
+  #inventory .inventory-toolbar { grid-template-columns:1fr !important; }
+  #inventory .inventory-search-wrap { grid-column:auto !important; }
+}
+</style>
 </head>
 <body class="auth-locked">
 <!-- +----------------------------------+
