@@ -1205,6 +1205,10 @@
       transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
     }
 
+    .settings-extra-card.is-action { cursor: pointer; }
+
+    .settings-extra-card.is-action:focus-visible { outline: 3px solid rgba(37, 99, 235, .28); outline-offset: 2px; }
+
     .settings-extra-card:hover {
       transform: translate3d(0, -3px, 0);
       z-index: 2;
@@ -8305,10 +8309,10 @@
 <div class="setting-box"><strong>Version</strong><span id="aboutAppVersion">2.1.7</span></div>
 </div>
 <div class="settings-extra-grid">
-<div class="settings-extra-card">
+<button class="settings-extra-card is-action" id="settingsUpdateButton" type="button" title="Check for the latest version">
 <div class="settings-extra-icon" aria-hidden="true">↻</div>
-<div class="settings-extra-copy"><strong>UPDATE</strong><span>Check for latest version</span></div>
-</div>
+<div class="settings-extra-copy"><strong>UPDATE</strong><span id="settingsUpdateText">Check for latest version</span></div>
+</button>
 <div class="settings-extra-card">
 <div class="settings-extra-icon" aria-hidden="true">☁</div>
 <div class="settings-extra-copy"><strong>DATA &amp; SYNC</strong><span>GitHub + Firebase + Vercel</span></div>
@@ -18353,6 +18357,63 @@ function exportMonthlySchedulePdfs() {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupMobileNavigation, { once: true });
   else setupMobileNavigation();
+})();
+
+(function () {
+  function updateAppNow() {
+    var button = document.getElementById('settingsUpdateButton');
+    var text = document.getElementById('settingsUpdateText');
+    if (!button || button.dataset.updateBusy === '1') return;
+
+    button.dataset.updateBusy = '1';
+    button.disabled = true;
+    if (text) text.textContent = 'Checking for latest version...';
+
+    var tasks = [];
+
+    // Remove the current service worker so the next load cannot keep an old cached shell.
+    if ('serviceWorker' in navigator) {
+      tasks.push(
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          return Promise.all(registrations.map(function (registration) {
+            return registration.unregister();
+          }));
+        }).catch(function () {})
+      );
+    }
+
+    // Clear all browser caches used by the app. Keep localStorage/sessionStorage intact.
+    if ('caches' in window) {
+      tasks.push(
+        caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+        }).catch(function () {})
+      );
+    }
+
+    Promise.all(tasks).then(function () {
+      if (text) text.textContent = 'Updating...';
+      var url = new URL(window.location.href);
+      url.searchParams.set('app_update', Date.now().toString());
+      url.hash = '';
+      window.location.replace(url.toString());
+    }).catch(function () {
+      window.location.reload();
+    });
+  }
+
+  function bindSettingsUpdate() {
+    var button = document.getElementById('settingsUpdateButton');
+    if (!button || button.dataset.updateBound === '1') return;
+    button.dataset.updateBound = '1';
+    button.addEventListener('click', updateAppNow);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once: true });
+  } else {
+    bindSettingsUpdate();
+  }
 })();
 
 if ("serviceWorker" in navigator) {
