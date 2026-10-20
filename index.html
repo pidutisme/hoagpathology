@@ -18629,57 +18629,90 @@ if ("serviceWorker" in navigator) {
     var btn=document.getElementById('settingsUpdateButton');
     if(!btn || btn.dataset.updateBound==='1') return;
     btn.dataset.updateBound='1';
-    btn.addEventListener('click',async function(event){
+
+    btn.addEventListener('click', async function(event){
       event.preventDefault();
       event.stopPropagation();
       if(btn.dataset.updating==='1') return;
+
       btn.dataset.updating='1';
       btn.disabled=true;
       var copy=btn.querySelector('.settings-extra-copy span');
       var original=copy ? copy.textContent : 'Check for latest version';
-      if(copy) copy.textContent='Checking for latest version…';
+      if(copy) copy.textContent='Updating…';
 
       try {
-        // IMPORTANT: do not navigate/reload here. In the Windows/WebView build,
-        // a forced navigation can recreate the auth context and show the login screen.
-        // Ask the active Service Worker to check for a newer build instead.
-        if ('serviceWorker' in navigator) {
-          var registration=await navigator.serviceWorker.getRegistration();
-          if (registration) {
-            await registration.update();
+        /*
+         * REAL APP UPDATE:
+         * 1. Verify that the latest index.html is reachable from the deployed site.
+         * 2. Ask the Service Worker to update itself.
+         * 3. Reload the CURRENT WINDOW only. The application is NOT closed.
+         *
+         * IMPORTANT:
+         * - Never clear localStorage/sessionStorage.
+         * - Never unregister the Service Worker.
+         * - Never call logout.
+         * - The existing LabApp session remains available to the normal auth
+         *   resume flow after the reload.
+         */
+        var updateUrl = window.location.href.split('#')[0];
+        var latestResponse = await fetch(updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'update=' + Date.now(), {
+          method:'GET',
+          cache:'no-store',
+          credentials:'same-origin',
+          headers:{
+            'Cache-Control':'no-cache, no-store, max-age=0',
+            'Pragma':'no-cache'
+          }
+        });
+
+        if(!latestResponse.ok) throw new Error('HTTP ' + latestResponse.status);
+
+        /* Make sure the response really contains the application shell. */
+        var latestHtml = await latestResponse.text();
+        if(!latestHtml || latestHtml.indexOf('settingsUpdateButton') === -1) {
+          throw new Error('Latest application shell could not be verified.');
+        }
+
+        /* Update the Service Worker when supported. */
+        if('serviceWorker' in navigator){
+          try {
+            var registration = await navigator.serviceWorker.getRegistration();
+            if(registration) await registration.update();
+          } catch(swError) {
+            console.warn('Service Worker update check failed:', swError);
+            /* A normal reload below can still fetch the latest app shell. */
           }
         }
 
-        // Also verify that the current document is still reachable without
-        // changing the current page, URL, or authentication/session storage.
-        try {
-          await fetch(window.location.href, {
-            method:'HEAD',
-            cache:'no-store',
-            credentials:'same-origin'
-          });
-        } catch (headError) {
-          console.warn('Latest-version check request failed:', headError);
-        }
+        if(copy) copy.textContent='Update ready ✓';
 
-        if(copy) copy.textContent='Latest version checked ✓';
+        /*
+         * Reload in-place so the NEW HTML/CSS/JS from GitHub/Vercel is actually
+         * executed. This does NOT close the Windows/WebView application.
+         * Session/local storage are deliberately untouched, so the existing
+         * authenticated session can resume normally.
+         */
+        window.setTimeout(function(){
+          window.location.reload();
+        }, 250);
+      } catch(error) {
+        console.warn('Application update failed:', error);
+        if(copy) copy.textContent='Update failed — try again';
         window.setTimeout(function(){
           if(copy) copy.textContent=original;
-        },1800);
-      } catch (error) {
-        console.warn('Latest-version check failed:', error);
-        if(copy) copy.textContent='Update check failed';
-        window.setTimeout(function(){
-          if(copy) copy.textContent=original;
-        },1800);
-      } finally {
-        btn.dataset.updating='0';
-        btn.disabled=false;
+          btn.dataset.updating='0';
+          btn.disabled=false;
+        }, 1800);
       }
     });
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindSettingsUpdate);
-  else bindSettingsUpdate();
+
+  if(document.readyState==='loading') {
+    document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once:true });
+  } else {
+    bindSettingsUpdate();
+  }
 })();
 </script>
 </body>
