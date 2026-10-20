@@ -8541,6 +8541,21 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
   #inventory .inventory-toolbar { grid-template-columns:1fr !important; }
   #inventory .inventory-search-wrap { grid-column:auto !important; }
 }
+<style id="inventory-viewport-top-fix">
+/* Inventory page viewport: never retain a page-level scroll offset.
+   The inventory table remains the only scrollable region. */
+#inventory .page-scroll.inventory-scroll{
+  scroll-behavior:auto !important;
+  overflow:hidden !important;
+  overscroll-behavior:none !important;
+  transform:none !important;
+}
+#inventory .inventory-table-wrap{
+  overflow-y:auto !important;
+  overflow-x:auto !important;
+  overscroll-behavior:contain !important;
+}
+</style>
 </style>
 </head>
 <body class="auth-locked">
@@ -19318,8 +19333,17 @@ function exportMonthlySchedulePdfs() {
         modal.hidden=false;
       }
 
+      function resetInventoryPageViewport(){
+        var page=$('inventory');
+        if(!page)return;
+        var scroller=page.querySelector('.page-scroll.inventory-scroll');
+        if(scroller){
+          scroller.scrollTop=0;
+          scroller.scrollLeft=0;
+        }
+      }
       function render(){normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
-      function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');Router.renderBackButton('inventory');render();populateForm();}
+      function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');render();populateForm();requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);}
       function populateForm(){
         var sel=$('inventoryItemInput');if(!sel)return;var items=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
         sel.innerHTML=items.map(function(i){return '<option value="'+esc(i.id)+'">'+esc(i.name)+' · '+esc(i.category)+' · '+money(i.price)+'</option>';}).join('');
@@ -19414,6 +19438,13 @@ function exportMonthlySchedulePdfs() {
       }
       function load(force){
         bind();var had=loadLocal();if(!had)seed();mergeSeedCatalog();var freshReset=resetInventoryForFreshStart();ensureCurrentMonthPrices();if(freshReset||!had)persist();render();
+        var inventoryPage=$('inventory');
+        if(inventoryPage && window.MutationObserver){
+          var inventoryViewportObserver=new MutationObserver(function(){
+            if(inventoryPage.classList.contains('active')) resetInventoryPageViewport();
+          });
+          inventoryViewportObserver.observe(inventoryPage,{attributes:true,attributeFilter:['class']});
+        }
         loadRemote().then(function(found){
           if(!found){if(freshReset)persist();render();return;}
           if(freshReset){data.transactions=[];data.monthlySnapshots={};data.items.forEach(function(item){item.openingStock=0;});}
