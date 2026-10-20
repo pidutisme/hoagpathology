@@ -18863,7 +18863,7 @@ function exportMonthlySchedulePdfs() {
       function render(){normalize();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else renderItems();}
       function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');Router.renderBackButton('inventory');render();populateForm();}
       function populateForm(){
-        var sel=$('inventoryItemInput');if(!sel)return;sel.innerHTML=data.items.filter(function(i){return i.active!==false;}).map(function(i){return '<option value="'+esc(i.id)+'">'+esc(i.name)+' · '+esc(i.category)+' · '+money(i.price)+'</option>';}).join('');
+        var sel=$('inventoryItemInput');if(!sel)return;sel.innerHTML=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});}).map(function(i){return '<option value="'+esc(i.id)+'">'+esc(i.name)+' · '+esc(i.category)+' · '+money(i.price)+'</option>';}).join('');
         var staff=$('inventoryStaffInput');if(staff)staff.innerHTML=staffNames.map(function(n){return '<option>'+esc(n)+'</option>';}).join('');
         updateLotSelect();
       }
