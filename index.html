@@ -11444,13 +11444,10 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + getStoredToken                   +
        * +----------------------------------+ */
       function getStoredToken() {
-        var token = safeSessionGet(TOKEN_KEY) || safeStorageGet(TOKEN_KEY) || '';
-        if (token) {
-          /* Keep a local backup so a WebView refresh/recreation cannot lose the session. */
-          safeSessionSet(TOKEN_KEY, token);
-          return token;
-        }
-        return '';
+        /* AUTH POLICY: authentication is session-only.
+         * Never restore a login from persistent localStorage across a fresh
+         * browser/WebView/Electron launch. */
+        return safeSessionGet(TOKEN_KEY) || '';
       }
 
       /* +----------------------------------+
@@ -11471,7 +11468,8 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + getStoredPublicUser_             +
        * +----------------------------------+ */
       function getStoredPublicUser_() {
-        var raw = safeSessionGet(USER_KEY) || safeStorageGet(USER_KEY) || '';
+        /* User identity is session-only too. */
+        var raw = safeSessionGet(USER_KEY) || '';
         if (!raw) return null;
 
         var payload = safeParse(raw);
@@ -11500,7 +11498,6 @@ body.dark-mode #inventory .inventory-record-close:hover {
           version: cleanText(envelope.version)
         });
         safeSessionSet(USER_KEY, payload);
-        safeStorageSet(USER_KEY, payload);
         return true;
       }
   
@@ -11511,7 +11508,6 @@ body.dark-mode #inventory .inventory-record-close:hover {
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
         var token = envelope.token || '';
         safeSessionSet(TOKEN_KEY, token);
-        safeStorageSet(TOKEN_KEY, token);
         storePublicAuthUser_(envelope);
       }
   
@@ -11918,58 +11914,44 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + consumeUpdateResume              +
        * +----------------------------------+ */
       function consumeUpdateResume_() {
+        /* Legacy compatibility only: persistent update-resume login bypasses
+         * are intentionally disabled. An application update returns to login. */
         try {
-          if (!safeStorageGet(UPDATE_BYPASS_KEY)) return null;
           safeStorageRemove(UPDATE_BYPASS_KEY);
-          var raw = safeStorageGet(UPDATE_BYPASS_USER_KEY);
           safeStorageRemove(UPDATE_BYPASS_USER_KEY);
-          var user = raw ? safeParse(raw) : null;
-          return normalizePublicAuthUser_(user);
         } catch (error) {
-          console.warn('Update resume state read failed:', error);
-          return null;
+          console.warn('Legacy update-resume cleanup failed:', error);
         }
+        return null;
       }
 
       /* +----------------------------------+
        * + checkStoredSession               +
        * +----------------------------------+ */
       function checkStoredSession() {
-        var updateResumeUser = consumeUpdateResume_();
-        if (updateResumeUser && getStoredToken()) {
-          /* UPDATE must never force a fresh login. Resume the existing local session
-             first; the normal 5-minute watchdog can still verify it later. */
-          unlock(updateResumeUser, { freshLogin: false, optimisticResume: true, updateResume: true });
-          return;
+        /*
+         * FRESH-START LOGIN POLICY
+         * ------------------------
+         * Every new app/page boot must show the username/password form.
+         * Do not restore a previous authentication session automatically.
+         * This applies to the Vercel web URL, Android WebView APK and
+         * Windows Electron desktop app.
+         *
+         * Existing persistent auth keys from older builds are explicitly
+         * removed so an old localStorage token cannot silently unlock the app.
+         */
+        try {
+          safeStorageRemove(TOKEN_KEY);
+          safeStorageRemove(USER_KEY);
+          safeStorageRemove(UPDATE_BYPASS_KEY);
+          safeStorageRemove(UPDATE_BYPASS_USER_KEY);
+        } catch (error) {
+          console.warn('Legacy persistent auth cleanup failed:', error);
         }
-        var token = getStoredToken();
 
-        if (!token) {
-          lock('', '');
-          return;
-        }
-
-        var cachedUser = getStoredPublicUser_();
-        if (cachedUser) {
-          unlock(cachedUser, { freshLogin: false, optimisticResume: true });
-          verifyStoredSessionInBackground_(token);
-          return;
-        }
-
-        setBusy(true, 'Checking...');
-        setLoginMessage('Checking secure session...', '');
-
-        hoagApiRequest('loginState', { token: token })
-          .then(function (envelope) {
-            handleEnvelope(envelope, { freshLogin: false });
-          })
-          .catch(function (error) {
-            clearStoredSession();
-            lock(error && error.message ? error.message : 'Unable to verify your session.', 'error');
-          })
-          .finally(function () {
-            setBusy(false);
-          });
+        clearStoredSession();
+        stopSessionControls();
+        lock('', '');
       }
 
       /* +----------------------------------+
@@ -19910,21 +19892,8 @@ if ("serviceWorker" in navigator) {
           } catch(swError) { console.warn('Service Worker update check failed:', swError); }
         }
 
-        /* Persist a one-shot resume marker BEFORE reloading. This is intentionally
-           separate from the real auth token: UPDATE can refresh the app shell
-           without making the auth layer perform a fresh login verification. */
-        try {
-          var currentUser = (window.LabApp && window.LabApp.Auth && window.LabApp.Auth.getUser)
-            ? window.LabApp.Auth.getUser() : null;
-          var token = (window.LabApp && window.LabApp.Auth && window.LabApp.Auth.getToken)
-            ? window.LabApp.Auth.getToken() : '';
-          if(token && currentUser && currentUser.id) {
-            localStorage.setItem('labAppUpdateInProgressV1','1');
-            localStorage.setItem('labAppUpdateUserV1', JSON.stringify(currentUser));
-          }
-        } catch(storageError) {
-          console.warn('Update resume marker failed:', storageError);
-        }
+        /* Auth sessions are deliberately not persisted across an app reload.
+           Updating the app therefore returns to the normal login screen. */
 
         if(copy) copy.textContent='Update ready ✓';
         window.setTimeout(function(){
