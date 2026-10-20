@@ -8160,6 +8160,36 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
   }
 }
 </style>
+<style id="inventory-no-visible-scrollbar-v3">
+/* Inventory: keep the complete catalog in index.html; scrolling is handled by the page, not a nested table scrollbar. */
+#inventory .page-scroll {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#inventory .page-scroll::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+#inventory .inventory-table-wrap {
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#inventory .inventory-table-wrap::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+</style>
 </head>
 <body class="auth-locked">
 <!-- +----------------------------------+
@@ -18690,6 +18720,7 @@ function exportMonthlySchedulePdfs() {
         ['REAGENT','MICROBIOLOGY','Ziehl Neelsen Stain Set M. Leprae',295,2,2],['REAGENT','MICROBIOLOGY','Giemsa Stain',450,2,2],['REAGENT','MICROBIOLOGY','Rapid TB Fluorescence Stain (Auramine O)',460,2,2],['REAGENT','MICROBIOLOGY','Leptospira IgM',250,0,2],['REAGENT','MICROBIOLOGY','Covid 19 Kit',5.50,0,2],['REAGENT','MICROBIOLOGY','Influenza Test Kit',0,0,2],['REAGENT','MICROBIOLOGY','Buffer Tablet pH 7.2',0,3,2],
         ['REAGENT','URINE/STOOL ANALYSIS','Mission 10U Urinalysis Strips',80,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission urine Glucose/Protein Strip',10,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission 10U Urine Reagent Strip',0,0,5],['REAGENT','URINE/STOOL ANALYSIS','Ecotest HCG UPT Strip',50,0,5],['REAGENT','URINE/STOOL ANALYSIS','RIQAS Urinalysis',0,0,5],['REAGENT','URINE/STOOL ANALYSIS','QC Urinalysis',1235,0,5],
         ['REAGENT','ETC','ABG Cartridge POCT ED',480,0,2],['REAGENT','ETC','Blood Glucose POCT',11.50,50,5],['REAGENT','ETC','Blood Glucose Solution',0,10,2],['REAGENT','ETC','Ketone Strip POCT',225,7,2],['REAGENT','ETC','Ketone Control Solution',0,12,2],['REAGENT','ETC','Glucose Powder 75g',4,0,2],['REAGENT','ETC','Sticker Barcode',0,0,10],
+        ['REAGENT','OUTSOURCE INDENT','Blood C&S Aerobic',0,5,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Anaerobic',0,5,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Paediatric',0,5,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Myco/F',0,4,2],['REAGENT','OUTSOURCE INDENT','Charcoal Swab',0,63,2],['REAGENT','OUTSOURCE INDENT','Sodium Citrate Tube (Coagulation)',0,10,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (Plain)',0,16,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (Thymol)',0,13,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (VMA)',0,6,2],['REAGENT','OUTSOURCE INDENT','VTM Swab Sterile',0,0,2],['REAGENT','OUTSOURCE INDENT','MTB IGRA',0,0,2],['REAGENT','OUTSOURCE INDENT','Dengue Combo',0,6,2],['REAGENT','OUTSOURCE INDENT','Faecal Occult Blood',0,0,2],['REAGENT','OUTSOURCE INDENT','Falcon Tube',0,50,2],
         ['CONSUMABLE','CONSUMABLES','Thermal Printer Paper For Urine Analyzer',0,0,5],['CONSUMABLE','CONSUMABLES','K2EDTA Tube 2mL (Lavender)',0,10,10],['CONSUMABLE','CONSUMABLES','Gel Tube with Clot Activator 3.6mL (Yellow)',0,10,10],['CONSUMABLE','CONSUMABLES','K3/KNa2 Spray Dried 3.6mL (Grey Cap)',0,20,10],['CONSUMABLE','CONSUMABLES','K2EDTA Microtainer Peads',0,0,10],['CONSUMABLE','CONSUMABLES','Lithium Heparin + Gel 500uL Paeds',0,0,10],['CONSUMABLE','CONSUMABLES','Biohazard Specimen With Zip',0,0,10],['CONSUMABLE','CONSUMABLES','Alcohol Swabs',0,0,20],['CONSUMABLE','CONSUMABLES','Applicator Sticks',0,0,20],['CONSUMABLE','CONSUMABLES','Disposable Pasteur Pipette 3mL',0,4,20],['CONSUMABLE','CONSUMABLES','3M VFEX Particulate Respirator N95 9150',0,0,20],['CONSUMABLE','CONSUMABLES','Latex Glove size M (Non Powder)',0,10,20],['CONSUMABLE','CONSUMABLES','Borosilicate Rimless Test Tube',0,0,20],['CONSUMABLE','CONSUMABLES','Parafilm 4x125ft',0,0,20],['CONSUMABLE','CONSUMABLES','Lens Tissue Wipe',0,0,20],['CONSUMABLE','CONSUMABLES','Immersion Oil (100ml)',0,0,5],['CONSUMABLE','CONSUMABLES','Formaldehyde Solution 10%',0,0,5],['CONSUMABLE','CONSUMABLES','ESR Vacuum Tube Monosed With 3.2 Sodium Citrate',0,1,10],['CONSUMABLE','CONSUMABLES','Isolation Gown 42G / Pack Of 10pcs',0,0,20],['CONSUMABLE','CONSUMABLES','Chemical Spill Pack',0,0,5],['CONSUMABLE','CONSUMABLES','Glass Slide Storage Box for 100 slides',0,0,5],['CONSUMABLE','CONSUMABLES','Plastic Slide Mailer for 5 slide',0,0,10],['CONSUMABLE','CONSUMABLES','Filter Paper 125mm',0,0,10],['CONSUMABLE','CONSUMABLES','Stool Container With Spoon',0,1,20],['CONSUMABLE','CONSUMABLES','Universal Container Yellow Cap',0,0,20],['CONSUMABLE','CONSUMABLES','Styrofoam Box',0,0,10],['CONSUMABLE','CONSUMABLES','Plastic Spatula',0,0,20],['CONSUMABLE','CONSUMABLES','Cover Slip Glass',0,0,20],['CONSUMABLE','CONSUMABLES','UTS Fluorescence Assist Slide',0,40,20],['CONSUMABLE','CONSUMABLES','Frosted Slide (Frosted End)',0,8,20],['CONSUMABLE','CONSUMABLES','Hand Sanitizer Alcohol Based 500mL',0,0,10],['CONSUMABLE','CONSUMABLES','Sticker Label Size 2cm x3cm (1000pcs)',0,60,100],['CONSUMABLE','CONSUMABLES','3 Ply Disposable Mask',0,1,20],['CONSUMABLE','CONSUMABLES','Plastic Apron Pull',0,0,20],['CONSUMABLE','CONSUMABLES','Clear Glass Slide (Non Frosted End)',0,50,20]
       ];
 
@@ -18707,6 +18738,40 @@ function exportMonthlySchedulePdfs() {
       function seed(){
         if(data.items.length) return;
         data.items=seedItems.map(function(x,i){return {id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:Number(x[4]),minStock:Number(x[5]),active:true};});
+        seedOutsourceTransactions();
+      }
+      function seedOutsourceTransactions(){
+        var movement=[
+          ['Blood C&S Aerobic','IN',5],['Blood C&S Anaerobic','IN',5],['Sodium Citrate Tube (Coagulation)','OUT',2]
+        ];
+        movement.forEach(function(m){
+          var item=data.items.find(function(it){return String(it.name||'').toLowerCase()===m[0].toLowerCase();});
+          if(!item) return;
+          var exists=data.transactions.some(function(t){return t.itemId===item.id && t.type===m[1] && Number(t.qty)===m[2] && t.notes==='Initial catalog data';});
+          if(!exists) data.transactions.push({id:'seed-'+item.id+'-'+m[1],itemId:item.id,type:m[1],qty:m[2],lotNo:'',expiry:'',staff:'',notes:'Initial catalog data',at:'2026-10-01T00:00:00.000Z'});
+        });
+      }
+      function mergeSeedCatalog(){
+        var byName={};
+        data.items.forEach(function(item){byName[String(item.name||'').trim().toLowerCase()]=item;});
+        var changed=false;
+        seedItems.forEach(function(x,i){
+          var key=String(x[2]||'').trim().toLowerCase();
+          var item=byName[key];
+          if(!item){
+            item={id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:Number(x[4]),minStock:Number(x[5]),active:true};
+            data.items.push(item); byName[key]=item; changed=true;
+          }else{
+            var price=Number(x[3]);
+            if(item.type!==x[0]||item.category!==x[1]||Number(item.price)!==price||item.active===false){
+              item.type=x[0]; item.category=x[1]; item.price=price; item.active=true; changed=true;
+            }
+            if(item.minStock==null || item.minStock===''){item.minStock=Number(x[5]);changed=true;}
+          }
+        });
+        seedOutsourceTransactions();
+        if(changed) data.version=3;
+        return changed;
       }
       function saveLocal(){try{safeStorageSet(STORAGE_KEY,JSON.stringify(data));}catch(e){}}
       function loadLocal(){
@@ -18804,9 +18869,9 @@ function exportMonthlySchedulePdfs() {
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();});
       }
       function load(force){
-        bind();var had=loadLocal();if(!had)seed();render();
-        if(force||!had){loadRemote().then(function(found){if(!found){seed();persist();}render();});}
-        else loadRemote().then(function(found){if(found)render();});
+        bind();var had=loadLocal();if(!had)seed();mergeSeedCatalog();persist();render();
+        if(force||!had){loadRemote().then(function(found){mergeSeedCatalog();persist();render();});}
+        else loadRemote().then(function(found){if(mergeSeedCatalog())persist();render();});
       }
       function init(){load(false);}
       return {init:init,open:open,load:load,render:render};
