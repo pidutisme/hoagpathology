@@ -4311,6 +4311,117 @@
 
 
     /* +----------------------------------+
+     * + DEDICATED CHAT WINDOW            +
+     * +----------------------------------+ */
+    html.chat-window-mode,
+    html.chat-window-mode body {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow: hidden !important;
+    }
+
+    body.chat-window-mode .sidebar,
+    body.chat-window-mode .display-board,
+    body.chat-window-mode .display-daily-quote,
+    body.chat-window-mode .mobile-nav-toggle {
+      display: none !important;
+    }
+
+    body.chat-window-mode .app {
+      display: block !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      min-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    body.chat-window-mode .main,
+    body.chat-window-mode .pages {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    body.chat-window-mode .page:not(#liveChat) {
+      display: none !important;
+    }
+
+    body.chat-window-mode #liveChat {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+    }
+
+    body.chat-window-mode #liveChat .page-scroll {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    body.chat-window-mode #liveChat .single-panel,
+    body.chat-window-mode #liveChat .panel {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      margin: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    body.chat-window-mode #liveChat .panel {
+      padding: 12px !important;
+    }
+
+    body.chat-window-mode #liveChat .content-inner.live-chat-page-content {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      grid-template-rows: minmax(0, 1fr) !important;
+      gap: 0 !important;
+    }
+
+    body.chat-window-mode #liveChat .live-chat-page-content > div:first-child {
+      display: none !important;
+    }
+
+    body.chat-window-mode #liveChat .live-chat-shell {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      border-radius: 18px !important;
+    }
+
+    body.chat-window-mode #liveChat .live-chat-actions {
+      display: none !important;
+    }
+
+    body.chat-window-mode .live-chat-popup,
+    body.chat-window-mode .live-chat-launcher {
+      display: none !important;
+    }
+
+    html.chat-window-mode.electron-chat-window body .page-back-dashboard-btn {
+      display: none !important;
+    }
+
+    html.chat-window-mode.android-webview body .page-back-dashboard-btn {
+      display: inline-flex !important;
+      margin: 8px 0 8px 4px !important;
+      position: relative !important;
+      z-index: 20 !important;
+    }
+
+    /* +----------------------------------+
      * + LIVE CHAT EXPERIENCE             +
      * +----------------------------------+ */
 
@@ -19827,6 +19938,9 @@ function exportMonthlySchedulePdfs() {
        * + openPopupFromUser                +
        * +----------------------------------+ */
       function openPopupFromUser() {
+        if (window.HoagChatWindow && typeof window.HoagChatWindow.open === 'function' && window.HoagChatWindow.open()) {
+          return;
+        }
         visitedLiveChatPage = true;
         userClosedPopup = false;
         userMinimizedPopup = false;
@@ -23980,6 +24094,85 @@ if ("serviceWorker" in navigator) {
       .catch((error) => console.error("Service Worker error:", error));
   });
 }
+</script>
+
+
+<script>
+(function () {
+  'use strict';
+
+  var params = new URLSearchParams(window.location.search || '');
+  var dedicatedChat = params.get('hoagChatWindow') === '1';
+  var runtimeMode = String((document.documentElement && document.documentElement.getAttribute('data-runtime-mode')) || '').toLowerCase();
+
+  function detectMode() {
+    if (/Electron\/\d+/i.test(navigator.userAgent || '')) return 'electron';
+    if (runtimeMode === 'apk-webview' || /; wv\)/i.test(navigator.userAgent || '') && /Android/i.test(navigator.userAgent || '')) return 'apk-webview';
+    return 'browser';
+  }
+
+  function chatUrl() {
+    var url = new URL(window.location.href);
+    url.searchParams.set('hoagChatWindow', '1');
+    return url.toString();
+  }
+
+  window.HoagChatWindow = {
+    open: function () {
+      var mode = detectMode();
+      if (mode === 'electron') {
+        window.open(chatUrl(), 'hoag-pathology-chat', 'popup=yes,width=1180,height=800,resizable=yes');
+        return true;
+      }
+      if (mode === 'apk-webview') {
+        window.location.assign(chatUrl());
+        return true;
+      }
+      return false;
+    }
+  };
+
+  if (!dedicatedChat) return;
+
+  document.documentElement.classList.add('chat-window-mode');
+  if (document.body) document.body.classList.add('chat-window-mode');
+  document.documentElement.classList.toggle('electron-chat-window', detectMode() === 'electron');
+  document.documentElement.classList.toggle('android-webview', detectMode() === 'apk-webview');
+
+  function activateChatPage() {
+    try {
+      var auth = window.LabApp && window.LabApp.Auth;
+      var router = window.LabApp && window.LabApp.Router;
+      if (!auth || !router || typeof router.goPage !== 'function') return false;
+
+      var authenticated = typeof auth.isAuthenticated === 'function' ? auth.isAuthenticated() : false;
+      if (!authenticated) return false;
+
+      router.goPage('liveChat', null);
+      return true;
+    } catch (error) {
+      console.warn('Dedicated chat window startup failed:', error);
+      return false;
+    }
+  }
+
+  function start() {
+    var attempts = 0;
+    var timer = window.setInterval(function () {
+      attempts += 1;
+      if (activateChatPage() || attempts >= 80) {
+        window.clearInterval(timer);
+      }
+    }, 250);
+    activateChatPage();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
+})();
 </script>
 
 </body>
