@@ -1175,7 +1175,7 @@
       display: grid;
       grid-template-rows: auto auto auto;
       align-content: start;
-      gap: 8px;
+      gap: 12px;
       overflow: auto;
       padding: 18px 6px 24px;
     }
@@ -1317,7 +1317,9 @@
     #settings .setting-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
+      column-gap: 14px;
+      row-gap: 12px;
+      margin-top: 0;
     }
 
     #settings .setting-box {
@@ -1387,7 +1389,8 @@
 
     #settings .settings-extra-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
+      column-gap: 14px;
+      row-gap: 12px;
     }
 
     #settings .settings-extra-card {
@@ -1397,6 +1400,12 @@
       box-sizing: border-box;
       padding: 14px 16px;
       border-radius: 22px;
+      text-align: left;
+      justify-content: flex-start;
+    }
+
+    #settings .settings-extra-card .settings-extra-copy {
+      text-align: left;
     }
 
     #settings .settings-extra-icon {
