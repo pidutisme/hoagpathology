@@ -19230,19 +19230,52 @@ function exportMonthlySchedulePdfs() {
       }
       function submitMovement(e){
         e.preventDefault();
-        try{
-        var type=($('inventoryMovementType')||{}).value||'IN';var itemId=($('inventoryItemInput')||{}).value;var qty=Math.floor(Number(($('inventoryQtyInput')||{}).value));var item=getItem(itemId);var msg=$('inventoryFormMessage');if(msg)msg.textContent='';if(!item||!qty||qty<1){if(msg)msg.textContent='Please select an item and enter a valid quantity.';return;}
-        var staff=(($('inventoryStaffInput')||{}).value)||getUserName();var notes=(($('inventoryNotesInput')||{}).value)||'';var lot=cleanText(($('inventoryLotInput')||{}).value);var expiry=(($('inventoryExpiryInput')||{}).value)||'';var movementDate=(($('inventoryMovementDateInput')||{}).value)||localDateKey();
-        if(!movementDate){if(msg)msg.textContent='Please select the Stock In / Stock Out date.';return;}
-        if(type==='IN'&&!lot){if(msg)msg.textContent='Lot No. is required for every Stock In.';return;}
-        var movementAt=isoForMovementDate(movementDate);
-        var tx=[];
-        if(type==='IN'){tx=[{id:id(),itemId:itemId,type:'IN',qty:qty,lotNo:lot,expiry:expiry,staff:staff,notes:notes,at:movementAt}];}
-        else {var preferred=(($('inventoryLotSelect')||{}).value)||'';var useFefo=(($('inventoryFefoInput')||{}).checked)!==false;var a=allocations(itemId,qty,preferred,useFefo);if(!a){if(msg)msg.textContent='Insufficient stock for the selected item/lot. Check the LOT STOCK view.';return;}tx=a.map(function(x){return {id:id(),itemId:itemId,type:'OUT',qty:x.qty,lotNo:x.lotNo==='OPENING / NO LOT'?'':x.lotNo,expiry:x.expiry||'',staff:staff,notes:notes+(a.length>1?' [FEFO allocation]':''),at:movementAt};});}
-        Array.prototype.push.apply(data.transactions,tx);
-        var affectedMonths={};tx.forEach(function(t){affectedMonths[String(t.at||'').slice(0,7)]=true;});affectedMonths[currentMonthKey()]=true;Object.keys(affectedMonths).forEach(function(k){saveMonthlySnapshot(k);});
-        persist();closeModal();render();
-        }catch(err){console.error('Inventory movement save error:',err);var msg=$('inventoryFormMessage');if(msg)msg.textContent='Unable to save movement. Please try again.';}
+        var msg=$('inventoryFormMessage');
+        if(msg)msg.textContent='';
+        try {
+          var type=($('inventoryMovementType')||{}).value||'IN';
+          var itemId=($('inventoryItemInput')||{}).value;
+          var qty=Math.floor(Number(($('inventoryQtyInput')||{}).value));
+          var item=getItem(itemId);
+          if(!item||!qty||qty<1){if(msg)msg.textContent='Please select an item and enter a valid quantity.';return;}
+
+          var staff=(($('inventoryStaffInput')||{}).value)||getUserName();
+          var notes=(($('inventoryNotesInput')||{}).value)||'';
+          var lot=cleanText(($('inventoryLotInput')||{}).value);
+          var expiry=(($('inventoryExpiryInput')||{}).value)||'';
+          var movementDate=(($('inventoryMovementDateInput')||{}).value)||localDateKey();
+          if(!movementDate){if(msg)msg.textContent='Please select the Stock In / Stock Out date.';return;}
+          if(type==='IN'&&!lot){if(msg)msg.textContent='Lot No. is required for every Stock In.';return;}
+
+          var movementAt=isoForMovementDate(movementDate);
+          var tx=[];
+          if(type==='IN'){
+            tx=[{id:id(),itemId:itemId,type:'IN',qty:qty,lotNo:lot,expiry:expiry,staff:staff,notes:notes,at:movementAt}];
+          } else {
+            var preferred=(($('inventoryLotSelect')||{}).value)||'';
+            var useFefo=(($('inventoryFefoInput')||{}).checked)!==false;
+            var a=allocations(itemId,qty,preferred,useFefo);
+            if(!a){if(msg)msg.textContent='Insufficient stock for the selected item/lot. Check the LOT STOCK view.';return;}
+            tx=a.map(function(x){return {id:id(),itemId:itemId,type:'OUT',qty:x.qty,lotNo:x.lotNo==='OPENING / NO LOT'?'':x.lotNo,expiry:x.expiry||'',staff:staff,notes:notes+(a.length>1?' [FEFO allocation]':''),at:movementAt};});
+          }
+
+          // Commit the movement first. Local storage is the primary client-side save.
+          Array.prototype.push.apply(data.transactions,tx);
+          normalize();
+          tx.forEach(function(t){saveMonthlySnapshot(String(t.at||'').slice(0,7));});
+          saveMonthlySnapshot(currentMonthKey());
+          saveLocal();
+
+          // Firebase sync is intentionally non-blocking. A Firebase/rules/network error
+          // must not make a successfully saved local movement look like a failed Stock In/Out.
+          try { saveRemote(); } catch(remoteErr) { console.warn('Inventory remote save error:',remoteErr); }
+
+          closeModal();
+          render();
+        } catch(err) {
+          console.error('Inventory movement save error:',err);
+          if(msg) msg.textContent='Unable to save movement: '+(err&&err.message?err.message:'Please try again.');
+        }
       }
       function bind(){
         if(initialized)return;initialized=true;
