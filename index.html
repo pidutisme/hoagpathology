@@ -8172,7 +8172,44 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
 }
 </style>
 <style id="inventory-scroll-runtime-css">
-/* Kept intentionally empty: inventory-table-wrap is the only scroll surface. */
+/* Inventory layout: page stays fixed; ONLY the inventory table area scrolls. */
+#inventory .page-scroll.inventory-scroll {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+#inventory .inventory-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+#inventory .inventory-table-wrap {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 220px !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 18px !important;
+  box-sizing: border-box !important;
+}
+#inventory .inventory-table-wrap::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+#inventory .inventory-table {
+  margin-bottom: 2px !important;
+}
 </style>
 </head>
 <body class="auth-locked">
@@ -18808,13 +18845,13 @@ function exportMonthlySchedulePdfs() {
         var host=$('inventoryAlerts');if(!host)return;var lots=allLots();var low=data.items.filter(function(i){return itemStatus(i)==='LOW'||itemStatus(i)==='OUT';}).slice(0,1);var exp=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRING';}).sort(function(a,b){return a.lot.expiry.localeCompare(b.lot.expiry);}).slice(0,1);var old=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRED';}).slice(0,1);var html='';if(low.length){var i=low[0];html+='<div class="inventory-alert low"><strong>LOW STOCK · '+esc(i.name)+'</strong><span>'+itemBalance(i.id)+' remaining · minimum '+Number(i.minStock||0)+'</span></div>';}if(exp.length){var e=exp[0];html+='<div class="inventory-alert"><strong>EXPIRING · '+esc(e.item.name)+'</strong><span>Lot '+esc(e.lot.lotNo)+' · '+esc(e.lot.expiry)+' · '+e.lot.qty+' remaining</span></div>';}if(old.length){var o=old[0];html+='<div class="inventory-alert expired"><strong>EXPIRED · '+esc(o.item.name)+'</strong><span>Lot '+esc(o.lot.lotNo)+' · '+esc(o.lot.expiry)+' · remove/quarantine as required</span></div>';}host.innerHTML=html||'<div class="inventory-alert"><strong>ALL CLEAR</strong><span>No low-stock or expiry alerts in the current data.</span></div>';}
       function renderItems(){
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';
-        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;var st=itemStatus(i);if(status==='LOW'&&st!=='LOW'&&st!=='OUT')return false;if(status==='EXPIRING'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRING';}).length)return false;if(status==='EXPIRED'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRED';}).length)return false;return !q||[i.name,i.category,i.type].join(' ').toLowerCase().indexOf(q)!==-1;});
+        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;var st=itemStatus(i);if(status==='LOW'&&st!=='LOW'&&st!=='OUT')return false;if(status==='EXPIRING'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRING';}).length)return false;if(status==='EXPIRED'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRED';}).length)return false;return !q||[i.name,i.category,i.type].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
         var html='<table class="inventory-table"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>PRICE / UNIT</th><th>OPENING</th><th>BALANCE</th><th>VALUE</th><th>LOT(S)</th><th>STATUS</th></tr></thead><tbody>';
         rows.forEach(function(i){var lots=lotsForItem(i.id);var st=itemStatus(i);html+='<tr><td><div class="inventory-item-name">'+esc(i.name)+'</div></td><td>'+esc(i.category)+'</td><td class="inventory-money">'+money(i.price)+'</td><td class="inventory-num">'+Number(i.openingStock||0)+'</td><td class="inventory-num">'+itemBalance(i.id)+'</td><td class="inventory-money">'+money(itemBalance(i.id)*Number(i.price||0))+'</td><td>'+ (lots.length?lots.map(function(l){return '<span class="inventory-badge legacy">'+esc(l.lotNo)+': '+l.qty+'</span>';}).join(' '):'<span class="inventory-muted">—</span>')+'</td><td><span class="inventory-badge '+(st==='OK'?'ok':st==='LOW'?'low':'expired')+'">'+esc(st)+'</span></td></tr>';});
         html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No inventory items match the current filter.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
       function renderLots(){
-        var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';var rows=allLots().filter(function(x){var es=expiryStatus(x.lot.expiry);if(cat!=='ALL'&&x.item.category!==cat)return false;if(status==='EXPIRING'&&es!=='EXPIRING')return false;if(status==='EXPIRED'&&es!=='EXPIRED')return false;if(status==='LOW'&&itemStatus(x.item)!=='LOW'&&itemStatus(x.item)!=='OUT')return false;return !q||[x.item.name,x.item.category,x.lot.lotNo,x.lot.expiry].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){return (a.lot.expiry||'9999').localeCompare(b.lot.expiry||'9999');});
+        var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';var rows=allLots().filter(function(x){var es=expiryStatus(x.lot.expiry);if(cat!=='ALL'&&x.item.category!==cat)return false;if(status==='EXPIRING'&&es!=='EXPIRING')return false;if(status==='EXPIRED'&&es!=='EXPIRED')return false;if(status==='LOW'&&itemStatus(x.item)!=='LOW'&&itemStatus(x.item)!=='OUT')return false;return !q||[x.item.name,x.item.category,x.lot.lotNo,x.lot.expiry].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){var n=String(a.item.name||'').localeCompare(String(b.item.name||''),'en',{sensitivity:'base',numeric:true});return n||String(a.lot.expiry||'9999').localeCompare(String(b.lot.expiry||'9999'));});
         var html='<table class="inventory-table"><thead><tr><th>ITEM</th><th>LOT NO.</th><th>EXPIRY</th><th>STOCK</th><th>PRICE / UNIT</th><th>STOCK VALUE</th><th>STATUS</th></tr></thead><tbody>';
         rows.forEach(function(x){var es=expiryStatus(x.lot.expiry);var cls=es==='EXPIRED'?'expired':es==='EXPIRING'?'expiring':'ok';html+='<tr><td class="inventory-item-name">'+esc(x.item.name)+'</td><td><strong>'+esc(x.lot.lotNo)+'</strong></td><td>'+esc(x.lot.expiry||'—')+'</td><td class="inventory-num">'+x.lot.qty+'</td><td>'+money(x.item.price)+'</td><td>'+money(x.lot.qty*x.item.price)+'</td><td><span class="inventory-badge '+cls+'">'+(es||'ACTIVE')+'</span></td></tr>';});html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No active lots match the current filter.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
