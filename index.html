@@ -8133,34 +8133,28 @@
 body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings-extra-icon { background:rgba(255,255,255,.05) !important; }
 
 </style>
-<style id="inventory-scroll-final-v4">
-/* Inventory scroll fix: full inventory remains in index.html. No visible scrollbar; wheel, touch and trackpad scrolling work on the page itself. */
+<style id="inventory-scroll-final-v5">
+/* Inventory only: the PAGE stays fixed; ONLY the inventory list/table scrolls.
+   Scrollbar is hidden but mouse wheel, trackpad and touch still work. */
 #inventory.page {
   overflow: hidden !important;
   min-height: 0 !important;
 }
 #inventory .page-scroll.inventory-scroll {
-  width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
   max-height: 100% !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  overscroll-behavior-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-y !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-#inventory .page-scroll.inventory-scroll::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  display: none !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
 }
 #inventory .inventory-table-wrap {
-  max-height: none !important;
-  min-height: 0 !important;
-  overflow: visible !important;
+  height: calc(100vh - 390px) !important;
+  min-height: 220px !important;
+  max-height: calc(100vh - 390px) !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
@@ -8170,34 +8164,15 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
   display: none !important;
 }
 @media (max-width: 980px) {
-  #inventory.page { overflow: visible !important; }
-  #inventory .page-scroll.inventory-scroll {
-    height: auto !important;
-    max-height: none !important;
-    overflow-y: visible !important;
-    touch-action: pan-y !important;
+  #inventory .inventory-table-wrap {
+    height: calc(100vh - 470px) !important;
+    max-height: calc(100vh - 470px) !important;
+    min-height: 180px !important;
   }
 }
 </style>
 <style id="inventory-scroll-runtime-css">
-#inventory.page.active { overflow: hidden !important; }
-#inventory.page.active > .page-scroll.inventory-scroll {
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  max-height: 100% !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior-y: contain !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-#inventory.page.active > .page-scroll.inventory-scroll::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
-#inventory.page.active .inventory-table-wrap { overflow: visible !important; }
+/* Kept intentionally empty: inventory-table-wrap is the only scroll surface. */
 </style>
 </head>
 <body class="auth-locked">
@@ -19079,63 +19054,8 @@ if ("serviceWorker" in navigator) {
 })();
 </script>
 <script id="inventory-scroll-runtime-fix">
-(function () {
-  function bindInventoryScroller() {
-    var page = document.getElementById('inventory');
-    if (!page) return;
-    var scroller = page.querySelector('.page-scroll.inventory-scroll');
-    if (!scroller || scroller.dataset.manualScrollBound === '1') return;
-    scroller.dataset.manualScrollBound = '1';
-
-    /* Keep the scrollbar invisible, but make the inventory itself the scroll surface. */
-    scroller.style.overflowY = 'auto';
-    scroller.style.overflowX = 'hidden';
-    scroller.style.scrollbarWidth = 'none';
-    scroller.style.msOverflowStyle = 'none';
-    scroller.style.touchAction = 'pan-y';
-    scroller.style.webkitOverflowScrolling = 'touch';
-
-    /* Some parent/layout rules in this app intentionally use overflow:hidden.
-       Forward wheel/trackpad movement directly to the inventory scroller. */
-    scroller.addEventListener('wheel', function (e) {
-      if (!e.deltaY) return;
-      var max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-      if (max <= 0) return;
-      var next = Math.max(0, Math.min(max, scroller.scrollTop + e.deltaY));
-      if (next !== scroller.scrollTop) {
-        e.preventDefault();
-        scroller.scrollTop = next;
-      }
-    }, { passive: false });
-
-    var touchY = 0;
-    var touchScrollTop = 0;
-    scroller.addEventListener('touchstart', function (e) {
-      if (!e.touches || !e.touches.length) return;
-      touchY = e.touches[0].clientY;
-      touchScrollTop = scroller.scrollTop;
-    }, { passive: true });
-    scroller.addEventListener('touchmove', function (e) {
-      if (!e.touches || !e.touches.length) return;
-      var dy = touchY - e.touches[0].clientY;
-      var max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-      if (max <= 0) return;
-      var next = Math.max(0, Math.min(max, touchScrollTop + dy));
-      if (next !== scroller.scrollTop) {
-        e.preventDefault();
-        scroller.scrollTop = next;
-      }
-    }, { passive: false });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindInventoryScroller);
-  } else {
-    bindInventoryScroller();
-  }
-  setTimeout(bindInventoryScroller, 300);
-  setTimeout(bindInventoryScroller, 1200);
-})();
+/* Inventory scrolling is handled natively by #inventory .inventory-table-wrap.
+   Do not attach wheel/touch handlers to the page itself. */
 </script>
 </body>
 </html>
