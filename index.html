@@ -8682,6 +8682,165 @@ body.dark-mode #inventory .inventory-custom-option.is-selected {
   color: #fff !important;
 }
 </style>
+
+<style id="inventory-dark-polish-and-alert-filter">
+/* Dark mode polish: remove the bright/neumorphic white glow from Inventory. */
+body.dark-mode #inventory .inventory-title-icon,
+body.dark-mode #inventory .inventory-action-btn,
+body.dark-mode #inventory .inventory-kpi,
+body.dark-mode #inventory .inventory-search-wrap,
+body.dark-mode #inventory .inventory-select,
+body.dark-mode #inventory .inventory-alert,
+body.dark-mode #inventory .inventory-table-wrap,
+body.dark-mode #inventory .inventory-custom-trigger,
+body.dark-mode #inventory .inventory-custom-menu,
+body.dark-mode #inventory .inventory-price-toolbar,
+body.dark-mode #inventory .inventory-price-input,
+body.dark-mode #inventory .inventory-modal-card,
+body.dark-mode #inventory .inventory-record-card,
+body.dark-mode #inventory .inventory-modal-close,
+body.dark-mode #inventory .inventory-record-close,
+body.dark-mode #inventory .inventory-form input,
+body.dark-mode #inventory .inventory-form select,
+body.dark-mode #inventory .inventory-form textarea {
+  box-shadow: none !important;
+}
+
+/* Dark mode: strong but comfortable movement colours. */
+body.dark-mode #inventory .inventory-action-btn.primary {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px rgba(34,197,94,.16), 0 5px 14px rgba(22,163,74,.16) !important;
+}
+body.dark-mode #inventory .inventory-action-btn.danger {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.16), 0 5px 14px rgba(220,38,38,.16) !important;
+}
+body.dark-mode #inventory .inventory-action-btn.primary:hover {
+  background: #22c55e !important;
+  border-color: #22c55e !important;
+}
+body.dark-mode #inventory .inventory-action-btn.danger:hover {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+/* Dark table movement colours. */
+body.dark-mode #inventory .inventory-table .movement-in,
+body.dark-mode #inventory .inventory-record-table .movement-in {
+  color: #4ade80 !important;
+  font-weight: 900 !important;
+}
+body.dark-mode #inventory .inventory-table .movement-out,
+body.dark-mode #inventory .inventory-record-table .movement-out {
+  color: #f87171 !important;
+  font-weight: 900 !important;
+}
+body.dark-mode #inventory .inventory-item-row.inventory-status-low {
+  background: rgba(234,179,8,.055) !important;
+}
+body.dark-mode #inventory .inventory-item-row.inventory-status-out {
+  background: rgba(239,68,68,.075) !important;
+}
+
+/* No visible scrollbar anywhere inside Inventory, while wheel/touch scrolling remains native. */
+#inventory .inventory-table-wrap,
+#inventory .inventory-custom-menu,
+#inventory .inventory-modal-card,
+#inventory .inventory-record-card,
+#inventory .inventory-record-table-wrap {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#inventory .inventory-table-wrap::-webkit-scrollbar,
+#inventory .inventory-custom-menu::-webkit-scrollbar,
+#inventory .inventory-modal-card::-webkit-scrollbar,
+#inventory .inventory-record-card::-webkit-scrollbar,
+#inventory .inventory-record-table-wrap::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* Alert cards are interactive filters. */
+#inventory .inventory-alert[data-alert-filter] {
+  cursor: pointer;
+  user-select: none;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+#inventory .inventory-alert[data-alert-filter]:hover {
+  transform: translateY(-1px);
+}
+body.dark-mode #inventory .inventory-alert[data-alert-filter]:hover {
+  background: rgba(255,255,255,.035) !important;
+}
+body.dark-mode #inventory .inventory-alert.expiring[data-alert-filter] {
+  border-color: rgba(245,158,11,.42) !important;
+}
+body.dark-mode #inventory .inventory-alert.expiring[data-alert-filter]:hover {
+  background: rgba(245,158,11,.07) !important;
+}
+#inventory .inventory-alert.expiring[data-alert-filter] {
+  cursor: pointer;
+}
+</style>
+<style id="inventory-history-dark-final">
+/* Inventory movement history: true dark surface, readable text, no white glow. */
+body.dark-mode #inventory .inventory-record-card {
+  background: linear-gradient(145deg,#202b3b,#121a27) !important;
+  color: #f3f6fb !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  box-shadow: 0 18px 48px rgba(0,0,0,.42) !important;
+}
+body.dark-mode #inventory .inventory-record-card h3,
+body.dark-mode #inventory .inventory-record-card strong,
+body.dark-mode #inventory .inventory-record-card td {
+  color: #f3f6fb !important;
+}
+body.dark-mode #inventory .inventory-record-sub,
+body.dark-mode #inventory .inventory-record-section-title,
+body.dark-mode #inventory .inventory-record-kicker,
+body.dark-mode #inventory .inventory-record-stat span {
+  color: #a1adbf !important;
+}
+body.dark-mode #inventory .inventory-record-stat {
+  background: rgba(255,255,255,.035) !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+body.dark-mode #inventory .inventory-record-table {
+  background: #182231 !important;
+  color: #f3f6fb !important;
+}
+body.dark-mode #inventory .inventory-record-table th {
+  background: #245d8f !important;
+  color: #fff !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+body.dark-mode #inventory .inventory-record-table td {
+  background: #182231 !important;
+  border-bottom-color: rgba(255,255,255,.08) !important;
+}
+body.dark-mode #inventory .inventory-record-table tbody tr:hover td {
+  background: rgba(255,255,255,.045) !important;
+}
+body.dark-mode #inventory .inventory-record-empty {
+  background: rgba(255,255,255,.025) !important;
+  color: #a1adbf !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+body.dark-mode #inventory .inventory-record-close {
+  background: #202b3b !important;
+  color: #f3f6fb !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  box-shadow: none !important;
+}
+body.dark-mode #inventory .inventory-record-close:hover {
+  background: #2a374a !important;
+}
+</style>
 </head>
 <body class="auth-locked">
 <!-- +----------------------------------+
@@ -19353,7 +19512,7 @@ function exportMonthlySchedulePdfs() {
         return '<div class="inventory-kpi"><span>TOTAL ITEMS</span><strong>'+active.length+'</strong><small>Master items</small></div><div class="inventory-kpi"><span>ACTIVE LOTS</span><strong>'+lots.length+'</strong><small>Lot balances &gt; 0</small></div><div class="inventory-kpi"><span>LOW / OUT</span><strong>'+low+'</strong><small>At or below minimum</small></div><div class="inventory-kpi"><span>EXPIRING ≤ 30D</span><strong>'+exp+'</strong><small>Lot-level expiry</small></div><div class="inventory-kpi"><span>STOCK VALUE</span><strong>'+money(value)+'</strong><small>Current balance × price</small></div>';
       }
       function renderAlerts(){
-        var host=$('inventoryAlerts');if(!host)return;var lots=allLots();var low=data.items.filter(function(i){return itemStatus(i)==='LOW'||itemStatus(i)==='OUT';}).slice(0,1);var exp=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRING';}).sort(function(a,b){return a.lot.expiry.localeCompare(b.lot.expiry);}).slice(0,1);var old=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRED';}).slice(0,1);var html='';if(low.length){var i=low[0];var alertClass=itemStatus(i)==='OUT'?'out':'low';var alertTitle=itemStatus(i)==='OUT'?'OUT OF STOCK':'LOW STOCK';html+='<div class="inventory-alert '+alertClass+'"><strong>'+alertTitle+' · '+esc(i.name)+'</strong><span>'+itemBalance(i.id)+' remaining · minimum 1</span></div>';}if(exp.length){var e=exp[0];html+='<div class="inventory-alert"><strong>EXPIRING · '+esc(e.item.name)+'</strong><span>Lot '+esc(e.lot.lotNo)+' · '+esc(e.lot.expiry)+' · '+e.lot.qty+' remaining</span></div>';}if(old.length){var o=old[0];html+='<div class="inventory-alert expired"><strong>EXPIRED · '+esc(o.item.name)+'</strong><span>Lot '+esc(o.lot.lotNo)+' · '+esc(o.lot.expiry)+' · remove/quarantine as required</span></div>';}host.innerHTML=html||'<div class="inventory-alert"><strong>ALL CLEAR</strong><span>No low-stock or expiry alerts in the current data.</span></div>';}
+        var host=$('inventoryAlerts');if(!host)return;var lots=allLots();var low=data.items.filter(function(i){return itemStatus(i)==='LOW'||itemStatus(i)==='OUT';}).slice(0,1);var exp=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRING';}).sort(function(a,b){return a.lot.expiry.localeCompare(b.lot.expiry);}).slice(0,1);var old=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRED';}).slice(0,1);var html='';if(low.length){var i=low[0];var alertClass=itemStatus(i)==='OUT'?'out':'low';var alertTitle=itemStatus(i)==='OUT'?'OUT OF STOCK':'LOW STOCK';html+='<div class="inventory-alert '+alertClass+'" data-alert-filter="'+(itemStatus(i)==='OUT'?'OUT':'LOW')+'" role="button" tabindex="0"><strong>'+alertTitle+' · '+esc(i.name)+'</strong><span>'+itemBalance(i.id)+' remaining · minimum 1</span></div>';}if(exp.length){var e=exp[0];html+='<div class="inventory-alert expiring" data-alert-filter="EXPIRING" role="button" tabindex="0" title="Show all expiring items"><strong>EXPIRING · '+esc(e.item.name)+'</strong><span>Lot '+esc(e.lot.lotNo)+' · '+esc(e.lot.expiry)+' · '+e.lot.qty+' remaining</span></div>';}if(old.length){var o=old[0];html+='<div class="inventory-alert expired"><strong>EXPIRED · '+esc(o.item.name)+'</strong><span>Lot '+esc(o.lot.lotNo)+' · '+esc(o.lot.expiry)+' · remove/quarantine as required</span></div>';}host.innerHTML=html||'<div class="inventory-alert"><strong>ALL CLEAR</strong><span>No low-stock or expiry alerts in the current data.</span></div>';}
       function transactionMonthKey(t){var d=t&&t.at?new Date(t.at):null;if(!d||isNaN(d.getTime()))return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
       function totalInForItem(itemId,monthKey){
         var key=monthKey||currentMonthKey();
@@ -19552,7 +19711,7 @@ function exportMonthlySchedulePdfs() {
       function bind(){
         if(initialized)return;initialized=true;
         var search=$('inventorySearch');if(search)search.addEventListener('input',render);
-        ['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'].forEach(function(id){var n=$(id);if(n)n.addEventListener('change',function(){if(id==='inventoryViewFilter')currentView=n.value;render();});});
+        ['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'].forEach(function(id){var n=$(id);if(n)n.addEventListener('change',function(){if(id==='inventoryViewFilter')currentView=n.value;render();});});var alerts=$('inventoryAlerts');if(alerts){var applyAlertFilter=function(e){var card=e.target.closest('[data-alert-filter]');if(!card)return;var filter=card.getAttribute('data-alert-filter');var status=$('inventoryStatusFilter');var view=$('inventoryViewFilter');if(view){view.value=(filter==='EXPIRING'||filter==='EXPIRED')?'LOTS':'ITEMS';currentView=view.value;}if(status){status.value=filter;};render();var table=$('inventoryTableWrap');if(table)requestAnimationFrame(function(){table.scrollTop=0;});};alerts.addEventListener('click',applyAlertFilter);alerts.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();applyAlertFilter(e);}});}
         var inBtn=$('inventoryStockInBtn');if(inBtn)inBtn.addEventListener('click',function(){showModal('IN');});var outBtn=$('inventoryStockOutBtn');if(outBtn)outBtn.addEventListener('click',function(){showModal('OUT');});
         var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();});
         var itemTrigger=$('inventoryItemTrigger');if(itemTrigger)itemTrigger.addEventListener('click',function(e){e.stopPropagation();toggleItemCustom();});
@@ -19563,9 +19722,12 @@ function exportMonthlySchedulePdfs() {
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();if(e.key==='Escape'&&$('inventoryRecordModal')&&!$('inventoryRecordModal').hidden)closeRecordModal();});
       }
       function resetInventoryForFreshStart(){
-        var flagKey='labAppInventoryFreshResetV3';
+        var flagKey='labAppInventoryFreshResetV4';
         var done=safeStorageGet(flagKey)==='1';
         if(done)return false;
+        // Fresh inventory start: keep the item master/catalog and prices,
+        // but remove all existing movement/opening-balance data so Stock In/Out
+        // can be entered manually from this point onward.
         data.transactions=[];
         data.monthlySnapshots={};
         data.items.forEach(function(item){item.openingStock=0;});
