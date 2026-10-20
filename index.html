@@ -4953,6 +4953,69 @@
     }
 
     @media (max-width: 760px) {
+      /* QUICK LINKS — mobile layout matches HOSPITAL PROFILE cards */
+      #quickLinks .quick-links-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: clamp(140px, 18vh, 170px);
+        gap: clamp(10px, 1.8vw, 15px);
+        margin-top: 24px;
+        padding: 4px;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+
+      #quickLinks .quick-links-card {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        row-gap: 5px;
+        column-gap: 0;
+        align-content: center;
+        align-items: center;
+        justify-items: center;
+        text-align: center;
+        padding: 10px 9px;
+        min-height: 0;
+        height: 100%;
+      }
+
+      #quickLinks .quick-links-card::before {
+        grid-column: 1;
+        grid-row: 1;
+        width: 42px;
+        height: 42px;
+        font-size: 20px;
+      }
+
+      #quickLinks .quick-links-card strong {
+        grid-column: 1;
+        grid-row: 2;
+        align-self: center;
+        min-height: 0;
+        margin: 0;
+        font-size: 11px;
+        line-height: 1.15;
+        text-align: center;
+      }
+
+      #quickLinks .quick-links-card span {
+        grid-column: 1;
+        grid-row: 3;
+        align-self: start;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        min-height: calc(2 * 1.25em);
+        width: 100%;
+        font-size: 11px;
+        line-height: 1.25;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    @media (max-width: 760px) {
       .live-chat-main {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr) auto;
