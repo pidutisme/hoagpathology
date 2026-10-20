@@ -7776,7 +7776,12 @@
 .inventory-modal-card,.inventory-table-wrap{scrollbar-width:none;-ms-overflow-style:none}
 .inventory-modal-card::-webkit-scrollbar,.inventory-table-wrap::-webkit-scrollbar{width:0;height:0;display:none}
 
-.inventory-empty{padding:42px 20px;text-align:center;color:#7b8798}.inventory-section-label{font-size:10px;font-weight:900;letter-spacing:.7px;color:#718096;padding:12px 12px 4px}.inventory-price-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(120,135,160,.12);background:rgba(255,255,255,.18)}.inventory-price-toolbar select{height:36px;border:1px solid rgba(120,135,160,.14);border-radius:10px;background:var(--neo-surface,#eef2f8);color:var(--text,#243047);padding:0 10px;font:inherit;font-size:11px;font-weight:800;outline:0}.inventory-price-toolbar span{font-size:10px;color:#718096;font-weight:700}.inventory-price-input{width:120px;box-sizing:border-box;border:1px solid rgba(120,135,160,.16);border-radius:9px;background:var(--neo-surface,#eef2f8);color:var(--text,#243047);padding:7px 9px;font:inherit;font-size:11px;text-align:right;outline:0;box-shadow:inset 2px 2px 4px rgba(145,155,175,.08),inset -2px -2px 4px rgba(255,255,255,.7)}.inventory-price-input:focus{border-color:rgba(47,128,237,.35);box-shadow:0 0 0 3px rgba(47,128,237,.08)}.inventory-price-save{margin-left:auto}
+.inventory-empty{padding:42px 20px;text-align:center;color:#7b8798}.inventory-section-label{font-size:10px;font-weight:900;letter-spacing:.7px;color:#718096;padding:12px 12px 4px}.inventory-price-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(120,135,160,.12);background:rgba(255,255,255,.18)}
+      .monthly-movement-table .movement-in{background:rgba(110,170,100,.22)}
+      .monthly-movement-table .movement-out{background:rgba(239,68,68,.22)}
+      .monthly-movement-table .formula-ok{color:#16a34a;font-weight:900;text-align:center}
+      .monthly-movement-table .inventory-total-row{font-weight:900;background:rgba(66,130,190,.14)}
+.inventory-price-toolbar select{height:36px;border:1px solid rgba(120,135,160,.14);border-radius:10px;background:var(--neo-surface,#eef2f8);color:var(--text,#243047);padding:0 10px;font:inherit;font-size:11px;font-weight:800;outline:0}.inventory-price-toolbar span{font-size:10px;color:#718096;font-weight:700}.inventory-price-input{width:120px;box-sizing:border-box;border:1px solid rgba(120,135,160,.16);border-radius:9px;background:var(--neo-surface,#eef2f8);color:var(--text,#243047);padding:7px 9px;font:inherit;font-size:11px;text-align:right;outline:0;box-shadow:inset 2px 2px 4px rgba(145,155,175,.08),inset -2px -2px 4px rgba(255,255,255,.7)}.inventory-price-input:focus{border-color:rgba(47,128,237,.35);box-shadow:0 0 0 3px rgba(47,128,237,.08)}.inventory-price-save{margin-left:auto}
 @media (max-width:1100px){.inventory-kpis{grid-template-columns:repeat(3,1fr)}.inventory-toolbar{grid-template-columns:1fr 1fr}.inventory-alerts{grid-template-columns:1fr 1fr}}
 @media (max-width:720px){.inventory-head{align-items:flex-start;flex-direction:column}.inventory-head-actions{width:100%;justify-content:stretch}.inventory-head-actions .inventory-action-btn{flex:1}.inventory-kpis{grid-template-columns:repeat(2,1fr)}.inventory-toolbar{grid-template-columns:1fr}.inventory-alerts{grid-template-columns:1fr}.inventory-form-grid{grid-template-columns:1fr}.inventory-title-row h3{font-size:20px}.inventory-scroll{padding:12px!important}}
 
@@ -8227,6 +8232,241 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
 }
 #inventory .inventory-table {
   margin-bottom: 2px !important;
+}
+
+    /* ==========================================================
+     * PROFILE PAGE — FULL AVAILABLE VIEWPORT / RESPONSIVE FIT
+     * ========================================================== */
+    #profile,
+    #profile.page,
+    #profile .page-scroll,
+    #profile .profile-two-cards,
+    #profile .profile-card {
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      box-sizing: border-box;
+    }
+
+    #profile .page-scroll {
+      height: 100%;
+      padding: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    #profile .profile-two-cards {
+      height: 100%;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: clamp(10px, 1vw, 18px);
+    }
+
+    #profile .profile-card {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: clamp(8px, .8vh, 14px);
+      overflow: hidden;
+    }
+
+    #profile .profile-link-grid {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: minmax(0, 1fr);
+      align-content: stretch;
+      overflow: hidden;
+      padding: 0;
+      gap: clamp(8px, .8vw, 14px);
+    }
+
+    #profile .profile-link-card {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      box-sizing: border-box;
+      align-self: stretch;
+    }
+
+    @media (max-width: 900px) {
+      #profile .profile-two-cards {
+        grid-template-columns: minmax(0, 1fr);
+        height: auto;
+        min-height: 0;
+      }
+
+      #profile .profile-card {
+        height: auto;
+        min-height: min(70vh, 620px);
+      }
+
+      #profile .profile-link-grid {
+        height: auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: minmax(76px, 1fr);
+        overflow: hidden;
+      }
+    }
+
+    @media (max-width: 560px) {
+      #profile .profile-link-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-auto-rows: minmax(68px, auto);
+      }
+
+      #profile .profile-card {
+        min-height: 0;
+      }
+    }
+
+</style>
+
+<style id="inventory-full-page-final-v6">
+/* ==========================================================
+   INVENTORY FINAL — FULL PAGE + RESPONSIVE
+   Page itself does NOT scroll.
+   ONLY the inventory list scrolls by mouse wheel / touch.
+   Scrollbars are hidden.
+   ========================================================== */
+#inventory.page,
+#inventory.page.active {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#inventory .page-scroll.inventory-scroll {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: clamp(6px, .6vw, 12px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  box-sizing: border-box !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#inventory .page-scroll.inventory-scroll::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+#inventory .inventory-shell {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+#inventory .inventory-head,
+#inventory .inventory-kpis,
+#inventory .inventory-toolbar,
+#inventory .inventory-alerts {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+
+#inventory .inventory-table-wrap {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 1 1 0 !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y pinch-zoom !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  box-sizing: border-box !important;
+}
+#inventory .inventory-table-wrap::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+#inventory .inventory-table {
+  width: 100% !important;
+  min-width: 860px !important;
+  margin: 0 !important;
+}
+
+/* Keep the complete list visible inside the scroll area. */
+#inventory .inventory-table tbody tr:last-child td {
+  padding-bottom: 10px !important;
+}
+
+/* Desktop / tablet: inventory fills the entire available app area. */
+@media (min-width: 981px) {
+  #inventory .inventory-title-row h3 { font-size: clamp(18px, 1.45vw, 28px) !important; }
+  #inventory .inventory-title-row p { font-size: clamp(10px, .72vw, 13px) !important; }
+  #inventory .inventory-head { gap: clamp(10px, 1vw, 20px) !important; }
+  #inventory .inventory-head-actions { flex-wrap: wrap !important; }
+}
+
+/* Mobile: still full-screen, with only the list area scrolling. */
+@media (max-width: 980px) {
+  #inventory.page,
+  #inventory.page.active {
+    height: calc(100svh - 48px) !important;
+    min-height: calc(100svh - 48px) !important;
+    max-height: calc(100svh - 48px) !important;
+    overflow: hidden !important;
+  }
+  #inventory .page-scroll.inventory-scroll {
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    padding: 6px !important;
+  }
+  #inventory .inventory-shell {
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+  #inventory .inventory-table-wrap {
+    min-height: 120px !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #inventory.page,
+  #inventory.page.active {
+    height: calc(100svh - 44px) !important;
+    min-height: calc(100svh - 44px) !important;
+    max-height: calc(100svh - 44px) !important;
+  }
+  #inventory .inventory-table {
+    min-width: 760px !important;
+  }
+  #inventory .inventory-toolbar {
+    gap: 6px !important;
+  }
 }
 </style>
 </head>
@@ -8723,7 +8963,7 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
     <option value="ITEMS">ITEM SUMMARY</option>
     <option value="LOTS">LOT STOCK</option>
     <option value="HISTORY">MOVEMENT HISTORY</option>
-    <option value="PRICES">MONTHLY PRICE</option>
+    <option value="MONTHLY">MONTHLY STOCK IN / OUT</option>
   </select>
 </div>
 
@@ -18900,39 +19140,58 @@ function exportMonthlySchedulePdfs() {
         var html='<table class="inventory-table"><thead><tr><th>DATE / TIME</th><th>ITEM</th><th>MOVEMENT</th><th>LOT NO.</th><th>QTY</th><th>EXPIRY</th><th>STAFF</th><th>NOTES</th></tr></thead><tbody>';
         rows.slice(0,500).forEach(function(t){var item=getItem(t.itemId);html+='<tr><td>'+new Date(t.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'})+'</td><td class="inventory-item-name">'+esc(item?item.name:'Unknown')+'</td><td><span class="inventory-badge '+(t.type==='IN'?'ok':'low')+'">'+t.type+'</span></td><td>'+esc(t.lotNo||'OPENING / NO LOT')+'</td><td class="inventory-num">'+(t.type==='OUT'?'-':'')+Number(t.qty||0)+'</td><td>'+esc(t.expiry||'—')+'</td><td>'+esc(t.staff||'—')+'</td><td class="inventory-muted">'+esc(t.notes||'')+'</td></tr>';});html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No stock movements recorded yet.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
-      function renderPrices(){
+      function priceForMonth(item, key){
+        var bucket=data.monthlyPrices&&data.monthlyPrices[key];
+        var v=bucket&&bucket[item.id];
+        return v==null?Number(item.price||0):Number(v||0);
+      }
+      function monthKeyOffset(key, offset){
+        var p=String(key||currentMonthKey()).split('-');
+        var d=new Date(Number(p[0]),(Number(p[1]||1)-1)+offset,1);
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      }
+      function monthlyMovementStats(monthKey, category){
+        var start=monthKey+'-01T00:00:00';
+        var next=monthKeyOffset(monthKey,1)+'-01T00:00:00';
+        var prev=monthKeyOffset(monthKey,-1);
+        var prevEnd=monthKey+'-01T00:00:00';
+        var items=data.items.filter(function(i){return i.active!==false&&(category==='ALL'||i.category===category);});
+        var lastBalance=0, stockIn=0, stockOut=0;
+        items.forEach(function(item){
+          var price=priceForMonth(item,monthKey);
+          var before=data.transactions.filter(function(t){return t.itemId===item.id&&String(t.at||'')<prevEnd;}).reduce(function(sum,t){return sum+signedQty(t);},0);
+          var openingQty=Number(item.openingStock||0)+before;
+          var ins=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='IN'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
+          var outs=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='OUT'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
+          lastBalance+=openingQty*price;
+          stockIn+=ins*price;
+          stockOut+=outs*price;
+        });
+        return {lastBalance:lastBalance,stockIn:stockIn,stockOut:stockOut,closing:lastBalance+stockIn-stockOut};
+      }
+      function renderMonthlyMovement(){
         normalize();
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();
         var cat=($('inventoryCategoryFilter')||{}).value||'ALL';
         var month=selectedPriceMonth||currentMonthKey();
-        var bucket=data.monthlyPrices[month]||{};
-        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;return !q||[i.name,i.category].join(' ').toLowerCase().indexOf(q)!==-1;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
-        var html='<div class=\"inventory-price-toolbar\"><div><strong style=\"font-size:11px\">MONTHLY PRICE</strong><span style=\"display:block;margin-top:2px\">Record the unit price used for each month. Existing current prices are seeded into '+esc(monthLabel(currentMonthKey()))+'.</span></div><select id=\"inventoryPriceMonth\" aria-label=\"Price month\">';
+        var categories=['BIOCHEMISTRY','HAEMATOLOGY','MICROBIOLOGY','URINE/STOOL ANALYSIS','ETC','CONSUMABLES','OUTSOURCE INDENT'];
+        var visible=categories.filter(function(c){
+          if(cat!=='ALL'&&cat!==c)return false;
+          if(!q)return true;
+          return data.items.some(function(i){return i.active!==false&&i.category===c&&[i.name,i.category].join(' ').toLowerCase().indexOf(q)!==-1;});
+        });
+        var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category, based on the movement records for the selected month.</span></div><select id="inventoryPriceMonth" aria-label="Movement month">';
         var now=new Date();
-        for(var m=0;m<12;m++){var d=new Date(now.getFullYear(),m,1);var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');html+='<option value=\"'+key+'\"'+(key===month?' selected':'')+'>'+esc(monthLabel(key))+'</option>';}
-        html+='</select><button type=\"button\" class=\"inventory-action-btn primary inventory-price-save\" id=\"inventorySavePricesBtn\">SAVE PRICES</button></div>';
-        html+='<table class=\"inventory-table\"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>PRICE / UNIT · '+esc(monthLabel(month).toUpperCase())+'</th><th>CURRENT PRICE</th></tr></thead><tbody>';
-        rows.forEach(function(i){var val=bucket[i.id];html+='<tr><td><div class=\"inventory-item-name\">'+esc(i.name)+'</div></td><td>'+esc(i.category)+'</td><td><input class=\"inventory-price-input\" data-price-item=\"'+esc(i.id)+'\" inputmode=\"decimal\" type=\"number\" min=\"0\" step=\"0.01\" value=\"'+(val==null?'':Number(val).toFixed(2))+'\" placeholder=\"0.00\"></td><td class=\"inventory-money\">'+money(i.price)+'</td></tr>';});
-        html+='</tbody></table>';
-        if(!rows.length) html='<div class=\"inventory-empty\">No items match the current filter.</div>';
+        for(var m=0;m<12;m++){var d=new Date(now.getFullYear(),m,1);var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');html+='<option value="'+key+'"'+(key===month?' selected':'')+'>'+esc(monthLabel(key))+'</option>';}
+        html+='</select></div>';
+        html+='<table class="inventory-table monthly-movement-table"><thead><tr><th>ACTIVITY</th><th>LAST MONTH BALANCE</th><th>STOCK IN (RM)</th><th>STOCK OUT (RM)</th><th>CLOSING BALANCE</th><th>FORMULA CHECK</th></tr></thead><tbody>';
+        var total={lastBalance:0,stockIn:0,stockOut:0,closing:0};
+        visible.forEach(function(c){var st=monthlyMovementStats(month,c);total.lastBalance+=st.lastBalance;total.stockIn+=st.stockIn;total.stockOut+=st.stockOut;total.closing+=st.closing;html+='<tr><td class="inventory-item-name">'+esc(c)+'</td><td class="inventory-money">'+money(st.lastBalance)+'</td><td class="inventory-money movement-in">'+money(st.stockIn)+'</td><td class="inventory-money movement-out">'+money(st.stockOut)+'</td><td class="inventory-money">'+money(st.closing)+'</td><td class="formula-ok">✓</td></tr>';});
+        html+='<tr class="inventory-total-row"><td>TOTAL</td><td class="inventory-money">'+money(total.lastBalance)+'</td><td class="inventory-money movement-in">'+money(total.stockIn)+'</td><td class="inventory-money movement-out">'+money(total.stockOut)+'</td><td class="inventory-money">'+money(total.closing)+'</td><td class="formula-ok">✓</td></tr></tbody></table>';
+        if(!visible.length)html='<div class="inventory-empty">No monthly movement data matches the current filter.</div>';
         ($('inventoryTableWrap')||{}).innerHTML=html;
       }
-      function saveMonthlyPrices(){
-        var wrap=$('inventoryTableWrap'); if(!wrap)return;
-        var month=selectedPriceMonth||currentMonthKey();
-        if(!data.monthlyPrices[month]) data.monthlyPrices[month]={};
-        wrap.querySelectorAll('[data-price-item]').forEach(function(input){
-          var itemId=input.getAttribute('data-price-item');
-          var raw=input.value.trim();
-          if(raw==='') delete data.monthlyPrices[month][itemId];
-          else {var n=Number(raw); if(Number.isFinite(n)&&n>=0) data.monthlyPrices[month][itemId]=Number(n.toFixed(2));}
-        });
-        if(month===currentMonthKey()){
-          data.items.forEach(function(item){var v=data.monthlyPrices[month][item.id];if(v!=null)item.price=Number(v);});
-        }
-        persist(); render();
-      }
-      function render(){normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='PRICES')renderPrices();else renderItems();}
+      function render(){normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
       function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');Router.renderBackButton('inventory');render();populateForm();}
       function populateForm(){
         var sel=$('inventoryItemInput');if(!sel)return;var items=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
@@ -18971,7 +19230,7 @@ function exportMonthlySchedulePdfs() {
         var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();});
         var itemTrigger=$('inventoryItemTrigger');if(itemTrigger)itemTrigger.addEventListener('click',function(e){e.stopPropagation();toggleItemCustom();});
         var itemMenu=$('inventoryItemMenu');if(itemMenu)itemMenu.addEventListener('click',function(e){var opt=e.target.closest('.inventory-custom-option');if(!opt)return;var sel=$('inventoryItemInput');if(sel){sel.value=opt.getAttribute('data-value')||'';syncItemCustom();updateLotSelect();}closeItemCustom();});
-        var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){selectedPriceMonth=e.target.value;renderPrices();}});if(tableWrap)tableWrap.addEventListener('click',function(e){if(e.target.id==='inventorySavePricesBtn')saveMonthlyPrices();});
+        var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){selectedPriceMonth=e.target.value;renderMonthlyMovement();}});if(tableWrap)tableWrap.addEventListener('click',function(e){});
         document.addEventListener('click',function(e){if(!e.target.closest('#inventoryItemCustomWrap'))closeItemCustom();});
         document.querySelectorAll('[data-inventory-close]').forEach(function(n){n.addEventListener('click',closeModal);});
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();});
