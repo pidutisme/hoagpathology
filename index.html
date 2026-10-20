@@ -7994,7 +7994,113 @@
   }
 }
 </style>
-</link></link></head>
+</link></link>
+<style id="settings-card-final-alignment">
+/* FINAL SETTINGS CARD ALIGNMENT */
+#settings .settings-content-grid {
+  display: block !important;
+  padding: 18px 6px 24px !important;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+#settings .settings-content-grid .setting-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  column-gap: 14px !important;
+  row-gap: 12px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+#settings .settings-content-grid .settings-extra-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  column-gap: 14px !important;
+  row-gap: 12px !important;
+  padding: 0 !important;
+  margin: 12px 0 0 !important;
+  box-sizing: border-box;
+}
+
+#settings .setting-box,
+#settings .settings-extra-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 76px !important;
+  height: 76px !important;
+  box-sizing: border-box !important;
+  padding: 14px 16px !important;
+  border-radius: 22px !important;
+  border: 1px solid var(--year-page-card-border) !important;
+  background: var(--year-page-card-bg) !important;
+  box-shadow: var(--year-page-card-shadow) !important;
+}
+
+#settings .setting-box {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: 13px !important;
+}
+
+#settings .settings-extra-card {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: 13px !important;
+  justify-content: initial !important;
+  text-align: left !important;
+}
+
+#settings .setting-box .settings-card-icon,
+#settings .settings-extra-card .settings-extra-icon {
+  grid-column: 1 !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  flex: none !important;
+  margin: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+}
+
+#settings .setting-box > div:last-child,
+#settings .settings-extra-card .settings-extra-copy {
+  grid-column: 2 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+#settings .setting-box strong,
+#settings .settings-extra-copy strong {
+  display: block !important;
+  margin: 0 0 4px !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+}
+
+#settings .setting-box span,
+#settings .settings-extra-copy span {
+  display: block !important;
+  margin: 0 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+}
+
+@media (max-width: 900px) {
+  #settings .settings-content-grid .setting-grid,
+  #settings .settings-content-grid .settings-extra-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+</head>
 <body class="auth-locked">
 <!-- +----------------------------------+
        + HTML BODY / PAGE MARKUP          +
