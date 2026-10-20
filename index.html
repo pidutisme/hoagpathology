@@ -1185,6 +1185,56 @@
       overflow: visible;
     }
 
+    /* Settings information cards use the same icon-card language as UPDATE / DATA & SYNC / ABOUT. */
+    #settings .setting-box {
+      min-width: 0;
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      column-gap: 13px;
+      align-content: center;
+      align-items: center;
+      padding: 14px 16px;
+    }
+
+    #settings .setting-box::before {
+      content: attr(data-icon);
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(95, 126, 255, .18);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .28);
+      color: var(--primary);
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    #settings .setting-box strong,
+    #settings .setting-box span {
+      grid-column: 2;
+      min-width: 0;
+    }
+
+    #settings .setting-box strong {
+      align-self: end;
+      margin-bottom: 4px;
+    }
+
+    #settings .setting-box span {
+      align-self: start;
+    }
+
+    body.dark-mode #settings .setting-box::before {
+      background: rgba(255, 255, 255, .045);
+      border-color: rgba(143, 176, 255, .18);
+    }
+
     .settings-extra-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1204,10 +1254,6 @@
       box-shadow: var(--year-page-card-shadow);
       transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
     }
-
-    .settings-extra-card.is-action { cursor: pointer; }
-
-    .settings-extra-card.is-action:focus-visible { outline: 3px solid rgba(37, 99, 235, .28); outline-offset: 2px; }
 
     .settings-extra-card:hover {
       transform: translate3d(0, -3px, 0);
@@ -8301,18 +8347,15 @@
                       and operational controls.</p>
 <div class="settings-content-grid">
 <div class="setting-grid">
-<div class="setting-box"><strong>App Name</strong><span>HOAG Pathology</span></div>
-<div class="setting-box"><strong>App Type</strong><span>Laboratory Management System</span></div>
-<div class="setting-box"><strong>Department</strong><span>HOAG Pathology</span></div>
-<div class="setting-box"><strong>Platform</strong><span>Android + Web + Windows</span></div>
-<div class="setting-box"><strong>Time Zone</strong><span>Asia/Kuala_Lumpur (GMT+8)</span></div>
-<div class="setting-box"><strong>Version</strong><span id="aboutAppVersion">2.1.7</span></div>
+<div class="setting-box" data-icon="⌂"><strong>App Name</strong><span>HOAG Pathology</span></div>
+<div class="setting-box" data-icon="▣"><strong>App Type</strong><span>Laboratory Management System</span></div>
+<div class="setting-box" data-icon="⚕"><strong>Department</strong><span>HOAG Pathology</span></div>
+<div class="setting-box" data-icon="▱"><strong>Platform</strong><span>Android + Web + Windows</span></div>
+<div class="setting-box" data-icon="◷"><strong>Time Zone</strong><span>Asia/Kuala_Lumpur (GMT+8)</span></div>
+<div class="setting-box" data-icon="◆"><strong>Version</strong><span id="aboutAppVersion">2.1.7</span></div>
 </div>
 <div class="settings-extra-grid">
-<button class="settings-extra-card is-action" id="settingsUpdateButton" type="button" title="Check for the latest version">
-<div class="settings-extra-icon" aria-hidden="true">↻</div>
-<div class="settings-extra-copy"><strong>UPDATE</strong><span id="settingsUpdateText">Check for latest version</span></div>
-</button>
+<button type="button" class="settings-extra-card settings-update-card" id="settingsUpdateButton" aria-label="Check for latest version"><div class="settings-extra-icon" aria-hidden="true">↻</div><div class="settings-extra-copy"><strong>UPDATE</strong><span>Check for latest version</span></div></button>
 <div class="settings-extra-card">
 <div class="settings-extra-icon" aria-hidden="true">☁</div>
 <div class="settings-extra-copy"><strong>DATA &amp; SYNC</strong><span>GitHub + Firebase + Vercel</span></div>
@@ -18359,63 +18402,6 @@ function exportMonthlySchedulePdfs() {
   else setupMobileNavigation();
 })();
 
-(function () {
-  function updateAppNow() {
-    var button = document.getElementById('settingsUpdateButton');
-    var text = document.getElementById('settingsUpdateText');
-    if (!button || button.dataset.updateBusy === '1') return;
-
-    button.dataset.updateBusy = '1';
-    button.disabled = true;
-    if (text) text.textContent = 'Checking for latest version...';
-
-    var tasks = [];
-
-    // Remove the current service worker so the next load cannot keep an old cached shell.
-    if ('serviceWorker' in navigator) {
-      tasks.push(
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-          return Promise.all(registrations.map(function (registration) {
-            return registration.unregister();
-          }));
-        }).catch(function () {})
-      );
-    }
-
-    // Clear all browser caches used by the app. Keep localStorage/sessionStorage intact.
-    if ('caches' in window) {
-      tasks.push(
-        caches.keys().then(function (keys) {
-          return Promise.all(keys.map(function (key) { return caches.delete(key); }));
-        }).catch(function () {})
-      );
-    }
-
-    Promise.all(tasks).then(function () {
-      if (text) text.textContent = 'Updating...';
-      var url = new URL(window.location.href);
-      url.searchParams.set('app_update', Date.now().toString());
-      url.hash = '';
-      window.location.replace(url.toString());
-    }).catch(function () {
-      window.location.reload();
-    });
-  }
-
-  function bindSettingsUpdate() {
-    var button = document.getElementById('settingsUpdateButton');
-    if (!button || button.dataset.updateBound === '1') return;
-    button.dataset.updateBound = '1';
-    button.addEventListener('click', updateAppNow);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once: true });
-  } else {
-    bindSettingsUpdate();
-  }
-})();
-
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
@@ -18425,5 +18411,26 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
+<script>
+(function(){
+  function bindSettingsUpdate(){
+    var btn=document.getElementById('settingsUpdateButton');
+    if(!btn || btn.dataset.updateBound==='1') return;
+    btn.dataset.updateBound='1';
+    btn.addEventListener('click',function(){
+      if(btn.dataset.updating==='1') return;
+      btn.dataset.updating='1';
+      btn.disabled=true;
+      var copy=btn.querySelector('.settings-extra-copy span');
+      if(copy) copy.textContent='Refreshing latest version…';
+      var url=new URL(window.location.href);
+      url.searchParams.set('app_update',Date.now().toString());
+      window.location.replace(url.toString());
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindSettingsUpdate);
+  else bindSettingsUpdate();
+})();
+</script>
 </body>
 </html>
