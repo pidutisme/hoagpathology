@@ -7776,7 +7776,7 @@
 .inventory-modal-card,.inventory-table-wrap{scrollbar-width:none;-ms-overflow-style:none}
 .inventory-modal-card::-webkit-scrollbar,.inventory-table-wrap::-webkit-scrollbar{width:0;height:0;display:none}
 
-.inventory-empty{padding:42px 20px;text-align:center;color:#7b8798}.inventory-section-label{font-size:10px;font-weight:900;letter-spacing:.7px;color:#718096;padding:12px 12px 4px}
+.inventory-empty{padding:42px 20px;text-align:center;color:#7b8798}.inventory-section-label{font-size:10px;font-weight:900;letter-spacing:.7px;color:#718096;padding:12px 12px 4px}.inventory-price-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(120,135,160,.12);background:rgba(255,255,255,.18)}.inventory-price-toolbar select{height:36px;border:1px solid rgba(120,135,160,.14);border-radius:10px;background:var(--neo-surface,#eef2f8);color:var(--text,#243047);padding:0 10px;font:inherit;font-size:11px;font-weight:800;outline:0}.inventory-price-toolbar span{font-size:10px;color:#718096;font-weight:700}.inventory-price-input{width:120px;box-sizing:border-box;border:1px solid rgba(120,135,160,.16);border-radius:9px;background:var(--neo-surface,#eef2f8);color:var(--text,#243047);padding:7px 9px;font:inherit;font-size:11px;text-align:right;outline:0;box-shadow:inset 2px 2px 4px rgba(145,155,175,.08),inset -2px -2px 4px rgba(255,255,255,.7)}.inventory-price-input:focus{border-color:rgba(47,128,237,.35);box-shadow:0 0 0 3px rgba(47,128,237,.08)}.inventory-price-save{margin-left:auto}
 @media (max-width:1100px){.inventory-kpis{grid-template-columns:repeat(3,1fr)}.inventory-toolbar{grid-template-columns:1fr 1fr}.inventory-alerts{grid-template-columns:1fr 1fr}}
 @media (max-width:720px){.inventory-head{align-items:flex-start;flex-direction:column}.inventory-head-actions{width:100%;justify-content:stretch}.inventory-head-actions .inventory-action-btn{flex:1}.inventory-kpis{grid-template-columns:repeat(2,1fr)}.inventory-toolbar{grid-template-columns:1fr}.inventory-alerts{grid-template-columns:1fr}.inventory-form-grid{grid-template-columns:1fr}.inventory-title-row h3{font-size:20px}.inventory-scroll{padding:12px!important}}
 
@@ -8692,7 +8692,6 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
     </div>
   </div>
   <div class="inventory-head-actions">
-    <button type="button" class="inventory-action-btn" id="inventoryRefreshBtn">↻ REFRESH</button>
     <button type="button" class="inventory-action-btn primary" id="inventoryStockInBtn">＋ STOCK IN</button>
     <button type="button" class="inventory-action-btn danger" id="inventoryStockOutBtn">− STOCK OUT</button>
   </div>
@@ -8724,6 +8723,7 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
     <option value="ITEMS">ITEM SUMMARY</option>
     <option value="LOTS">LOT STOCK</option>
     <option value="HISTORY">MOVEMENT HISTORY</option>
+    <option value="PRICES">MONTHLY PRICE</option>
   </select>
 </div>
 
@@ -18759,8 +18759,9 @@ function exportMonthlySchedulePdfs() {
       var STORAGE_KEY = 'labAppInventoryV1';
       var initialized = false;
       var dbPath = 'labapp/inventory';
-      var data = { version: 1, items: [], transactions: [] };
+      var data = { version: 1, items: [], transactions: [], monthlyPrices: {} };
       var currentView = 'ITEMS';
+      var selectedPriceMonth = new Date().toISOString().slice(0,7);
       var staffNames = ['SHOUNNA', 'LIZA', 'JAYANTHI', 'SURIANI', 'TOMMY', 'JAPIDI', 'NAZRAN'];
       var seedItems = [
         ['REAGENT','BIOCHEMISTRY','Urea',1512.80,1,5],['REAGENT','BIOCHEMISTRY','Creatinine',950.40,2,5],['REAGENT','BIOCHEMISTRY','Uric Acid',3225,0,5],['REAGENT','BIOCHEMISTRY','Albumin',892.80,0,5],['REAGENT','BIOCHEMISTRY','Total Protein',990,0,5],['REAGENT','BIOCHEMISTRY','Alkaline Phosphatase',1410.40,0,5],['REAGENT','BIOCHEMISTRY','Alanine Transaminase',2038.40,0,5],['REAGENT','BIOCHEMISTRY','Aspartate Transferase',1803.20,0,5],['REAGENT','BIOCHEMISTRY','Total Bilirubin',2171.20,0,5],['REAGENT','BIOCHEMISTRY','Direct Bilirubin',4195.20,0,5],['REAGENT','BIOCHEMISTRY','Cholesterol',1783.60,0,5],['REAGENT','BIOCHEMISTRY','Triglyceride',3900,0,5],['REAGENT','BIOCHEMISTRY','HDL-Cholesterol',4950.60,0,5],['REAGENT','BIOCHEMISTRY','Glucose',2098.40,0,5],['REAGENT','BIOCHEMISTRY','Chloride, Na, K',800,0,5],['REAGENT','BIOCHEMISTRY','ISE Buffer',0,8,2],['REAGENT','BIOCHEMISTRY','ISE Mid Standard',0,6,2],['REAGENT','BIOCHEMISTRY','ISE Low Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE High Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Na+/K+ Selectivity Check',0,0,2],['REAGENT','BIOCHEMISTRY','Cleaning Solution',0,4,2],['REAGENT','BIOCHEMISTRY','Wash Solution',0,9,2],['REAGENT','BIOCHEMISTRY','System Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','HDL Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Reference',0,7,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC1',1059,0,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC2',1059,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 1',1048,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 2',1048,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Monthly Clinical Chemistry',0,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Neonatal Bilirubin',0,0,2],
@@ -18781,6 +18782,7 @@ function exportMonthlySchedulePdfs() {
         if(!data||typeof data!=='object') data={};
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
+        if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
         data.version=1;
       }
       function seed(){
@@ -18820,6 +18822,22 @@ function exportMonthlySchedulePdfs() {
         seedOutsourceTransactions();
         if(changed) data.version=3;
         return changed;
+      }
+      function currentMonthKey(){return new Date().toISOString().slice(0,7);}
+      function ensureCurrentMonthPrices(){
+        normalize();
+        var key=currentMonthKey();
+        if(!data.monthlyPrices[key]) data.monthlyPrices[key]={};
+        var changed=false;
+        data.items.forEach(function(item){
+          if(data.monthlyPrices[key][item.id]==null){data.monthlyPrices[key][item.id]=Number(item.price||0);changed=true;}
+        });
+        return changed;
+      }
+      function monthLabel(key){
+        var parts=String(key||'').split('-');
+        var d=new Date(Number(parts[0])||new Date().getFullYear(),(Number(parts[1])||1)-1,1);
+        return d.toLocaleDateString('en-MY',{month:'long',year:'numeric'});
       }
       function saveLocal(){try{safeStorageSet(STORAGE_KEY,JSON.stringify(data));}catch(e){}}
       function loadLocal(){
@@ -18882,7 +18900,39 @@ function exportMonthlySchedulePdfs() {
         var html='<table class="inventory-table"><thead><tr><th>DATE / TIME</th><th>ITEM</th><th>MOVEMENT</th><th>LOT NO.</th><th>QTY</th><th>EXPIRY</th><th>STAFF</th><th>NOTES</th></tr></thead><tbody>';
         rows.slice(0,500).forEach(function(t){var item=getItem(t.itemId);html+='<tr><td>'+new Date(t.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'})+'</td><td class="inventory-item-name">'+esc(item?item.name:'Unknown')+'</td><td><span class="inventory-badge '+(t.type==='IN'?'ok':'low')+'">'+t.type+'</span></td><td>'+esc(t.lotNo||'OPENING / NO LOT')+'</td><td class="inventory-num">'+(t.type==='OUT'?'-':'')+Number(t.qty||0)+'</td><td>'+esc(t.expiry||'—')+'</td><td>'+esc(t.staff||'—')+'</td><td class="inventory-muted">'+esc(t.notes||'')+'</td></tr>';});html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No stock movements recorded yet.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
-      function render(){normalize();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else renderItems();}
+      function renderPrices(){
+        normalize();
+        var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();
+        var cat=($('inventoryCategoryFilter')||{}).value||'ALL';
+        var month=selectedPriceMonth||currentMonthKey();
+        var bucket=data.monthlyPrices[month]||{};
+        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;return !q||[i.name,i.category].join(' ').toLowerCase().indexOf(q)!==-1;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
+        var html='<div class=\"inventory-price-toolbar\"><div><strong style=\"font-size:11px\">MONTHLY PRICE</strong><span style=\"display:block;margin-top:2px\">Record the unit price used for each month. Existing current prices are seeded into '+esc(monthLabel(currentMonthKey()))+'.</span></div><select id=\"inventoryPriceMonth\" aria-label=\"Price month\">';
+        var now=new Date();
+        for(var m=0;m<12;m++){var d=new Date(now.getFullYear(),m,1);var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');html+='<option value=\"'+key+'\"'+(key===month?' selected':'')+'>'+esc(monthLabel(key))+'</option>';}
+        html+='</select><button type=\"button\" class=\"inventory-action-btn primary inventory-price-save\" id=\"inventorySavePricesBtn\">SAVE PRICES</button></div>';
+        html+='<table class=\"inventory-table\"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>PRICE / UNIT · '+esc(monthLabel(month).toUpperCase())+'</th><th>CURRENT PRICE</th></tr></thead><tbody>';
+        rows.forEach(function(i){var val=bucket[i.id];html+='<tr><td><div class=\"inventory-item-name\">'+esc(i.name)+'</div></td><td>'+esc(i.category)+'</td><td><input class=\"inventory-price-input\" data-price-item=\"'+esc(i.id)+'\" inputmode=\"decimal\" type=\"number\" min=\"0\" step=\"0.01\" value=\"'+(val==null?'':Number(val).toFixed(2))+'\" placeholder=\"0.00\"></td><td class=\"inventory-money\">'+money(i.price)+'</td></tr>';});
+        html+='</tbody></table>';
+        if(!rows.length) html='<div class=\"inventory-empty\">No items match the current filter.</div>';
+        ($('inventoryTableWrap')||{}).innerHTML=html;
+      }
+      function saveMonthlyPrices(){
+        var wrap=$('inventoryTableWrap'); if(!wrap)return;
+        var month=selectedPriceMonth||currentMonthKey();
+        if(!data.monthlyPrices[month]) data.monthlyPrices[month]={};
+        wrap.querySelectorAll('[data-price-item]').forEach(function(input){
+          var itemId=input.getAttribute('data-price-item');
+          var raw=input.value.trim();
+          if(raw==='') delete data.monthlyPrices[month][itemId];
+          else {var n=Number(raw); if(Number.isFinite(n)&&n>=0) data.monthlyPrices[month][itemId]=Number(n.toFixed(2));}
+        });
+        if(month===currentMonthKey()){
+          data.items.forEach(function(item){var v=data.monthlyPrices[month][item.id];if(v!=null)item.price=Number(v);});
+        }
+        persist(); render();
+      }
+      function render(){normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='PRICES')renderPrices();else renderItems();}
       function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');Router.renderBackButton('inventory');render();populateForm();}
       function populateForm(){
         var sel=$('inventoryItemInput');if(!sel)return;var items=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
@@ -18917,16 +18967,17 @@ function exportMonthlySchedulePdfs() {
         if(initialized)return;initialized=true;
         var search=$('inventorySearch');if(search)search.addEventListener('input',render);
         ['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'].forEach(function(id){var n=$(id);if(n)n.addEventListener('change',function(){if(id==='inventoryViewFilter')currentView=n.value;render();});});
-        var inBtn=$('inventoryStockInBtn');if(inBtn)inBtn.addEventListener('click',function(){showModal('IN');});var outBtn=$('inventoryStockOutBtn');if(outBtn)outBtn.addEventListener('click',function(){showModal('OUT');});var refresh=$('inventoryRefreshBtn');if(refresh)refresh.addEventListener('click',function(){load(true);});
+        var inBtn=$('inventoryStockInBtn');if(inBtn)inBtn.addEventListener('click',function(){showModal('IN');});var outBtn=$('inventoryStockOutBtn');if(outBtn)outBtn.addEventListener('click',function(){showModal('OUT');});
         var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();});
         var itemTrigger=$('inventoryItemTrigger');if(itemTrigger)itemTrigger.addEventListener('click',function(e){e.stopPropagation();toggleItemCustom();});
         var itemMenu=$('inventoryItemMenu');if(itemMenu)itemMenu.addEventListener('click',function(e){var opt=e.target.closest('.inventory-custom-option');if(!opt)return;var sel=$('inventoryItemInput');if(sel){sel.value=opt.getAttribute('data-value')||'';syncItemCustom();updateLotSelect();}closeItemCustom();});
+        var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){selectedPriceMonth=e.target.value;renderPrices();}});if(tableWrap)tableWrap.addEventListener('click',function(e){if(e.target.id==='inventorySavePricesBtn')saveMonthlyPrices();});
         document.addEventListener('click',function(e){if(!e.target.closest('#inventoryItemCustomWrap'))closeItemCustom();});
         document.querySelectorAll('[data-inventory-close]').forEach(function(n){n.addEventListener('click',closeModal);});
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();});
       }
       function load(force){
-        bind();var had=loadLocal();if(!had)seed();mergeSeedCatalog();persist();render();
+        bind();var had=loadLocal();if(!had)seed();mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
         if(force||!had){loadRemote().then(function(found){mergeSeedCatalog();persist();render();});}
         else loadRemote().then(function(found){if(mergeSeedCatalog())persist();render();});
       }
