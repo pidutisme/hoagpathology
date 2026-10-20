@@ -1,0 +1,451 @@
+/*
+ * HOAG Pathology UI Polish v3
+ * Keeps the existing HOAG neumorphism visual language.
+ * Focus: hierarchy, usability, responsive behavior, accessibility and polish.
+ */
+
+:root {
+  --ui-focus: rgba(35, 103, 242, .42);
+  --ui-focus-ring: 0 0 0 3px rgba(35, 103, 242, .16);
+  --ui-hover-lift: translateY(-2px);
+  --ui-press: translateY(0) scale(.985);
+  --ui-max-content: 1800px;
+  --ui-page-gutter: clamp(10px, 1vw, 18px);
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep the neumorphic identity, but make depth more controlled and readable. */
+.sidebar,
+.display-board,
+.panel,
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.sidebar-footer,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card,
+.leave-course-year-card,
+.auth-card {
+  isolation: isolate;
+}
+
+.app {
+  max-width: var(--ui-max-content);
+  margin-inline: auto;
+}
+
+/* Keyboard accessibility without changing the visual language. */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 0;
+  box-shadow: var(--ui-focus-ring), var(--shadow-soft) !important;
+}
+
+:where(.auth-input-wrap):focus-within,
+:where(.calendar-mini-day):focus-visible,
+:where(.nav button):focus-visible {
+  border-color: rgba(35, 103, 242, .42) !important;
+}
+
+::selection {
+  color: #fff;
+  background: rgba(35, 103, 242, .78);
+}
+
+/* Better touch targets while retaining the compact desktop layout. */
+.nav button,
+.theme-toggle,
+.logout-btn,
+.calendar-toolbar-btn,
+.calendar-roster-nav-btn,
+.calendar-roster-month-btn,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn,
+.auth-password-toggle,
+.auth-secondary-btn,
+.auth-back-btn {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Refined neumorphic hover/press behavior. */
+@media (hover: hover) and (pointer: fine) {
+  .nav button:not(:disabled):not(.active):not([aria-current="page"]):hover,
+  .calendar-toolbar-btn:not(:disabled):hover,
+  .calendar-roster-nav-btn:not(:disabled):hover,
+  .calendar-roster-month-btn:not(:disabled):hover,
+  .calendar-roster-today-btn:not(:disabled):hover,
+  .page-back-dashboard-btn:not(:disabled):hover,
+  .auth-secondary-btn:not(:disabled):hover,
+  .auth-back-btn:not(:disabled):hover {
+    transform: var(--ui-hover-lift);
+  }
+
+  .stat-card.clickable-card:hover,
+  .bottom-card.clickable-card:hover,
+  .profile-link-card:hover,
+  .access-link-card:hover,
+  .year-card:hover,
+  .leave-course-mini-year:hover {
+    transform: var(--ui-hover-lift);
+  }
+
+  .stat-card.clickable-card:hover,
+  .bottom-card.clickable-card:hover,
+  .profile-link-card:hover,
+  .access-link-card:hover,
+  .year-card:hover,
+  .leave-course-mini-year:hover {
+    border-color: rgba(35, 103, 242, .22) !important;
+  }
+}
+
+:where(button, .clickable-card, a):active {
+  transform: var(--ui-press);
+}
+
+/* Disable decorative movement for users who request reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Dashboard: make the information hierarchy more obvious at common laptop sizes. */
+.display-board {
+  min-height: clamp(180px, 22vh, 280px);
+}
+
+.display-title-clock {
+  letter-spacing: -.045em;
+  line-height: .96;
+}
+
+.display-date {
+  letter-spacing: .12em;
+}
+
+.display-greeting {
+  max-width: 58ch;
+  line-height: 1.45;
+}
+
+.stats-row {
+  align-items: stretch;
+}
+
+.stat-card,
+.bottom-card {
+  cursor: pointer;
+}
+
+.stat-card {
+  min-height: clamp(88px, 10.5vh, 124px);
+}
+
+.dashboard-card-title {
+  letter-spacing: .055em;
+}
+
+.bottom-card {
+  min-height: 190px;
+}
+
+/* More comfortable panels on high-density displays. */
+.panel,
+.profile-card {
+  padding: clamp(18px, 1.45vw, 28px);
+}
+
+/* Forms: clear state changes and readable autofill. */
+:where(input, textarea, select) {
+  color-scheme: light;
+}
+
+body.dark-mode :where(input, textarea, select) {
+  color-scheme: dark;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px transparent inset, var(--shadow-inset);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.auth-input-wrap:focus-within {
+  transform: translateY(-1px);
+  border-color: rgba(35, 103, 242, .34);
+  box-shadow: var(--ui-focus-ring), var(--shadow-inset) !important;
+}
+
+.auth-input::placeholder {
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.auth-input:focus::placeholder {
+  opacity: .55;
+  transform: translateX(2px);
+}
+
+.auth-submit {
+  min-height: 58px;
+}
+
+.auth-submit:not(:disabled):active {
+  transform: translateY(1px) scale(.992);
+}
+
+.auth-message:empty {
+  min-height: 8px;
+}
+
+/* Improve sidebar hierarchy while retaining the pill-shaped neumorphic controls. */
+.brand h1 {
+  letter-spacing: -.025em;
+}
+
+.nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(109, 119, 138, .24) transparent;
+}
+
+.nav button {
+  position: relative;
+}
+
+.nav button::after {
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.nav button[aria-current="page"] {
+  font-weight: 950;
+}
+
+/* Native scrollbars are intentionally subtle instead of visually dominant. */
+.page-scroll,
+.content-inner,
+.profile-info-grid,
+.nav,
+.admin-user-list,
+.admin-log-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(109, 119, 138, .22) transparent;
+}
+
+.page-scroll::-webkit-scrollbar,
+.content-inner::-webkit-scrollbar,
+.profile-info-grid::-webkit-scrollbar,
+.nav::-webkit-scrollbar,
+.admin-user-list::-webkit-scrollbar,
+.admin-log-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.page-scroll::-webkit-scrollbar-track,
+.content-inner::-webkit-scrollbar-track,
+.profile-info-grid::-webkit-scrollbar-track,
+.nav::-webkit-scrollbar-track,
+.admin-user-list::-webkit-scrollbar-track,
+.admin-log-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-scroll::-webkit-scrollbar-thumb,
+.content-inner::-webkit-scrollbar-thumb,
+.profile-info-grid::-webkit-scrollbar-thumb,
+.nav::-webkit-scrollbar-thumb,
+.admin-user-list::-webkit-scrollbar-thumb,
+.admin-log-list::-webkit-scrollbar-thumb {
+  background: rgba(109, 119, 138, .20);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.page-scroll::-webkit-scrollbar-thumb:hover,
+.content-inner::-webkit-scrollbar-thumb:hover,
+.profile-info-grid::-webkit-scrollbar-thumb:hover,
+.nav::-webkit-scrollbar-thumb:hover,
+.admin-user-list::-webkit-scrollbar-thumb:hover,
+.admin-log-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(35, 103, 242, .34);
+  background-clip: padding-box;
+}
+
+/* Mobile drawer: safer safe-area spacing and easier dismissal. */
+@media (max-width: 980px) {
+  .app {
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left)) !important;
+  }
+
+  .main {
+    padding-top: 54px !important;
+  }
+
+  .mobile-nav-toggle {
+    top: max(8px, calc(env(safe-area-inset-top) + 6px)) !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+    min-height: 40px !important;
+    padding-inline: 13px !important;
+    box-shadow: var(--shadow-soft), 0 8px 24px rgba(20, 40, 80, .12) !important;
+  }
+
+  .sidebar {
+    top: max(8px, env(safe-area-inset-top)) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+    width: min(88vw, 380px) !important;
+    border-radius: 28px !important;
+  }
+
+  .nav button {
+    min-height: 40px !important;
+    height: auto !important;
+    padding: 9px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .sidebar-footer {
+    padding: 10px !important;
+  }
+
+  .stats-row,
+  .bottom-cards-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .display-board {
+    padding: 22px !important;
+    border-radius: 26px !important;
+  }
+
+  .bottom-card {
+    min-height: 170px;
+  }
+
+  .page-scroll {
+    padding-bottom: max(34px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .stats-row,
+  .bottom-cards-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .display-board {
+    padding: 20px !important;
+  }
+
+  .stat-card {
+    min-height: 86px;
+  }
+
+  .bottom-card {
+    min-height: 150px;
+  }
+
+  .panel,
+  .profile-card {
+    padding: 16px !important;
+    border-radius: 24px !important;
+  }
+
+  .auth-screen {
+    padding:
+      max(14px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+
+  .auth-card {
+    width: min(100%, 460px);
+    padding: 22px !important;
+    border-radius: 28px !important;
+  }
+
+  .auth-title {
+    font-size: clamp(34px, 12vw, 48px) !important;
+  }
+
+  .auth-input-wrap,
+  .auth-input,
+  .auth-submit {
+    min-height: 54px;
+  }
+}
+
+@media (max-width: 380px) {
+  .app {
+    padding-inline: 6px !important;
+  }
+
+  .main {
+    padding-top: 50px !important;
+  }
+
+  .display-board {
+    padding: 17px !important;
+  }
+
+  .auth-card {
+    padding: 18px !important;
+  }
+
+  .auth-title {
+    font-size: 33px !important;
+  }
+}
+
+/* Desktop: prevent the main content from becoming excessively wide. */
+@media (min-width: 1600px) {
+  .app {
+    padding: 18px;
+  }
+}
+
+/* Dark-mode refinements, still fully neumorphic. */
+body.dark-mode .page-scroll::-webkit-scrollbar-thumb,
+body.dark-mode .content-inner::-webkit-scrollbar-thumb,
+body.dark-mode .profile-info-grid::-webkit-scrollbar-thumb,
+body.dark-mode .nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .12);
+  background-clip: padding-box;
+}
+
+body.dark-mode .page-scroll::-webkit-scrollbar-thumb:hover,
+body.dark-mode .content-inner::-webkit-scrollbar-thumb:hover,
+body.dark-mode .profile-info-grid::-webkit-scrollbar-thumb:hover,
+body.dark-mode .nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(143, 176, 255, .28);
+  background-clip: padding-box;
+}
