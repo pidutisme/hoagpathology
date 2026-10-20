@@ -8983,7 +8983,7 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
     <form id="inventoryMovementForm" class="inventory-form" autocomplete="off">
       <input type="hidden" id="inventoryMovementType" value="IN">
       <label>ITEM<div class="inventory-custom-select" id="inventoryItemCustomWrap">
-        <select id="inventoryItemInput" required aria-hidden="true" tabindex="-1"></select>
+        <select id="inventoryItemInput" aria-hidden="true" tabindex="-1"></select>
         <button type="button" class="inventory-custom-trigger" id="inventoryItemTrigger" aria-haspopup="listbox" aria-expanded="false"><span id="inventoryItemTriggerText">Select item...</span><span class="inventory-custom-chevron">⌄</span></button>
         <div class="inventory-custom-menu" id="inventoryItemMenu" role="listbox" tabindex="-1"></div>
       </div></label>
@@ -19229,7 +19229,9 @@ function exportMonthlySchedulePdfs() {
         lots.sort(function(a,b){return (a.expiry||'9999').localeCompare(b.expiry||'9999');});var need=qty,out=[];for(var i=0;i<lots.length&&need>0;i++){var take=Math.min(need,lots[i].qty);if(take>0)out.push({lotNo:lots[i].lotNo,qty:take,expiry:lots[i].expiry});need-=take;}return need>0?null:out;
       }
       function submitMovement(e){
-        e.preventDefault();var type=($('inventoryMovementType')||{}).value||'IN';var itemId=($('inventoryItemInput')||{}).value;var qty=Math.floor(Number(($('inventoryQtyInput')||{}).value));var item=getItem(itemId);var msg=$('inventoryFormMessage');if(msg)msg.textContent='';if(!item||!qty||qty<1){if(msg)msg.textContent='Please select an item and enter a valid quantity.';return;}
+        e.preventDefault();
+        try{
+        var type=($('inventoryMovementType')||{}).value||'IN';var itemId=($('inventoryItemInput')||{}).value;var qty=Math.floor(Number(($('inventoryQtyInput')||{}).value));var item=getItem(itemId);var msg=$('inventoryFormMessage');if(msg)msg.textContent='';if(!item||!qty||qty<1){if(msg)msg.textContent='Please select an item and enter a valid quantity.';return;}
         var staff=(($('inventoryStaffInput')||{}).value)||getUserName();var notes=(($('inventoryNotesInput')||{}).value)||'';var lot=cleanText(($('inventoryLotInput')||{}).value);var expiry=(($('inventoryExpiryInput')||{}).value)||'';var movementDate=(($('inventoryMovementDateInput')||{}).value)||localDateKey();
         if(!movementDate){if(msg)msg.textContent='Please select the Stock In / Stock Out date.';return;}
         if(type==='IN'&&!lot){if(msg)msg.textContent='Lot No. is required for every Stock In.';return;}
@@ -19240,6 +19242,7 @@ function exportMonthlySchedulePdfs() {
         Array.prototype.push.apply(data.transactions,tx);
         var affectedMonths={};tx.forEach(function(t){affectedMonths[String(t.at||'').slice(0,7)]=true;});affectedMonths[currentMonthKey()]=true;Object.keys(affectedMonths).forEach(function(k){saveMonthlySnapshot(k);});
         persist();closeModal();render();
+        }catch(err){console.error('Inventory movement save error:',err);var msg=$('inventoryFormMessage');if(msg)msg.textContent='Unable to save movement. Please try again.';}
       }
       function bind(){
         if(initialized)return;initialized=true;
