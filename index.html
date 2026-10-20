@@ -8557,6 +8557,33 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
 }
 </style>
 </style>
+
+<style id="inventory-month-reset-and-toolbar-final">
+/* Inventory: monthly counters reset visually each month; full movement history remains intact. */
+#inventory .inventory-toolbar{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(150px,180px) minmax(150px,180px) minmax(150px,180px) !important;
+  gap:10px !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+#inventory .inventory-search-wrap,
+#inventory .inventory-select{min-width:0 !important;width:100% !important;max-width:100% !important;box-sizing:border-box !important;}
+#inventory .inventory-search-wrap input{min-width:0 !important;max-width:100% !important;}
+@media (max-width:1200px) and (min-width:981px){
+  #inventory .inventory-toolbar{grid-template-columns:minmax(0,1fr) repeat(3,minmax(125px,1fr)) !important;gap:8px !important;}
+}
+@media (max-width:980px) and (min-width:561px){
+  #inventory .inventory-toolbar{grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,1fr)) !important;gap:8px !important;}
+  #inventory .inventory-select{padding-left:8px !important;padding-right:8px !important;font-size:10px !important;}
+}
+@media (max-width:560px){
+  #inventory .inventory-toolbar{grid-template-columns:1fr 1fr !important;gap:6px !important;}
+  #inventory .inventory-search-wrap{grid-column:1/-1 !important;}
+}
+</style>
 </head>
 <body class="auth-locked">
 <!-- +----------------------------------+
@@ -19168,7 +19195,7 @@ function exportMonthlySchedulePdfs() {
         if(changed) data.version=4;
         return changed;
       }
-      function currentMonthKey(){return new Date().toISOString().slice(0,7);}
+      function currentMonthKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
       function ensureCurrentMonthPrices(){
         normalize();
         var key=currentMonthKey();
@@ -19228,11 +19255,21 @@ function exportMonthlySchedulePdfs() {
       }
       function renderAlerts(){
         var host=$('inventoryAlerts');if(!host)return;var lots=allLots();var low=data.items.filter(function(i){return itemStatus(i)==='LOW'||itemStatus(i)==='OUT';}).slice(0,1);var exp=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRING';}).sort(function(a,b){return a.lot.expiry.localeCompare(b.lot.expiry);}).slice(0,1);var old=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRED';}).slice(0,1);var html='';if(low.length){var i=low[0];html+='<div class="inventory-alert low"><strong>LOW STOCK · '+esc(i.name)+'</strong><span>'+itemBalance(i.id)+' remaining · minimum '+Number(i.minStock||0)+'</span></div>';}if(exp.length){var e=exp[0];html+='<div class="inventory-alert"><strong>EXPIRING · '+esc(e.item.name)+'</strong><span>Lot '+esc(e.lot.lotNo)+' · '+esc(e.lot.expiry)+' · '+e.lot.qty+' remaining</span></div>';}if(old.length){var o=old[0];html+='<div class="inventory-alert expired"><strong>EXPIRED · '+esc(o.item.name)+'</strong><span>Lot '+esc(o.lot.lotNo)+' · '+esc(o.lot.expiry)+' · remove/quarantine as required</span></div>';}host.innerHTML=html||'<div class="inventory-alert"><strong>ALL CLEAR</strong><span>No low-stock or expiry alerts in the current data.</span></div>';}
+      function transactionMonthKey(t){var d=t&&t.at?new Date(t.at):null;if(!d||isNaN(d.getTime()))return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+      function totalInForItem(itemId,monthKey){
+        var key=monthKey||currentMonthKey();
+        return getTransactionsForItem(itemId).filter(function(t){return t.type==='IN'&&transactionMonthKey(t)===key;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
+      }
+      function totalOutForItem(itemId,monthKey){
+        var key=monthKey||currentMonthKey();
+        return getTransactionsForItem(itemId).filter(function(t){return t.type==='OUT'&&transactionMonthKey(t)===key;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
+      }
       function renderItems(){
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';
         var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;var st=itemStatus(i);if(status==='LOW'&&st!=='LOW'&&st!=='OUT')return false;if(status==='EXPIRING'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRING';}).length)return false;if(status==='EXPIRED'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRED';}).length)return false;return !q||[i.name,i.category,i.type].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
-        var html='<table class="inventory-table"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>PRICE / UNIT</th><th>OPENING</th><th>BALANCE</th><th>VALUE</th><th>LOT(S)</th><th>STATUS</th></tr></thead><tbody>';
-        rows.forEach(function(i){var lots=lotsForItem(i.id);var st=itemStatus(i);html+='<tr class="inventory-item-row" data-inventory-item-id="'+esc(i.id)+'" tabindex="0" title="Click to view Stock In / Stock Out records"><td><div class="inventory-item-name">'+esc(i.name)+'</div></td><td>'+esc(i.category)+'</td><td class="inventory-money">'+money(i.price)+'</td><td class="inventory-num">'+Number(i.openingStock||0)+'</td><td class="inventory-num">'+itemBalance(i.id)+'</td><td class="inventory-money">'+money(itemBalance(i.id)*Number(i.price||0))+'</td><td>'+ (lots.length?lots.map(function(l){return '<span class="inventory-badge legacy">'+esc(l.lotNo)+': '+l.qty+'</span>';}).join(' '):'<span class="inventory-muted">—</span>')+'</td><td><span class="inventory-badge '+(st==='OK'?'ok':st==='LOW'?'low':'expired')+'">'+esc(st)+'</span></td></tr>';});
+        var html='<table class="inventory-table"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>PRICE / UNIT</th><th>OPENING</th><th>TOTAL IN</th><th>TOTAL OUT</th><th>BALANCE</th><th>VALUE</th><th>LOT(S)</th><th>STATUS</th></tr></thead><tbody>';
+        var monthKey=currentMonthKey();
+        rows.forEach(function(i){var lots=lotsForItem(i.id);var st=itemStatus(i);var totalIn=totalInForItem(i.id,monthKey);var totalOut=totalOutForItem(i.id,monthKey);var balance=itemBalance(i.id);html+='<tr class="inventory-item-row" data-inventory-item-id="'+esc(i.id)+'" tabindex="0" title="Click to view Stock In / Stock Out records"><td><div class="inventory-item-name">'+esc(i.name)+'</div></td><td>'+esc(i.category)+'</td><td class="inventory-money">'+money(i.price)+'</td><td class="inventory-num">'+Number(i.openingStock||0)+'</td><td class="inventory-num">'+totalIn+'</td><td class="inventory-num">'+totalOut+'</td><td class="inventory-num">'+balance+'</td><td class="inventory-money">'+money(balance*Number(i.price||0))+'</td><td>'+ (lots.length?lots.map(function(l){return '<span class="inventory-badge legacy">'+esc(l.lotNo)+': '+l.qty+'</span>';}).join(' '):'<span class="inventory-muted">—</span>')+'</td><td><span class="inventory-badge '+(st==='OK'?'ok':st==='LOW'?'low':'expired')+'">'+esc(st)+'</span></td></tr>';});
         html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No inventory items match the current filter.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
       function renderLots(){
@@ -19427,7 +19464,7 @@ function exportMonthlySchedulePdfs() {
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();if(e.key==='Escape'&&$('inventoryRecordModal')&&!$('inventoryRecordModal').hidden)closeRecordModal();});
       }
       function resetInventoryForFreshStart(){
-        var flagKey='labAppInventoryFreshResetV2';
+        var flagKey='labAppInventoryFreshResetV3';
         var done=safeStorageGet(flagKey)==='1';
         if(done)return false;
         data.transactions=[];
@@ -19445,9 +19482,13 @@ function exportMonthlySchedulePdfs() {
           });
           inventoryViewportObserver.observe(inventoryPage,{attributes:true,attributeFilter:['class']});
         }
+        if(freshReset){
+          // Do not reload the old remote movement data after a deliberate fresh reset.
+          // The cleared local state has already been pushed by persist().
+          return;
+        }
         loadRemote().then(function(found){
-          if(!found){if(freshReset)persist();render();return;}
-          if(freshReset){data.transactions=[];data.monthlySnapshots={};data.items.forEach(function(item){item.openingStock=0;});}
+          if(!found){render();return;}
           mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
         });
       }
