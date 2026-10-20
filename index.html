@@ -8099,6 +8099,20 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* SETTINGS ICONS — colorful single-tone accents */
+#settings .setting-box:nth-child(1) .settings-card-icon svg { stroke:#2563eb !important; }
+#settings .setting-box:nth-child(2) .settings-card-icon svg { stroke:#7c3aed !important; }
+#settings .setting-box:nth-child(3) .settings-card-icon svg { stroke:#f59e0b !important; }
+#settings .setting-box:nth-child(4) .settings-card-icon svg { stroke:#10b981 !important; }
+#settings .setting-box:nth-child(5) .settings-card-icon svg { stroke:#06b6d4 !important; }
+#settings .setting-box:nth-child(6) .settings-card-icon svg { stroke:#ef4444 !important; }
+#settings .settings-extra-card:nth-child(1) .settings-extra-icon svg { stroke:#3b82f6 !important; }
+#settings .settings-extra-card:nth-child(2) .settings-extra-icon svg { stroke:#0ea5e9 !important; }
+#settings .settings-extra-card:nth-child(3) .settings-extra-icon svg { stroke:#8b5cf6 !important; }
+#settings .settings-card-icon, #settings .settings-extra-icon { background:rgba(255,255,255,.34) !important; }
+body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings-extra-icon { background:rgba(255,255,255,.05) !important; }
+
 </style>
 </head>
 <body class="auth-locked">
@@ -10601,14 +10615,11 @@
        * + getStoredToken                   +
        * +----------------------------------+ */
       function getStoredToken() {
-        var token = safeSessionGet(TOKEN_KEY) || '';
-        if (token) return token;
-  
-        var legacyToken = safeStorageGet(TOKEN_KEY) || '';
-        if (legacyToken) {
-          safeSessionSet(TOKEN_KEY, legacyToken);
-          safeStorageRemove(TOKEN_KEY);
-          return legacyToken;
+        var token = safeSessionGet(TOKEN_KEY) || safeStorageGet(TOKEN_KEY) || '';
+        if (token) {
+          /* Keep a local backup so a WebView refresh/recreation cannot lose the session. */
+          safeSessionSet(TOKEN_KEY, token);
+          return token;
         }
         return '';
       }
@@ -10653,13 +10664,14 @@
         var publicUser = normalizePublicAuthUser_(envelope.user || envelope);
         if (!publicUser) return false;
 
-        safeSessionSet(USER_KEY, JSON.stringify({
+        var payload = JSON.stringify({
           user: publicUser,
           expiresAt: cleanText(envelope.expiresAt),
           cachedAt: new Date().toISOString(),
           version: cleanText(envelope.version)
-        }));
-        safeStorageRemove(USER_KEY);
+        });
+        safeSessionSet(USER_KEY, payload);
+        safeStorageSet(USER_KEY, payload);
         return true;
       }
   
@@ -10668,9 +10680,10 @@
        * +----------------------------------+ */
       function storeSession(envelope) {
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
-        safeSessionSet(TOKEN_KEY, envelope.token || '');
+        var token = envelope.token || '';
+        safeSessionSet(TOKEN_KEY, token);
+        safeStorageSet(TOKEN_KEY, token);
         storePublicAuthUser_(envelope);
-        safeStorageRemove(TOKEN_KEY);
       }
   
       /* +----------------------------------+
@@ -18694,7 +18707,8 @@ if ("serviceWorker" in navigator) {
          * authenticated session can resume normally.
          */
         window.setTimeout(function(){
-          window.location.reload();
+          var freshUrl = updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'app_update=' + Date.now();
+          window.location.replace(freshUrl);
         }, 250);
       } catch(error) {
         console.warn('Application update failed:', error);
