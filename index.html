@@ -11982,9 +11982,36 @@ body.dark-mode #inventory .inventory-record-close:hover {
          * localStorage and sessionStorage.
          */
         var token = getStoredToken();
+
+        /* Recover from the HttpOnly server session when browser/WebView
+         * storage is empty after a reload. Storage is a cache; the cookie is
+         * the durable session handle and the server remains authoritative. */
         if (!token) {
           stopSessionControls();
-          lock('', '');
+          setLoginMessage('Checking secure session...', '');
+          hoagApiRequest('loginState', {})
+            .then(function (envelope) {
+              if (!envelope || envelope.ok === false || !envelope.authenticated) {
+                clearStoredSession();
+                updateResumeSessionButton_();
+                lock('', '');
+                return;
+              }
+
+              if (envelope.token) storeSession(envelope);
+              else storePublicAuthUser_(envelope);
+              unlock(envelope.user || getStoredPublicUser_() || {}, {
+                freshLogin: false,
+                restoredSession: true,
+                cookieRecovered: true
+              });
+            })
+            .catch(function (error) {
+              console.warn('Cookie session recovery failed:', error);
+              clearStoredSession();
+              updateResumeSessionButton_();
+              lock('', '');
+            });
           return;
         }
 
