@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { getAuth } from 'firebase-admin/auth';
 import { getApps } from 'firebase-admin/app';
 import { firebaseDb } from '../lib/firebase-admin.js';
-import { normalizeUserId, normalizePassword, buildPasswordHash, verifyPassword } from '../lib/auth.js';
+import { normalizeUserId, normalizePassword, buildPasswordRecord, verifyPassword, isLegacyPassword } from '../lib/auth.js';
 
 const require = createRequire(import.meta.url);
 const VERSION = require('../package.json').version || '2.1.4';
@@ -21,7 +21,11 @@ const iso = () => new Date().toISOString();
 const clean = (v, max=3000) => String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0,max);
 const tokenHash = token => createHash('sha256').update(`token\n${String(token || '')}`, 'utf8').digest('hex');
 const asList = value => Array.isArray(value) ? value : value && typeof value === 'object' ? Object.values(value) : [];
-const fail = message => { throw new Error(message); };
+const fail = (message, status=400) => { const e = new Error(message); e.status = status; throw e; };
+const getClientIp = req => { const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim(); return (forwarded || String(req.headers['x-real-ip'] || '') || 'unknown').slice(0, 120); };
+const cookieValue = (req, name) => { const raw = String(req.headers.cookie || ''); const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '=')); return hit ? decodeURIComponent(hit.slice(name.length + 1)) : ''; };
+const setSessionCookie = (res, token, maxAge=21600) => res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(token)}; Max-Age=${maxAge}; Path=/; HttpOnly; Secure; SameSite=Lax`);
+const clearSessionCookie = res => res.setHeader('Set-Cookie', 'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
 
 async function readUsers(db) {
   const snap = await db.ref(USERS).get(); const value = snap.val();
@@ -100,34 +104,60 @@ export default async function handler(req,res) {
       return res.status(200).json({ok:true,appName:'LabApp',boardTitle:'HOAG PATHOLOGY',subtitle:'SPA Single Page Application',version:VERSION,serverDate:`${get('day')} ${get('month')} ${get('year')}`,serverTime:`${get('hour')}:${get('minute')}:${get('second')} ${get('dayPeriod')}`,serverIso:now.toISOString(),timeZone:TZ});
     }
     if(action==='action') return res.status(200).json(await dispatch(db,clean(payload.method,100),Array.isArray(payload.args)?payload.args:[]));
-    if(action==='login') return res.status(200).json(await login(db,payload.username,payload.password,payload.clientInfo));
-    if(action==='loginState') return res.status(200).json(await loginState(db,payload.token));
+    if(action==='login') {
+      const result = await login(db,payload.username,payload.password,payload.clientInfo,{ip:getClientIp(req)});
+      if(result.ok && result.token) setSessionCookie(res,result.token,21600);
+      return res.status(result.ok ? 200 : 401).json(result);
+    }
+    if(action==='loginState') return res.status(200).json(await loginState(db,payload.token || cookieValue(req,'labapp_session')));
     if(action==='logout') {
-      const token = clean(payload.token, 300);
+      const token = clean(payload.token || cookieValue(req,'labapp_session'), 300);
       if (token) {
         const auth = await sessionFor(db, token);
         if (auth) await log(db, auth.userId, 'LOGOUT', 'Signed out safely.', payload.clientInfo || {});
         await db.ref(`${SESSIONS}/${tokenHash(token)}`).remove();
       }
+      clearSessionCookie(res);
       return res.status(200).json({ok:true,authenticated:false,version:VERSION});
     }
-    return res.status(400).json({ok:false,error:`Unknown API action: ${action}`});
-  } catch(error) { console.error('Vercel API action failed:',action,error?.message||error); return res.status(200).json({ok:false,error:clean(error?.message||'Unable to process request',300),version:VERSION}); }
+    return res.status(400).json({ok:false,error:'Unknown API action.'});
+  } catch(error) {
+    console.error('Vercel API action failed:',action,error?.message||'Unknown error');
+    const status = Number(error?.status) || 500;
+    const safe = status >= 500 ? 'Unable to process the request right now. Please try again.' : clean(error?.message||'Unable to process request',300);
+    return res.status(status).json({ok:false,error:safe,version:VERSION});
+  }
 }
 
-async function login(db, username, password, clientInfo={}) {
+async function login(db, username, password, clientInfo={}, requestInfo={}) {
   const id=normalizeUserId(username), pass=normalizePassword(password);
   if(!id||!pass) return {ok:false,authenticated:false,error:'Please enter your username and password.'};
+  const ip = clean(requestInfo.ip || 'unknown',120);
   const settings=(await db.ref(SETTINGS).get()).val()||{};
-  const failed=(settings.loginFailures||{})[id]||{};
-  if(Number(failed.until||0)>Date.now()) return {ok:false,authenticated:false,error:'Too many failed attempts. Please try again in a few minutes.'};
+  const failures=settings.loginFailures||{};
+  const userKey = createHash('sha256').update(`login-user\n${id}`).digest('hex').slice(0,32);
+  const ipKey = createHash('sha256').update(`login-ip\n${ip}`).digest('hex').slice(0,32);
+  const failedUser=failures[userKey]||{};
+  const failedIp=failures[ipKey]||{};
+  if(Number(failedUser.until||0)>Date.now() || Number(failedIp.until||0)>Date.now()) return {ok:false,authenticated:false,error:'Too many failed attempts. Please try again in a few minutes.'};
   const users=await readUsers(db); const user=users.find(u=>normalizeUserId(u.userId||u.id||u.username)===id&&u.deleted!==true);
   if(!user||user.active===false||!verifyPassword(user,pass)) {
-    const count=Number(failed.count||0)+1; await db.ref(`${SETTINGS}/loginFailures/${id}`).set({count,until:count>=5?Date.now()+300000:0});
+    const userCount=Number(failedUser.count||0)+1; const ipCount=Number(failedIp.count||0)+1;
+    const untilUser=userCount>=5?Date.now()+300000:0; const untilIp=ipCount>=20?Date.now()+300000:0;
+    await Promise.all([
+      db.ref(`${SETTINGS}/loginFailures/${userKey}`).set({count:userCount,until:untilUser,kind:'user',updatedAt:iso()}),
+      db.ref(`${SETTINGS}/loginFailures/${ipKey}`).set({count:ipCount,until:untilIp,kind:'ip',updatedAt:iso()})
+    ]);
     return {ok:false,authenticated:false,error:'Invalid username or password.'};
   }
   if(settings.maintenance?.enabled&&normalizeUserId(user.role)!=='ADMIN') return {ok:false,authenticated:false,error:clean(settings.maintenance.message||'System is temporarily under maintenance.',300)};
-  await db.ref(`${SETTINGS}/loginFailures/${id}`).remove();
+  await Promise.all([db.ref(`${SETTINGS}/loginFailures/${userKey}`).remove(),db.ref(`${SETTINGS}/loginFailures/${ipKey}`).remove()]);
+  // Seamlessly upgrade legacy SHA-256 password records after a successful login.
+  if (isLegacyPassword(user)) {
+    const upgraded = buildPasswordRecord(pass);
+    const usersUpdated = users.map(u => normalizeUserId(u.userId||u.id||u.username)===id ? {...u,...upgraded,updatedAt:iso()} : u);
+    await writeUsers(db, usersUpdated);
+  }
   const now=Date.now(), token=`${randomUUID()}.${randomUUID()}.${now}`, issuedAt=new Date(now).toISOString(), expiresAt=new Date(now+21600000).toISOString();
   const session={userId:id,name:clean(user.displayName||id,80),role:clean(user.role||'USER',30),issuedAt,expiresAt};
   await db.ref(`${SESSIONS}/${tokenHash(token)}`).set(session); await log(db,id,'LOGIN','Signed in successfully.',clientInfo);
@@ -166,12 +196,12 @@ async function dispatch(db, method, a) {
     }
     case 'clearUserRoster': {const s=await requireAdmin(db,tokenAt(0));await db.ref(ROSTER).remove();await log(db,s.userId,'CLEAR_ROSTER','Cleared the shared team roster.',a[1]);return {ok:true,cleared:true,userId:s.userId,scope:'team',version:VERSION};}
     case 'getLiveChatMessages': {const s=await requireSession(db,tokenAt(0));return await chatEnvelope(db,s);}
-    case 'sendLiveChatMessage': {const s=await requireSession(db,tokenAt(1));const settings=(await db.ref(SETTINGS).get()).val()||{};if(settings.chatControl?.locked&&s.role!=='ADMIN')throw Error('Live chat is locked by admin.');const text=clean(a[0],400);if(!text)throw Error('Message is empty.');const chatId=clean(a[3]||'global',100);const recipient=normalizeUserId(a[4]);const participants=chatId.startsWith('dm:')?[s.userId,recipient].filter(Boolean):[];const msg={id:randomUUID(),chatId,chatType:chatId.startsWith('dm:')?'direct':'global',participantIds:participants,recipientId:recipient,text,senderName:clean(s.user.displayName||s.userId,80),senderEmail:'',senderKey:s.userId,createdAt:iso(),updatedAt:iso(),displayTime:new Intl.DateTimeFormat('en-MY',{timeZone:TZ,dateStyle:'medium',timeStyle:'short'}).format(new Date()),replyTo:null,reactions:{},deletedAt:'',deletedBy:'',readBy:[]};const ref=db.ref(CHAT);const rows=asList((await ref.get()).val());rows.push(msg);await ref.set(Object.fromEntries(rows.slice(-100).map(x=>[x.id,x])));await log(db,s.userId,chatId.startsWith('dm:')?'CHAT_DM_SEND':'CHAT_SEND','Sent chat message.',a[2]);return await chatEnvelope(db,s);}
+    case 'sendLiveChatMessage': {const s=await requireSession(db,tokenAt(1));const settings=(await db.ref(SETTINGS).get()).val()||{};if(settings.chatControl?.locked&&s.role!=='ADMIN')throw Error('Live chat is locked by admin.');const text=clean(a[0],400);if(!text)throw Error('Message is empty.');const chatId=clean(a[3]||'global',100);const recipient=normalizeUserId(a[4]);const participants=chatId.startsWith('dm:')?[s.userId,recipient].filter(Boolean):[];const msg={id:randomUUID(),chatId,chatType:chatId.startsWith('dm:')?'direct':'global',participantIds:participants,recipientId:recipient,text,senderName:clean(s.user.displayName||s.userId,80),senderEmail:'',senderKey:s.userId,createdAt:iso(),updatedAt:iso(),displayTime:new Intl.DateTimeFormat('en-MY',{timeZone:TZ,dateStyle:'medium',timeStyle:'short'}).format(new Date()),replyTo:null,reactions:{},deletedAt:'',deletedBy:'',readBy:[]};const ref=db.ref(CHAT);await ref.child(msg.id).set(msg);const rows=asList((await ref.get()).val());if(rows.length>100){const stale=rows.sort((x,y)=>String(x.createdAt).localeCompare(String(y.createdAt))).slice(0,rows.length-100);const removals={};stale.forEach(x=>{if(x&&x.id)removals[x.id]=null;});if(Object.keys(removals).length)await ref.update(removals);}await log(db,s.userId,chatId.startsWith('dm:')?'CHAT_DM_SEND':'CHAT_SEND','Sent chat message.',a[2]);return await chatEnvelope(db,s);}
     case 'deleteLiveChatMessage': {const s=await requireSession(db,tokenAt(1));const ref=db.ref(CHAT), rows=asList((await ref.get()).val());const msg=rows.find(x=>x.id===a[0]);if(!msg)throw Error('Message was not found.');if(msg.senderKey!==s.userId&&s.role!=='ADMIN')throw Error('Only the sender or an Administrator can delete this message.');await ref.child(msg.id).remove();return await chatEnvelope(db,s);}
     case 'markLiveChatRead': {const s=await requireSession(db,tokenAt(1));const chatId=clean(a[0]||'global',100);const ref=db.ref(CHAT), rows=asList((await ref.get()).val());const updated=rows.map(m=>m.chatId===chatId?{...m,readBy:Array.from(new Set([...(m.readBy||[]),s.userId]))}:m);await ref.set(Object.fromEntries(updated.map(x=>[x.id,x])));return await chatEnvelope(db,s);}
     case 'reactLiveChatMessage': {const s=await requireSession(db,tokenAt(2));const ref=db.ref(CHAT),rows=asList((await ref.get()).val());const id=clean(a[0],100),emoji=clean(a[1],16);let found=false;const next=rows.map(m=>{if(m.id!==id)return m;found=true;const r={...(m.reactions||{})};const users=Array.isArray(r[emoji])?r[emoji]:[];r[emoji]=users.includes(s.userId)?users.filter(x=>x!==s.userId):[...users,s.userId];return {...m,reactions:r,updatedAt:iso()};});if(!found)throw Error('Message was not found.');await ref.set(Object.fromEntries(next.map(x=>[x.id,x])));return await chatEnvelope(db,s);}
     case 'getUserNotes': {const s=await requireSession(db,tokenAt(0));return await notesEnvelope(db,s);}
-    case 'saveUserNote': {const s=await requireSession(db,tokenAt(2));const title=clean(a[0],100)||'Untitled note',text=clean(a[1],3000);if(!text&&!title)throw Error('Note title or note body is required.');const ref=db.ref(NOTES),rows=asList((await ref.get()).val());const note={id:randomUUID(),title,text,preview:text.slice(0,180),createdAt:iso(),updatedAt:iso(),displayTime:new Intl.DateTimeFormat('en-MY',{timeZone:TZ,dateStyle:'medium',timeStyle:'short'}).format(new Date()),savedByUserId:s.userId,savedByName:clean(s.user.displayName||s.userId,80),savedByRole:s.role,reactions:{}};rows.unshift(note);await ref.set(Object.fromEntries(rows.slice(0,50).map(x=>[x.id,x])));await db.ref(`${NOTES_STATE}/${s.userId}`).update({readAt:note.updatedAt,savedUnreadNoteIds:[]});return await notesEnvelope(db,s,{note,updatedAt:note.updatedAt});}
+    case 'saveUserNote': {const s=await requireSession(db,tokenAt(2));const title=clean(a[0],100)||'Untitled note',text=clean(a[1],3000);if(!text&&!title)throw Error('Note title or note body is required.');const ref=db.ref(NOTES);const note={id:randomUUID(),title,text,preview:text.slice(0,180),createdAt:iso(),updatedAt:iso(),displayTime:new Intl.DateTimeFormat('en-MY',{timeZone:TZ,dateStyle:'medium',timeStyle:'short'}).format(new Date()),savedByUserId:s.userId,savedByName:clean(s.user.displayName||s.userId,80),savedByRole:s.role,reactions:{}};await ref.child(note.id).set(note);await db.ref(`${NOTES_STATE}/${s.userId}`).update({readAt:note.updatedAt,savedUnreadNoteIds:[]});return await notesEnvelope(db,s,{note,updatedAt:note.updatedAt});}
     case 'updateUserNote': {const s=await requireSession(db,tokenAt(3));const ref=db.ref(NOTES),rows=asList((await ref.get()).val());let found;const next=rows.map(n=>{if(n.id!==a[0])return n;if(n.savedByUserId!==s.userId&&s.role!=='ADMIN')throw Error('You cannot edit this note.');found={...n,title:clean(a[1],100)||'Untitled note',text:clean(a[2],3000),preview:clean(a[2],3000).slice(0,180),updatedAt:iso()};return found;});if(!found)throw Error('Note was not found.');await ref.set(Object.fromEntries(next.map(x=>[x.id,x])));return await notesEnvelope(db,s,{note:found});}
     case 'deleteUserNote': {const s=await requireSession(db,tokenAt(1));const ref=db.ref(NOTES),rows=asList((await ref.get()).val());const n=rows.find(x=>x.id===a[0]);if(!n)throw Error('Note was not found.');if(n.savedByUserId!==s.userId&&s.role!=='ADMIN')throw Error('You cannot delete this note.');await ref.child(n.id).remove();return await notesEnvelope(db,s,{deletedId:n.id});}
     case 'reactUserNote': {const s=await requireSession(db,tokenAt(2));const ref=db.ref(NOTES),rows=asList((await ref.get()).val());let found=false;const next=rows.map(n=>{if(n.id!==a[0])return n;found=true;const r={...(n.reactions||{})},emoji=clean(a[1],16),users=Array.isArray(r[emoji])?r[emoji]:[];r[emoji]=users.includes(s.userId)?users.filter(x=>x!==s.userId):[...users,s.userId];return {...n,reactions:r,updatedAt:iso()};});if(!found)throw Error('Note was not found.');await ref.set(Object.fromEntries(next.map(x=>[x.id,x])));return await notesEnvelope(db,s);}
@@ -205,8 +235,8 @@ async function dispatch(db, method, a) {
       }).filter(row => row.at && row.action).slice(-250).reverse();
       return {ok:true,isAdmin:true,users:users.map(u=>({id:normalizeUserId(u.userId||u.id),name:clean(u.displayName||u.userId,80),role:clean(u.role,30),active:u.active!==false,deleted:u.deleted===true})),broadcast:settings.broadcast||{enabled:false,message:''},maintenance:settings.maintenance||{enabled:false,message:''},chatControl:settings.chatControl||{locked:false},logs,version:VERSION,admin:{id:s.userId,name:clean(s.user.displayName||s.userId),role:s.role}};
     }
-    case 'adminAddAuthUser': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]), name=clean(a[2],80), role=normalizeUserId(a[3])==='ADMIN'?'ADMIN':'USER', pass=normalizePassword(a[4]);if(!id||pass.length<4)throw Error('Username and password (minimum 4 characters) are required.');const users=await readUsers(db);if(users.some(u=>normalizeUserId(u.userId||u.id)===id))throw Error('User already exists.');const salt=randomUUID()+randomUUID();users.push({userId:id,displayName:name||id,role,salt,passwordHash:buildPasswordHash(salt,pass,10000),passwordIterations:10000,active:true,createdAt:iso()});await writeUsers(db,users);await log(db,s.userId,'ADMIN_ADD_USER',`Added user ${id}.`,a[5]);return {ok:true,version:VERSION};}
-    case 'adminResetAuthPassword': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]),pass=normalizePassword(a[2]);if(pass.length<4)throw Error('Password must be at least 4 characters.');let changed=false;const users=(await readUsers(db)).map(u=>{if(normalizeUserId(u.userId||u.id)!==id)return u;changed=true;const salt=randomUUID()+randomUUID();return {...u,salt,passwordHash:buildPasswordHash(salt,pass,10000),passwordIterations:10000,sessionsRevokedAt:iso(),updatedAt:iso()};});if(!changed)throw Error('User was not found.');await writeUsers(db,users);await log(db,s.userId,'ADMIN_RESET_PASSWORD',`Reset password for ${id}.`,a[3]);return {ok:true,version:VERSION};}
+    case 'adminAddAuthUser': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]), name=clean(a[2],80), role=normalizeUserId(a[3])==='ADMIN'?'ADMIN':'USER', pass=normalizePassword(a[4]);if(!id||pass.length<4)throw Error('Username and password (minimum 4 characters) are required.');const users=await readUsers(db);if(users.some(u=>normalizeUserId(u.userId||u.id)===id))throw Error('User already exists.');const salt=randomUUID()+randomUUID();users.push({userId:id,displayName:name||id,role,...buildPasswordRecord(pass),active:true,createdAt:iso()});await writeUsers(db,users);await log(db,s.userId,'ADMIN_ADD_USER',`Added user ${id}.`,a[5]);return {ok:true,version:VERSION};}
+    case 'adminResetAuthPassword': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]),pass=normalizePassword(a[2]);if(pass.length<4)throw Error('Password must be at least 4 characters.');let changed=false;const users=(await readUsers(db)).map(u=>{if(normalizeUserId(u.userId||u.id)!==id)return u;changed=true;return {...u,...buildPasswordRecord(pass),sessionsRevokedAt:iso(),updatedAt:iso()};});if(!changed)throw Error('User was not found.');await writeUsers(db,users);await log(db,s.userId,'ADMIN_RESET_PASSWORD',`Reset password for ${id}.`,a[3]);return {ok:true,version:VERSION};}
     case 'adminSetAuthUserActive': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]);let changed=false;const users=(await readUsers(db)).map(u=>{if(normalizeUserId(u.userId||u.id)!==id)return u;changed=true;return {...u,active:!!a[2],sessionsRevokedAt:a[2]?u.sessionsRevokedAt:iso(),updatedAt:iso()};});if(!changed)throw Error('User was not found.');await writeUsers(db,users);await log(db,s.userId,'ADMIN_SET_USER_ACTIVE',`${id}: ${!!a[2]}`,a[3]);return {ok:true,version:VERSION};}
     case 'adminDeleteAuthUser': {const s=await requireAdmin(db,tokenAt(0));const id=normalizeUserId(a[1]);let changed=false;const users=(await readUsers(db)).map(u=>{if(normalizeUserId(u.userId||u.id)!==id)return u;changed=true;return {...u,deleted:true,active:false,sessionsRevokedAt:iso(),updatedAt:iso()};});if(!changed)throw Error('User was not found.');await writeUsers(db,users);await log(db,s.userId,'ADMIN_DELETE_USER',`Deleted user ${id}.`,a[2]);return {ok:true,version:VERSION};}
     case 'adminSaveBroadcast': {const s=await requireAdmin(db,tokenAt(0));const message=clean(a[1],600);await db.ref(`${SETTINGS}/broadcast`).set({enabled:!!message,message,updatedAt:iso(),updatedBy:s.userId});await log(db,s.userId,'ADMIN_BROADCAST','Updated broadcast.',a[2]);return {ok:true,version:VERSION};}
@@ -214,7 +244,7 @@ async function dispatch(db, method, a) {
     case 'adminSetLiveChatLocked': {const s=await requireAdmin(db,tokenAt(0));await db.ref(`${SETTINGS}/chatControl`).set({locked:!!a[1],updatedAt:iso(),updatedBy:s.userId});await log(db,s.userId,'ADMIN_CHAT_LOCK',`Locked ${!!a[1]}`,a[2]);return {ok:true,version:VERSION};}
     case 'adminClearLiveChat': {const s=await requireAdmin(db,tokenAt(0));await db.ref(CHAT).remove();await log(db,s.userId,'ADMIN_CLEAR_CHAT','Cleared live chat.',a[1]);return {ok:true,version:VERSION};}
     case 'adminClearUserNotes': {const s=await requireAdmin(db,tokenAt(0));await db.ref(NOTES).remove();await log(db,s.userId,'ADMIN_CLEAR_NOTES','Cleared notes.',a[1]);return {ok:true,version:VERSION};}
-    case 'changeAuthPassword': {const id=normalizeUserId(a[0]),current=normalizePassword(a[1]),nextPass=normalizePassword(a[2]);const users=await readUsers(db);const u=users.find(x=>normalizeUserId(x.userId||x.id)===id&&x.deleted!==true);if(!u||!verifyPassword(u,current))return {ok:false,error:'Invalid username or current password.'};if(nextPass.length<4)return {ok:false,error:'New password must be at least 4 characters.'};const salt=randomUUID()+randomUUID(),now=iso();const updated=users.map(x=>normalizeUserId(x.userId||x.id)===id?{...x,salt,passwordHash:buildPasswordHash(salt,nextPass,10000),passwordIterations:10000,sessionsRevokedAt:now,updatedAt:now}:x);await writeUsers(db,updated);const loginResult=await login(db,id,nextPass,a[3]);return {...loginResult,changed:true,message:'Password updated successfully.'};}
+    case 'changeAuthPassword': {const s=await requireSession(db,tokenAt(4));const id=normalizeUserId(a[0]);if(id!==s.userId)fail('You can only change your own password.',403);const current=normalizePassword(a[1]),nextPass=normalizePassword(a[2]);const users=await readUsers(db);const u=users.find(x=>normalizeUserId(x.userId||x.id)===id&&x.deleted!==true);if(!u||!verifyPassword(u,current))fail('Invalid current password.',401);if(nextPass.length<4)fail('New password must be at least 4 characters.',400);const now=iso();const updated=users.map(x=>normalizeUserId(x.userId||x.id)===id?{...x,...buildPasswordRecord(nextPass),sessionsRevokedAt:now,updatedAt:now}:x);await writeUsers(db,updated);await db.ref(`${SESSIONS}/${tokenHash(s.token)}`).remove();const loginResult=await login(db,id,nextPass,a[3],{});return {...loginResult,changed:true,message:'Password updated successfully.'};}
     default: throw Error(`API action not migrated yet: ${method}`);
   }
 }
