@@ -14,6 +14,7 @@ const CHAT = 'labapp/liveChat/messages';
 const NOTES = 'labapp/notes/items';
 const NOTES_STATE = 'labapp/notes/userState';
 const ROSTER = 'labapp/roster/team';
+const INVENTORY = 'labapp/inventory';
 const LOGS = 'labapp/systemLogs';
 const SETTINGS = 'labapp/settings';
 const iso = () => new Date().toISOString();
@@ -145,6 +146,24 @@ async function dispatch(db, method, a) {
     case 'getMalaysiaHolidayData': {const year=Number(a[0]||new Date().getFullYear());const r=await fetch(`https://malaysia-holiday.dydxsoft.my/api/v1/holidays?year=${year}`,{headers:{Accept:'application/json'}});if(!r.ok)throw Error('Malaysia holiday source unavailable.');const d=await r.json();return {ok:true,year,holidays:Array.isArray(d)?d:(d.holidays||d.data||[]),sourceName:'Malaysia Holiday API',fromCache:false,version:VERSION};}
     case 'getUserRosterEnvelope': {const s=await requireSession(db,tokenAt(0));const v=(await db.ref(ROSTER).get()).val()||{};const roster=v.roster||v.data||v;return {ok:true,roster,userId:s.userId,scope:'team',savedKeys:Object.keys(roster).length,updatedAt:v.updatedAt||'',source:'firebase-team',version:VERSION};}
     case 'saveUserRoster': {const s=await requireSession(db,tokenAt(1));const roster=a[0]&&typeof a[0]==='object'?a[0]:{};const old=(await db.ref(ROSTER).get()).val()||{};const updatedAt=clean(old.updatedAt);if(clean(a[2])!==updatedAt)return {ok:false,conflict:true,roster:old.roster||old.data||old,updatedAt,error:'Roster was changed by another user. The latest roster has been reloaded; please review and save again.',version:VERSION};const next={version:2,scope:'team',updatedBy:s.userId,savedKeys:Object.keys(roster).length,updatedAt:iso(),roster};await db.ref(ROSTER).set(next);return {ok:true,userId:s.userId,scope:'team',savedKeys:Object.keys(roster).length,updatedAt:next.updatedAt,storageSource:'firebase',version:VERSION};}
+    case 'getSharedInventory': {
+      const s=await requireSession(db,tokenAt(0));
+      const v=(await db.ref(INVENTORY).get()).val()||{};
+      const inventory=v.inventory||v.data||v;
+      return {ok:true,inventory:inventory&&typeof inventory==='object'?inventory:{},updatedAt:clean(v.updatedAt),scope:'team',storageSource:'firebase-admin',version:VERSION};
+    }
+    case 'saveSharedInventory': {
+      const s=await requireSession(db,tokenAt(1));
+      const inventory=a[0]&&typeof a[0]==='object'?a[0]:{};
+      const old=(await db.ref(INVENTORY).get()).val()||{};
+      const updatedAt=clean(old.updatedAt);
+      if(clean(a[2])!==updatedAt){
+        return {ok:false,conflict:true,inventory:old.inventory||old.data||old,updatedAt,error:'Inventory was changed on another device. The latest inventory has been returned for merging.',version:VERSION};
+      }
+      const next={version:4,scope:'team',updatedBy:s.userId,updatedAt:iso(),inventory};
+      await db.ref(INVENTORY).set(next);
+      return {ok:true,updatedAt:next.updatedAt,scope:'team',storageSource:'firebase-admin',version:VERSION};
+    }
     case 'clearUserRoster': {const s=await requireAdmin(db,tokenAt(0));await db.ref(ROSTER).remove();await log(db,s.userId,'CLEAR_ROSTER','Cleared the shared team roster.',a[1]);return {ok:true,cleared:true,userId:s.userId,scope:'team',version:VERSION};}
     case 'getLiveChatMessages': {const s=await requireSession(db,tokenAt(0));return await chatEnvelope(db,s);}
     case 'sendLiveChatMessage': {const s=await requireSession(db,tokenAt(1));const settings=(await db.ref(SETTINGS).get()).val()||{};if(settings.chatControl?.locked&&s.role!=='ADMIN')throw Error('Live chat is locked by admin.');const text=clean(a[0],400);if(!text)throw Error('Message is empty.');const chatId=clean(a[3]||'global',100);const recipient=normalizeUserId(a[4]);const participants=chatId.startsWith('dm:')?[s.userId,recipient].filter(Boolean):[];const msg={id:randomUUID(),chatId,chatType:chatId.startsWith('dm:')?'direct':'global',participantIds:participants,recipientId:recipient,text,senderName:clean(s.user.displayName||s.userId,80),senderEmail:'',senderKey:s.userId,createdAt:iso(),updatedAt:iso(),displayTime:new Intl.DateTimeFormat('en-MY',{timeZone:TZ,dateStyle:'medium',timeStyle:'short'}).format(new Date()),replyTo:null,reactions:{},deletedAt:'',deletedBy:'',readBy:[]};const ref=db.ref(CHAT);const rows=asList((await ref.get()).val());rows.push(msg);await ref.set(Object.fromEntries(rows.slice(-100).map(x=>[x.id,x])));await log(db,s.userId,chatId.startsWith('dm:')?'CHAT_DM_SEND':'CHAT_SEND','Sent chat message.',a[2]);return await chatEnvelope(db,s);}
