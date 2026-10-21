@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     appName: "LabApp",
     boardTitle: "HOAG PATHOLOGY",
     subtitle: "SPA Single Page Application",
-    version: "2.1.4",
+    version: "2.1.81",
     serverIso: now.toISOString(),
     serverDate: new Intl.DateTimeFormat("en-GB", {
       timeZone: "Asia/Kuala_Lumpur",

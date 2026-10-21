@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     const session = { userId:username, name:String(user.displayName || username), role:String(user.role || 'USER'), issuedAt, expiresAt };
     await db.ref(`${SESSIONS_PATH}/${tokenHash(token)}`).set(session);
     setCookie(res, token);
-    return res.status(200).json({ ok:true, authenticated:true, token, expiresAt, expiresIn:SESSION_SECONDS, user:{id:username,name:session.name,role:session.role}, version:'2.1.80' });
+    return res.status(200).json({ ok:true, authenticated:true, token, expiresAt, expiresIn:SESSION_SECONDS, user:{id:username,name:session.name,role:session.role}, version:'2.1.81' });
   } catch (error) {
     console.error('Login endpoint failed:', error?.message || 'Unknown error');
     return res.status(500).json({ ok:false, authenticated:false, error:'An unexpected system error occurred during sign-in.' });

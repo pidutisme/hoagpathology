@@ -101,7 +101,7 @@ export default async function handler(req, res) {
         role: String(user.role || "USER")
       },
       expiresAt: session.expiresAt,
-      version: "2.1.4"
+      version: "2.1.81"
     });
   } catch (error) {
     console.error("Login state check failed:", error.message);

@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       body: ["GET", "HEAD"].includes(req.method)
         ? undefined
         : req,
+      duplex: "half",
       redirect: "manual",
     });
 
