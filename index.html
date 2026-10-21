@@ -19507,12 +19507,26 @@ function exportMonthlySchedulePdfs() {
         if(days<0)return 'EXPIRED'; if(days<=30)return 'EXPIRING'; return '';
       }
       // Alert banner only: warn 2 calendar months before expiry. The status dropdown remains unchanged at <=30 days.
+      // Accept YYYY-MM-DD plus common date-like values stored by older inventory records.
+      function parseExpiryDate(expiry){
+        if(!expiry)return null;
+        if(expiry instanceof Date)return isNaN(expiry.getTime())?null:expiry;
+        var raw=String(expiry).trim();
+        if(!raw)return null;
+        var end=new Date(/^\d{4}-\d{2}-\d{2}$/.test(raw)?raw+'T23:59:59':raw);
+        return isNaN(end.getTime())?null:end;
+      }
       function expiryWarning(expiry){
-        if(!expiry)return false;
-        var end=new Date(expiry+'T23:59:59');
-        if(isNaN(end.getTime()) || end.getTime() < Date.now())return false;
-        var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()+2);cutoff.setHours(23,59,59,999);
+        var end=parseExpiryDate(expiry);
+        if(!end || end.getTime() < Date.now())return false;
+        var cutoff=new Date();
+        cutoff.setMonth(cutoff.getMonth()+2);
+        cutoff.setHours(23,59,59,999);
         return end.getTime() <= cutoff.getTime();
+      }
+      function expiryFromRecord(record){
+        if(!record)return '';
+        return cleanText(record.expiry||record.expiryDate||record.expirationDate||record.expires||'');
       }
       function itemStatus(item){var b=itemBalance(item.id); if(b<=0)return 'OUT'; if(b<=Number(item.minStock||0))return 'LOW'; return 'OK';}
       function kpis(){
@@ -19520,7 +19534,21 @@ function exportMonthlySchedulePdfs() {
         return '<div class="inventory-kpi"><span>TOTAL ITEMS</span><strong>'+active.length+'</strong><small>Master items</small></div><div class="inventory-kpi"><span>ACTIVE LOTS</span><strong>'+lots.length+'</strong><small>Lot balances &gt; 0</small></div><div class="inventory-kpi"><span>LOW / OUT</span><strong>'+low+'</strong><small>At or below minimum</small></div><div class="inventory-kpi"><span>EXPIRING ≤ 30D</span><strong>'+exp+'</strong><small>Lot-level expiry</small></div><div class="inventory-kpi"><span>STOCK VALUE</span><strong>'+money(value)+'</strong><small>Current balance × price</small></div>';
       }
       function renderAlerts(){
-        var host=$('inventoryAlerts');if(!host)return;var lots=allLots();var low=data.items.filter(function(i){return itemStatus(i)==='LOW'||itemStatus(i)==='OUT';}).slice(0,1);var exp=lots.filter(function(x){return expiryWarning(x.lot.expiry);}).sort(function(a,b){return a.lot.expiry.localeCompare(b.lot.expiry);}).slice(0,1);var old=lots.filter(function(x){return expiryStatus(x.lot.expiry)==='EXPIRED';}).slice(0,1);var html='';if(low.length){var i=low[0];var alertClass=itemStatus(i)==='OUT'?'out':'low';var alertTitle=itemStatus(i)==='OUT'?'OUT OF STOCK':'LOW STOCK';html+='<div class="inventory-alert '+alertClass+'" data-alert-filter="'+(itemStatus(i)==='OUT'?'OUT':'LOW')+'" role="button" tabindex="0"><strong>'+alertTitle+' · '+esc(i.name)+'</strong><span>'+itemBalance(i.id)+' remaining · minimum 1</span></div>';}if(exp.length){var e=exp[0];html+='<div class="inventory-alert expiring" title="Expiry warning: within 2 months"><strong>EXPIRY WARNING · '+esc(e.item.name)+'</strong><span>Lot '+esc(e.lot.lotNo)+' · expires '+esc(e.lot.expiry)+' · '+e.lot.qty+' remaining</span></div>';}if(old.length){var o=old[0];html+='<div class="inventory-alert expired"><strong>EXPIRED · '+esc(o.item.name)+'</strong><span>Lot '+esc(o.lot.lotNo)+' · '+esc(o.lot.expiry)+' · remove/quarantine as required</span></div>';}host.innerHTML=html||'<div class="inventory-alert"><strong>ALL CLEAR</strong><span>No low-stock or expiry warnings in the current data.</span></div>';}
+        var host=$('inventoryAlerts');if(!host)return;
+        var lots=allLots();
+        var low=data.items.filter(function(i){return itemStatus(i)==='LOW'||itemStatus(i)==='OUT';}).slice(0,1);
+        var exp=lots.filter(function(x){return expiryWarning(expiryFromRecord(x.lot));}).sort(function(a,b){return String(a.lot.expiry||'').localeCompare(String(b.lot.expiry||''));}).slice(0,1);
+        // Backward-compatible fallback for records that store expiry on the item instead of the lot.
+        if(!exp.length){
+          exp=data.items.map(function(i){return {item:i,lot:{lotNo:'ITEM EXPIRY',qty:itemBalance(i.id),expiry:expiryFromRecord(i)}};}).filter(function(x){return x.lot.qty>0&&expiryWarning(x.lot.expiry);}).sort(function(a,b){return String(a.lot.expiry).localeCompare(String(b.lot.expiry));}).slice(0,1);
+        }
+        var old=lots.filter(function(x){return expiryStatus(expiryFromRecord(x.lot))==='EXPIRED';}).slice(0,1);
+        var html='';
+        if(low.length){var i=low[0];var alertClass=itemStatus(i)==='OUT'?'out':'low';var alertTitle=itemStatus(i)==='OUT'?'OUT OF STOCK':'LOW STOCK';html+='<div class="inventory-alert '+alertClass+'" data-alert-filter="'+(itemStatus(i)==='OUT'?'OUT':'LOW')+'" role="button" tabindex="0"><strong>'+alertTitle+' · '+esc(i.name)+'</strong><span>'+itemBalance(i.id)+' remaining · minimum 1</span></div>';}
+        if(exp.length){var e=exp[0];html+='<div class="inventory-alert expiring" title="Expiry warning: within 2 months"><strong>EXPIRY WARNING · '+esc(e.item.name)+'</strong><span>'+esc(e.lot.lotNo)+' · expires '+esc(e.lot.expiry)+' · '+e.lot.qty+' remaining</span></div>';}
+        if(old.length){var o=old[0];html+='<div class="inventory-alert expired"><strong>EXPIRED · '+esc(o.item.name)+'</strong><span>Lot '+esc(o.lot.lotNo)+' · '+esc(o.lot.expiry)+' · remove/quarantine as required</span></div>';}
+        host.innerHTML=html||'<div class="inventory-alert"><strong>ALL CLEAR</strong><span>No low-stock or expiry warnings in the current data.</span></div>';
+      }
       function transactionMonthKey(t){var d=t&&t.at?new Date(t.at):null;if(!d||isNaN(d.getTime()))return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
       function totalInForItem(itemId,monthKey){
         var key=monthKey||currentMonthKey();
