@@ -12367,6 +12367,9 @@ if (token) {
                 if (typeof Presence !== 'undefined' && Presence && typeof Presence.handleFirebaseReady === 'function') {
                   Presence.handleFirebaseReady();
                 }
+                if (typeof Inventory !== 'undefined' && Inventory && typeof Inventory.handleFirebaseReady === 'function') {
+                  Inventory.handleFirebaseReady();
+                }
               })
               .catch(function (error) {
                 signingIn = false;
@@ -19403,6 +19406,8 @@ function exportMonthlySchedulePdfs() {
       var STORAGE_KEY = 'labAppInventoryV2';
       var initialized = false;
       var dbPath = 'labapp/inventory';
+      var remoteHydrated = false;
+      var remoteSyncInFlight = false;
       var data = { version: 4, items: [], transactions: [], monthlyPrices: {}, monthlySnapshots: {} };
       var currentView = 'ITEMS';
       var selectedPriceMonth = new Date().toISOString().slice(0,7);
@@ -19515,7 +19520,40 @@ function exportMonthlySchedulePdfs() {
       }
       function loadRemote(){
         var d=db(); if(!d) return Promise.resolve(false);
-        return d.ref(dbPath).once('value').then(function(s){var v=s&&s.val?s.val():null;if(v&&typeof v==='object'&&Array.isArray(v.items)){data=v;normalize();saveLocal();return true;}return false;}).catch(function(e){console.warn('Inventory Firebase load failed:',e);return false;});
+        if(remoteSyncInFlight) return Promise.resolve(remoteHydrated);
+        remoteSyncInFlight=true;
+        return d.ref(dbPath).once('value').then(function(s){
+          var v=s&&s.val?s.val():null;
+          if(v&&typeof v==='object'&&Array.isArray(v.items)){
+            data=v; normalize(); saveLocal(); remoteHydrated=true; return true;
+          }
+          remoteHydrated=false;
+          return false;
+        }).catch(function(e){
+          console.warn('Inventory Firebase load failed:',e);
+          remoteHydrated=false;
+          return false;
+        }).finally(function(){ remoteSyncInFlight=false; });
+      }
+      function syncFromFirebase(){
+        if(!db()) return;
+        loadRemote().then(function(found){
+          if(found){
+            migrateInventoryNames();
+            mergeSeedCatalog();
+            ensureCurrentMonthPrices();
+            saveLocal();
+            render();
+            return;
+          }
+          // First-time Firebase setup: promote the existing local inventory to
+          // the shared database so future deployments/browsers keep the data.
+          if(data && Array.isArray(data.items) && data.items.length){
+            saveRemote().then(function(ok){
+              if(ok){ remoteHydrated=true; saveLocal(); }
+            });
+          }
+        });
       }
       function persist(){saveLocal();saveRemote();}
       function getItem(itemId){return data.items.find(function(x){return x.id===itemId;})||null;}
@@ -19868,13 +19906,21 @@ function exportMonthlySchedulePdfs() {
           return;
         }
         loadRemote().then(function(found){
-          if(!found){render();return;}
+          if(!found){
+            // Firebase may not be ready yet. handleFirebaseReady() will retry
+            // and will bootstrap the shared copy if this is the first setup.
+            render();return;
+          }
           migrateInventoryNames();
-          mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
+          mergeSeedCatalog();ensureCurrentMonthPrices();saveLocal();render();
+          remoteHydrated=true;
         });
       }
+      function handleFirebaseReady(){
+        syncFromFirebase();
+      }
       function init(){load(false);}
-      return {init:init,open:open,load:load,render:render};
+      return {init:init,open:open,load:load,render:render,handleFirebaseReady:handleFirebaseReady};
     })();
 
     var LabApp = {
