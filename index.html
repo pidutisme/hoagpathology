@@ -9445,7 +9445,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
 <div class="setting-box"><div class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"/><path d="M7 4h10M5 8h14"/></svg></div><div><strong>Version</strong><span id="aboutAppVersion">2.1.7</span></div></div>
 </div>
 <div class="settings-extra-grid">
-<button type="button" class="settings-extra-card settings-update-card" id="settingsUpdateButton" aria-label="Check for latest version"><div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 1 4"/><path d="M20 4v7h-7"/></svg></div><div class="settings-extra-copy"><strong>Update</strong><span>Check for latest version</span></div></button>
+<button type="button" class="settings-extra-card settings-check-card" id="settingsSystemCheckButton" aria-label="Run system check"><div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></div><div class="settings-extra-copy"><strong>System Check</strong><span>Check app, storage &amp; connection</span></div></button>
 <div class="settings-extra-card">
 <div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"/></svg></div>
 <div class="settings-extra-copy"><strong>Data &amp; Sync</strong><span>GitHub + Firebase + Vercel</span></div>
@@ -12366,6 +12366,9 @@ if (token) {
                 }
                 if (typeof Presence !== 'undefined' && Presence && typeof Presence.handleFirebaseReady === 'function') {
                   Presence.handleFirebaseReady();
+                }
+                if (typeof Inventory !== 'undefined' && Inventory && typeof Inventory.handleFirebaseReady === 'function') {
+                  Inventory.handleFirebaseReady();
                 }
               })
               .catch(function (error) {
@@ -19509,13 +19512,83 @@ function exportMonthlySchedulePdfs() {
         var parsed=safeParse(raw); if(!parsed) return false; data=parsed; normalize(); return true;
       }
       function db(){return typeof FirebaseBridge!=='undefined'&&FirebaseBridge.isReady&&FirebaseBridge.isReady()?FirebaseBridge.getDatabase():null;}
+      function cloneData(value){
+        try { return JSON.parse(JSON.stringify(value)); } catch(e) { return null; }
+      }
+      function mergeRemoteIntoLocal(remote){
+        if(!remote || typeof remote!=='object' || !Array.isArray(remote.items)) return false;
+        normalize();
+        var local=cloneData(data) || {version:4,items:[],transactions:[],monthlyPrices:{},monthlySnapshots:{}};
+        var changed=false;
+
+        var itemMap={};
+        (local.items||[]).forEach(function(item){ if(item&&item.id)itemMap[String(item.id)]=item; });
+        (remote.items||[]).forEach(function(item){
+          if(!item||!item.id)return;
+          var id=String(item.id);
+          if(!itemMap[id]){
+            local.items.push(item);
+            itemMap[id]=item;
+            changed=true;
+          }
+        });
+
+        var txMap={};
+        (local.transactions||[]).forEach(function(tx){ if(tx&&tx.id)txMap[String(tx.id)]=tx; });
+        (remote.transactions||[]).forEach(function(tx){
+          if(!tx)return;
+          var id=String(tx.id||'');
+          if(id && !txMap[id]){
+            local.transactions.push(tx);
+            txMap[id]=tx;
+            changed=true;
+          }
+        });
+
+        local.monthlyPrices=local.monthlyPrices||{};
+        Object.keys(remote.monthlyPrices||{}).forEach(function(month){
+          local.monthlyPrices[month]=local.monthlyPrices[month]||{};
+          Object.keys(remote.monthlyPrices[month]||{}).forEach(function(id){
+            if(local.monthlyPrices[month][id]==null){
+              local.monthlyPrices[month][id]=remote.monthlyPrices[month][id];
+              changed=true;
+            }
+          });
+        });
+
+        local.monthlySnapshots=local.monthlySnapshots||{};
+        Object.keys(remote.monthlySnapshots||{}).forEach(function(month){
+          if(local.monthlySnapshots[month]==null){
+            local.monthlySnapshots[month]=remote.monthlySnapshots[month];
+            changed=true;
+          }
+        });
+
+        local.version=Math.max(Number(local.version||0),Number(remote.version||0),4);
+        data=local;
+        normalize();
+        return changed;
+      }
       function saveRemote(){
         var d=db(); if(!d) return Promise.resolve(false);
-        return d.ref(dbPath).set(data).then(function(){return true;}).catch(function(e){console.warn('Inventory Firebase save failed:',e);return false;});
+        var payload=cloneData(data);
+        return d.ref(dbPath).set(payload).then(function(){return true;}).catch(function(e){console.warn('Inventory Firebase save failed:',e);return false;});
       }
       function loadRemote(){
         var d=db(); if(!d) return Promise.resolve(false);
-        return d.ref(dbPath).once('value').then(function(s){var v=s&&s.val?s.val():null;if(v&&typeof v==='object'&&Array.isArray(v.items)){data=v;normalize();saveLocal();return true;}return false;}).catch(function(e){console.warn('Inventory Firebase load failed:',e);return false;});
+        return d.ref(dbPath).once('value').then(function(s){
+          var remote=s&&s.val?s.val():null;
+          if(!remote || typeof remote!=='object' || !Array.isArray(remote.items)){
+            return saveRemote().then(function(){return false;});
+          }
+          var changed=mergeRemoteIntoLocal(remote);
+          saveLocal();
+          return saveRemote().then(function(){return true;});
+        }).catch(function(e){console.warn('Inventory Firebase load failed:',e);return false;});
+      }
+      function handleFirebaseReady(){
+        if(!initialized) return;
+        loadRemote().then(function(){ render(); }).catch(function(e){ console.warn('Inventory Firebase ready sync failed:',e); });
       }
       function persist(){saveLocal();saveRemote();}
       function getItem(itemId){return data.items.find(function(x){return x.id===itemId;})||null;}
@@ -19874,7 +19947,7 @@ function exportMonthlySchedulePdfs() {
         });
       }
       function init(){load(false);}
-      return {init:init,open:open,load:load,render:render};
+      return {init:init,open:open,load:load,render:render,handleFirebaseReady:handleFirebaseReady};
     })();
 
     var LabApp = {
@@ -19993,69 +20066,45 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
-<script>
-(function(){
-  function bindSettingsUpdate(){
-    var btn=document.getElementById('settingsUpdateButton');
-    if(!btn || btn.dataset.updateBound==='1') return;
-    btn.dataset.updateBound='1';
 
-    btn.addEventListener('click', async function(event){
+
+<script id="settings-system-check-runtime">
+(function(){
+  function bindSystemCheck(){
+    var btn=document.getElementById('settingsSystemCheckButton');
+    if(!btn || btn.dataset.systemCheckBound==='1') return;
+    btn.dataset.systemCheckBound='1';
+    btn.addEventListener('click', function(event){
       event.preventDefault();
       event.stopPropagation();
-      if(btn.dataset.updating==='1') return;
-
-      btn.dataset.updating='1';
+      if(btn.dataset.checking==='1') return;
+      btn.dataset.checking='1';
       btn.disabled=true;
       var copy=btn.querySelector('.settings-extra-copy span');
-      var original=copy ? copy.textContent : 'Check for latest version';
-      if(copy) copy.textContent='Updating…';
-
-      try {
-        var updateUrl = window.location.href.split('#')[0];
-        var latestResponse = await fetch(updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'update=' + Date.now(), {
-          method:'GET',
-          cache:'no-store',
-          credentials:'same-origin',
-          headers:{'Cache-Control':'no-cache, no-store, max-age=0','Pragma':'no-cache'}
-        });
-        if(!latestResponse.ok) throw new Error('HTTP ' + latestResponse.status);
-        var latestHtml = await latestResponse.text();
-        if(!latestHtml || latestHtml.indexOf('settingsUpdateButton') === -1) throw new Error('Latest application shell could not be verified.');
-
-        if('serviceWorker' in navigator){
-          try {
-            var registration = await navigator.serviceWorker.getRegistration();
-            if(registration) await registration.update();
-          } catch(swError) { console.warn('Service Worker update check failed:', swError); }
-        }
-
-        /* Auth sessions are deliberately not persisted across an app reload.
-           Updating the app therefore returns to the normal login screen. */
-
-        if(copy) copy.textContent='Update ready ✓';
-        window.setTimeout(function(){
-          /* Reload the page inside the existing WebView/window. The app itself is
-             never closed, and the auth token is deliberately preserved. */
-          var freshUrl = updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'app_update=' + Date.now();
-          window.location.replace(freshUrl);
-        }, 180);
-      } catch(error) {
-        console.warn('Application update failed:', error);
-        if(copy) copy.textContent='Update failed — try again';
+      var original=copy ? copy.textContent : 'Check app, storage & connection';
+      if(copy) copy.textContent='Checking…';
+      var checks = {
+        app: !!window.LabApp,
+        storage: (function(){ try { var k='__labapp_check__'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; } catch(e){ return false; } })(),
+        connection: navigator.onLine !== false,
+        firebase: !!(typeof FirebaseBridge!=='undefined' && FirebaseBridge.isReady && FirebaseBridge.isReady())
+      };
+      window.setTimeout(function(){
+        var ok = checks.app && checks.storage && checks.connection;
+        if(copy) copy.textContent = ok ? 'System OK ✓' : 'Check completed';
+        btn.dataset.checking='0';
         window.setTimeout(function(){
           if(copy) copy.textContent=original;
-          btn.dataset.updating='0';
           btn.disabled=false;
         }, 1800);
-      }
+      }, 350);
     });
   }
-
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once:true });
-  else bindSettingsUpdate();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSystemCheck, {once:true});
+  else bindSystemCheck();
 })();
 </script>
+
 <script id="inventory-scroll-runtime-fix">
 /* Inventory scrolling is handled natively by #inventory .inventory-table-wrap.
    Do not attach wheel/touch handlers to the page itself. */
