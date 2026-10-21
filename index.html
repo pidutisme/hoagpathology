@@ -20130,7 +20130,7 @@ if ("serviceWorker" in navigator) {
     function close(){pop.hidden=true;}
     function choose(k){h.value=k;v.value=fmt(k);h.dispatchEvent(new Event('input',{bubbles:true}));h.dispatchEvent(new Event('change',{bubbles:true}));close();}
     v.value=fmt(h.value); v.addEventListener('click',open); v.addEventListener('focus',open);
-    pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.prev){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position();}else if(b.dataset.next){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position();}else if(b.dataset.date){choose(b.dataset.date);}else if(b.dataset.today){choose(key(new Date()));}else if(b.dataset.clear){choose('');}});
+    pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-prev')){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position();}else if(b.hasAttribute('data-next')){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position();}else if(b.dataset.date){choose(b.dataset.date);}else if(b.hasAttribute('data-today')){choose(key(new Date()));}else if(b.hasAttribute('data-clear')){choose('');}});
     document.addEventListener('mousedown',function(e){if(!pop.contains(e.target)&&e.target!==v)close();});
     window.addEventListener('resize',function(){if(!pop.hidden)position();}); window.addEventListener('scroll',function(){if(!pop.hidden)position();},true);
     var form=v.closest('form'); if(form)form.addEventListener('reset',function(){setTimeout(function(){v.value=fmt(h.value);},0);});
