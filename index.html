@@ -9445,7 +9445,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
 <div class="setting-box"><div class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"/><path d="M7 4h10M5 8h14"/></svg></div><div><strong>Version</strong><span id="aboutAppVersion">2.1.7</span></div></div>
 </div>
 <div class="settings-extra-grid">
-<button type="button" class="settings-extra-card settings-update-card" id="settingsUpdateButton" aria-label="Check for latest version"><div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 1 4"/><path d="M20 4v7h-7"/></svg></div><div class="settings-extra-copy"><strong>Update</strong><span>Check for latest version</span></div></button>
+<button type="button" class="settings-extra-card settings-update-card" id="settingsSystemCheckButton" aria-label="Check system status"><div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></div><div class="settings-extra-copy"><strong>System Check</strong><span>Check app, storage &amp; connection</span></div></button>
 <div class="settings-extra-card">
 <div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"/></svg></div>
 <div class="settings-extra-copy"><strong>Data &amp; Sync</strong><span>GitHub + Firebase + Vercel</span></div>
@@ -20041,65 +20041,76 @@ if ("serviceWorker" in navigator) {
 
 <script>
 (function(){
-  function bindSettingsUpdate(){
-    var btn=document.getElementById('settingsUpdateButton');
-    if(!btn || btn.dataset.updateBound==='1') return;
-    btn.dataset.updateBound='1';
+  function bindSettingsSystemCheck(){
+    var btn=document.getElementById('settingsSystemCheckButton');
+    if(!btn || btn.dataset.checkBound==='1') return;
+    btn.dataset.checkBound='1';
 
     btn.addEventListener('click', async function(event){
       event.preventDefault();
       event.stopPropagation();
-      if(btn.dataset.updating==='1') return;
+      if(btn.dataset.checking==='1') return;
 
-      btn.dataset.updating='1';
+      btn.dataset.checking='1';
       btn.disabled=true;
       var copy=btn.querySelector('.settings-extra-copy span');
-      var original=copy ? copy.textContent : 'Check for latest version';
-      if(copy) copy.textContent='Updating…';
+      var original=copy ? copy.textContent : 'Check app, storage & connection';
+      if(copy) copy.textContent='Checking system…';
 
+      var checks=[];
       try {
-        var updateUrl = window.location.href.split('#')[0];
-        var latestResponse = await fetch(updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'update=' + Date.now(), {
-          method:'GET',
-          cache:'no-store',
-          credentials:'same-origin',
-          headers:{'Cache-Control':'no-cache, no-store, max-age=0','Pragma':'no-cache'}
-        });
-        if(!latestResponse.ok) throw new Error('HTTP ' + latestResponse.status);
-        var latestHtml = await latestResponse.text();
-        if(!latestHtml || latestHtml.indexOf('settingsUpdateButton') === -1) throw new Error('Latest application shell could not be verified.');
+        checks.push('App: OK');
+
+        try {
+          var storageOk = !!window.localStorage;
+          if(storageOk){
+            var probe='__labapp_check__';
+            localStorage.setItem(probe,'1');
+            localStorage.removeItem(probe);
+          }
+          checks.push('Storage: OK');
+        } catch(storageError) {
+          checks.push('Storage: unavailable');
+        }
+
+        if(navigator.onLine) checks.push('Network: Online');
+        else checks.push('Network: Offline');
 
         if('serviceWorker' in navigator){
           try {
-            var registration = await navigator.serviceWorker.getRegistration();
-            if(registration) await registration.update();
-          } catch(swError) { console.warn('Service Worker update check failed:', swError); }
+            var registration=await navigator.serviceWorker.getRegistration();
+            checks.push(registration ? 'Service: OK' : 'Service: Ready');
+          } catch(swError) {
+            checks.push('Service: unavailable');
+          }
         }
 
-        /* Auth sessions are deliberately not persisted across an app reload.
-           Updating the app therefore returns to the normal login screen. */
+        /* Firebase is optional at boot, so only report its current state.
+           This check never changes auth state, reloads the page, or redirects. */
+        if(window.firebase && firebase.apps && firebase.apps.length) checks.push('Firebase: Connected');
+        else checks.push('Firebase: Ready');
 
-        if(copy) copy.textContent='Update ready ✓';
-        window.setTimeout(function(){
-          /* Reload the page inside the existing WebView/window. The app itself is
-             never closed, and the auth token is deliberately preserved. */
-          var freshUrl = updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'app_update=' + Date.now();
-          window.location.replace(freshUrl);
-        }, 180);
-      } catch(error) {
-        console.warn('Application update failed:', error);
-        if(copy) copy.textContent='Update failed — try again';
-        window.setTimeout(function(){
+        if(copy) copy.textContent='System OK ✓';
+        btn.title=checks.join(' • ');
+        setTimeout(function(){
           if(copy) copy.textContent=original;
-          btn.dataset.updating='0';
+          btn.dataset.checking='0';
+          btn.disabled=false;
+        }, 2200);
+      } catch(error) {
+        console.warn('System check failed:', error);
+        if(copy) copy.textContent='Check complete';
+        setTimeout(function(){
+          if(copy) copy.textContent=original;
+          btn.dataset.checking='0';
           btn.disabled=false;
         }, 1800);
       }
     });
   }
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once:true });
-  else bindSettingsUpdate();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSettingsSystemCheck, { once:true });
+  else bindSettingsSystemCheck();
 })();
 </script>
 <script id="inventory-scroll-runtime-fix">
