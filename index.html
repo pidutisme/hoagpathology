@@ -19740,8 +19740,26 @@ function exportMonthlySchedulePdfs() {
         safeStorageSet(flagKey,'1');
         return true;
       }
+      function repairOctober2026OpeningBalance(){
+        var flagKey='labAppInventoryOctober2026BalanceFixV2';
+        if(safeStorageGet(flagKey)==='1')return false;
+        var key='2026-10';
+        if(!data.monthlyPrices[key])data.monthlyPrices[key]={};
+        var byName={};
+        seedItems.forEach(function(x){byName[String(x[2]||'').trim().toLowerCase()]=x;});
+        data.items.forEach(function(item){
+          var seed=byName[String(item.name||'').trim().toLowerCase()];
+          if(!seed)return;
+          item.openingStock=Number(seed[4]||0);
+          item.price=Number(seed[3]||0);
+          data.monthlyPrices[key][item.id]=Number(seed[3]||0);
+        });
+        data.monthlySnapshots={};
+        safeStorageSet(flagKey,'1');
+        return true;
+      }
       function load(force){
-        bind();var had=loadLocal();if(!had)seed();migrateInventoryNames();mergeSeedCatalog();var freshReset=resetInventoryForFreshStart();ensureCurrentMonthPrices();if(freshReset||!had)persist();render();
+        bind();var had=loadLocal();if(!had)seed();migrateInventoryNames();mergeSeedCatalog();var freshReset=resetInventoryForFreshStart();var balanceFix=repairOctober2026OpeningBalance();ensureCurrentMonthPrices();if(freshReset||balanceFix||!had)persist();render();
         var inventoryPage=$('inventory');
         if(inventoryPage && window.MutationObserver){
           var inventoryViewportObserver=new MutationObserver(function(){
