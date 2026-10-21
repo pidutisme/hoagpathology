@@ -19563,14 +19563,14 @@ function exportMonthlySchedulePdfs() {
       }
       function renderItems(){
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';
-        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;var st=itemStatus(i);if(status==='LOW'&&st!=='LOW'&&st!=='OUT')return false;if(status==='OUT'&&st!=='OUT')return false;if(status==='EXPIRING'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRING';}).length)return false;if(status==='EXPIRED'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRED';}).length)return false;return !q||[i.name,i.category,i.type].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
+        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;var st=itemStatus(i);if(status==='LOW'&&st!=='LOW')return false;if(status==='OUT'&&st!=='OUT')return false;if(status==='EXPIRING'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRING';}).length)return false;if(status==='EXPIRED'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRED';}).length)return false;return !q||[i.name,i.category,i.type].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
         var html='<table class="inventory-table"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>PRICE / UNIT</th><th class="inventory-center-head">TOTAL IN</th><th class="inventory-center-head">TOTAL OUT</th><th class="inventory-center-head">BALANCE</th><th>VALUE</th><th>LOT(S)</th><th>STATUS</th></tr></thead><tbody>';
         var monthKey=currentMonthKey();
         rows.forEach(function(i){var lots=lotsForItem(i.id);var st=itemStatus(i);var displaySt=inventoryDisplayStatus(i);var totalIn=totalInForItem(i.id,monthKey);var totalOut=totalOutForItem(i.id,monthKey);var balance=itemBalance(i.id);var rowClass=st==='OUT'?'inventory-status-out':st==='LOW'?'inventory-status-low':displaySt==='EXPIRED'?'inventory-status-expired':displaySt==='EXPIRING'?'inventory-status-expiring':'';var badgeClass=displaySt==='OK'?'ok':displaySt==='LOW'?'low':displaySt==='OUT'||displaySt==='EXPIRED'?'expired':'expiring';html+='<tr class="inventory-item-row '+rowClass+'" data-inventory-item-id="'+esc(i.id)+'" tabindex="0" title="Click to view Stock In / Stock Out records"><td><div class="inventory-item-name">'+esc(i.name)+'</div></td><td>'+esc(i.category)+'</td><td class="inventory-money">'+money(i.price)+'</td><td class="inventory-num inventory-center-num">'+totalIn+'</td><td class="inventory-num inventory-center-num">'+totalOut+'</td><td class="inventory-num inventory-center-num">'+balance+'</td><td class="inventory-money">'+money(balance*Number(i.price||0))+'</td><td>'+ (lots.length?lots.map(function(l){return '<span class="inventory-badge legacy">'+esc(l.lotNo)+': '+l.qty+'</span>';}).join(' '):'<span class="inventory-muted">—</span>')+'</td><td><span class="inventory-badge '+badgeClass+'">'+esc(displaySt)+'</span></td></tr>';});
         html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No inventory items match the current filter.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
       function renderLots(){
-        var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';var rows=allLots().filter(function(x){var es=expiryStatus(x.lot.expiry);if(cat!=='ALL'&&x.item.category!==cat)return false;if(status==='EXPIRING'&&es!=='EXPIRING')return false;if(status==='EXPIRED'&&es!=='EXPIRED')return false;if(status==='LOW'&&itemStatus(x.item)!=='LOW'&&itemStatus(x.item)!=='OUT')return false;if(status==='OUT'&&itemStatus(x.item)!=='OUT')return false;return !q||[x.item.name,x.item.category,x.lot.lotNo,x.lot.expiry].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){var n=String(a.item.name||'').localeCompare(String(b.item.name||''),'en',{sensitivity:'base',numeric:true});return n||String(a.lot.expiry||'9999').localeCompare(String(b.lot.expiry||'9999'));});
+        var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';var rows=allLots().filter(function(x){var es=expiryStatus(x.lot.expiry);if(cat!=='ALL'&&x.item.category!==cat)return false;if(status==='EXPIRING'&&es!=='EXPIRING')return false;if(status==='EXPIRED'&&es!=='EXPIRED')return false;if(status==='LOW'&&itemStatus(x.item)!=='LOW')return false;if(status==='OUT'&&itemStatus(x.item)!=='OUT')return false;return !q||[x.item.name,x.item.category,x.lot.lotNo,x.lot.expiry].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){var n=String(a.item.name||'').localeCompare(String(b.item.name||''),'en',{sensitivity:'base',numeric:true});return n||String(a.lot.expiry||'9999').localeCompare(String(b.lot.expiry||'9999'));});
         var html='<table class="inventory-table"><thead><tr><th>ITEM</th><th>LOT NO.</th><th>EXPIRY</th><th>STOCK</th><th>PRICE / UNIT</th><th>STOCK VALUE</th><th>STATUS</th></tr></thead><tbody>';
         rows.forEach(function(x){var es=expiryStatus(x.lot.expiry);var cls=es==='EXPIRED'?'expired':es==='EXPIRING'?'expiring':'ok';html+='<tr><td class="inventory-item-name">'+esc(x.item.name)+'</td><td><strong>'+esc(x.lot.lotNo)+'</strong></td><td>'+esc(x.lot.expiry||'—')+'</td><td class="inventory-num">'+x.lot.qty+'</td><td>'+money(x.item.price)+'</td><td>'+money(x.lot.qty*x.item.price)+'</td><td><span class="inventory-badge '+cls+'">'+(es||'ACTIVE')+'</span></td></tr>';});html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No active lots match the current filter.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
@@ -19592,8 +19592,8 @@ function exportMonthlySchedulePdfs() {
       function monthlyMovementStats(monthKey, category){
         var start=monthKey+'-01T00:00:00';
         var next=monthKeyOffset(monthKey,1)+'-01T00:00:00';
-        var prev=monthKeyOffset(monthKey,-1);
-        var prevEnd=monthKey+'-01T00:00:00';
+        var prevKey=monthKeyOffset(monthKey,-1);
+        var prevEnd=start;
         var items=data.items.filter(function(i){return i.active!==false&&(category==='ALL'||i.category===category);});
         var lastBalance=0, stockIn=0, stockOut=0;
         items.forEach(function(item){
@@ -19606,13 +19606,37 @@ function exportMonthlySchedulePdfs() {
           stockIn+=ins*price;
           stockOut+=outs*price;
         });
-        return {lastBalance:lastBalance,stockIn:stockIn,stockOut:stockOut,closing:lastBalance+stockIn-stockOut};
+
+        // Once a previous month has been closed, its closing value becomes the
+        // next month's opening/last-month balance. A newly opened month starts
+        // with a zero closing balance until that month has a movement.
+        var previousSnapshot=data.monthlySnapshots&&data.monthlySnapshots[prevKey];
+        if(previousSnapshot&&previousSnapshot.categories&&previousSnapshot.categories[category]){
+          lastBalance=Number(previousSnapshot.categories[category].closing||0);
+        }
+        var hasMovement=(stockIn!==0||stockOut!==0);
+        var closing=hasMovement?lastBalance+stockIn-stockOut:0;
+        return {lastBalance:lastBalance,stockIn:stockIn,stockOut:stockOut,closing:closing};
       }
       function saveMonthlySnapshot(monthKey){
         normalize();
         var categories=['BIOCHEMISTRY','HAEMATOLOGY','MICROBIOLOGY','URINE/STOOL ANALYSIS','ETC','CONSUMABLES','OUTSOURCE INDENT'];
+        var existing=data.monthlySnapshots[monthKey]||null;
         var snap={categories:{},total:{lastBalance:0,stockIn:0,stockOut:0,closing:0},savedAt:nowIso()};
-        categories.forEach(function(c){var st=monthlyMovementStats(monthKey,c);snap.categories[c]=st;snap.total.lastBalance+=st.lastBalance;snap.total.stockIn+=st.stockIn;snap.total.stockOut+=st.stockOut;snap.total.closing+=st.closing;});
+        categories.forEach(function(c){
+          var st=monthlyMovementStats(monthKey,c);
+          // Preserve an explicitly opened/closed month with no movements at RM0.00
+          // instead of silently carrying its last-month balance into closing.
+          if(existing&&existing.categories&&existing.categories[c]&&st.stockIn===0&&st.stockOut===0){
+            st.lastBalance=Number(existing.categories[c].lastBalance||st.lastBalance);
+            st.closing=Number(existing.categories[c].closing||0);
+          }
+          snap.categories[c]=st;
+          snap.total.lastBalance+=st.lastBalance;
+          snap.total.stockIn+=st.stockIn;
+          snap.total.stockOut+=st.stockOut;
+          snap.total.closing+=st.closing;
+        });
         data.monthlySnapshots[monthKey]=snap;
         return snap;
       }
@@ -19755,7 +19779,7 @@ function exportMonthlySchedulePdfs() {
         var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();});
         var itemTrigger=$('inventoryItemTrigger');if(itemTrigger)itemTrigger.addEventListener('click',function(e){e.stopPropagation();toggleItemCustom();});
         var itemMenu=$('inventoryItemMenu');if(itemMenu)itemMenu.addEventListener('click',function(e){var opt=e.target.closest('.inventory-custom-option');if(!opt)return;var sel=$('inventoryItemInput');if(sel){sel.value=opt.getAttribute('data-value')||'';syncItemCustom();updateLotSelect();}closeItemCustom();});
-        var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){selectedPriceMonth=e.target.value;renderMonthlyMovement();}});if(tableWrap)tableWrap.addEventListener('click',function(e){var row=e.target.closest('.inventory-item-row');if(row)showItemRecords(row.getAttribute('data-inventory-item-id'));});if(tableWrap)tableWrap.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.closest('.inventory-item-row')){e.preventDefault();showItemRecords(e.target.closest('.inventory-item-row').getAttribute('data-inventory-item-id'));}});
+        var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){var previousMonth=selectedPriceMonth;saveMonthlySnapshot(previousMonth);selectedPriceMonth=e.target.value;var target=selectedPriceMonth;if(!data.monthlySnapshots[target]){saveMonthlySnapshot(target);}else{saveMonthlySnapshot(target);}saveLocal();renderMonthlyMovement();}});if(tableWrap)tableWrap.addEventListener('click',function(e){var row=e.target.closest('.inventory-item-row');if(row)showItemRecords(row.getAttribute('data-inventory-item-id'));});if(tableWrap)tableWrap.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.closest('.inventory-item-row')){e.preventDefault();showItemRecords(e.target.closest('.inventory-item-row').getAttribute('data-inventory-item-id'));}});
         document.addEventListener('click',function(e){if(!e.target.closest('#inventoryItemCustomWrap'))closeItemCustom();});
         document.querySelectorAll('[data-inventory-close]').forEach(function(n){n.addEventListener('click',closeModal);});document.querySelectorAll('[data-inventory-record-close]').forEach(function(n){n.addEventListener('click',closeRecordModal);});
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();if(e.key==='Escape'&&$('inventoryRecordModal')&&!$('inventoryRecordModal').hidden)closeRecordModal();});
