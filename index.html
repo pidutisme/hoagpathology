@@ -11479,10 +11479,11 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + getStoredToken                   +
        * +----------------------------------+ */
       function getStoredToken() {
-        /* AUTH POLICY: authentication is session-only.
-         * Never restore a login from persistent localStorage across a fresh
-         * browser/WebView/Electron launch. */
-        return safeSessionGet(TOKEN_KEY) || '';
+        /* AUTH POLICY: keep the authenticated session across page refreshes.
+         * The server remains authoritative and expires the token after the
+         * configured session lifetime. localStorage is used so browser refresh,
+         * Android WebView reloads and Electron reloads do not force a login. */
+        return safeStorageGet(TOKEN_KEY) || safeSessionGet(TOKEN_KEY) || '';
       }
 
       /* +----------------------------------+
@@ -11503,8 +11504,8 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + getStoredPublicUser_             +
        * +----------------------------------+ */
       function getStoredPublicUser_() {
-        /* User identity is session-only too. */
-        var raw = safeSessionGet(USER_KEY) || '';
+        /* Keep the cached identity alongside the persisted session token. */
+        var raw = safeStorageGet(USER_KEY) || safeSessionGet(USER_KEY) || '';
         if (!raw) return null;
 
         var payload = safeParse(raw);
@@ -11532,6 +11533,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
           cachedAt: new Date().toISOString(),
           version: cleanText(envelope.version)
         });
+        safeStorageSet(USER_KEY, payload);
         safeSessionSet(USER_KEY, payload);
         return true;
       }
@@ -11542,6 +11544,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
       function storeSession(envelope) {
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
         var token = envelope.token || '';
+        safeStorageSet(TOKEN_KEY, token);
         safeSessionSet(TOKEN_KEY, token);
         storePublicAuthUser_(envelope);
       }
@@ -11965,28 +11968,28 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * +----------------------------------+ */
       function checkStoredSession() {
         /*
-         * FRESH-START LOGIN POLICY
-         * ------------------------
-         * Every new app/page boot must show the username/password form.
-         * Do not restore a previous authentication session automatically.
-         * This applies to the Vercel web URL, Android WebView APK and
-         * Windows Electron desktop app.
+         * SESSION RESTORE POLICY
+         * ----------------------
+         * Restore a previously authenticated session after a normal page
+         * refresh/reload. The server is always checked before the app unlocks,
+         * so an expired/revoked token cannot bypass authentication.
          *
-         * Existing persistent auth keys from older builds are explicitly
-         * removed so an old localStorage token cannot silently unlock the app.
+         * This applies to the Vercel web URL, Android WebView APK and
+         * Windows Electron desktop app. Explicit logout still clears both
+         * localStorage and sessionStorage.
          */
-        try {
-          safeStorageRemove(TOKEN_KEY);
-          safeStorageRemove(USER_KEY);
-          safeStorageRemove(UPDATE_BYPASS_KEY);
-          safeStorageRemove(UPDATE_BYPASS_USER_KEY);
-        } catch (error) {
-          console.warn('Legacy persistent auth cleanup failed:', error);
+        var token = getStoredToken();
+        if (!token) {
+          stopSessionControls();
+          lock('', '');
+          return;
         }
 
-        clearStoredSession();
-        stopSessionControls();
+        var cachedUser = getStoredPublicUser_();
+        if (cachedUser) applyUser(cachedUser);
         lock('', '');
+
+        verifyStoredSessionInBackground_(token);
       }
 
       /* +----------------------------------+
@@ -12004,15 +12007,25 @@ body.dark-mode #inventory .inventory-record-close:hover {
             }
 
             storePublicAuthUser_(envelope);
-            applyUser(envelope.user || getStoredPublicUser_() || {});
+            var restoredUser = envelope.user || getStoredPublicUser_() || {};
+            applyUser(restoredUser);
+            unlock(restoredUser, { freshLogin: false, restoredSession: true });
             if (typeof ActivityTracker !== 'undefined' && ActivityTracker.track) {
               ActivityTracker.track('SESSION_RESUME', 'Verified saved login session.', { page: 'session' }, { dedupeMs: 60000 });
             }
           })
           .catch(function (error) {
             if (token !== getStoredToken()) return;
-            clearStoredSession();
-            lock(error && error.message ? error.message : 'Unable to verify your session.', 'error');
+            /* Keep the cached session during a transient network/API failure.
+             * A later watchdog check will re-verify it; only an explicit
+             * server-side rejection expires the session immediately. */
+            console.warn('Saved session verification temporarily unavailable:', error);
+            var cachedUser = getStoredPublicUser_();
+            if (cachedUser) {
+              applyUser(cachedUser);
+              unlock(cachedUser, { freshLogin: false, restoredSession: true });
+              setSystemToast('Connection Notice', 'Could not verify the session right now. Your login is being kept and will be checked again automatically.', 5000);
+            }
           });
       }
 
