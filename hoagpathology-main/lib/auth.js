@@ -52,8 +52,7 @@ export function buildPasswordRecord(password) {
     passwordScheme: 'scrypt',
     passwordSalt: salt.toString('base64'),
     passwordHash: hash.toString('base64'),
-    passwordCost: { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, keylen: SCRYPT_KEYLEN },
-    passwordIterations: undefined
+    passwordCost: { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, keylen: SCRYPT_KEYLEN }
   };
 }
 

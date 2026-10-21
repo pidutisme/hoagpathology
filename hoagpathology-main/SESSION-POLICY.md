@@ -1,9 +1,24 @@
-# Session Policy
+# HOAG Pathology Session Policy
 
-- Login, refresh/session validation, and logout use the single `/api/bridge` authentication implementation.
-- The client keeps the auth token only in `sessionStorage`.
-- `localStorage` is never used for authentication and legacy auth keys are removed on startup.
-- The server does not restore authentication from the legacy `labapp_session` cookie.
-- Normal page refresh/reload keeps the current tab/WebView session.
-- Closing the browser tab/window or destroying the WebView/Electron page session requires a new login.
-- No "Continue Session" action is exposed in the login UI.
+## Intended behavior
+
+- Login is required when the browser tab/window, Android WebView app instance, or Windows desktop app session is newly opened.
+- A normal page refresh/reload keeps the login session.
+- Closing the tab/window/app and opening it again requires login.
+- There is no **Continue Session** button.
+- Authentication credentials are stored in `sessionStorage` only. `localStorage` is explicitly removed for auth state.
+- Server-side auth APIs require the session token supplied by the current page session and do not recover authentication from a persistent cookie.
+
+## Why
+
+A persistent HttpOnly cookie can silently restore authentication after the app/browser is closed. That conflicts with the required security behavior. The client session token is therefore intentionally scoped to the page session.
+
+## Test matrix
+
+1. Login -> dashboard: PASS expected.
+2. F5 / Ctrl+R: session remains.
+3. Close browser tab -> reopen URL: login required.
+4. Close Android WebView app -> reopen: login required (subject to the WebView host retaining the same page instance; a fresh WebView session clears `sessionStorage`).
+5. Close Windows app -> reopen: login required.
+6. Existing legacy `localStorage` auth tokens are removed at startup.
+7. Persistent `labapp_session` cookies from older builds are ignored by auth-state validation.

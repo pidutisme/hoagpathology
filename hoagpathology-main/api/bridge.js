@@ -182,9 +182,52 @@ async function dispatch(db, method, a) {
     case 'saveUserRoster': {const s=await requireSession(db,tokenAt(1));const roster=a[0]&&typeof a[0]==='object'?a[0]:{};const old=(await db.ref(ROSTER).get()).val()||{};const updatedAt=clean(old.updatedAt);if(clean(a[2])!==updatedAt)return {ok:false,conflict:true,roster:old.roster||old.data||old,updatedAt,error:'Roster was changed by another user. The latest roster has been reloaded; please review and save again.',version:VERSION};const next={version:2,scope:'team',updatedBy:s.userId,savedKeys:Object.keys(roster).length,updatedAt:iso(),roster};await db.ref(ROSTER).set(next);return {ok:true,userId:s.userId,scope:'team',savedKeys:Object.keys(roster).length,updatedAt:next.updatedAt,storageSource:'firebase',version:VERSION};}
     case 'getSharedInventory': {
       const s=await requireSession(db,tokenAt(0));
-      const v=(await db.ref(INVENTORY).get()).val()||{};
-      const inventory=v.inventory||v.data||v;
-      return {ok:true,inventory:inventory&&typeof inventory==='object'?inventory:{},updatedAt:clean(v.updatedAt),scope:'team',storageSource:'firebase-admin',version:VERSION};
+      const ref=db.ref(INVENTORY);
+      const v=(await ref.get()).val()||{};
+      let inventory=v.inventory||v.data||v;
+      inventory=inventory&&typeof inventory==='object'?inventory:{};
+
+      // INVENTORY BASELINE V12: one-time server-side reset for the four
+      // Novaclone masters. Firebase is the source of truth, so this migration
+      // runs on the shared record itself rather than relying on browser flags.
+      // It intentionally ignores older V4-V11 markers. After V12 is stored,
+      // normal Stock In/Out movements are never touched by this migration.
+      const novacloneNames=new Set([
+        'novaclone anti-a 10ml/vial',
+        'novaclone anti-b 10ml/vial',
+        'novaclone anti-a,b 10ml/vial',
+        'novaclone anti-d (anti rh) igm+igg 10ml/vial'
+      ]);
+      const items=Array.isArray(inventory.items)?inventory.items:[];
+      const targetIds=new Set();
+      let novacloneNeedsRepair=false;
+      items.forEach(item=>{
+        const key=String(item?.name||'').trim().toLowerCase();
+        if(!novacloneNames.has(key)) return;
+        if(Number(item?.openingStock||0)!==0) novacloneNeedsRepair=true;
+        if(item.id) targetIds.add(String(item.id));
+      });
+      const txs=Array.isArray(inventory.transactions)?inventory.transactions:[];
+      const hasNovacloneTransactions=txs.some(tx=>targetIds.has(String(tx?.itemId||'')));
+
+      // V13: repair the ACTUAL Firebase state, not a migration marker.
+      // V12/V11 markers may say "done" while the four masters still carry
+      // the old seed opening quantity of 2. Only repair when the current
+      // persisted data is still on that stale baseline.
+      if(novacloneNeedsRepair || hasNovacloneTransactions){
+        const kept=txs.filter(tx=>!targetIds.has(String(tx?.itemId||'')));
+        if(kept.length!==txs.length) inventory.transactions=kept;
+        items.forEach(item=>{
+          const key=String(item?.name||'').trim().toLowerCase();
+          if(novacloneNames.has(key)) item.openingStock=0;
+        });
+        inventory.novacloneBalanceResetV13=true;
+        const next={version:4,scope:'team',updatedBy:s.userId,updatedAt:iso(),inventory};
+        await ref.set(next);
+        return {ok:true,inventory,updatedAt:next.updatedAt,scope:'team',storageSource:'firebase-admin',version:VERSION,migration:'novaclone-v13',changed:true};
+      }
+
+      return {ok:true,inventory,updatedAt:clean(v.updatedAt),scope:'team',storageSource:'firebase-admin',version:VERSION};
     }
     case 'saveSharedInventory': {
       const s=await requireSession(db,tokenAt(1));

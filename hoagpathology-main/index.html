@@ -9990,21 +9990,21 @@ body.dark-mode #inventory .inventory-record-close:hover {
 
     /* Vercel bridge for browser-hosted deployment */
     async function hoagApiRequest(action, payload) {
-      /* Single authentication source of truth: /api/bridge.
-       * Login, session validation, logout and application actions all use the
-       * same server implementation so auth behavior cannot drift between
-       * duplicate endpoints. The client stores the returned token only in
-       * sessionStorage, never localStorage or a persistent auth cookie. */
+      /* Authentication uses dedicated Vercel endpoints. This keeps login and
+       * session validation independent from the general application bridge. */
+      var authAction = String(action || '');
+      var authEndpoint = authAction === 'login' ? '/api/login' : (authAction === 'loginState' ? '/api/login-state' : '');
       var requestBody = payload && typeof payload === 'object' ? payload : {};
-      const response = await fetch('/api/bridge', {
+      var body = authEndpoint ? JSON.stringify(requestBody) : JSON.stringify({
+        action: authAction,
+        payload: requestBody
+      });
+      const response = await fetch(authEndpoint || '/api/bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         cache: 'no-store',
-        body: JSON.stringify({
-          action: action,
-          payload: requestBody
-        })
+        body: body
       });
 
       const text = await response.text();
@@ -12054,7 +12054,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + submitLogin                      +
        * +----------------------------------+ */
       function updateResumeSessionButton_() {
-        // Session restoration is automatic on refresh; no manual resume action is exposed.
+        // Continue Session UI is intentionally disabled. Session restoration is automatic on refresh.
         if (nodes.resume) nodes.resume.hidden = true;
       }
 
@@ -19459,7 +19459,7 @@ function exportMonthlySchedulePdfs() {
       var staffNames = ['SHOUNNA', 'LIZA', 'JAYANTHI', 'SURIANI', 'TOMMY', 'JAPIDI', 'NAZRAN'];
       var seedItems = [
         ['REAGENT','BIOCHEMISTRY','Urea',1512.80,0,5],['REAGENT','BIOCHEMISTRY','Creatinine',950.40,0,5],['REAGENT','BIOCHEMISTRY','Uric Acid',3225,0,5],['REAGENT','BIOCHEMISTRY','Albumin',892.80,0,5],['REAGENT','BIOCHEMISTRY','Total Protein',990,0,5],['REAGENT','BIOCHEMISTRY','Alkaline Phosphatase',1410.40,0,5],['REAGENT','BIOCHEMISTRY','Alanine Transaminase',2038.40,0,5],['REAGENT','BIOCHEMISTRY','Aspartate Transferase',1803.20,0,5],['REAGENT','BIOCHEMISTRY','Total Bilirubin',2171.20,0,5],['REAGENT','BIOCHEMISTRY','Direct Bilirubin',4195.20,0,5],['REAGENT','BIOCHEMISTRY','Cholesterol',1783.60,0,5],['REAGENT','BIOCHEMISTRY','Triglyceride',3900,0,5],['REAGENT','BIOCHEMISTRY','HDL-Cholesterol',4950.60,0,5],['REAGENT','BIOCHEMISTRY','Glucose',2098.40,0,5],['REAGENT','BIOCHEMISTRY','Chloride, Na, K',800,0,5],['REAGENT','BIOCHEMISTRY','ISE Buffer',0,8,2],['REAGENT','BIOCHEMISTRY','ISE Mid Standard',0,7,2],['REAGENT','BIOCHEMISTRY','ISE Low Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE High Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Na+/K+ Selectivity Check',0,0,2],['REAGENT','BIOCHEMISTRY','Cleaning Solution',0,4,2],['REAGENT','BIOCHEMISTRY','Wash Solution',0,9,2],['REAGENT','BIOCHEMISTRY','System Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','HDL Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Reference',0,7,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC1',1059,0,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC2',1059,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 1',1048,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 2',1048,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Monthly Clinical Chemistry',0,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Neonatal Bilirubin',0,0,2],
-        ['REAGENT','HAEMATOLOGY','Haematology Full Blood Count EQA (RCPA)',0,0,2],['REAGENT','HAEMATOLOGY','ESR Control L1',1126,0,2],['REAGENT','HAEMATOLOGY','ESR Control L2',1126,0,2],['REAGENT','HAEMATOLOGY','Invitrocell Reverse A1-A2-B-O',435,0,2],['REAGENT','HAEMATOLOGY','Anti A,B,AB,D 10mL/Vial',0,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC1',445,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC2',445,0,2],['REAGENT','HAEMATOLOGY','Randox G6PD Screen Test',1650,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Reagent Set',0,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Quality Control',0,0,2],['REAGENT','HAEMATOLOGY','Novaclone Anti-A 10ml/vial',26,0,2],['REAGENT','HAEMATOLOGY','Novaclone Anti-B 10ml/vial',26,0,2],['REAGENT','HAEMATOLOGY','Novaclone Anti-A,B 10ml/vial',35,0,2],['REAGENT','HAEMATOLOGY','Novaclone Anti-D (Anti Rh) IgM+IgG 10ml/vial',40,0,2],
+        ['REAGENT','HAEMATOLOGY','Haematology Full Blood Count EQA (RCPA)',0,0,2],['REAGENT','HAEMATOLOGY','ESR Control L1',1126,0,2],['REAGENT','HAEMATOLOGY','ESR Control L2',1126,0,2],['REAGENT','HAEMATOLOGY','Invitrocell Reverse A1-A2-B-O',435,0,2],['REAGENT','HAEMATOLOGY','Anti A,B,AB,D 10mL/Vial',0,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC1',445,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC2',445,0,2],['REAGENT','HAEMATOLOGY','Randox G6PD Screen Test',1650,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Reagent Set',0,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Quality Control',0,0,2],['REAGENT','HAEMATOLOGY','Novaclone Anti-A 10ml/vial',26,0,0],['REAGENT','HAEMATOLOGY','Novaclone Anti-B 10ml/vial',26,0,0],['REAGENT','HAEMATOLOGY','Novaclone Anti-A,B 10ml/vial',35,0,0],['REAGENT','HAEMATOLOGY','Novaclone Anti-D (Anti Rh) IgM+IgG 10ml/vial',40,0,0],
         ['REAGENT','MICROBIOLOGY','Ziehl Neelsen Stain Set M. Leprae',295,2,2],['REAGENT','MICROBIOLOGY','Giemsa Stain',450,2,2],['REAGENT','MICROBIOLOGY','Rapid TB Fluorescence Stain (Auramine O)',460,2,2],['REAGENT','MICROBIOLOGY','Leptospira IgM',250,0,2],['REAGENT','MICROBIOLOGY','Covid 19 Kit',5.50,0,2],['REAGENT','MICROBIOLOGY','Influenza Test Kit',0,0,2],['REAGENT','MICROBIOLOGY','Buffer Tablet pH 7.2',0,3,2],
         ['REAGENT','URINE/STOOL ANALYSIS','Mission 10U Urinalysis Strips',80,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission urine Glucose/Protein Strip',10,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission Cre/Alb Urine Reagent Strip',160,20,5],['REAGENT','URINE/STOOL ANALYSIS','Ecotest HCG UPT Strip',50,0,5],['REAGENT','URINE/STOOL ANALYSIS','RIQAS Urinalysis',0,0,5],['REAGENT','URINE/STOOL ANALYSIS','QC Urinalysis',1235,0,5],
         ['REAGENT','ETC','ABG Cartridge POCT ED',480,0,2],['REAGENT','ETC','Blood Glucose POCT',11.50,50,5],['REAGENT','ETC','Blood Glucose Solution',0,10,2],['REAGENT','ETC','Ketone Strip POCT',225,17,2],['REAGENT','ETC','Ketone Control Solution',0,12,2],['REAGENT','ETC','Glucose Powder 75g',4,0,2],['REAGENT','ETC','Sticker Barcode',0,0,10],
@@ -19702,7 +19702,7 @@ function exportMonthlySchedulePdfs() {
           scheduleSharedPoll();
         }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
       }
-      function mergeCloudAuthoritative(cloud){
+      function mergeCloudAuthoritative(cloud, suppressStaleNovaclone){
         if(!cloud || typeof cloud!=='object' || !Array.isArray(cloud.items)) return false;
         var local=cloneData(data)||{version:4,items:[],transactions:[],monthlyPrices:{},monthlySnapshots:{}};
         var merged=cloneData(cloud)||{};
@@ -19711,9 +19711,26 @@ function exportMonthlySchedulePdfs() {
         merged.transactions=Array.isArray(cloud.transactions)?cloud.transactions.slice():[];
         var txMap={};
         merged.transactions.forEach(function(tx){if(tx&&tx.id)txMap[String(tx.id)]=true;});
-        // Preserve Stock In/Out created locally before the cloud save completed.
+        // Preserve unsynced local movements, except for the four Novaclone
+        // masters during the V12 baseline reset. Older browsers can still hold
+        // the stale opening transactions that caused the balance to reappear;
+        // those must not be merged back after the server has cleaned Firebase.
+        var novacloneNames={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var novacloneIds={};
+        merged.items.forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(novacloneNames[key]&&item&&item.id) novacloneIds[String(item.id)]=true;
+        });
         (local.transactions||[]).forEach(function(tx){
-          if(tx&&tx.id&&!txMap[String(tx.id)]){merged.transactions.push(tx);txMap[String(tx.id)]=true;}
+          if(!tx||!tx.id||txMap[String(tx.id)]) return;
+          if(suppressStaleNovaclone && cloud.novacloneBalanceResetV12===true && novacloneIds[String(tx.itemId||'')]) return;
+          merged.transactions.push(tx);
+          txMap[String(tx.id)]=true;
         });
         // Cloud is authoritative for catalog and prices so every PC calculates the same stock value.
         merged.monthlyPrices=cloneData(cloud.monthlyPrices||{});
@@ -19741,7 +19758,7 @@ function exportMonthlySchedulePdfs() {
               if(localHasData) saveRemote({force:true});
               saveLocal(); render(); scheduleSharedPoll(); resolve(false); return;
             }
-            mergeCloudAuthoritative(remote);
+            mergeCloudAuthoritative(remote, result.migration==='novaclone-v12' || result.migration==='novaclone-v13');
             // Keep the built-in catalog complete after a cloud-authoritative load.
             // This adds missing master items without replacing existing stock,
             // lots, transactions or prices.
@@ -19749,33 +19766,10 @@ function exportMonthlySchedulePdfs() {
             mergeSeedCatalog();
             ensureNovacloneInitialZero();
 
-            // The cloud may still contain the legacy phantom H and Novaclone
-            // opening/movement data. Enforce the clean baseline on the
-            // cloud-authoritative snapshot before writing it back.
+            // Remove only malformed catalog entries here. Novaclone zeroing is
+            // controlled by the one-time shared V5 migration above so future
+            // legitimate Stock In/Out movements are preserved.
             var cloudChanged=removeMalformedCatalogItems();
-            var repairNames={
-              'novaclone anti-a 10ml/vial':true,
-              'novaclone anti-b 10ml/vial':true,
-              'novaclone anti-a,b 10ml/vial':true,
-              'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
-            };
-            data.items.forEach(function(item){
-              var key=String(item&&item.name||'').trim().toLowerCase();
-              if(repairNames[key] && Number(item.openingStock||0)!==0){
-                item.openingStock=0;
-                cloudChanged=true;
-              }
-            });
-            var txBefore=data.transactions.length;
-            data.transactions=data.transactions.filter(function(tx){
-              var item=data.items.find(function(it){
-                return String(it&&it.id||'')===String(tx&&tx.itemId||'');
-              });
-              var key=item?String(item.name||'').trim().toLowerCase():'';
-              return !repairNames[key];
-            });
-            if(data.transactions.length!==txBefore) cloudChanged=true;
-
             saveLocal();
             // Push the repaired cloud-authoritative state back to Vercel.
             saveRemote({force:true});
@@ -20196,6 +20190,73 @@ function exportMonthlySchedulePdfs() {
         safeStorageSet(flagKey,'1');
         return true;
       }
+      function repairNovacloneBalanceV5(){
+        /* ONE-TIME INVENTORY REPAIR V5: zero ONLY the four Novaclone masters. */
+        if(data.novacloneBalanceResetV5===true) return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        data.items.forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){item.openingStock=0;changed=true;}
+        });
+        var before=data.transactions.length;
+        data.transactions=data.transactions.filter(function(tx){
+          var item=data.items.find(function(it){return String(it&&it.id||'')===String(tx&&tx.itemId||'');});
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+        data.novacloneBalanceResetV5=true;
+        return true;
+      }
+
+      function repairNovacloneBalanceV6(){
+        /*
+         * ONE-TIME SHARED INVENTORY REPAIR V6.
+         * The earlier V5 repair may already be marked complete while
+         * Novaclone transactions were subsequently restored/synced from
+         * the shared cloud. V6 is therefore a fresh migration marker.
+         * It clears opening stock AND every transaction belonging to the
+         * four Novaclone masters exactly once, then persists the cleaned
+         * shared state. Normal future Stock In/Out movements are preserved
+         * after this migration.
+         */
+        if(data.novacloneBalanceResetV6===true) return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        data.items.forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){
+            item.openingStock=0;
+            changed=true;
+          }
+        });
+        var before=data.transactions.length;
+        data.transactions=data.transactions.filter(function(tx){
+          var item=data.items.find(function(it){
+            return String(it&&it.id||'')===String(tx&&tx.itemId||'');
+          });
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+        data.novacloneBalanceResetV6=true;
+        data.version=Math.max(Number(data.version||0),4);
+        return true;
+      }
+
       function repairInventoryCloudDataV4(){
         /*
          * ONE-TIME SHARED DATA REPAIR V4.
@@ -20239,6 +20300,118 @@ function exportMonthlySchedulePdfs() {
         return changed;
       }
 
+      function repairNovacloneBalanceV7(){
+        /*
+         * ONE-TIME NOVACLONE CLEANUP V7.
+         * V6 correctly zeroed the four masters, but the October 2026 opening
+         * balance migration ran afterwards and restored the old seed quantity
+         * of 2. V7 runs after that migration, clears the four Novaclone opening
+         * balances and their legacy movements, and then persists the clean
+         * shared state. Future Stock In/Out movements are not affected because
+         * the migration is guarded by its own marker.
+         */
+        if(data.novacloneBalanceResetV7===true) return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        (data.items||[]).forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){ item.openingStock=0; changed=true; }
+        });
+        var before=(data.transactions||[]).length;
+        data.transactions=(data.transactions||[]).filter(function(tx){
+          var item=(data.items||[]).find(function(it){
+            return String(it&&it.id||'')===String(tx&&tx.itemId||'');
+          });
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+        data.novacloneBalanceResetV7=true;
+        data.version=Math.max(Number(data.version||0),4);
+        return true;
+      }
+
+      function repairNovacloneBalanceV8(){
+        /*
+         * ONE-TIME SHARED NOVACLONE BASELINE V8.
+         * V8 is retained for backward compatibility. It is intentionally
+         * local-marker based so a stale cloud V8 marker cannot falsely tell
+         * the client that the cloud dataset was actually cleaned.
+         */
+        var flagKey='labAppNovacloneBalanceResetV8';
+        if(safeStorageGet(flagKey)==='1') return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        (data.items||[]).forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){ item.openingStock=0; changed=true; }
+        });
+        var before=(data.transactions||[]).length;
+        data.transactions=(data.transactions||[]).filter(function(tx){
+          var item=(data.items||[]).find(function(it){
+            return String(it&&it.id||'')===String(tx&&tx.itemId||'');
+          });
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+        data.novacloneBalanceResetV8=true;
+        data.version=Math.max(Number(data.version||0),4);
+        safeStorageSet(flagKey,'1');
+        return changed || true;
+      }
+
+      function repairNovacloneBalanceV9(){
+        /*
+         * ONE-TIME SHARED CLOUD REPAIR V9.
+         * Previous migrations trusted a cloud novacloneBalanceResetV8 marker.
+         * That marker can exist even when the actual cloud items still carry
+         * openingStock=2. V9 therefore uses a browser-local migration flag,
+         * ignores stale cloud markers, cleans the four Novaclone masters after
+         * the cloud merge, and then saveRemote() persists the cleaned dataset.
+         * Future Stock In/Out movements are preserved after this one-time run.
+         */
+        var flagKey='labAppNovacloneBalanceResetV9';
+        if(safeStorageGet(flagKey)==='1') return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        (data.items||[]).forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){ item.openingStock=0; changed=true; }
+        });
+        var before=(data.transactions||[]).length;
+        data.transactions=(data.transactions||[]).filter(function(tx){
+          var item=(data.items||[]).find(function(it){
+            return String(it&&it.id||'')===String(tx&&tx.itemId||'');
+          });
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+        data.novacloneBalanceResetV9=true;
+        data.version=Math.max(Number(data.version||0),4);
+        safeStorageSet(flagKey,'1');
+        return changed || true;
+      }
+
       function load(force){
         bind();
         var had=loadLocal();
@@ -20246,14 +20419,13 @@ function exportMonthlySchedulePdfs() {
         migrateInventoryNames();
         removeMalformedCatalogItems();
         mergeSeedCatalog();
-        var novacloneZeroed=ensureNovacloneInitialZero();
         var repairV4=repairInventoryCloudDataV4();
         var freshReset=resetInventoryForFreshStart();
         var balanceFix=repairOctober2026OpeningBalance();
         ensureCurrentMonthPrices();
         // Do not push local bootstrap data before checking the shared cloud.
         // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
-        if(freshReset||balanceFix||novacloneZeroed||repairV4){
+        if(freshReset||balanceFix||repairV4){
           saveLocal();
         }
         render();
