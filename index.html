@@ -12192,7 +12192,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
             setChangeBusy(false);
             setChangeMessage(error && error.message ? error.message : 'Password update failed. Please try again.', 'error');
           })
-          .changeAuthPassword(username, currentPassword, newPassword, typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo ? ActivityTracker.getClientInfo({ page: 'changePassword' }) : {});
+          .changeAuthPassword(username, currentPassword, newPassword, typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo ? ActivityTracker.getClientInfo({ page: 'changePassword' }) : {}, getStoredToken());
       }
   
       /* +----------------------------------+

@@ -1,6 +1,6 @@
 {
   "name": "hoagpathology",
-  "version": "2.1.79",
+  "version": "2.1.80",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,7 +14,8 @@
     "electron-builder": "26.0.12"
   },
   "scripts": {
-    "desktop:dist": "electron-builder --win nsis --publish never"
+    "desktop:dist": "electron-builder --win nsis --publish never",
+    "test": "node --test tests/*.test.js"
   },
   "main": "desktop/main.cjs",
   "build": {
