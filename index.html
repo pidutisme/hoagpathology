@@ -9990,13 +9990,21 @@ body.dark-mode #inventory .inventory-record-close:hover {
 
     /* Vercel bridge for browser-hosted deployment */
     async function hoagApiRequest(action, payload) {
-      const response = await fetch('/api/bridge', {
+      /* Authentication uses dedicated Vercel endpoints. This keeps login and
+       * session validation independent from the general application bridge. */
+      var authAction = String(action || '');
+      var authEndpoint = authAction === 'login' ? '/api/login' : (authAction === 'loginState' ? '/api/login-state' : '');
+      var requestBody = payload && typeof payload === 'object' ? payload : {};
+      var body = authEndpoint ? JSON.stringify(requestBody) : JSON.stringify({
+        action: authAction,
+        payload: requestBody
+      });
+      const response = await fetch(authEndpoint || '/api/bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: String(action || ''),
-          payload: payload && typeof payload === 'object' ? payload : {}
-        })
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: body
       });
 
       const text = await response.text();
