@@ -182,9 +182,46 @@ async function dispatch(db, method, a) {
     case 'saveUserRoster': {const s=await requireSession(db,tokenAt(1));const roster=a[0]&&typeof a[0]==='object'?a[0]:{};const old=(await db.ref(ROSTER).get()).val()||{};const updatedAt=clean(old.updatedAt);if(clean(a[2])!==updatedAt)return {ok:false,conflict:true,roster:old.roster||old.data||old,updatedAt,error:'Roster was changed by another user. The latest roster has been reloaded; please review and save again.',version:VERSION};const next={version:2,scope:'team',updatedBy:s.userId,savedKeys:Object.keys(roster).length,updatedAt:iso(),roster};await db.ref(ROSTER).set(next);return {ok:true,userId:s.userId,scope:'team',savedKeys:Object.keys(roster).length,updatedAt:next.updatedAt,storageSource:'firebase',version:VERSION};}
     case 'getSharedInventory': {
       const s=await requireSession(db,tokenAt(0));
-      const v=(await db.ref(INVENTORY).get()).val()||{};
-      const inventory=v.inventory||v.data||v;
-      return {ok:true,inventory:inventory&&typeof inventory==='object'?inventory:{},updatedAt:clean(v.updatedAt),scope:'team',storageSource:'firebase-admin',version:VERSION};
+      const ref=db.ref(INVENTORY);
+      const v=(await ref.get()).val()||{};
+      let inventory=v.inventory||v.data||v;
+      inventory=inventory&&typeof inventory==='object'?inventory:{};
+
+      // ONE-TIME INVENTORY MIGRATION V10: the previous client-side Novaclone
+      // repairs could mark completion before the cleaned payload was actually
+      // persisted to the shared Firebase record. The server is the source of
+      // truth, so perform the final cleanup here exactly once. This touches
+      // only the four Novaclone masters and their legacy movements. Once the
+      // V10 marker is stored, normal future Stock In/Out movements are left
+      // completely untouched.
+      if(inventory.novacloneBalanceResetV10 !== true){
+        const names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        let changed=false;
+        const items=Array.isArray(inventory.items)?inventory.items:[];
+        items.forEach(item=>{
+          const key=String(item?.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item?.openingStock||0)!==0){ item.openingStock=0; changed=true; }
+        });
+        const txs=Array.isArray(inventory.transactions)?inventory.transactions:[];
+        const kept=txs.filter(tx=>{
+          const item=items.find(it=>String(it?.id||'')===String(tx?.itemId||''));
+          const key=item?String(item?.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(kept.length!==txs.length){ inventory.transactions=kept; changed=true; }
+        inventory.novacloneBalanceResetV10=true;
+        const next={version:4,scope:'team',updatedBy:s.userId,updatedAt:iso(),inventory};
+        await ref.set(next);
+        return {ok:true,inventory,updatedAt:next.updatedAt,scope:'team',storageSource:'firebase-admin',version:VERSION,migration:'novaclone-v10',changed};
+      }
+
+      return {ok:true,inventory,updatedAt:clean(v.updatedAt),scope:'team',storageSource:'firebase-admin',version:VERSION};
     }
     case 'saveSharedInventory': {
       const s=await requireSession(db,tokenAt(1));
