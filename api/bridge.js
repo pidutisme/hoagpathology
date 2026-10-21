@@ -194,21 +194,33 @@ async function dispatch(db, method, a) {
       // only the four Novaclone masters and their legacy movements. Once the
       // V10 marker is stored, normal future Stock In/Out movements are left
       // completely untouched.
-      if(inventory.novacloneBalanceResetV10 !== true){
-        const names={
-          'novaclone anti-a 10ml/vial':true,
-          'novaclone anti-b 10ml/vial':true,
-          'novaclone anti-a,b 10ml/vial':true,
-          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
-        };
+      const names={
+        'novaclone anti-a 10ml/vial':true,
+        'novaclone anti-b 10ml/vial':true,
+        'novaclone anti-a,b 10ml/vial':true,
+        'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+      };
+      const items=Array.isArray(inventory.items)?inventory.items:[];
+      const targetItems=items.filter(item=>names[String(item?.name||'').trim().toLowerCase()]);
+      const txs=Array.isArray(inventory.transactions)?inventory.transactions:[];
+      const targetItemIds=new Set(targetItems.map(item=>String(item?.id||'')));
+      const targetTxs=txs.filter(tx=>targetItemIds.has(String(tx?.itemId||'')));
+      const targetHasNonZeroOpening=targetItems.some(item=>Number(item?.openingStock||0)!==0);
+      // Repair stale V10 markers too. This specifically handles the bad state
+      // created by earlier migrations: marker=true while the four Novaclone
+      // masters still carry the old opening balance. We only re-run the cleanup
+      // when there are no current Novaclone movements, so legitimate Stock In/Out
+      // after a successful reset is never erased.
+      const needsRepair=inventory.novacloneBalanceResetV10 !== true ||
+        (targetHasNonZeroOpening && targetTxs.length===0);
+
+      if(needsRepair){
         let changed=false;
-        const items=Array.isArray(inventory.items)?inventory.items:[];
         items.forEach(item=>{
           const key=String(item?.name||'').trim().toLowerCase();
           if(!names[key]) return;
           if(Number(item?.openingStock||0)!==0){ item.openingStock=0; changed=true; }
         });
-        const txs=Array.isArray(inventory.transactions)?inventory.transactions:[];
         const kept=txs.filter(tx=>{
           const item=items.find(it=>String(it?.id||'')===String(tx?.itemId||''));
           const key=item?String(item?.name||'').trim().toLowerCase():'';
