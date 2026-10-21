@@ -19374,13 +19374,13 @@ function exportMonthlySchedulePdfs() {
       var selectedPriceMonth = new Date().toISOString().slice(0,7);
       var staffNames = ['SHOUNNA', 'LIZA', 'JAYANTHI', 'SURIANI', 'TOMMY', 'JAPIDI', 'NAZRAN'];
       var seedItems = [
-        ['REAGENT','BIOCHEMISTRY','Urea',1512.80,1,5],['REAGENT','BIOCHEMISTRY','Creatinine',950.40,2,5],['REAGENT','BIOCHEMISTRY','Uric Acid',3225,0,5],['REAGENT','BIOCHEMISTRY','Albumin',892.80,0,5],['REAGENT','BIOCHEMISTRY','Total Protein',990,0,5],['REAGENT','BIOCHEMISTRY','Alkaline Phosphatase',1410.40,0,5],['REAGENT','BIOCHEMISTRY','Alanine Transaminase',2038.40,0,5],['REAGENT','BIOCHEMISTRY','Aspartate Transferase',1803.20,0,5],['REAGENT','BIOCHEMISTRY','Total Bilirubin',2171.20,0,5],['REAGENT','BIOCHEMISTRY','Direct Bilirubin',4195.20,0,5],['REAGENT','BIOCHEMISTRY','Cholesterol',1783.60,0,5],['REAGENT','BIOCHEMISTRY','Triglyceride',3900,0,5],['REAGENT','BIOCHEMISTRY','HDL-Cholesterol',4950.60,0,5],['REAGENT','BIOCHEMISTRY','Glucose',2098.40,0,5],['REAGENT','BIOCHEMISTRY','Chloride, Na, K',800,0,5],['REAGENT','BIOCHEMISTRY','ISE Buffer',0,8,2],['REAGENT','BIOCHEMISTRY','ISE Mid Standard',0,6,2],['REAGENT','BIOCHEMISTRY','ISE Low Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE High Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Na+/K+ Selectivity Check',0,0,2],['REAGENT','BIOCHEMISTRY','Cleaning Solution',0,4,2],['REAGENT','BIOCHEMISTRY','Wash Solution',0,9,2],['REAGENT','BIOCHEMISTRY','System Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','HDL Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Reference',0,7,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC1',1059,0,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC2',1059,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 1',1048,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 2',1048,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Monthly Clinical Chemistry',0,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Neonatal Bilirubin',0,0,2],
-        ['REAGENT','HAEMATOLOGY','Haematology Full Blood Count EQA (RCPA)',0,0,2],['REAGENT','HAEMATOLOGY','ESR Control L1',1126,0,2],['REAGENT','HAEMATOLOGY','ESR Control L2',1126,0,2],['REAGENT','HAEMATOLOGY','Invitrocell Reverse AT-A2B-O',435,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC1',445,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC2',445,0,2],['REAGENT','HAEMATOLOGY','Randox G6PD Screen Test',1650,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Reagent Set',0,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Quality Control',0,3,2],
+        ['REAGENT','BIOCHEMISTRY','Urea',1512.80,0,5],['REAGENT','BIOCHEMISTRY','Creatinine',950.40,0,5],['REAGENT','BIOCHEMISTRY','Uric Acid',3225,0,5],['REAGENT','BIOCHEMISTRY','Albumin',892.80,0,5],['REAGENT','BIOCHEMISTRY','Total Protein',990,0,5],['REAGENT','BIOCHEMISTRY','Alkaline Phosphatase',1410.40,0,5],['REAGENT','BIOCHEMISTRY','Alanine Transaminase',2038.40,0,5],['REAGENT','BIOCHEMISTRY','Aspartate Transferase',1803.20,0,5],['REAGENT','BIOCHEMISTRY','Total Bilirubin',2171.20,0,5],['REAGENT','BIOCHEMISTRY','Direct Bilirubin',4195.20,0,5],['REAGENT','BIOCHEMISTRY','Cholesterol',1783.60,0,5],['REAGENT','BIOCHEMISTRY','Triglyceride',3900,0,5],['REAGENT','BIOCHEMISTRY','HDL-Cholesterol',4950.60,0,5],['REAGENT','BIOCHEMISTRY','Glucose',2098.40,0,5],['REAGENT','BIOCHEMISTRY','Chloride, Na, K',800,0,5],['REAGENT','BIOCHEMISTRY','ISE Buffer',0,8,2],['REAGENT','BIOCHEMISTRY','ISE Mid Standard',0,7,2],['REAGENT','BIOCHEMISTRY','ISE Low Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE High Serum Standard',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Na+/K+ Selectivity Check',0,0,2],['REAGENT','BIOCHEMISTRY','Cleaning Solution',0,4,2],['REAGENT','BIOCHEMISTRY','Wash Solution',0,9,2],['REAGENT','BIOCHEMISTRY','System Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','HDL Calibrator',0,0,2],['REAGENT','BIOCHEMISTRY','ISE Reference',0,7,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC1',1059,0,2],['REAGENT','BIOCHEMISTRY','BIORAD Lypocheck Assay Chemistry QC2',1059,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 1',1048,0,2],['REAGENT','BIOCHEMISTRY','LIQUECHECK Paediatric Control LEVEL 2',1048,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Monthly Clinical Chemistry',0,0,2],['REAGENT','BIOCHEMISTRY','EQA RIQAS Neonatal Bilirubin',0,0,2],
+        ['REAGENT','HAEMATOLOGY','Haematology Full Blood Count EQA (RCPA)',0,0,2],['REAGENT','HAEMATOLOGY','ESR Control L1',1126,0,2],['REAGENT','HAEMATOLOGY','ESR Control L2',1126,0,2],['REAGENT','HAEMATOLOGY','Invitrocell Reverse A1-A2-B-O',435,0,2],['REAGENT','HAEMATOLOGY','Anti A,B,AB,D 10mL/Vial',0,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC1',445,0,2],['REAGENT','HAEMATOLOGY','ABO Grouping QC2',445,0,2],['REAGENT','HAEMATOLOGY','Randox G6PD Screen Test',1650,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Reagent Set',0,0,2],['REAGENT','HAEMATOLOGY','DXH 560 Quality Control',0,0,2],
         ['REAGENT','MICROBIOLOGY','Ziehl Neelsen Stain Set M. Leprae',295,2,2],['REAGENT','MICROBIOLOGY','Giemsa Stain',450,2,2],['REAGENT','MICROBIOLOGY','Rapid TB Fluorescence Stain (Auramine O)',460,2,2],['REAGENT','MICROBIOLOGY','Leptospira IgM',250,0,2],['REAGENT','MICROBIOLOGY','Covid 19 Kit',5.50,0,2],['REAGENT','MICROBIOLOGY','Influenza Test Kit',0,0,2],['REAGENT','MICROBIOLOGY','Buffer Tablet pH 7.2',0,3,2],
-        ['REAGENT','URINE/STOOL ANALYSIS','Mission 10U Urinalysis Strips',80,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission urine Glucose/Protein Strip',10,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission 10U Urine Reagent Strip',0,0,5],['REAGENT','URINE/STOOL ANALYSIS','Ecotest HCG UPT Strip',50,0,5],['REAGENT','URINE/STOOL ANALYSIS','RIQAS Urinalysis',0,0,5],['REAGENT','URINE/STOOL ANALYSIS','QC Urinalysis',1235,0,5],
-        ['REAGENT','ETC','ABG Cartridge POCT ED',480,0,2],['REAGENT','ETC','Blood Glucose POCT',11.50,50,5],['REAGENT','ETC','Blood Glucose Solution',0,10,2],['REAGENT','ETC','Ketone Strip POCT',225,7,2],['REAGENT','ETC','Ketone Control Solution',0,12,2],['REAGENT','ETC','Glucose Powder 75g',4,0,2],['REAGENT','ETC','Sticker Barcode',0,0,10],
-        ['REAGENT','OUTSOURCE INDENT','Blood C&S Aerobic',0,5,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Anaerobic',0,5,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Paediatric',0,5,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Myco/F',0,4,2],['REAGENT','OUTSOURCE INDENT','Charcoal Swab',0,63,2],['REAGENT','OUTSOURCE INDENT','Sodium Citrate Tube (Coagulation)',0,10,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (Plain)',0,16,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (Thymol)',0,13,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (VMA)',0,6,2],['REAGENT','OUTSOURCE INDENT','VTM Swab Sterile',0,0,2],['REAGENT','OUTSOURCE INDENT','MTB IGRA',0,0,2],['REAGENT','OUTSOURCE INDENT','Dengue Combo',0,6,2],['REAGENT','OUTSOURCE INDENT','Faecal Occult Blood',0,0,2],['REAGENT','OUTSOURCE INDENT','Falcon Tube',0,50,2],
-        ['CONSUMABLE','CONSUMABLES','Thermal Printer Paper For Urine Analyzer',0,0,5],['CONSUMABLE','CONSUMABLES','K2EDTA Tube 2mL (Lavender)',0,10,10],['CONSUMABLE','CONSUMABLES','Gel Tube with Clot Activator 3.6mL (Yellow)',0,10,10],['CONSUMABLE','CONSUMABLES','K3/KNa2 Spray Dried 3.6mL (Grey Cap)',0,20,10],['CONSUMABLE','CONSUMABLES','K2EDTA Microtainer Peads',0,0,10],['CONSUMABLE','CONSUMABLES','Lithium Heparin + Gel 500uL Paeds',0,0,10],['CONSUMABLE','CONSUMABLES','Biohazard Specimen With Zip',0,0,10],['CONSUMABLE','CONSUMABLES','Alcohol Swabs',0,0,20],['CONSUMABLE','CONSUMABLES','Applicator Sticks',0,0,20],['CONSUMABLE','CONSUMABLES','Disposable Pasteur Pipette 3mL',0,4,20],['CONSUMABLE','CONSUMABLES','3M VFEX Particulate Respirator N95 9150',0,0,20],['CONSUMABLE','CONSUMABLES','Latex Glove size M (Non Powder)',0,10,20],['CONSUMABLE','CONSUMABLES','Borosilicate Rimless Test Tube',0,0,20],['CONSUMABLE','CONSUMABLES','Parafilm 4x125ft',0,0,20],['CONSUMABLE','CONSUMABLES','Lens Tissue Wipe',0,0,20],['CONSUMABLE','CONSUMABLES','Immersion Oil (100ml)',0,0,5],['CONSUMABLE','CONSUMABLES','Formaldehyde Solution 10%',0,0,5],['CONSUMABLE','CONSUMABLES','ESR Vacuum Tube Monosed With 3.2 Sodium Citrate',0,1,10],['CONSUMABLE','CONSUMABLES','Isolation Gown 42G / Pack Of 10pcs',0,0,20],['CONSUMABLE','CONSUMABLES','Chemical Spill Pack',0,0,5],['CONSUMABLE','CONSUMABLES','Glass Slide Storage Box for 100 slides',0,0,5],['CONSUMABLE','CONSUMABLES','Plastic Slide Mailer for 5 slide',0,0,10],['CONSUMABLE','CONSUMABLES','Filter Paper 125mm',0,0,10],['CONSUMABLE','CONSUMABLES','Stool Container With Spoon',0,1,20],['CONSUMABLE','CONSUMABLES','Universal Container Yellow Cap',0,0,20],['CONSUMABLE','CONSUMABLES','Styrofoam Box',0,0,10],['CONSUMABLE','CONSUMABLES','Plastic Spatula',0,0,20],['CONSUMABLE','CONSUMABLES','Cover Slip Glass',0,0,20],['CONSUMABLE','CONSUMABLES','UTS Fluorescence Assist Slide',0,40,20],['CONSUMABLE','CONSUMABLES','Frosted Slide (Frosted End)',0,8,20],['CONSUMABLE','CONSUMABLES','Hand Sanitizer Alcohol Based 500mL',0,0,10],['CONSUMABLE','CONSUMABLES','Sticker Label Size 2cm x3cm (1000pcs)',0,60,100],['CONSUMABLE','CONSUMABLES','3 Ply Disposable Mask',0,1,20],['CONSUMABLE','CONSUMABLES','Plastic Apron Pull',0,0,20],['CONSUMABLE','CONSUMABLES','Clear Glass Slide (Non Frosted End)',0,50,20]
+        ['REAGENT','URINE/STOOL ANALYSIS','Mission 10U Urinalysis Strips',80,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission urine Glucose/Protein Strip',10,0,5],['REAGENT','URINE/STOOL ANALYSIS','Mission Cre/Alb Urine Reagent Strip',160,20,5],['REAGENT','URINE/STOOL ANALYSIS','Ecotest HCG UPT Strip',50,0,5],['REAGENT','URINE/STOOL ANALYSIS','RIQAS Urinalysis',0,0,5],['REAGENT','URINE/STOOL ANALYSIS','QC Urinalysis',1235,0,5],
+        ['REAGENT','ETC','ABG Cartridge POCT ED',480,0,2],['REAGENT','ETC','Blood Glucose POCT',11.50,50,5],['REAGENT','ETC','Blood Glucose Solution',0,10,2],['REAGENT','ETC','Ketone Strip POCT',225,17,2],['REAGENT','ETC','Ketone Control Solution',0,12,2],['REAGENT','ETC','Glucose Powder 75g',4,0,2],['REAGENT','ETC','Sticker Barcode',0,0,10],
+        ['REAGENT','OUTSOURCE INDENT','Blood C&S Aerobic',0,0,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Anaerobic',0,0,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Paediatric',0,5,2],['REAGENT','OUTSOURCE INDENT','Blood C&S Myco/F',0,4,2],['REAGENT','OUTSOURCE INDENT','Charcoal Swab',0,13,2],['REAGENT','OUTSOURCE INDENT','Sodium Citrate Tube (Coagulation)',0,0,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (Plain)',0,16,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (Thymol)',0,13,2],['REAGENT','OUTSOURCE INDENT','Urine 24H (VMA)',0,6,2],['REAGENT','OUTSOURCE INDENT','VTM Swab Sterile',0,0,2],['REAGENT','OUTSOURCE INDENT','MTB IGRA',0,0,2],['REAGENT','OUTSOURCE INDENT','Dengue Combo',0,6,2],['REAGENT','OUTSOURCE INDENT','Faecal Occult Blood',0,0,2],['REAGENT','OUTSOURCE INDENT','Falcon Tube',0,0,2],
+        ['CONSUMABLE','CONSUMABLES','Thermal Printer Paper For Urine Analyzer',0,0,5],['CONSUMABLE','CONSUMABLES','K2EDTA Tube 2mL (Lavender)',0,13,10],['CONSUMABLE','CONSUMABLES','Gel Tube with Clot Activator 3.6mL (Yellow)',0,20,10],['CONSUMABLE','CONSUMABLES','KFNa2 Spray Dried 3.6mL (Grey Cap)',0,20,10],['CONSUMABLE','CONSUMABLES','K2EDTA Microtainer Peads',0,0,10],['CONSUMABLE','CONSUMABLES','Lithium Heparin + Gel 500µL Paeds',0,0,10],['CONSUMABLE','CONSUMABLES','Biohazard Specimen With Zip',0,0,10],['CONSUMABLE','CONSUMABLES','Alcohol Swabs',0,0,20],['CONSUMABLE','CONSUMABLES','Applicator Sticks',0,0,20],['CONSUMABLE','CONSUMABLES','Disposable Pasteur Pipette 3mL',0,5,20],['CONSUMABLE','CONSUMABLES','3M VFEX Particulate Respirator N95 9150',0,0,20],['CONSUMABLE','CONSUMABLES','Latex Glove size M (Non Powder)',0,0,20],['CONSUMABLE','CONSUMABLES','Borosilicate Rimless Test Tube',0,0,20],['CONSUMABLE','CONSUMABLES','Parafilm 4x125fts',0,0,20],['CONSUMABLE','CONSUMABLES','Lens Tissue Wipe',0,0,20],['CONSUMABLE','CONSUMABLES','Immersion Oil (100ml)',0,0,5],['CONSUMABLE','CONSUMABLES','Formaldehyde Solution 10%',0,0,5],['CONSUMABLE','CONSUMABLES','ESR Vacuum Tube Monosed With 3.2 Sodium Citrate',0,1,10],['CONSUMABLE','CONSUMABLES','Isolation Gown 42G /Pack Of 10pcs',0,0,20],['CONSUMABLE','CONSUMABLES','Chemical Spill Pack',0,0,5],['CONSUMABLE','CONSUMABLES','Glass Slide Storage Box for 100 slides',0,0,5],['CONSUMABLE','CONSUMABLES','Plastic Slide Mailer for 5 slide',0,0,10],['CONSUMABLE','CONSUMABLES','Filter Paper 125mm',0,0,10],['CONSUMABLE','CONSUMABLES','Stool Container With Spoon',0,1,20],['CONSUMABLE','CONSUMABLES','Universal Container Yellow Cap',0,0,20],['CONSUMABLE','CONSUMABLES','Styrofoam Box',0,0,10],['CONSUMABLE','CONSUMABLES','Plastic Spatula',0,0,20],['CONSUMABLE','CONSUMABLES','Cover Slip Glass',0,0,20],['CONSUMABLE','CONSUMABLES','LTS Fluorescence Assist Slide',0,40,20],['CONSUMABLE','CONSUMABLES','Frosted Slide (Frosted End)',0,10,20],['CONSUMABLE','CONSUMABLES','Hand Sanitizer Alcohol Based 500mL',0,0,10],['CONSUMABLE','CONSUMABLES','Sticker Label Size 2cm x3cm (1000pcs)',0,60,100],['CONSUMABLE','CONSUMABLES','3 Ply Disposable Mask',0,6,20],['CONSUMABLE','CONSUMABLES','Plastic Apron Putih',0,0,20],['CONSUMABLE','CONSUMABLES','Clear Glass Slide (Non Frosted End)',0,55,20]
       ];
 
       function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -19401,7 +19401,7 @@ function exportMonthlySchedulePdfs() {
       }
       function seed(){
         if(data.items.length) return;
-        data.items=seedItems.map(function(x,i){return {id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:0,minStock:1,active:true};});
+        data.items=seedItems.map(function(x,i){return {id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:Number(x[4]||0),minStock:Number(x[5]||1),active:true};});
       }
       function seedOutsourceTransactions(){
         var movement=[
@@ -19414,6 +19414,24 @@ function exportMonthlySchedulePdfs() {
           if(!exists) data.transactions.push({id:'seed-'+item.id+'-'+m[1],itemId:item.id,type:m[1],qty:m[2],lotNo:'',expiry:'',staff:'',notes:'Initial catalog data',at:'2026-10-01T00:00:00.000Z'});
         });
       }
+      function migrateInventoryNames(){
+        var aliases={
+          'invitrocell reverse at-a2b-o':'Invitrocell Reverse A1-A2-B-O',
+          'mission 10u urine reagent strip':'Mission Cre/Alb Urine Reagent Strip',
+          'k3/kna2 spray dried 3.6ml (grey cap)':'KFNa2 Spray Dried 3.6mL (Grey Cap)',
+          'uts fluorescence assist slide':'LTS Fluorescence Assist Slide',
+          'plastic apron pull':'Plastic Apron Putih',
+          'parafilm 4x125ft':'Parafilm 4x125fts',
+          'isolation gown 42g / pack of 10pcs':'Isolation Gown 42G /Pack Of 10pcs',
+          'lithium heparin + gel 500ul paeds':'Lithium Heparin + Gel 500µL Paeds'
+        };
+        var changed=false;
+        data.items.forEach(function(item){
+          var key=String(item.name||'').trim().toLowerCase();
+          if(aliases[key]){item.name=aliases[key];changed=true;}
+        });
+        return changed;
+      }
       function mergeSeedCatalog(){
         var byName={};
         data.items.forEach(function(item){byName[String(item.name||'').trim().toLowerCase()]=item;});
@@ -19422,7 +19440,7 @@ function exportMonthlySchedulePdfs() {
           var key=String(x[2]||'').trim().toLowerCase();
           var item=byName[key];
           if(!item){
-            item={id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:0,minStock:1,active:true};
+            item={id:'item-'+String(i+1).padStart(3,'0'),type:x[0],category:x[1],name:x[2],price:Number(x[3]),openingStock:Number(x[4]||0),minStock:Number(x[5]||1),active:true};
             data.items.push(item); byName[key]=item; changed=true;
           }else{
             var price=Number(x[3]);
@@ -19704,20 +19722,26 @@ function exportMonthlySchedulePdfs() {
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();if(e.key==='Escape'&&$('inventoryRecordModal')&&!$('inventoryRecordModal').hidden)closeRecordModal();});
       }
       function resetInventoryForFreshStart(){
-        var flagKey='labAppInventoryFreshResetV4';
+        var flagKey='labAppInventoryStartingOct2026V1';
         var done=safeStorageGet(flagKey)==='1';
         if(done)return false;
-        // Fresh inventory start: keep the item master/catalog and prices,
-        // but remove all existing movement/opening-balance data so Stock In/Out
-        // can be entered manually from this point onward.
+        // Starting October 2026 inventory baseline supplied by the laboratory.
+        // Clear legacy movements/snapshots and use the supplied quantities as
+        // openingStock so the Inventory Balance starts from these figures.
         data.transactions=[];
         data.monthlySnapshots={};
-        data.items.forEach(function(item){item.openingStock=0;});
+        var stockByName={};
+        seedItems.forEach(function(x){stockByName[String(x[2]||'').trim().toLowerCase()]=Number(x[4]||0);});
+        data.items.forEach(function(item){
+          var key=String(item.name||'').trim().toLowerCase();
+          if(stockByName[key]!=null)item.openingStock=stockByName[key];
+          else item.openingStock=0;
+        });
         safeStorageSet(flagKey,'1');
         return true;
       }
       function load(force){
-        bind();var had=loadLocal();if(!had)seed();mergeSeedCatalog();var freshReset=resetInventoryForFreshStart();ensureCurrentMonthPrices();if(freshReset||!had)persist();render();
+        bind();var had=loadLocal();if(!had)seed();migrateInventoryNames();mergeSeedCatalog();var freshReset=resetInventoryForFreshStart();ensureCurrentMonthPrices();if(freshReset||!had)persist();render();
         var inventoryPage=$('inventory');
         if(inventoryPage && window.MutationObserver){
           var inventoryViewportObserver=new MutationObserver(function(){
@@ -19732,6 +19756,7 @@ function exportMonthlySchedulePdfs() {
         }
         loadRemote().then(function(found){
           if(!found){render();return;}
+          migrateInventoryNames();
           mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
         });
       }
