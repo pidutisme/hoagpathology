@@ -19407,6 +19407,9 @@ function exportMonthlySchedulePdfs() {
       var initialized = false;
       var dbPath = 'labapp/inventory';
       var data = { version: 4, items: [], transactions: [], monthlyPrices: {}, monthlySnapshots: {} };
+      var sharedUpdatedAt = '';
+      var sharedSyncBusy = false;
+      var sharedPollTimer = null;
       var currentView = 'ITEMS';
       var selectedPriceMonth = new Date().toISOString().slice(0,7);
       var staffNames = ['SHOUNNA', 'LIZA', 'JAYANTHI', 'SURIANI', 'TOMMY', 'JAPIDI', 'NAZRAN'];
@@ -19520,77 +19523,131 @@ function exportMonthlySchedulePdfs() {
         normalize();
         var local=cloneData(data) || {version:4,items:[],transactions:[],monthlyPrices:{},monthlySnapshots:{}};
         var changed=false;
-
         var itemMap={};
         (local.items||[]).forEach(function(item){ if(item&&item.id)itemMap[String(item.id)]=item; });
         (remote.items||[]).forEach(function(item){
           if(!item||!item.id)return;
           var id=String(item.id);
-          if(!itemMap[id]){
-            local.items.push(item);
-            itemMap[id]=item;
-            changed=true;
-          }
+          if(!itemMap[id]){ local.items.push(item); itemMap[id]=item; changed=true; }
         });
-
         var txMap={};
         (local.transactions||[]).forEach(function(tx){ if(tx&&tx.id)txMap[String(tx.id)]=tx; });
         (remote.transactions||[]).forEach(function(tx){
           if(!tx)return;
           var id=String(tx.id||'');
-          if(id && !txMap[id]){
-            local.transactions.push(tx);
-            txMap[id]=tx;
-            changed=true;
-          }
+          if(id && !txMap[id]){ local.transactions.push(tx); txMap[id]=tx; changed=true; }
         });
-
         local.monthlyPrices=local.monthlyPrices||{};
         Object.keys(remote.monthlyPrices||{}).forEach(function(month){
           local.monthlyPrices[month]=local.monthlyPrices[month]||{};
           Object.keys(remote.monthlyPrices[month]||{}).forEach(function(id){
-            if(local.monthlyPrices[month][id]==null){
-              local.monthlyPrices[month][id]=remote.monthlyPrices[month][id];
-              changed=true;
-            }
+            if(local.monthlyPrices[month][id]==null){ local.monthlyPrices[month][id]=remote.monthlyPrices[month][id]; changed=true; }
           });
         });
-
         local.monthlySnapshots=local.monthlySnapshots||{};
         Object.keys(remote.monthlySnapshots||{}).forEach(function(month){
-          if(local.monthlySnapshots[month]==null){
-            local.monthlySnapshots[month]=remote.monthlySnapshots[month];
-            changed=true;
-          }
+          if(local.monthlySnapshots[month]==null){ local.monthlySnapshots[month]=remote.monthlySnapshots[month]; changed=true; }
         });
-
         local.version=Math.max(Number(local.version||0),Number(remote.version||0),4);
-        data=local;
-        normalize();
+        data=local; normalize();
         return changed;
       }
-      function saveRemote(){
-        var d=db(); if(!d) return Promise.resolve(false);
-        var payload=cloneData(data);
-        return d.ref(dbPath).set(payload).then(function(){return true;}).catch(function(e){console.warn('Inventory Firebase save failed:',e);return false;});
+      function scheduleSharedPoll(){
+        clearTimeout(sharedPollTimer);
+        sharedPollTimer=setTimeout(function(){
+          sharedPollTimer=null;
+          if(document.hidden || !initialized || sharedSyncBusy) { scheduleSharedPoll(); return; }
+          loadRemote(true);
+        }, 12000);
       }
-      function loadRemote(){
-        var d=db(); if(!d) return Promise.resolve(false);
-        return d.ref(dbPath).once('value').then(function(s){
-          var remote=s&&s.val?s.val():null;
-          if(!remote || typeof remote!=='object' || !Array.isArray(remote.items)){
-            return saveRemote().then(function(){return false;});
+      function saveRemote(options){
+        options=options||{};
+        if(sharedSyncBusy && !options.force) return;
+        var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
+        if(!token || !hasVercelBackend()) return;
+        sharedSyncBusy=true;
+        hoagApi.run.withSuccessHandler(function(result){
+          sharedSyncBusy=false;
+          if(result && result.ok===false && result.conflict){
+            var cloud=result.inventory||{};
+            mergeRemoteIntoLocal(cloud);
+            saveLocal();
+            // Retry with the merged team state against the latest server revision.
+            saveRemote({force:true});
+            render();
+            scheduleSharedPoll();
+            return;
           }
-          var changed=mergeRemoteIntoLocal(remote);
-          saveLocal();
-          return saveRemote().then(function(){return true;});
-        }).catch(function(e){console.warn('Inventory Firebase load failed:',e);return false;});
+          if(result && result.ok!==false) sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
+          scheduleSharedPoll();
+        }).withFailureHandler(function(error){
+          sharedSyncBusy=false;
+          console.warn('Shared Inventory save failed:',error&&error.message?error.message:error);
+          scheduleSharedPoll();
+        }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
+      }
+      function mergeCloudAuthoritative(cloud){
+        if(!cloud || typeof cloud!=='object' || !Array.isArray(cloud.items)) return false;
+        var local=cloneData(data)||{version:4,items:[],transactions:[],monthlyPrices:{},monthlySnapshots:{}};
+        var merged=cloneData(cloud)||{};
+        merged.version=4;
+        merged.items=Array.isArray(cloud.items)?cloud.items.slice():[];
+        merged.transactions=Array.isArray(cloud.transactions)?cloud.transactions.slice():[];
+        var txMap={};
+        merged.transactions.forEach(function(tx){if(tx&&tx.id)txMap[String(tx.id)]=true;});
+        // Preserve Stock In/Out created locally before the cloud save completed.
+        (local.transactions||[]).forEach(function(tx){
+          if(tx&&tx.id&&!txMap[String(tx.id)]){merged.transactions.push(tx);txMap[String(tx.id)]=true;}
+        });
+        // Cloud is authoritative for catalog and prices so every PC calculates the same stock value.
+        merged.monthlyPrices=cloneData(cloud.monthlyPrices||{});
+        merged.monthlySnapshots=cloneData(cloud.monthlySnapshots||{});
+        data=merged; normalize();
+        return true;
+      }
+      function loadRemote(silent){
+        var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
+        if(!token || !hasVercelBackend()) { render(); return Promise.resolve(false); }
+        if(sharedSyncBusy) return Promise.resolve(false);
+        sharedSyncBusy=true;
+        return new Promise(function(resolve){
+          hoagApi.run.withSuccessHandler(function(result){
+            sharedSyncBusy=false;
+            if(!result || result.ok===false){
+              scheduleSharedPoll(); render(); resolve(false); return;
+            }
+            var remote=result.inventory||{};
+            sharedUpdatedAt=String(result.updatedAt||'');
+            var remoteHasData=Array.isArray(remote.items)&&remote.items.length>0;
+            var localHasData=Array.isArray(data.items)&&data.items.length>0;
+            if(!remoteHasData){
+              // First device bootstraps the shared team inventory.
+              if(localHasData) saveRemote({force:true});
+              saveLocal(); render(); scheduleSharedPoll(); resolve(false); return;
+            }
+            mergeCloudAuthoritative(remote);
+            saveLocal();
+            // Push any local Stock In/Out that existed before the cloud read.
+            saveRemote({force:true});
+            if(!silent) render(); else render();
+            scheduleSharedPoll();
+            resolve(true);
+          }).withFailureHandler(function(error){
+            sharedSyncBusy=false;
+            console.warn('Shared Inventory load failed:',error&&error.message?error.message:error);
+            scheduleSharedPoll(); render(); resolve(false);
+          }).getSharedInventory(token);
+        });
       }
       function handleFirebaseReady(){
         if(!initialized) return;
-        loadRemote().then(function(){ render(); }).catch(function(e){ console.warn('Inventory Firebase ready sync failed:',e); });
+        // Inventory persistence follows the same authenticated team-cloud model as the On Call roster.
+        loadRemote(false);
       }
-      function persist(){saveLocal();saveRemote();}
+      function persist(){
+        saveLocal();
+        saveRemote();
+      }
       function getItem(itemId){return data.items.find(function(x){return x.id===itemId;})||null;}
       function getTransactionsForItem(itemId){return data.transactions.filter(function(t){return t.itemId===itemId;});}
       function signedQty(t){return t.type==='OUT'?-Number(t.qty||0):Number(t.qty||0);}
@@ -19927,7 +19984,20 @@ function exportMonthlySchedulePdfs() {
         return true;
       }
       function load(force){
-        bind();var had=loadLocal();if(!had)seed();migrateInventoryNames();mergeSeedCatalog();var freshReset=resetInventoryForFreshStart();var balanceFix=repairOctober2026OpeningBalance();ensureCurrentMonthPrices();if(freshReset||balanceFix||!had)persist();render();
+        bind();
+        var had=loadLocal();
+        if(!had) seed();
+        migrateInventoryNames();
+        mergeSeedCatalog();
+        var freshReset=resetInventoryForFreshStart();
+        var balanceFix=repairOctober2026OpeningBalance();
+        ensureCurrentMonthPrices();
+        // Do not push local bootstrap data before checking the shared cloud.
+        // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
+        if(freshReset||balanceFix){
+          saveLocal();
+        }
+        render();
         var inventoryPage=$('inventory');
         if(inventoryPage && window.MutationObserver){
           var inventoryViewportObserver=new MutationObserver(function(){
@@ -19935,15 +20005,8 @@ function exportMonthlySchedulePdfs() {
           });
           inventoryViewportObserver.observe(inventoryPage,{attributes:true,attributeFilter:['class']});
         }
-        if(freshReset){
-          // Do not reload the old remote movement data after a deliberate fresh reset.
-          // The cleared local state has already been pushed by persist().
-          return;
-        }
-        loadRemote().then(function(found){
-          if(!found){render();return;}
-          migrateInventoryNames();
-          mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
+        loadRemote(false).then(function(){
+          render();
         });
       }
       function init(){load(false);}
