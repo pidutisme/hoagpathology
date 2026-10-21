@@ -20456,5 +20456,158 @@ if ("serviceWorker" in navigator) {
   window.addEventListener('scroll',function(){if(menu)positionMenu();},true);
 })();
 </script>
+
+<style id="inventory-filter-dropdown-polish-v8">
+/* v8: custom body-level filter menus matching the stable monthly selector. */
+#inventory .inventory-filter-custom-wrap {
+  position: relative; min-width: 0; width: 100%;
+}
+#inventory .inventory-filter-native {
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  opacity: 0 !important; pointer-events: none !important;
+}
+#inventory .inventory-filter-trigger {
+  width: 100%; min-height: 42px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: 1px solid rgba(120,135,160,.14); border-radius: 12px;
+  background: var(--neo-surface,#eef2f8); color: var(--text,#243047);
+  padding: 0 12px; font: inherit; font-size: 11px; font-weight: 800;
+  cursor: pointer; text-align: left; outline: none;
+  box-shadow: 3px 3px 7px rgba(145,155,175,.12), -3px -3px 7px rgba(255,255,255,.75);
+  white-space: nowrap; overflow: hidden;
+}
+#inventory .inventory-filter-trigger span:first-child {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#inventory .inventory-filter-trigger:hover,
+#inventory .inventory-filter-trigger.is-open {
+  border-color: rgba(47,128,237,.32);
+  box-shadow: 0 0 0 3px rgba(47,128,237,.07), 3px 3px 7px rgba(145,155,175,.12), -3px -3px 7px rgba(255,255,255,.75);
+}
+#inventory .inventory-filter-chevron {
+  flex: 0 0 auto; font-size: 12px; line-height: 1; opacity: .72;
+  transition: transform .16s ease;
+}
+#inventory .inventory-filter-trigger.is-open .inventory-filter-chevron { transform: rotate(180deg); }
+.inventory-filter-menu {
+  position: fixed; z-index: 100001; display: none;
+  min-width: 220px; max-height: 310px; overflow-y: auto; overflow-x: hidden;
+  padding: 5px; box-sizing: border-box; border-radius: 12px;
+  background: var(--neo-surface,#eef2f8); color: var(--text,#243047);
+  border: 1px solid rgba(120,135,160,.14);
+  box-shadow: 8px 12px 24px rgba(80,90,110,.18), -5px -5px 15px rgba(255,255,255,.8);
+}
+.inventory-filter-menu.is-open { display: block; }
+.inventory-filter-menu button {
+  width: 100%; min-height: 36px; border: 0; border-radius: 8px;
+  background: transparent; color: inherit; padding: 8px 10px;
+  font: inherit; font-size: 11px; font-weight: 750; text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.inventory-filter-menu button:hover,
+.inventory-filter-menu button.is-selected { background: rgba(47,128,237,.10); }
+.inventory-filter-menu button:active { background: rgba(47,128,237,.17); }
+.inventory-filter-menu::-webkit-scrollbar { width: 0; height: 0; }
+.inventory-filter-menu { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Slightly tighter calendar/date picker typography. */
+.inventory-date-popover { width: 270px !important; padding: 12px !important; border-radius: 16px !important; }
+.inventory-date-head { margin-bottom: 9px !important; }
+.inventory-date-month { font-size: 13px !important; }
+.inventory-date-nav { gap: 5px !important; }
+.inventory-date-nav button, .inventory-date-foot button {
+  min-width: 31px !important; height: 30px !important; padding: 0 8px !important; border-radius: 9px !important; font-size: 11px !important;
+}
+.inventory-date-week, .inventory-date-grid { gap: 3px !important; }
+.inventory-date-week span { font-size: 9px !important; padding: 3px 0 !important; }
+.inventory-date-day { height: 29px !important; border-radius: 8px !important; font-size: 11px !important; }
+.inventory-date-foot { margin-top: 9px !important; padding-top: 8px !important; }
+@media (max-width: 560px) {
+  .inventory-date-popover { width: min(270px,calc(100vw - 24px)) !important; }
+}
+
+@media (min-width: 1201px) {
+  #inventory .inventory-toolbar {
+    grid-template-columns: minmax(260px,1fr) repeat(3,minmax(205px,220px)) !important;
+  }
+}
+@media (max-width: 1200px) and (min-width: 981px) {
+  #inventory .inventory-toolbar {
+    grid-template-columns: minmax(220px,1fr) repeat(3,minmax(185px,1fr)) !important;
+  }
+}
+</style>
+<script id="inventory-filter-dropdown-polish-v8">
+(function(){
+  var ids=['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'];
+  var openMenu=null, openTrigger=null, openSelect=null;
+  function close(){
+    if(openMenu){openMenu.remove();openMenu=null;}
+    if(openTrigger){openTrigger.classList.remove('is-open');openTrigger.setAttribute('aria-expanded','false');}
+    openTrigger=null; openSelect=null;
+  }
+  function position(){
+    if(!openMenu||!openTrigger)return;
+    var r=openTrigger.getBoundingClientRect();
+    var w=Math.max(r.width,220);
+    var h=openMenu.offsetHeight;
+    var left=Math.min(Math.max(8,r.left),window.innerWidth-w-8);
+    var top=r.bottom+6;
+    if(top+h>window.innerHeight-8) top=Math.max(8,r.top-h-6);
+    openMenu.style.minWidth=w+'px';
+    openMenu.style.left=left+'px';
+    openMenu.style.top=top+'px';
+  }
+  function open(trigger,select){
+    close(); openTrigger=trigger; openSelect=select;
+    var menu=document.createElement('div');
+    openMenu=menu; menu.className='inventory-filter-menu is-open'; menu.setAttribute('role','listbox');
+    Array.prototype.forEach.call(select.options,function(opt){
+      var b=document.createElement('button'); b.type='button'; b.textContent=opt.textContent;
+      b.dataset.value=opt.value; b.setAttribute('role','option');
+      if(opt.value===select.value)b.classList.add('is-selected');
+      b.addEventListener('click',function(e){
+        e.preventDefault(); e.stopPropagation();
+        select.value=b.dataset.value;
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+        sync(select); close();
+      });
+      menu.appendChild(b);
+    });
+    document.body.appendChild(menu);
+    trigger.classList.add('is-open'); trigger.setAttribute('aria-expanded','true');
+    position();
+  }
+  function sync(select){
+    var wrap=select.parentElement, trigger=wrap && wrap.querySelector('.inventory-filter-trigger');
+    if(!trigger)return;
+    var text=trigger.querySelector('[data-filter-label]');
+    var opt=select.options[select.selectedIndex];
+    if(text)text.textContent=opt?opt.textContent:'Select...';
+    if(openMenu){openMenu.querySelectorAll('button').forEach(function(b){b.classList.toggle('is-selected',b.dataset.value===select.value);});}
+  }
+  function setup(select){
+    if(!select || select.dataset.customized==='1')return;
+    select.dataset.customized='1';
+    select.classList.add('inventory-filter-native');
+    var wrap=document.createElement('div'); wrap.className='inventory-filter-custom-wrap';
+    select.parentNode.insertBefore(wrap,select); wrap.appendChild(select);
+    var trigger=document.createElement('button'); trigger.type='button'; trigger.className='inventory-filter-trigger';
+    trigger.setAttribute('aria-haspopup','listbox'); trigger.setAttribute('aria-expanded','false');
+    trigger.innerHTML='<span data-filter-label></span><span class="inventory-filter-chevron">⌄</span>';
+    wrap.insertBefore(trigger,select);
+    sync(select);
+    trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation(); if(openMenu && openTrigger===trigger)close(); else open(trigger,select);});
+    select.addEventListener('change',function(){sync(select);});
+  }
+  function init(){ids.forEach(function(id){setup(document.getElementById(id));});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  document.addEventListener('click',function(e){if(openMenu && !e.target.closest('.inventory-filter-menu') && !e.target.closest('.inventory-filter-trigger'))close();},true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&openMenu)close();});
+  window.addEventListener('resize',function(){if(openMenu)position();});
+  window.addEventListener('scroll',function(){if(openMenu)position();},true);
+})();
+</script>
+
 </body>
 </html>
