@@ -19687,15 +19687,6 @@ function exportMonthlySchedulePdfs() {
           if(result && result.ok===false && result.conflict){
             var cloud=result.inventory||{};
             mergeRemoteIntoLocal(cloud);
-            // If this is the first V6 migration save and the server still
-            // has the pre-V6 dataset, re-apply the one-time Novaclone reset
-            // after merging the latest cloud revision.
-            if(cloud.novacloneBalanceResetV6 !== true){
-              repairNovacloneBalanceV6();
-            }
-            if(cloud.novacloneBalanceResetV8 !== true){
-              repairNovacloneBalanceV8();
-            }
             saveLocal();
             // Retry with the merged team state against the latest server revision.
             saveRemote({force:true});
@@ -19711,7 +19702,7 @@ function exportMonthlySchedulePdfs() {
           scheduleSharedPoll();
         }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
       }
-      function mergeCloudAuthoritative(cloud){
+      function mergeCloudAuthoritative(cloud, suppressStaleNovaclone){
         if(!cloud || typeof cloud!=='object' || !Array.isArray(cloud.items)) return false;
         var local=cloneData(data)||{version:4,items:[],transactions:[],monthlyPrices:{},monthlySnapshots:{}};
         var merged=cloneData(cloud)||{};
@@ -19720,9 +19711,26 @@ function exportMonthlySchedulePdfs() {
         merged.transactions=Array.isArray(cloud.transactions)?cloud.transactions.slice():[];
         var txMap={};
         merged.transactions.forEach(function(tx){if(tx&&tx.id)txMap[String(tx.id)]=true;});
-        // Preserve Stock In/Out created locally before the cloud save completed.
+        // Preserve unsynced local movements, except for the four Novaclone
+        // masters during the V12 baseline reset. Older browsers can still hold
+        // the stale opening transactions that caused the balance to reappear;
+        // those must not be merged back after the server has cleaned Firebase.
+        var novacloneNames={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var novacloneIds={};
+        merged.items.forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(novacloneNames[key]&&item&&item.id) novacloneIds[String(item.id)]=true;
+        });
         (local.transactions||[]).forEach(function(tx){
-          if(tx&&tx.id&&!txMap[String(tx.id)]){merged.transactions.push(tx);txMap[String(tx.id)]=true;}
+          if(!tx||!tx.id||txMap[String(tx.id)]) return;
+          if(suppressStaleNovaclone && cloud.novacloneBalanceResetV12===true && novacloneIds[String(tx.itemId||'')]) return;
+          merged.transactions.push(tx);
+          txMap[String(tx.id)]=true;
         });
         // Cloud is authoritative for catalog and prices so every PC calculates the same stock value.
         merged.monthlyPrices=cloneData(cloud.monthlyPrices||{});
@@ -19750,17 +19758,7 @@ function exportMonthlySchedulePdfs() {
               if(localHasData) saveRemote({force:true});
               saveLocal(); render(); scheduleSharedPoll(); resolve(false); return;
             }
-            mergeCloudAuthoritative(remote);
-            // V6 is a one-time cloud migration that clears any Novaclone
-            // transactions/opening stock left behind by earlier repairs.
-            // It runs once on the shared dataset, then future movements remain intact.
-            var remoteNovacloneResetV6 = repairNovacloneBalanceV6();
-            var remoteNovacloneResetV7 = repairNovacloneBalanceV7();
-            var remoteNovacloneResetV8 = repairNovacloneBalanceV8();
-            var remoteNovacloneResetV9 = repairNovacloneBalanceV9();
-            if(remote.novacloneBalanceResetV5 !== true){
-              repairNovacloneBalanceV5();
-            }
+            mergeCloudAuthoritative(remote, result.migration==='novaclone-v12');
             // Keep the built-in catalog complete after a cloud-authoritative load.
             // This adds missing master items without replacing existing stock,
             // lots, transactions or prices.
@@ -20421,19 +20419,13 @@ function exportMonthlySchedulePdfs() {
         migrateInventoryNames();
         removeMalformedCatalogItems();
         mergeSeedCatalog();
-        var novacloneZeroed=ensureNovacloneInitialZero();
         var repairV4=repairInventoryCloudDataV4();
-        var novacloneResetV5=repairNovacloneBalanceV5();
-        var novacloneResetV6=repairNovacloneBalanceV6();
         var freshReset=resetInventoryForFreshStart();
         var balanceFix=repairOctober2026OpeningBalance();
-        var novacloneResetV7=repairNovacloneBalanceV7();
-        var novacloneResetV8=repairNovacloneBalanceV8();
-        var novacloneResetV9=repairNovacloneBalanceV9();
         ensureCurrentMonthPrices();
         // Do not push local bootstrap data before checking the shared cloud.
         // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
-        if(freshReset||balanceFix||novacloneZeroed||repairV4||novacloneResetV5||novacloneResetV6||novacloneResetV7||novacloneResetV8||novacloneResetV9){
+        if(freshReset||balanceFix||repairV4){
           saveLocal();
         }
         render();
