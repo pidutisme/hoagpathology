@@ -18,11 +18,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const bodyToken = String(req.body?.token ?? '').trim();
-    const rawCookie = String(req.headers.cookie || '');
-    const cookieHit = rawCookie.split(';').map(part => part.trim()).find(part => part.startsWith('labapp_session='));
-    const cookieToken = cookieHit ? decodeURIComponent(cookieHit.slice('labapp_session='.length)) : '';
-    const token = bodyToken || cookieToken;
+    // Authentication is intentionally sessionStorage-only. Do not recover from
+    // a persistent browser/WebView cookie after the app/tab has been closed.
+    const token = String(req.body?.token ?? '').trim();
 
     if (!token || token.length > 300) {
       return res.status(200).json({ ok: true, authenticated: false });
@@ -104,7 +102,6 @@ export default async function handler(req, res) {
       expiresAt: session.expiresAt,
       version: "2.1.81"
     };
-    if (!bodyToken && cookieToken) result.token = cookieToken;
     return res.status(200).json(result);
   } catch (error) {
     console.error("Login state check failed:", error.message);

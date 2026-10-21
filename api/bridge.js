@@ -24,7 +24,6 @@ const asList = value => Array.isArray(value) ? value : value && typeof value ===
 const fail = (message, status=400) => { const e = new Error(message); e.status = status; throw e; };
 const getClientIp = req => { const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim(); return (forwarded || String(req.headers['x-real-ip'] || '') || 'unknown').slice(0, 120); };
 const cookieValue = (req, name) => { const raw = String(req.headers.cookie || ''); const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '=')); return hit ? decodeURIComponent(hit.slice(name.length + 1)) : ''; };
-const setSessionCookie = (res, token, maxAge=21600) => res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(token)}; Max-Age=${maxAge}; Path=/; HttpOnly; Secure; SameSite=Lax`);
 const clearSessionCookie = res => res.setHeader('Set-Cookie', 'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
 
 async function readUsers(db) {
@@ -106,25 +105,17 @@ export default async function handler(req,res) {
     if(action==='action') return res.status(200).json(await dispatch(db,clean(payload.method,100),Array.isArray(payload.args)?payload.args:[]));
     if(action==='login') {
       const result = await login(db,payload.username,payload.password,payload.clientInfo,{ip:getClientIp(req)});
-      if(result.ok && result.token) setSessionCookie(res,result.token,21600);
+      // Authentication is sessionStorage-only on the client; do not create a persistent cookie.
+      clearSessionCookie(res);
       return res.status(result.ok ? 200 : 401).json(result);
     }
     if(action==='loginState') {
-      const cookieToken = cookieValue(req,'labapp_session');
-      const suppliedToken = clean(payload.token, 300);
-      const token = suppliedToken || cookieToken;
+      const token = clean(payload.token, 300);
       const result = await loginState(db, token);
-      if (result.authenticated && token && !suppliedToken) {
-        const expiresMs = Date.parse(result.expiresAt || '');
-        const maxAge = Number.isFinite(expiresMs) ? Math.max(0, Math.floor((expiresMs - Date.now()) / 1000)) : 0;
-        if (maxAge > 0) setSessionCookie(res, token, maxAge);
-        result.token = token;
-        result.cookieRecovered = true;
-      }
       return res.status(200).json(result);
     }
     if(action==='logout') {
-      const token = clean(payload.token || cookieValue(req,'labapp_session'), 300);
+      const token = clean(payload.token, 300);
       if (token) {
         const auth = await sessionFor(db, token);
         if (auth) await log(db, auth.userId, 'LOGOUT', 'Signed out safely.', payload.clientInfo || {});

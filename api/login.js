@@ -9,7 +9,6 @@ const SETTINGS_PATH = 'labapp/settings';
 const clean = (v, max=3000) => String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0,max);
 const tokenHash = token => createHash('sha256').update(`token\n${String(token || '')}`, 'utf8').digest('hex');
 const getIp = req => (String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || String(req.headers['x-real-ip'] || '') || 'unknown').slice(0,120);
-const setCookie = (res, token) => res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(token)}; Max-Age=${SESSION_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`);
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -64,7 +63,8 @@ export default async function handler(req, res) {
     const token = `${randomUUID()}.${randomUUID()}.${now}`;
     const session = { userId:username, name:String(user.displayName || username), role:String(user.role || 'USER'), issuedAt, expiresAt };
     await db.ref(`${SESSIONS_PATH}/${tokenHash(token)}`).set(session);
-    setCookie(res, token);
+    // Session is returned to the client and kept in sessionStorage only.
+    res.setHeader('Set-Cookie', 'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
     return res.status(200).json({ ok:true, authenticated:true, token, expiresAt, expiresIn:SESSION_SECONDS, user:{id:username,name:session.name,role:session.role}, version:'2.1.81' });
   } catch (error) {
     console.error('Login endpoint failed:', error?.message || 'Unknown error');
