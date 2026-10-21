@@ -19757,6 +19757,7 @@ function exportMonthlySchedulePdfs() {
             var remoteNovacloneResetV6 = repairNovacloneBalanceV6();
             var remoteNovacloneResetV7 = repairNovacloneBalanceV7();
             var remoteNovacloneResetV8 = repairNovacloneBalanceV8();
+            var remoteNovacloneResetV9 = repairNovacloneBalanceV9();
             if(remote.novacloneBalanceResetV5 !== true){
               repairNovacloneBalanceV5();
             }
@@ -20341,13 +20342,12 @@ function exportMonthlySchedulePdfs() {
       function repairNovacloneBalanceV8(){
         /*
          * ONE-TIME SHARED NOVACLONE BASELINE V8.
-         * V7 could be overwritten by a cloud-authoritative revision during
-         * sync/conflict resolution. V8 is deliberately applied after every
-         * cloud merge until its marker is persisted, so the four Novaclone
-         * opening balances are truly zeroed in the shared dataset.
-         * Future Stock In/Out movements are preserved after this migration.
+         * V8 is retained for backward compatibility. It is intentionally
+         * local-marker based so a stale cloud V8 marker cannot falsely tell
+         * the client that the cloud dataset was actually cleaned.
          */
-        if(data.novacloneBalanceResetV8===true) return false;
+        var flagKey='labAppNovacloneBalanceResetV8';
+        if(safeStorageGet(flagKey)==='1') return false;
         var names={
           'novaclone anti-a 10ml/vial':true,
           'novaclone anti-b 10ml/vial':true,
@@ -20371,7 +20371,47 @@ function exportMonthlySchedulePdfs() {
         if(data.transactions.length!==before) changed=true;
         data.novacloneBalanceResetV8=true;
         data.version=Math.max(Number(data.version||0),4);
-        return true;
+        safeStorageSet(flagKey,'1');
+        return changed || true;
+      }
+
+      function repairNovacloneBalanceV9(){
+        /*
+         * ONE-TIME SHARED CLOUD REPAIR V9.
+         * Previous migrations trusted a cloud novacloneBalanceResetV8 marker.
+         * That marker can exist even when the actual cloud items still carry
+         * openingStock=2. V9 therefore uses a browser-local migration flag,
+         * ignores stale cloud markers, cleans the four Novaclone masters after
+         * the cloud merge, and then saveRemote() persists the cleaned dataset.
+         * Future Stock In/Out movements are preserved after this one-time run.
+         */
+        var flagKey='labAppNovacloneBalanceResetV9';
+        if(safeStorageGet(flagKey)==='1') return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        (data.items||[]).forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){ item.openingStock=0; changed=true; }
+        });
+        var before=(data.transactions||[]).length;
+        data.transactions=(data.transactions||[]).filter(function(tx){
+          var item=(data.items||[]).find(function(it){
+            return String(it&&it.id||'')===String(tx&&tx.itemId||'');
+          });
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+        data.novacloneBalanceResetV9=true;
+        data.version=Math.max(Number(data.version||0),4);
+        safeStorageSet(flagKey,'1');
+        return changed || true;
       }
 
       function load(force){
@@ -20389,10 +20429,11 @@ function exportMonthlySchedulePdfs() {
         var balanceFix=repairOctober2026OpeningBalance();
         var novacloneResetV7=repairNovacloneBalanceV7();
         var novacloneResetV8=repairNovacloneBalanceV8();
+        var novacloneResetV9=repairNovacloneBalanceV9();
         ensureCurrentMonthPrices();
         // Do not push local bootstrap data before checking the shared cloud.
         // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
-        if(freshReset||balanceFix||novacloneZeroed||repairV4||novacloneResetV5||novacloneResetV6||novacloneResetV7||novacloneResetV8){
+        if(freshReset||balanceFix||novacloneZeroed||repairV4||novacloneResetV5||novacloneResetV6||novacloneResetV7||novacloneResetV8||novacloneResetV9){
           saveLocal();
         }
         render();
