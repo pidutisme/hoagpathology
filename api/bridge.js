@@ -109,7 +109,20 @@ export default async function handler(req,res) {
       if(result.ok && result.token) setSessionCookie(res,result.token,21600);
       return res.status(result.ok ? 200 : 401).json(result);
     }
-    if(action==='loginState') return res.status(200).json(await loginState(db,payload.token || cookieValue(req,'labapp_session')));
+    if(action==='loginState') {
+      const cookieToken = cookieValue(req,'labapp_session');
+      const suppliedToken = clean(payload.token, 300);
+      const token = suppliedToken || cookieToken;
+      const result = await loginState(db, token);
+      if (result.authenticated && token && !suppliedToken) {
+        const expiresMs = Date.parse(result.expiresAt || '');
+        const maxAge = Number.isFinite(expiresMs) ? Math.max(0, Math.floor((expiresMs - Date.now()) / 1000)) : 0;
+        if (maxAge > 0) setSessionCookie(res, token, maxAge);
+        result.token = token;
+        result.cookieRecovered = true;
+      }
+      return res.status(200).json(result);
+    }
     if(action==='logout') {
       const token = clean(payload.token || cookieValue(req,'labapp_session'), 300);
       if (token) {

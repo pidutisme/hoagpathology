@@ -18,13 +18,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const token = String(req.body?.token ?? "").trim();
+    const bodyToken = String(req.body?.token ?? '').trim();
+    const rawCookie = String(req.headers.cookie || '');
+    const cookieHit = rawCookie.split(';').map(part => part.trim()).find(part => part.startsWith('labapp_session='));
+    const cookieToken = cookieHit ? decodeURIComponent(cookieHit.slice('labapp_session='.length)) : '';
+    const token = bodyToken || cookieToken;
 
     if (!token || token.length > 300) {
-      return res.status(401).json({
-        ok: true,
-        authenticated: false
-      });
+      return res.status(200).json({ ok: true, authenticated: false });
     }
 
     const tokenHash = createHash("sha256")
@@ -92,17 +93,19 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({
+    const result = {
       ok: true,
       authenticated: true,
       user: {
         id: userId,
         name: String(user.displayName || userId),
-        role: String(user.role || "USER")
+        role: String(user.role || 'USER')
       },
       expiresAt: session.expiresAt,
       version: "2.1.81"
-    });
+    };
+    if (!bodyToken && cookieToken) result.token = cookieToken;
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Login state check failed:", error.message);
 
