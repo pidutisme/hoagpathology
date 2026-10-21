@@ -19819,9 +19819,9 @@ function exportMonthlySchedulePdfs() {
         var snap=saveMonthlySnapshot(month);
         var movementMonths=data.transactions.map(function(t){return String(t.at||'').slice(0,7);}).filter(Boolean);
         var keys=Object.keys(data.monthlySnapshots||{}).concat(movementMonths,[currentMonthKey()]).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).sort().reverse();
-        var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category. Monthly records are saved for review from the month selector.</span></div><select id="inventoryPriceMonth" aria-label="Movement month">';
+        var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category. Monthly records are saved for review from the month selector.</span></div><div class="inventory-month-select-wrap"><select id="inventoryPriceMonth" aria-label="Movement month" class="inventory-month-native">';
         keys.forEach(function(key){html+='<option value="'+key+'"'+(key===month?' selected':'')+'>'+esc(monthLabel(key))+'</option>';});
-        html+='</select></div>';
+        html+='</select><button type="button" class="inventory-month-trigger" id="inventoryPriceMonthTrigger" aria-haspopup="listbox" aria-expanded="false"><span>'+esc(monthLabel(month))+'</span><span class="inventory-custom-chevron">⌄</span></button></div></div>';
         html+='<table class="inventory-table monthly-movement-table"><thead><tr><th>ACTIVITY</th><th>LAST MONTH BALANCE</th><th>STOCK IN (RM)</th><th>STOCK OUT (RM)</th><th>CLOSING BALANCE</th></tr></thead><tbody>';
         var total={lastBalance:0,stockIn:0,stockOut:0,closing:0};
         visible.forEach(function(c){var st=snap.categories[c]||{lastBalance:0,stockIn:0,stockOut:0,closing:0};total.lastBalance+=st.lastBalance;total.stockIn+=st.stockIn;total.stockOut+=st.stockOut;total.closing+=st.closing;html+='<tr><td class="inventory-item-name">'+esc(c)+'</td><td class="inventory-money">'+money(st.lastBalance)+'</td><td class="inventory-money movement-in">'+money(st.stockIn)+'</td><td class="inventory-money movement-out">'+money(st.stockOut)+'</td><td class="inventory-money">'+money(st.closing)+'</td></tr>';});
@@ -20314,6 +20314,146 @@ if ("serviceWorker" in navigator) {
   }
   function init(){setup('inventoryMovementDateInput','inventoryMovementDateVisible');setup('inventoryExpiryInput','inventoryExpiryVisible');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+<style id="inventory-dropdown-and-toolbar-final-v7">
+/* Inventory filter cards: give long labels enough room and keep them readable. */
+#inventory .inventory-toolbar {
+  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(200px, 220px)) !important;
+  gap: 10px !important;
+  align-items: stretch !important;
+}
+#inventory .inventory-select {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 42px !important;
+  padding-left: 12px !important;
+  padding-right: 34px !important;
+  font-size: 10.5px !important;
+  letter-spacing: .05px !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+}
+#inventory .inventory-select option { font-size: 12px; }
+
+/* The monthly selector is a custom, body-level menu so it cannot be clipped
+   by the inventory table's overflow container and will remain open for clicks. */
+#inventory .inventory-month-select-wrap { position: relative; width: 220px; min-width: 200px; }
+#inventory .inventory-month-native {
+  position: absolute !important;
+  width: 1px !important; height: 1px !important;
+  opacity: 0 !important; pointer-events: none !important;
+}
+#inventory .inventory-month-trigger {
+  width: 100%; min-height: 40px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: 1px solid rgba(120,135,160,.14); border-radius: 10px;
+  background: var(--neo-surface,#eef2f8); color: var(--text,#243047);
+  padding: 0 11px; font: inherit; font-size: 11px; font-weight: 800;
+  cursor: pointer; text-align: left;
+  box-shadow: 3px 3px 7px rgba(145,155,175,.12), -3px -3px 7px rgba(255,255,255,.75);
+}
+#inventory .inventory-month-trigger:hover,
+#inventory .inventory-month-trigger.is-open {
+  border-color: rgba(47,128,237,.32);
+  box-shadow: 0 0 0 3px rgba(47,128,237,.07), 3px 3px 7px rgba(145,155,175,.12), -3px -3px 7px rgba(255,255,255,.75);
+}
+.inventory-month-menu {
+  position: fixed; z-index: 100000; display: none;
+  min-width: 220px; max-height: 300px; overflow-y: auto; overflow-x: hidden;
+  padding: 5px; box-sizing: border-box; border-radius: 12px;
+  background: var(--neo-surface,#eef2f8); color: var(--text,#243047);
+  border: 1px solid rgba(120,135,160,.14);
+  box-shadow: 8px 12px 24px rgba(80,90,110,.18), -5px -5px 15px rgba(255,255,255,.8);
+}
+.inventory-month-menu.is-open { display: block; }
+.inventory-month-menu button {
+  width: 100%; min-height: 36px; border: 0; border-radius: 8px;
+  background: transparent; color: inherit; padding: 8px 10px;
+  font: inherit; font-size: 11px; font-weight: 750; text-align: left; cursor: pointer;
+}
+.inventory-month-menu button:hover,
+.inventory-month-menu button.is-selected { background: rgba(47,128,237,.10); }
+.inventory-month-menu button:active { background: rgba(47,128,237,.17); }
+.inventory-month-menu::-webkit-scrollbar { width: 0; height: 0; }
+.inventory-month-menu { scrollbar-width: none; -ms-overflow-style: none; }
+
+@media (max-width: 1200px) and (min-width: 981px) {
+  #inventory .inventory-toolbar {
+    grid-template-columns: minmax(220px,1fr) repeat(3,minmax(185px,1fr)) !important;
+    gap: 8px !important;
+  }
+  #inventory .inventory-month-select-wrap { width: 200px; min-width: 190px; }
+}
+@media (max-width: 980px) {
+  #inventory .inventory-toolbar {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  #inventory .inventory-search-wrap { grid-column: 1 / -1 !important; }
+  #inventory .inventory-select { font-size: 11px !important; }
+  #inventory .inventory-month-select-wrap { width: min(100%, 240px); min-width: 0; }
+}
+@media (max-width: 560px) {
+  #inventory .inventory-toolbar { grid-template-columns: 1fr !important; gap: 7px !important; }
+  #inventory .inventory-search-wrap { grid-column: auto !important; }
+  #inventory .inventory-month-select-wrap { width: 100%; }
+}
+</style>
+<script id="inventory-month-dropdown-final-v7">
+(function(){
+  var menu=null, trigger=null, select=null;
+  function closeMenu(){
+    if(menu){menu.remove();menu=null;}
+    if(trigger){trigger.classList.remove('is-open');trigger.setAttribute('aria-expanded','false');}
+    trigger=null;select=null;
+  }
+  function positionMenu(){
+    if(!menu||!trigger)return;
+    var r=trigger.getBoundingClientRect();
+    var w=Math.max(220,r.width);
+    menu.style.minWidth=w+'px';
+    var h=menu.offsetHeight;
+    var left=Math.min(Math.max(8,r.left),window.innerWidth-w-8);
+    var top=r.bottom+6;
+    if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-6);
+    menu.style.left=left+'px';menu.style.top=top+'px';
+  }
+  function openMenu(btn){
+    closeMenu();
+    trigger=btn;
+    select=document.getElementById('inventoryPriceMonth');
+    if(!select)return;
+    menu=document.createElement('div');
+    menu.className='inventory-month-menu is-open';
+    menu.setAttribute('role','listbox');
+    Array.prototype.forEach.call(select.options,function(opt){
+      var b=document.createElement('button'); b.type='button'; b.textContent=opt.textContent;
+      b.dataset.value=opt.value; b.setAttribute('role','option');
+      if(opt.value===select.value)b.classList.add('is-selected');
+      b.addEventListener('click',function(e){
+        e.preventDefault(); e.stopPropagation();
+        select.value=b.dataset.value;
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+        closeMenu();
+      });
+      menu.appendChild(b);
+    });
+    document.body.appendChild(menu);
+    trigger.classList.add('is-open');trigger.setAttribute('aria-expanded','true');
+    positionMenu();
+    var chosen=menu.querySelector('.is-selected');
+    if(chosen)chosen.scrollIntoView({block:'nearest'});
+  }
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('#inventoryPriceMonthTrigger');
+    if(btn){e.preventDefault();e.stopPropagation(); if(menu)closeMenu();else openMenu(btn);return;}
+    if(menu&&!e.target.closest('.inventory-month-menu'))closeMenu();
+  },true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&menu)closeMenu();});
+  window.addEventListener('resize',function(){if(menu)positionMenu();});
+  window.addEventListener('scroll',function(){if(menu)positionMenu();},true);
 })();
 </script>
 </body>
