@@ -11479,10 +11479,11 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + getStoredToken                   +
        * +----------------------------------+ */
       function getStoredToken() {
-        /* AUTH POLICY: authentication is session-only.
-         * Never restore a login from persistent localStorage across a fresh
-         * browser/WebView/Electron launch. */
-        return safeSessionGet(TOKEN_KEY) || '';
+        /* AUTH POLICY: keep the authenticated session across a normal page
+         * refresh/reload. Prefer sessionStorage, then fall back to the
+         * persistent localStorage copy used by web/WebView/Electron.
+         * The server-side token still expires and is verified on boot. */
+        return safeSessionGet(TOKEN_KEY) || safeStorageGet(TOKEN_KEY) || '';
       }
 
       /* +----------------------------------+
@@ -11503,8 +11504,8 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * + getStoredPublicUser_             +
        * +----------------------------------+ */
       function getStoredPublicUser_() {
-        /* User identity is session-only too. */
-        var raw = safeSessionGet(USER_KEY) || '';
+        /* Restore cached identity across a normal page refresh as well. */
+        var raw = safeSessionGet(USER_KEY) || safeStorageGet(USER_KEY) || '';
         if (!raw) return null;
 
         var payload = safeParse(raw);
@@ -11533,6 +11534,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
           version: cleanText(envelope.version)
         });
         safeSessionSet(USER_KEY, payload);
+        safeStorageSet(USER_KEY, payload);
         return true;
       }
   
@@ -11543,6 +11545,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
         var token = envelope.token || '';
         safeSessionSet(TOKEN_KEY, token);
+        safeStorageSet(TOKEN_KEY, token);
         storePublicAuthUser_(envelope);
       }
   
@@ -11965,28 +11968,40 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * +----------------------------------+ */
       function checkStoredSession() {
         /*
-         * FRESH-START LOGIN POLICY
-         * ------------------------
-         * Every new app/page boot must show the username/password form.
-         * Do not restore a previous authentication session automatically.
-         * This applies to the Vercel web URL, Android WebView APK and
-         * Windows Electron desktop app.
-         *
-         * Existing persistent auth keys from older builds are explicitly
-         * removed so an old localStorage token cannot silently unlock the app.
+         * SESSION RESUME ON REFRESH
+         * -------------------------
+         * A normal page refresh/reload must NOT log the user out. Restore the
+         * saved token, verify it against the server, then unlock the app.
+         * The server-side session remains authoritative and expires normally.
          */
-        try {
-          safeStorageRemove(TOKEN_KEY);
-          safeStorageRemove(USER_KEY);
-          safeStorageRemove(UPDATE_BYPASS_KEY);
-          safeStorageRemove(UPDATE_BYPASS_USER_KEY);
-        } catch (error) {
-          console.warn('Legacy persistent auth cleanup failed:', error);
+        var token = getStoredToken();
+
+        if (!token) {
+          stopSessionControls();
+          lock('', '');
+          return;
         }
 
-        clearStoredSession();
         stopSessionControls();
-        lock('', '');
+        lock('Checking secure session...', '');
+
+        hoagApiRequest('loginState', { token: token })
+          .then(function (envelope) {
+            if (!envelope || envelope.ok === false || !envelope.authenticated) {
+              clearStoredSession();
+              lock(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.', 'error');
+              return;
+            }
+
+            storePublicAuthUser_(envelope);
+            unlock(envelope.user || getStoredPublicUser_() || {}, { freshLogin: false, restoredSession: true });
+          })
+          .catch(function (error) {
+            /* Keep the saved session intact on a temporary network failure so
+             * a simple refresh does not destroy a valid login. */
+            console.warn('Saved session verification failed:', error);
+            lock('Unable to verify your saved session. Please refresh and try again.', 'error');
+          });
       }
 
       /* +----------------------------------+
@@ -19627,8 +19642,13 @@ function exportMonthlySchedulePdfs() {
               saveLocal(); render(); scheduleSharedPoll(); resolve(false); return;
             }
             mergeCloudAuthoritative(remote);
+            // Keep the current built-in catalog in sync after cloud-authoritative loads.
+            // Older shared inventory snapshots may still contain only 110 items; mergeSeedCatalog()
+            // restores any newly added master items (including the 4 Novaclone Haematology items)
+            // without touching existing stock, lots, transactions or prices.
+            var catalogChanged=mergeSeedCatalog();
             saveLocal();
-            // Push any local Stock In/Out that existed before the cloud read.
+            // Push any local Stock In/Out and newly seeded master items that existed before the cloud read.
             saveRemote({force:true});
             if(!silent) render(); else render();
             scheduleSharedPoll();
