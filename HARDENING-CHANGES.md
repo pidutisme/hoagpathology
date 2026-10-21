@@ -15,9 +15,9 @@ This build keeps the existing UI and CSS unchanged. The only frontend source cha
 - Notes creation uses individual Firebase child writes.
 - SPA documents are no longer cached by the service worker; this reduces stale deployments.
 - Added Vercel security headers.
-- Added GitHub Actions concurrency protection for the versioning workflow.
+- Removed automatic GitHub Actions versioning so normal `main` pushes do not create a second commit/deployment.
 - Added authentication regression tests.
-- Version set to 2.1.80.
+- Application version remains manually controlled in `package.json`.
 
 ## Not changed
 
