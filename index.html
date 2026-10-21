@@ -19742,6 +19742,9 @@ function exportMonthlySchedulePdfs() {
               saveLocal(); render(); scheduleSharedPoll(); resolve(false); return;
             }
             mergeCloudAuthoritative(remote);
+            if(remote.novacloneBalanceResetV5 !== true){
+              repairNovacloneBalanceV5();
+            }
             // Keep the built-in catalog complete after a cloud-authoritative load.
             // This adds missing master items without replacing existing stock,
             // lots, transactions or prices.
@@ -19749,33 +19752,10 @@ function exportMonthlySchedulePdfs() {
             mergeSeedCatalog();
             ensureNovacloneInitialZero();
 
-            // The cloud may still contain the legacy phantom H and Novaclone
-            // opening/movement data. Enforce the clean baseline on the
-            // cloud-authoritative snapshot before writing it back.
+            // Remove only malformed catalog entries here. Novaclone zeroing is
+            // controlled by the one-time shared V5 migration above so future
+            // legitimate Stock In/Out movements are preserved.
             var cloudChanged=removeMalformedCatalogItems();
-            var repairNames={
-              'novaclone anti-a 10ml/vial':true,
-              'novaclone anti-b 10ml/vial':true,
-              'novaclone anti-a,b 10ml/vial':true,
-              'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
-            };
-            data.items.forEach(function(item){
-              var key=String(item&&item.name||'').trim().toLowerCase();
-              if(repairNames[key] && Number(item.openingStock||0)!==0){
-                item.openingStock=0;
-                cloudChanged=true;
-              }
-            });
-            var txBefore=data.transactions.length;
-            data.transactions=data.transactions.filter(function(tx){
-              var item=data.items.find(function(it){
-                return String(it&&it.id||'')===String(tx&&tx.itemId||'');
-              });
-              var key=item?String(item.name||'').trim().toLowerCase():'';
-              return !repairNames[key];
-            });
-            if(data.transactions.length!==txBefore) cloudChanged=true;
-
             saveLocal();
             // Push the repaired cloud-authoritative state back to Vercel.
             saveRemote({force:true});
@@ -20196,6 +20176,32 @@ function exportMonthlySchedulePdfs() {
         safeStorageSet(flagKey,'1');
         return true;
       }
+      function repairNovacloneBalanceV5(){
+        /* ONE-TIME INVENTORY REPAIR V5: zero ONLY the four Novaclone masters. */
+        if(data.novacloneBalanceResetV5===true) return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        data.items.forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){item.openingStock=0;changed=true;}
+        });
+        var before=data.transactions.length;
+        data.transactions=data.transactions.filter(function(tx){
+          var item=data.items.find(function(it){return String(it&&it.id||'')===String(tx&&tx.itemId||'');});
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+        data.novacloneBalanceResetV5=true;
+        return true;
+      }
+
       function repairInventoryCloudDataV4(){
         /*
          * ONE-TIME SHARED DATA REPAIR V4.
@@ -20248,12 +20254,13 @@ function exportMonthlySchedulePdfs() {
         mergeSeedCatalog();
         var novacloneZeroed=ensureNovacloneInitialZero();
         var repairV4=repairInventoryCloudDataV4();
+        var novacloneResetV5=repairNovacloneBalanceV5();
         var freshReset=resetInventoryForFreshStart();
         var balanceFix=repairOctober2026OpeningBalance();
         ensureCurrentMonthPrices();
         // Do not push local bootstrap data before checking the shared cloud.
         // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
-        if(freshReset||balanceFix||novacloneZeroed||repairV4){
+        if(freshReset||balanceFix||novacloneZeroed||repairV4||novacloneResetV5){
           saveLocal();
         }
         render();
