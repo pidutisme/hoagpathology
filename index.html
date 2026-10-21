@@ -8912,6 +8912,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
 </span>
 </label>
 <button class="auth-submit" id="loginSubmit" type="submit"><span class="auth-submit-label">Sign In</span><span aria-hidden="true" class="auth-spinner"></span></button>
+<button class="auth-submit auth-resume-submit" id="resumeSessionButton" type="button" hidden>Continue Session</button>
 <div aria-live="polite" class="auth-message" id="loginMessage">Checking secure session...</div>
 </form>
 <div class="auth-actions">
@@ -11317,6 +11318,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
         nodes.password = $('loginPassword');
         nodes.passwordToggle = $('loginPasswordToggle');
         nodes.submit = $('loginSubmit');
+        nodes.resume = $('resumeSessionButton');
         nodes.message = $('loginMessage');
         nodes.showChangePassword = $('showChangePassword');
         nodes.backToLogin = $('backToLogin');
@@ -11922,6 +11924,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
   
         setBusy(false);
         setLoginMessage('', '');
+        updateResumeSessionButton_();
   
         startSessionControls();
         afterAuthPaint_(function () {
@@ -11986,9 +11989,19 @@ body.dark-mode #inventory .inventory-record-close:hover {
         }
 
         var cachedUser = getStoredPublicUser_();
-        if (cachedUser) applyUser(cachedUser);
-        lock('', '');
+        if (cachedUser) {
+          // Restore the UI immediately from the persisted token/user.
+          // The server check still remains authoritative and will lock the
+          // app if the token is actually expired or revoked.
+          applyUser(cachedUser);
+          unlock(cachedUser, { freshLogin:false, restoredSession:true });
+          updateResumeSessionButton_();
+          verifyStoredSessionInBackground_(token);
+          return;
+        }
 
+        lock('', '');
+        updateResumeSessionButton_();
         verifyStoredSessionInBackground_(token);
       }
 
@@ -12032,6 +12045,40 @@ body.dark-mode #inventory .inventory-record-close:hover {
       /* +----------------------------------+
        * + submitLogin                      +
        * +----------------------------------+ */
+      function updateResumeSessionButton_() {
+        if (!nodes.resume) return;
+        var token=getStoredToken();
+        var cached=getStoredPublicUser_();
+        var show=!!(token&&cached);
+        nodes.resume.hidden=!show;
+        if(show){
+          nodes.resume.textContent='Continue as '+(cached.name||cached.id||'Team Member');
+        }
+      }
+
+      function resumeStoredSession_() {
+        var token=getStoredToken();
+        if(!token){ lock('', ''); return; }
+        setBusy(true, 'Restoring Session...');
+        setLoginMessage('', '');
+        hoagApiRequest('loginState', { token: token })
+          .then(function(envelope){
+            setBusy(false);
+            if(!envelope||envelope.ok===false||!envelope.authenticated){
+              clearStoredSession();
+              updateResumeSessionButton_();
+              lock(envelope&&envelope.error?envelope.error:'Your saved session has expired. Please sign in again.','error');
+              return;
+            }
+            storePublicAuthUser_(envelope);
+            unlock(envelope.user||getStoredPublicUser_()||{}, {freshLogin:false,restoredSession:true});
+          })
+          .catch(function(error){
+            setBusy(false);
+            setLoginMessage(error&&error.message?error.message:'Could not restore the saved session. Please try again.','error');
+          });
+      }
+
       function submitLogin(event) {
         event.preventDefault();
         if (busy) return;
@@ -12292,6 +12339,7 @@ if (token) {
           nodes.changeForm.addEventListener('keydown', submitOnEnter);
         }
         if (nodes.passwordToggle) nodes.passwordToggle.addEventListener('click', togglePassword);
+        if (nodes.resume) nodes.resume.addEventListener('click', resumeStoredSession_);
         if (nodes.showChangePassword) nodes.showChangePassword.addEventListener('click', showChangePanel);
         if (nodes.backToLogin) {
           nodes.backToLogin.addEventListener('click', function () {
@@ -12299,6 +12347,7 @@ if (token) {
           });
         }
   
+        updateResumeSessionButton_();
         checkStoredSession();
       }
   
@@ -19484,7 +19533,7 @@ function exportMonthlySchedulePdfs() {
           var type=String(item&&item.type||'').trim();
           var category=String(item&&item.category||'').trim();
           var price=Number(item&&item.price||0);
-          var malformed=(name==='H'&&type==='D'&&category==='X'&&price===560);
+          var malformed=(name==='H' || (name==='H'&&type==='D'&&category==='X'&&price===560));
           if(malformed){ if(item&&item.id)badIds[String(item.id)]=true; changed=true; return false; }
           return true;
         });
@@ -19718,8 +19767,36 @@ function exportMonthlySchedulePdfs() {
             removeMalformedCatalogItems();
             mergeSeedCatalog();
             ensureNovacloneInitialZero();
+
+            // The cloud may still contain the legacy phantom H and Novaclone
+            // opening/movement data. Enforce the clean baseline on the
+            // cloud-authoritative snapshot before writing it back.
+            var cloudChanged=removeMalformedCatalogItems();
+            var repairNames={
+              'novaclone anti-a 10ml/vial':true,
+              'novaclone anti-b 10ml/vial':true,
+              'novaclone anti-a,b 10ml/vial':true,
+              'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+            };
+            data.items.forEach(function(item){
+              var key=String(item&&item.name||'').trim().toLowerCase();
+              if(repairNames[key] && Number(item.openingStock||0)!==0){
+                item.openingStock=0;
+                cloudChanged=true;
+              }
+            });
+            var txBefore=data.transactions.length;
+            data.transactions=data.transactions.filter(function(tx){
+              var item=data.items.find(function(it){
+                return String(it&&it.id||'')===String(tx&&tx.itemId||'');
+              });
+              var key=item?String(item.name||'').trim().toLowerCase():'';
+              return !repairNames[key];
+            });
+            if(data.transactions.length!==txBefore) cloudChanged=true;
+
             saveLocal();
-            // Push any local Stock In/Out that existed before the cloud read.
+            // Push the repaired cloud-authoritative state back to Vercel.
             saveRemote({force:true});
             if(!silent) render(); else render();
             scheduleSharedPoll();
@@ -20138,6 +20215,49 @@ function exportMonthlySchedulePdfs() {
         safeStorageSet(flagKey,'1');
         return true;
       }
+      function repairInventoryCloudDataV4(){
+        /*
+         * ONE-TIME SHARED DATA REPAIR V4.
+         * Removes the phantom H row and resets the four Novaclone masters
+         * to a genuine zero baseline, including any legacy transactions.
+         * The cleaned state is pushed back to the shared cloud after load.
+         */
+        var flagKey='labAppInventoryRepairV4';
+        if(safeStorageGet(flagKey)==='1') return false;
+
+        var changed=removeMalformedCatalogItems();
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+
+        data.items.forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(!names[key]) return;
+          if(Number(item.openingStock||0)!==0){
+            item.openingStock=0;
+            changed=true;
+          }
+        });
+
+        var before=data.transactions.length;
+        data.transactions=data.transactions.filter(function(tx){
+          var item=data.items.find(function(it){
+            return String(it&&it.id||'')===String(tx&&tx.itemId||'');
+          });
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before) changed=true;
+
+        data.monthlySnapshots={};
+        data.version=4;
+        safeStorageSet(flagKey,'1');
+        return changed;
+      }
+
       function load(force){
         bind();
         var had=loadLocal();
@@ -20146,12 +20266,13 @@ function exportMonthlySchedulePdfs() {
         removeMalformedCatalogItems();
         mergeSeedCatalog();
         var novacloneZeroed=ensureNovacloneInitialZero();
+        var repairV4=repairInventoryCloudDataV4();
         var freshReset=resetInventoryForFreshStart();
         var balanceFix=repairOctober2026OpeningBalance();
         ensureCurrentMonthPrices();
         // Do not push local bootstrap data before checking the shared cloud.
         // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
-        if(freshReset||balanceFix||novacloneZeroed){
+        if(freshReset||balanceFix||novacloneZeroed||repairV4){
           saveLocal();
         }
         render();
