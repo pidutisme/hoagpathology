@@ -11285,6 +11285,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
       var USER_KEY = 'labAppAuthUserV1';
       var UPDATE_BYPASS_KEY = 'labAppUpdateInProgressV1';
       var UPDATE_BYPASS_USER_KEY = 'labAppUpdateUserV1';
+      var APP_LIFECYCLE_KEY = 'labAppLifecycleActiveV1';
       var IDLE_TIMEOUT_MS = 15 * 60 * 1000;
       var IDLE_WARNING_MS = 60 * 1000;
       var SESSION_CHECK_MS = 5 * 60 * 1000;
@@ -11940,6 +11941,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
         }
   
         if (envelope.token) storeSession(envelope);
+        safeSessionSet(APP_LIFECYCLE_KEY, '1');
         else storePublicAuthUser_(envelope);
   
         unlock(envelope.user || getStoredPublicUser_() || {}, options || {});
@@ -11968,37 +11970,51 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * +----------------------------------+ */
       function checkStoredSession() {
         /*
-         * SESSION RESUME ON REFRESH
-         * -------------------------
-         * A normal page refresh/reload must NOT log the user out. Restore the
-         * saved token, verify it against the server, then unlock the app.
-         * The server-side session remains authoritative and expires normally.
+         * SESSION BEHAVIOUR
+         * -----------------
+         * - Normal browser/app refresh: restore the saved login session.
+         * - Closing the application/window/tab and opening it again: show login.
+         *
+         * sessionStorage survives a normal reload but is cleared when the page
+         * lifecycle ends. localStorage keeps the server token only as the refresh
+         * restore source.
          */
         var token = getStoredToken();
+        var sameAppLifecycle = safeSessionGet(APP_LIFECYCLE_KEY) === '1';
 
-        if (!token) {
+        if (!token || !sameAppLifecycle) {
+          if (!sameAppLifecycle) {
+            // Fresh application lifecycle: do not silently carry over an old login.
+            clearStoredSession();
+          }
           stopSessionControls();
           lock('', '');
           return;
         }
 
         stopSessionControls();
-        lock('Checking secure session...', '');
+
+        // Keep the login screen visually clean while the saved token is verified.
+        // Do NOT display "Checking secure session..." during a normal refresh.
+        lock('', '');
 
         hoagApiRequest('loginState', { token: token })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               clearStoredSession();
+              safeSessionRemove(APP_LIFECYCLE_KEY);
               lock(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.', 'error');
               return;
             }
 
+            // Mark this page/app lifecycle as active after successful verification.
+            safeSessionSet(APP_LIFECYCLE_KEY, '1');
             storePublicAuthUser_(envelope);
             unlock(envelope.user || getStoredPublicUser_() || {}, { freshLogin: false, restoredSession: true });
           })
           .catch(function (error) {
-            /* Keep the saved session intact on a temporary network failure so
-             * a simple refresh does not destroy a valid login. */
+            // Preserve the token and lifecycle marker during a temporary network issue.
+            // The user can refresh/retry without being unexpectedly logged out.
             console.warn('Saved session verification failed:', error);
             lock('Unable to verify your saved session. Please refresh and try again.', 'error');
           });
@@ -12246,6 +12262,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
        * +----------------------------------+ */
       function logout(message, type, reason) {
         var token = getStoredToken();
+        safeSessionRemove(APP_LIFECYCLE_KEY);
         stopSessionControls();
         clearStoredSession();
         if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.clearLastPage === 'function') {
@@ -19510,34 +19527,47 @@ function exportMonthlySchedulePdfs() {
         return changed;
       }
       function ensureNovacloneInitialZero(){
-        // The four Novaclone master items must start with ZERO stock.
-        // This is a one-time catalog migration so later manual Stock In/Out
-        // entries are never overwritten on refresh or cloud sync.
-        if(data.novacloneInitialZeroedV1===true)return false;
+        // ONE-TIME MIGRATION V2:
+        // All four newly-added Novaclone items must begin with a true ZERO balance.
+        // This removes any accidental opening stock and bootstrap transactions that
+        // may have existed in an older shared/cloud snapshot. After this migration
+        // is marked complete, future manual Stock In/Out movements are preserved.
+        if(data.novacloneInitialZeroedV2===true) return false;
+
         var names={
           'novaclone anti-a 10ml/vial':true,
           'novaclone anti-b 10ml/vial':true,
           'novaclone anti-a,b 10ml/vial':true,
           'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
         };
+
         var changed=false;
+
         data.items.forEach(function(item){
           var key=String(item.name||'').trim().toLowerCase();
-          if(!names[key])return;
-          if(Number(item.openingStock||0)!==0){item.openingStock=0;changed=true;}
-          // Any accidental bootstrap movements for these newly-added items
-          // are removed so their initial balance is truly zero.
+          if(!names[key]) return;
+
+          // Force opening quantity to zero.
+          if(Number(item.openingStock||0)!==0){
+            item.openingStock=0;
+            changed=true;
+          }
         });
+
+        // Remove any pre-existing bootstrap Stock In/Out movements for these four
+        // items so their starting balance is genuinely 0.
         var before=data.transactions.length;
         data.transactions=data.transactions.filter(function(t){
           var item=data.items.find(function(it){return it.id===t.itemId;});
           var key=item?String(item.name||'').trim().toLowerCase():'';
           return !names[key];
         });
-        if(data.transactions.length!==before)changed=true;
-        data.novacloneInitialZeroedV1=true;
+        if(data.transactions.length!==before) changed=true;
+
+        data.novacloneInitialZeroedV2=true;
         return true;
       }
+
       function currentMonthKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
       function ensureCurrentMonthPrices(){
         normalize();
