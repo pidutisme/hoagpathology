@@ -9398,8 +9398,8 @@ body.dark-mode #inventory .inventory-record-close:hover {
         <label>LOT NO.<input id="inventoryLotInput" type="text" maxlength="80" placeholder="e.g. 2804"></label>
       </div>
       <div class="inventory-form-grid">
-        <label>MOVEMENT DATE<input id="inventoryMovementDateInput" type="date" required></label>
-        <label>EXPIRY<input id="inventoryExpiryInput" type="date"></label>
+        <label class="inventory-date-field">MOVEMENT DATE<input id="inventoryMovementDateInput" type="hidden"><input id="inventoryMovementDateVisible" class="inventory-neumorphic-date" type="text" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" required readonly aria-label="Movement date"></label>
+        <label class="inventory-date-field">EXPIRY<input id="inventoryExpiryInput" type="hidden"><input id="inventoryExpiryVisible" class="inventory-neumorphic-date" type="text" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" readonly aria-label="Expiry date"></label>
       </div>
       <div class="inventory-form-grid">
         <label>STAFF<select id="inventoryStaffInput"></select></label>
@@ -9445,7 +9445,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
 <div class="setting-box"><div class="settings-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"/><path d="M7 4h10M5 8h14"/></svg></div><div><strong>Version</strong><span id="aboutAppVersion">2.1.7</span></div></div>
 </div>
 <div class="settings-extra-grid">
-<button type="button" class="settings-extra-card settings-update-card" id="settingsSystemCheckButton" aria-label="Check system status"><div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></div><div class="settings-extra-copy"><strong>System Check</strong><span>Check app, storage &amp; connection</span></div></button>
+<button type="button" class="settings-extra-card settings-update-card" id="settingsUpdateButton" aria-label="Check for latest version"><div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 1 4"/><path d="M20 4v7h-7"/></svg></div><div class="settings-extra-copy"><strong>Update</strong><span>Check for latest version</span></div></button>
 <div class="settings-extra-card">
 <div class="settings-extra-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"/></svg></div>
 <div class="settings-extra-copy"><strong>Data &amp; Sync</strong><span>GitHub + Firebase + Vercel</span></div>
@@ -12366,9 +12366,6 @@ if (token) {
                 }
                 if (typeof Presence !== 'undefined' && Presence && typeof Presence.handleFirebaseReady === 'function') {
                   Presence.handleFirebaseReady();
-                }
-                if (typeof Inventory !== 'undefined' && Inventory && typeof Inventory.handleFirebaseReady === 'function') {
-                  Inventory.handleFirebaseReady();
                 }
               })
               .catch(function (error) {
@@ -19406,8 +19403,6 @@ function exportMonthlySchedulePdfs() {
       var STORAGE_KEY = 'labAppInventoryV2';
       var initialized = false;
       var dbPath = 'labapp/inventory';
-      var remoteHydrated = false;
-      var remoteSyncInFlight = false;
       var data = { version: 4, items: [], transactions: [], monthlyPrices: {}, monthlySnapshots: {} };
       var currentView = 'ITEMS';
       var selectedPriceMonth = new Date().toISOString().slice(0,7);
@@ -19520,40 +19515,7 @@ function exportMonthlySchedulePdfs() {
       }
       function loadRemote(){
         var d=db(); if(!d) return Promise.resolve(false);
-        if(remoteSyncInFlight) return Promise.resolve(remoteHydrated);
-        remoteSyncInFlight=true;
-        return d.ref(dbPath).once('value').then(function(s){
-          var v=s&&s.val?s.val():null;
-          if(v&&typeof v==='object'&&Array.isArray(v.items)){
-            data=v; normalize(); saveLocal(); remoteHydrated=true; return true;
-          }
-          remoteHydrated=false;
-          return false;
-        }).catch(function(e){
-          console.warn('Inventory Firebase load failed:',e);
-          remoteHydrated=false;
-          return false;
-        }).finally(function(){ remoteSyncInFlight=false; });
-      }
-      function syncFromFirebase(){
-        if(!db()) return;
-        loadRemote().then(function(found){
-          if(found){
-            migrateInventoryNames();
-            mergeSeedCatalog();
-            ensureCurrentMonthPrices();
-            saveLocal();
-            render();
-            return;
-          }
-          // First-time Firebase setup: promote the existing local inventory to
-          // the shared database so future deployments/browsers keep the data.
-          if(data && Array.isArray(data.items) && data.items.length){
-            saveRemote().then(function(ok){
-              if(ok){ remoteHydrated=true; saveLocal(); }
-            });
-          }
-        });
+        return d.ref(dbPath).once('value').then(function(s){var v=s&&s.val?s.val():null;if(v&&typeof v==='object'&&Array.isArray(v.items)){data=v;normalize();saveLocal();return true;}return false;}).catch(function(e){console.warn('Inventory Firebase load failed:',e);return false;});
       }
       function persist(){saveLocal();saveRemote();}
       function getItem(itemId){return data.items.find(function(x){return x.id===itemId;})||null;}
@@ -19906,21 +19868,13 @@ function exportMonthlySchedulePdfs() {
           return;
         }
         loadRemote().then(function(found){
-          if(!found){
-            // Firebase may not be ready yet. handleFirebaseReady() will retry
-            // and will bootstrap the shared copy if this is the first setup.
-            render();return;
-          }
+          if(!found){render();return;}
           migrateInventoryNames();
-          mergeSeedCatalog();ensureCurrentMonthPrices();saveLocal();render();
-          remoteHydrated=true;
+          mergeSeedCatalog();ensureCurrentMonthPrices();persist();render();
         });
       }
-      function handleFirebaseReady(){
-        syncFromFirebase();
-      }
       function init(){load(false);}
-      return {init:init,open:open,load:load,render:render,handleFirebaseReady:handleFirebaseReady};
+      return {init:init,open:open,load:load,render:render};
     })();
 
     var LabApp = {
@@ -20041,81 +19995,150 @@ if ("serviceWorker" in navigator) {
 
 <script>
 (function(){
-  function bindSettingsSystemCheck(){
-    var btn=document.getElementById('settingsSystemCheckButton');
-    if(!btn || btn.dataset.checkBound==='1') return;
-    btn.dataset.checkBound='1';
+  function bindSettingsUpdate(){
+    var btn=document.getElementById('settingsUpdateButton');
+    if(!btn || btn.dataset.updateBound==='1') return;
+    btn.dataset.updateBound='1';
 
     btn.addEventListener('click', async function(event){
       event.preventDefault();
       event.stopPropagation();
-      if(btn.dataset.checking==='1') return;
+      if(btn.dataset.updating==='1') return;
 
-      btn.dataset.checking='1';
+      btn.dataset.updating='1';
       btn.disabled=true;
       var copy=btn.querySelector('.settings-extra-copy span');
-      var original=copy ? copy.textContent : 'Check app, storage & connection';
-      if(copy) copy.textContent='Checking system…';
+      var original=copy ? copy.textContent : 'Check for latest version';
+      if(copy) copy.textContent='Updating…';
 
-      var checks=[];
       try {
-        checks.push('App: OK');
-
-        try {
-          var storageOk = !!window.localStorage;
-          if(storageOk){
-            var probe='__labapp_check__';
-            localStorage.setItem(probe,'1');
-            localStorage.removeItem(probe);
-          }
-          checks.push('Storage: OK');
-        } catch(storageError) {
-          checks.push('Storage: unavailable');
-        }
-
-        if(navigator.onLine) checks.push('Network: Online');
-        else checks.push('Network: Offline');
+        var updateUrl = window.location.href.split('#')[0];
+        var latestResponse = await fetch(updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'update=' + Date.now(), {
+          method:'GET',
+          cache:'no-store',
+          credentials:'same-origin',
+          headers:{'Cache-Control':'no-cache, no-store, max-age=0','Pragma':'no-cache'}
+        });
+        if(!latestResponse.ok) throw new Error('HTTP ' + latestResponse.status);
+        var latestHtml = await latestResponse.text();
+        if(!latestHtml || latestHtml.indexOf('settingsUpdateButton') === -1) throw new Error('Latest application shell could not be verified.');
 
         if('serviceWorker' in navigator){
           try {
-            var registration=await navigator.serviceWorker.getRegistration();
-            checks.push(registration ? 'Service: OK' : 'Service: Ready');
-          } catch(swError) {
-            checks.push('Service: unavailable');
-          }
+            var registration = await navigator.serviceWorker.getRegistration();
+            if(registration) await registration.update();
+          } catch(swError) { console.warn('Service Worker update check failed:', swError); }
         }
 
-        /* Firebase is optional at boot, so only report its current state.
-           This check never changes auth state, reloads the page, or redirects. */
-        if(window.firebase && firebase.apps && firebase.apps.length) checks.push('Firebase: Connected');
-        else checks.push('Firebase: Ready');
+        /* Auth sessions are deliberately not persisted across an app reload.
+           Updating the app therefore returns to the normal login screen. */
 
-        if(copy) copy.textContent='System OK ✓';
-        btn.title=checks.join(' • ');
-        setTimeout(function(){
-          if(copy) copy.textContent=original;
-          btn.dataset.checking='0';
-          btn.disabled=false;
-        }, 2200);
+        if(copy) copy.textContent='Update ready ✓';
+        window.setTimeout(function(){
+          /* Reload the page inside the existing WebView/window. The app itself is
+             never closed, and the auth token is deliberately preserved. */
+          var freshUrl = updateUrl + (updateUrl.indexOf('?') >= 0 ? '&' : '?') + 'app_update=' + Date.now();
+          window.location.replace(freshUrl);
+        }, 180);
       } catch(error) {
-        console.warn('System check failed:', error);
-        if(copy) copy.textContent='Check complete';
-        setTimeout(function(){
+        console.warn('Application update failed:', error);
+        if(copy) copy.textContent='Update failed — try again';
+        window.setTimeout(function(){
           if(copy) copy.textContent=original;
-          btn.dataset.checking='0';
+          btn.dataset.updating='0';
           btn.disabled=false;
         }, 1800);
       }
     });
   }
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSettingsSystemCheck, { once:true });
-  else bindSettingsSystemCheck();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSettingsUpdate, { once:true });
+  else bindSettingsUpdate();
 })();
 </script>
 <script id="inventory-scroll-runtime-fix">
 /* Inventory scrolling is handled natively by #inventory .inventory-table-wrap.
    Do not attach wheel/touch handlers to the page itself. */
+</script>
+
+<style id="inventory-neumorphic-date-picker-styles">
+  .inventory-date-field { position: relative; }
+  .inventory-neumorphic-date {
+    width: 100%; box-sizing: border-box; height: 44px; padding: 0 42px 0 14px;
+    border: 1px solid rgba(148,163,184,.28); border-radius: 13px;
+    background: linear-gradient(145deg,#eef2f8,#e1e6ef); color:#172033;
+    box-shadow: inset 2px 2px 5px rgba(148,163,184,.16), inset -2px -2px 5px rgba(255,255,255,.8), 0 3px 9px rgba(76,94,122,.07);
+    outline: none; font: inherit; cursor: pointer; transition: .18s ease;
+  }
+  .inventory-neumorphic-date::placeholder { color:#7b8495; opacity:1; }
+  .inventory-neumorphic-date:hover { border-color: rgba(37,99,235,.25); transform: translateY(-1px); }
+  .inventory-neumorphic-date:focus { border-color: rgba(37,99,235,.48); box-shadow: inset 2px 2px 5px rgba(148,163,184,.14), inset -2px -2px 5px rgba(255,255,255,.9), 0 0 0 3px rgba(37,99,235,.09); }
+  .inventory-date-field::after {
+    content:'▣'; position:absolute; right:14px; bottom:13px; color:#64748b; font-size:13px; pointer-events:none; opacity:.85;
+  }
+  .inventory-date-popover {
+    position:fixed; z-index:99999; width:286px; padding:14px; border-radius:18px;
+    background:linear-gradient(145deg,#eef2f8,#e0e5ee);
+    border:1px solid rgba(148,163,184,.28);
+    box-shadow: 10px 10px 24px rgba(71,85,105,.18), -8px -8px 20px rgba(255,255,255,.9);
+    color:#182235; user-select:none;
+  }
+  .inventory-date-popover[hidden] { display:none; }
+  .inventory-date-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .inventory-date-month { font-weight:800; font-size:14px; letter-spacing:.02em; }
+  .inventory-date-nav { display:flex; gap:7px; }
+  .inventory-date-nav button,.inventory-date-foot button {
+    border:0; border-radius:10px; min-width:34px; height:32px; padding:0 9px; cursor:pointer;
+    background:linear-gradient(145deg,#f5f7fb,#dfe5ee); color:#334155;
+    box-shadow:4px 4px 8px rgba(100,116,139,.16),-3px -3px 7px rgba(255,255,255,.85); font-weight:700;
+  }
+  .inventory-date-nav button:active,.inventory-date-foot button:active { box-shadow:inset 2px 2px 5px rgba(100,116,139,.18), inset -2px -2px 4px rgba(255,255,255,.8); }
+  .inventory-date-week,.inventory-date-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .inventory-date-week span { text-align:center; font-size:10px; font-weight:800; color:#7b8799; padding:4px 0; }
+  .inventory-date-day { height:32px; border:0; border-radius:9px; background:transparent; color:#334155; cursor:pointer; font:700 12px inherit; }
+  .inventory-date-day:hover { background:rgba(37,99,235,.09); box-shadow:inset 2px 2px 4px rgba(100,116,139,.09), inset -2px -2px 4px rgba(255,255,255,.8); }
+  .inventory-date-day.muted { color:#a3acba; font-weight:600; }
+  .inventory-date-day.today { box-shadow:inset 0 0 0 1px rgba(37,99,235,.35); color:#2563eb; }
+  .inventory-date-day.selected { background:linear-gradient(145deg,#3b82f6,#2563eb); color:#fff; box-shadow:3px 3px 7px rgba(37,99,235,.22), inset 1px 1px 2px rgba(255,255,255,.25); }
+  .inventory-date-foot { display:flex; justify-content:space-between; margin-top:11px; padding-top:10px; border-top:1px solid rgba(148,163,184,.18); }
+  .inventory-date-foot button { min-width:auto; color:#2563eb; }
+  @media (max-width:560px) { .inventory-date-popover { width:min(286px,calc(100vw - 24px)); } }
+</style>
+<script id="inventory-neumorphic-date-picker">
+(function(){
+  function pad(n){return String(n).padStart(2,'0');}
+  function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+  function parse(v){if(!v)return null;var a=v.split('-').map(Number);if(a.length!==3||a.some(isNaN))return null;return new Date(a[0],a[1]-1,a[2]);}
+  function fmt(v){var d=parse(v);return d?pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear():'';}
+  function setup(hiddenId,visibleId){
+    var h=document.getElementById(hiddenId), v=document.getElementById(visibleId); if(!h||!v)return;
+    var pop=document.createElement('div'); pop.className='inventory-date-popover'; pop.hidden=true; pop.innerHTML=
+      '<div class="inventory-date-head"><div class="inventory-date-month"></div><div class="inventory-date-nav"><button type="button" data-prev aria-label="Previous month">‹</button><button type="button" data-next aria-label="Next month">›</button></div></div>'+
+      '<div class="inventory-date-week"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>'+
+      '<div class="inventory-date-grid"></div><div class="inventory-date-foot"><button type="button" data-clear>Clear</button><button type="button" data-today>Today</button></div>';
+    document.body.appendChild(pop);
+    var view=parse(h.value)||new Date();
+    function position(){var r=v.getBoundingClientRect(), w=pop.offsetWidth, hgt=pop.offsetHeight; var left=Math.min(Math.max(12,r.left),window.innerWidth-w-12); var top=r.bottom+8; if(top+hgt>window.innerHeight-12)top=Math.max(12,r.top-hgt-8); pop.style.left=left+'px';pop.style.top=top+'px';}
+    function render(){
+      pop.querySelector('.inventory-date-month').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+      var grid=pop.querySelector('.inventory-date-grid'); grid.innerHTML='';
+      var first=new Date(view.getFullYear(),view.getMonth(),1); var start=(first.getDay()+6)%7; var days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
+      var prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(); var today=key(new Date());
+      for(var i=0;i<42;i++){var n=i-start+1, d=new Date(view.getFullYear(),view.getMonth(),n), muted=false; if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);muted=true;} else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);muted=true;} var b=document.createElement('button');b.type='button';b.className='inventory-date-day'+(muted?' muted':'')+(key(d)===today?' today':'')+(key(d)===h.value?' selected':'');b.textContent=d.getDate();b.dataset.date=key(d);grid.appendChild(b);}
+    }
+    function open(){view=parse(h.value)||new Date();render();pop.hidden=false;position();}
+    function close(){pop.hidden=true;}
+    function choose(k){h.value=k;v.value=fmt(k);h.dispatchEvent(new Event('input',{bubbles:true}));h.dispatchEvent(new Event('change',{bubbles:true}));close();}
+    v.value=fmt(h.value); v.addEventListener('click',open); v.addEventListener('focus',open);
+    pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.prev){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position();}else if(b.dataset.next){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position();}else if(b.dataset.date){choose(b.dataset.date);}else if(b.dataset.today){choose(key(new Date()));}else if(b.dataset.clear){choose('');}});
+    document.addEventListener('mousedown',function(e){if(!pop.contains(e.target)&&e.target!==v)close();});
+    window.addEventListener('resize',function(){if(!pop.hidden)position();}); window.addEventListener('scroll',function(){if(!pop.hidden)position();},true);
+    var form=v.closest('form'); if(form)form.addEventListener('reset',function(){setTimeout(function(){v.value=fmt(h.value);},0);});
+    v._syncDate=function(){v.value=fmt(h.value);};
+  }
+  function init(){setup('inventoryMovementDateInput','inventoryMovementDateVisible');setup('inventoryExpiryInput','inventoryExpiryVisible');}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
 </script>
 </body>
 </html>
