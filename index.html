@@ -19509,6 +19509,35 @@ function exportMonthlySchedulePdfs() {
         if(changed) data.version=4;
         return changed;
       }
+      function ensureNovacloneInitialZero(){
+        // The four Novaclone master items must start with ZERO stock.
+        // This is a one-time catalog migration so later manual Stock In/Out
+        // entries are never overwritten on refresh or cloud sync.
+        if(data.novacloneInitialZeroedV1===true)return false;
+        var names={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        var changed=false;
+        data.items.forEach(function(item){
+          var key=String(item.name||'').trim().toLowerCase();
+          if(!names[key])return;
+          if(Number(item.openingStock||0)!==0){item.openingStock=0;changed=true;}
+          // Any accidental bootstrap movements for these newly-added items
+          // are removed so their initial balance is truly zero.
+        });
+        var before=data.transactions.length;
+        data.transactions=data.transactions.filter(function(t){
+          var item=data.items.find(function(it){return it.id===t.itemId;});
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !names[key];
+        });
+        if(data.transactions.length!==before)changed=true;
+        data.novacloneInitialZeroedV1=true;
+        return true;
+      }
       function currentMonthKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
       function ensureCurrentMonthPrices(){
         normalize();
@@ -19647,6 +19676,7 @@ function exportMonthlySchedulePdfs() {
             // restores any newly added master items (including the 4 Novaclone Haematology items)
             // without touching existing stock, lots, transactions or prices.
             var catalogChanged=mergeSeedCatalog();
+            var remoteNovacloneZeroed=ensureNovacloneInitialZero();
             saveLocal();
             // Push any local Stock In/Out and newly seeded master items that existed before the cloud read.
             saveRemote({force:true});
@@ -20073,12 +20103,13 @@ function exportMonthlySchedulePdfs() {
         if(!had) seed();
         migrateInventoryNames();
         mergeSeedCatalog();
+        var novacloneZeroed=ensureNovacloneInitialZero();
         var freshReset=resetInventoryForFreshStart();
         var balanceFix=repairOctober2026OpeningBalance();
         ensureCurrentMonthPrices();
         // Do not push local bootstrap data before checking the shared cloud.
         // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
-        if(freshReset||balanceFix){
+        if(freshReset||balanceFix||novacloneZeroed){
           saveLocal();
         }
         render();
