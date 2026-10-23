@@ -7861,9 +7861,9 @@
 .outsource-table tbody tr.status-reject,.outsource-table tbody tr.status-done,.outsource-table tbody tr.status-pending{background:transparent;}
 .outsource-result{font-weight:900;text-align:center;vertical-align:middle!important;}
 .outsource-result.status-cell{display:table-cell;}
-.outsource-result.status-done{color:#237a46;background:#dff4e7;border:1px solid #b8e2c8;border-radius:999px;padding:5px 10px!important;box-shadow:inset 1px 1px 3px rgba(80,120,90,.08),inset -1px -1px 3px rgba(255,255,255,.8);}
-.outsource-result.status-reject{color:#a52b35;background:#fde3e5;border:1px solid #f0bfc4;border-radius:999px;padding:5px 10px!important;box-shadow:inset 1px 1px 3px rgba(150,80,90,.08),inset -1px -1px 3px rgba(255,255,255,.8);}
-.outsource-result.status-pending{color:#687789;background:#eef2f7;border:1px solid #d9e0e8;border-radius:999px;padding:5px 10px!important;box-shadow:inset 1px 1px 3px rgba(100,115,135,.07),inset -1px -1px 3px rgba(255,255,255,.8);}
+.outsource-result.status-done{color:#111827;background:#dff4e7;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
+.outsource-result.status-reject{color:#111827;background:#fde3e5;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
+.outsource-result.status-pending{color:#111827;background:transparent;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
 .outsource-actions{display:flex;gap:5px;}
 .outsource-mini{border:1px solid #d5e0e8;background:#fff;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:800;cursor:pointer;}
 .outsource-mini.delete{color:#b72f3b;}
@@ -13559,10 +13559,13 @@ if (token) {
               '</form></section>'+
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3><span>'+outsourceEsc(total)+' TOTAL</span></div>'+
               '<div class="outsource-summary"><div class="outsource-stat"><div class="num">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num">'+rejected+'</div><div class="lbl">Rejected</div></div></div>'+
-              '<div class="outsource-search"><input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search outsource samples"><select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select></div>'+
+              '<div class="outsource-search">'+
+                '<input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search outsource samples">'+
+                '<select id="outsourceYearFilter"><option value="ALL">All years</option></select>'+                '<select id="outsourceMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>'+                '<select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select>'+              '</div>'+
               '<div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>#</th><th>Sample Date</th><th>Bar Code</th><th>Name</th><th>ID/IC</th><th>Sex</th><th>Age</th><th>Unit</th><th>Dispatch</th><th>Referral</th><th>Lab</th><th>Test</th><th>Result</th><th>Result Date</th><th>Reference No.</th><th>Reject Reason</th><th>Notes</th><th>Action</th></tr></thead><tbody id="outsourceTableBody"></tbody></table><div class="outsource-empty" id="outsourceEmpty" hidden>No outsource sample registered yet.</div></div>'+
             '</section>'+
           '</div></div>';
+        renderOutsourceFilterYears(rows);
         renderOutsourceRows();
         var form=$('outsourceForm'); if(form)form.addEventListener('submit',function(e){e.preventDefault();saveOutsourceSample();});
         bindOutsourceKeyboardFlow();
@@ -13570,19 +13573,74 @@ if (token) {
         initOutsourceNeumorphicDates(); window.setTimeout(initOutsourceNeumorphicDates,0);
         var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
         var search=$('outsourceSearch'); if(search)search.addEventListener('input',renderOutsourceRows);
+        var yearFilter=$('outsourceYearFilter'); if(yearFilter)yearFilter.addEventListener('change',renderOutsourceRows);
+        var monthFilter=$('outsourceMonthFilter'); if(monthFilter)monthFilter.addEventListener('change',renderOutsourceRows);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',renderOutsourceRows);
+        initOutsourceFilterDropdowns();
         var body=$('outsourceTableBody'); if(body)body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(!btn)return;var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='edit')editOutsourceSample(id);if(action==='delete')deleteOutsourceSample(id);});
+      }
+      function initOutsourceFilterDropdowns(){
+        var ids=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter'];
+        function closeMenu(){
+          var m=window.__outsourceFilterMenu,t=window.__outsourceFilterTrigger;
+          if(m){m.remove();window.__outsourceFilterMenu=null;}
+          if(t){t.classList.remove('is-open');t.setAttribute('aria-expanded','false');window.__outsourceFilterTrigger=null;}
+        }
+        function openMenu(trigger,select){
+          closeMenu();
+          var menu=document.createElement('div');
+          menu.className='inventory-filter-menu is-open outsource-filter-menu';
+          menu.setAttribute('role','listbox');
+          Array.prototype.forEach.call(select.options,function(opt){
+            var b=document.createElement('button');b.type='button';b.textContent=opt.textContent;b.dataset.value=opt.value;b.setAttribute('role','option');
+            if(opt.value===select.value)b.classList.add('is-selected');
+            if(select.id==='outsourceStatusFilter'&&opt.value==='COMPLETED')b.classList.add('status-completed-option');
+            if(select.id==='outsourceStatusFilter'&&opt.value==='REJECT')b.classList.add('status-reject-option');
+            b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();select.value=b.dataset.value;sync();select.dispatchEvent(new Event('change',{bubbles:true}));closeMenu();});
+            menu.appendChild(b);
+          });
+          document.body.appendChild(menu);window.__outsourceFilterMenu=menu;window.__outsourceFilterTrigger=trigger;trigger.classList.add('is-open');trigger.setAttribute('aria-expanded','true');
+          var r=trigger.getBoundingClientRect(),w=Math.max(r.width,180),h=menu.offsetHeight;menu.style.minWidth=w+'px';menu.style.left=Math.min(Math.max(8,r.left),window.innerWidth-w-8)+'px';menu.style.top=(r.bottom+h>window.innerHeight-8?Math.max(8,r.top-h-6):r.bottom+6)+'px';
+        }
+        function setup(select){
+          if(!select||select.dataset.outsourceCustom==='1')return;
+          select.dataset.outsourceCustom='1';
+          var wrap=document.createElement('div');wrap.className='inventory-filter-custom-wrap outsource-filter-custom-wrap';
+          select.parentNode.insertBefore(wrap,select);wrap.appendChild(select);
+          select.classList.add('inventory-filter-native');
+          var trigger=document.createElement('button');trigger.type='button';trigger.className='inventory-filter-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');trigger.innerHTML='<span data-filter-label></span><span class="inventory-filter-chevron">⌄</span>';wrap.insertBefore(trigger,select);
+          function sync(){var o=select.options[select.selectedIndex],label=trigger.querySelector('[data-filter-label]');if(label)label.textContent=o?o.textContent:'Select...';}
+          sync();trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(window.__outsourceFilterMenu&&window.__outsourceFilterTrigger===trigger)closeMenu();else openMenu(trigger,select);});select.addEventListener('change',sync);
+        }
+        ids.forEach(function(id){setup($(id));});
+      }
+      function renderOutsourceFilterYears(sourceRows){
+        var select=$('outsourceYearFilter'); if(!select)return;
+        var previous=String(select.value||'ALL');
+        var rows=Array.isArray(sourceRows)?sourceRows:((typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[]);
+        var years={};
+        rows.forEach(function(r){var d=String(r.sampleDate||'');var y=d.slice(0,4);if(/^\d{4}$/.test(y))years[y]=true;});
+        var list=Object.keys(years).sort(function(a,b){return Number(b)-Number(a);});
+        select.innerHTML='<option value="ALL">All years</option>'+list.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
+        if(list.indexOf(previous)>=0)select.value=previous; else select.value='ALL';
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
         var q=String(($('outsourceSearch')||{}).value||'').trim().toLowerCase();
+        var year=String(($('outsourceYearFilter')||{}).value||'ALL');
+        var month=String(($('outsourceMonthFilter')||{}).value||'ALL');
         var status=String(($('outsourceStatusFilter')||{}).value||'ALL').toUpperCase();
         var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).filter(function(r){
-          var result=String(r.result||'PENDING').toUpperCase(); if(status!=='ALL'&&result!==status)return false; if(!q)return true;
+          var result=String(r.result||'PENDING').toUpperCase();
+          var sampleDate=String(r.sampleDate||'');
+          if(status!=='ALL'&&result!==status)return false;
+          if(year!=='ALL'&&sampleDate.slice(0,4)!==year)return false;
+          if(month!=='ALL'&&sampleDate.slice(5,7)!==month)return false;
+          if(!q)return true;
           return [r.barCode,r.name,r.idIc].join(' ').toLowerCase().indexOf(q)>=0;
         });
         rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
-        body.innerHTML=rows.map(function(r,i){var cls=outsourceResultClass(r.result),result=String(r.result||'PENDING');return '<tr class="'+cls+'"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result status-cell '+cls+'">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
+        body.innerHTML=rows.map(function(r,i){var result=String(r.result||'PENDING').toUpperCase();var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';return '<tr><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result '+cls+'">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
         if(empty)empty.hidden=rows.length>0;
       }
       function calculateMalaysianIcDetails(rawIc, referenceDate){
@@ -21952,6 +22010,9 @@ if ("serviceWorker" in navigator) {
 .inventory-filter-menu button:hover,
 .inventory-filter-menu button.is-selected { background: rgba(47,128,237,.10); }
 .inventory-filter-menu button:active { background: rgba(47,128,237,.17); }
+.inventory-filter-menu button.status-completed-option{color:#27834c;font-weight:800;}
+.inventory-filter-menu button.status-reject-option{color:#c23b46;font-weight:800;}
+#moduleYearGrid.outsource-active-grid .outsource-filter-custom-wrap{width:100%;}
 .inventory-filter-menu::-webkit-scrollbar { width: 0; height: 0; }
 .inventory-filter-menu { scrollbar-width: none; -ms-overflow-style: none; }
 
@@ -21982,6 +22043,25 @@ if ("serviceWorker" in navigator) {
   }
 }
 </style>
+<style id="outsource-filter-polish-v1">
+#moduleYearGrid.outsource-active-grid .outsource-search{display:grid!important;grid-template-columns:minmax(260px,1.55fr) repeat(3,minmax(150px,.75fr))!important;gap:10px!important;align-items:center!important;padding:12px 18px!important;border-bottom:1px solid rgba(120,140,165,.14)!important;box-sizing:border-box!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search input,#moduleYearGrid.outsource-active-grid .outsource-search select{width:100%!important;min-width:0!important;height:38px!important;box-sizing:border-box!important;border:0!important;border-radius:12px!important;background:#e8edf5!important;color:#30415a!important;box-shadow:inset 3px 3px 7px rgba(163,177,198,.38),inset -3px -3px 7px rgba(255,255,255,.92)!important;outline:none!important;padding:0 12px!important;font-size:11px!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search input:focus{box-shadow:inset 3px 3px 7px rgba(163,177,198,.38),inset -3px -3px 7px rgba(255,255,255,.92),0 0 0 2px rgba(47,128,237,.16)!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search select{appearance:none!important;-webkit-appearance:none!important;background-image:linear-gradient(45deg,transparent 50%,#7b8ca5 50%),linear-gradient(135deg,#7b8ca5 50%,transparent 50%),linear-gradient(#e8edf5,#e8edf5)!important;background-position:calc(100% - 15px) 16px,calc(100% - 10px) 16px,100% 0!important;background-size:5px 5px,5px 5px,2.4em 100%!important;background-repeat:no-repeat!important;padding-right:38px!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result{font-weight:800!important;text-align:left!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding-left:7px!important;padding-right:7px!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result.status-done{color:#111827!important;background:#dff4e7!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result.status-reject{color:#111827!important;background:#fde3e5!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result.status-pending{color:#111827!important;background:transparent!important;}
+@media(max-width:900px){#moduleYearGrid.outsource-active-grid .outsource-search{grid-template-columns:1fr 1fr!important;}#moduleYearGrid.outsource-active-grid .outsource-search input{grid-column:1/-1!important;}}
+</style>
+<script id="outsource-filter-dropdown-close-v1">
+(function(){
+  function close(){var m=window.__outsourceFilterMenu,t=window.__outsourceFilterTrigger;if(m){m.remove();window.__outsourceFilterMenu=null;}if(t){t.classList.remove('is-open');t.setAttribute('aria-expanded','false');window.__outsourceFilterTrigger=null;}}
+  document.addEventListener('click',function(e){if(window.__outsourceFilterMenu&&!e.target.closest('.outsource-filter-menu')&&!e.target.closest('.outsource-filter-custom-wrap'))close();},true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&window.__outsourceFilterMenu)close();});
+  window.addEventListener('resize',close);
+})();
+</script>
 <script id="inventory-filter-dropdown-polish-v8">
 (function(){
   var ids=['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'];
