@@ -7824,6 +7824,54 @@
 /* Keep every scrollable area touch/mouse-scrollable without showing scrollbar chrome. */
 *{scrollbar-width:none;-ms-overflow-style:none}
 *::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
+
+/* ===== OUTSOURCE REGISTER ===== */
+.outsource-register{display:flex;flex-direction:column;gap:18px;padding:4px 0 28px;}
+.outsource-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:22px 24px;border:1px solid rgba(36,111,163,.16);border-radius:20px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(239,247,252,.92));box-shadow:0 12px 30px rgba(20,54,78,.08);}
+.outsource-kicker{font-size:11px;font-weight:800;letter-spacing:.12em;color:#2d6a96;text-transform:uppercase;margin-bottom:5px;}
+.outsource-hero h2{margin:0;font-size:24px;color:#16354c;letter-spacing:-.02em;}
+.outsource-hero p{margin:6px 0 0;color:#60788c;font-size:13px;max-width:720px;}
+.outsource-live{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:999px;background:#e8f7ef;color:#18794e;font-size:11px;font-weight:800;white-space:nowrap;}
+.outsource-live:before{content:'';width:7px;height:7px;border-radius:50%;background:#24a86b;box-shadow:0 0 0 4px rgba(36,168,107,.12);}
+.outsource-grid{display:grid;grid-template-columns:minmax(360px,.9fr) minmax(520px,1.7fr);gap:18px;align-items:start;}
+.outsource-card{background:rgba(255,255,255,.96);border:1px solid #dce7ef;border-radius:18px;box-shadow:0 10px 26px rgba(21,54,78,.07);overflow:hidden;}
+.outsource-card-head{padding:16px 18px;border-bottom:1px solid #e4edf3;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.outsource-card-head h3{margin:0;font-size:14px;color:#173b56;letter-spacing:.03em;}
+.outsource-card-head span{font-size:10px;color:#7b91a2;font-weight:700;}
+.outsource-form{padding:16px 18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.outsource-field{display:flex;flex-direction:column;gap:6px;}
+.outsource-field.full{grid-column:1/-1;}
+.outsource-field label{font-size:10px;font-weight:800;color:#547089;text-transform:uppercase;letter-spacing:.06em;}
+.outsource-field input,.outsource-field select,.outsource-field textarea{width:100%;box-sizing:border-box;border:1px solid #d4e1ea;border-radius:10px;background:#fbfdff;color:#18354a;padding:10px 11px;font:600 12px inherit;outline:none;transition:.15s;}
+.outsource-field textarea{min-height:72px;resize:vertical;}
+.outsource-field input:focus,.outsource-field select:focus,.outsource-field textarea:focus{border-color:#3b8bc4;box-shadow:0 0 0 3px rgba(59,139,196,.10);background:#fff;}
+.outsource-form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:4px;}
+.outsource-btn{border:0;border-radius:10px;padding:10px 16px;font-size:11px;font-weight:800;cursor:pointer;}
+.outsource-btn.primary{background:#2f80ed;color:#fff;box-shadow:0 5px 14px rgba(47,128,237,.22);}
+.outsource-btn.secondary{background:#eef3f7;color:#365269;border:1px solid #d8e3eb;}
+.outsource-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 18px 16px;}
+.outsource-stat{padding:12px;border-radius:12px;background:#f7fafc;border:1px solid #e3ebf1;}
+.outsource-stat .num{font-size:20px;font-weight:800;color:#173b56;line-height:1;}
+.outsource-stat .lbl{margin-top:5px;font-size:9px;font-weight:800;color:#73889a;text-transform:uppercase;letter-spacing:.05em;}
+.outsource-table-wrap{overflow:auto;max-height:620px;}
+.outsource-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1280px;font-size:10px;}
+.outsource-table th{position:sticky;top:0;z-index:2;background:#2f7fad;color:#fff;text-align:left;padding:9px 7px;font-size:9px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+.outsource-table td{padding:8px 7px;border-bottom:1px solid #e6edf2;color:#233f54;vertical-align:top;white-space:nowrap;}
+.outsource-table tbody tr:hover{background:#f6fbfe;}
+.outsource-table tbody tr.status-reject{background:#fbe1e1;}
+.outsource-table tbody tr.status-done{background:#dff0d8;}
+.outsource-table tbody tr.status-pending{background:#fffdf0;}
+.outsource-result{font-weight:800;}
+.outsource-actions{display:flex;gap:5px;}
+.outsource-mini{border:1px solid #d5e0e8;background:#fff;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:800;cursor:pointer;}
+.outsource-mini.delete{color:#b72f3b;}
+.outsource-empty{padding:36px 20px;text-align:center;color:#7c91a1;font-size:12px;}
+.outsource-search{display:flex;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid #e4edf3;}
+.outsource-search input{flex:1;border:1px solid #d4e1ea;border-radius:9px;padding:9px 11px;font-size:11px;outline:none;}
+.outsource-search select{border:1px solid #d4e1ea;border-radius:9px;padding:9px 11px;font-size:11px;background:#fff;}
+@media(max-width:1100px){.outsource-grid{grid-template-columns:1fr;}.outsource-summary{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:700px){.outsource-hero{padding:17px;}.outsource-form{grid-template-columns:1fr;}.outsource-field.full{grid-column:auto;}.outsource-form-actions{grid-column:auto;}.outsource-live{display:none;}}
+
 </style>
 <style id="mobile-profile-card-centering-v6">
 /* V6 mobile-only: keep document link cards vertically stacked and centered.
@@ -9384,7 +9432,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
   <div class="inventory-modal-backdrop" data-inventory-admin-close></div>
   <div class="inventory-modal-card" role="dialog" aria-modal="true" aria-labelledby="inventoryAdminItemsTitle">
     <div class="inventory-modal-head">
-      <div><span class="inventory-modal-kicker">ADMIN ONLY · LIVE SYNC</span><h3 id="inventoryAdminItemsTitle">INVENTORY CONTROL</h3></div>
+      <div><span class="inventory-modal-kicker">ADMIN ONLY</span><h3 id="inventoryAdminItemsTitle">INVENTORY CONTROL</h3></div>
       <button type="button" class="inventory-modal-close" data-inventory-admin-close aria-label="Close">×</button>
     </div>
     <form id="inventoryAdminItemForm" class="inventory-form" autocomplete="off">
@@ -9799,9 +9847,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
     };
   
     var moduleYearExternalLinks = {
-      'OUTSOURCE': {
-        '2026': 'https://drive.google.com/drive/folders/1blgdlhnJpa4uJ6OsyZ1L9VcLnOjiPKkW?usp=drive_link'
-      },
+      'OUTSOURCE': {},
       'TRANSFUSION': {
         '2026': 'https://docs.google.com/spreadsheets/d/1qWa76sx_m2IobM1Od4ttKgOoz8vAqxSP4kEnCFxWtGE/edit?gid=0#gid=0'
       },
@@ -13044,6 +13090,94 @@ if (token) {
       }
   
       /* +----------------------------------+
+       * + OUTSOURCE REGISTER               +
+       * +----------------------------------+ */
+      function outsourceToday(){
+        var p=getAppNowParts();
+        return Number(p.year)+'-'+pad2(Number(p.month))+'-'+pad2(Number(p.day));
+      }
+      function outsourceNewId(){return 'outsource-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);}
+      function outsourceResultClass(value){
+        var v=String(value||'').trim().toUpperCase();
+        if(v==='REJECT')return 'status-reject';
+        if(v==='ADA'||v==='COMPLETED'||v==='POSITIVE'||v==='NEGATIVE')return 'status-done';
+        return 'status-pending';
+      }
+      function renderOutsourcePage(){
+        var grid=$('moduleYearGrid'); if(!grid)return;
+        $('moduleYearsTitle').textContent='OUTSOURCE';
+        $('moduleYearsDesc').textContent='Register, track and follow up outsourced laboratory samples in one live workspace. No external spreadsheet required.';
+        var rows=Array.isArray(data.outsourceSamples)?data.outsourceSamples.slice():[];
+        rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
+        var total=rows.length,pending=rows.filter(function(r){return !String(r.result||'').trim()||String(r.result).toUpperCase()==='PENDING';}).length;
+        var done=rows.filter(function(r){return ['ADA','COMPLETED','POSITIVE','NEGATIVE'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
+        var rejected=rows.filter(function(r){return String(r.result||'').toUpperCase()==='REJECT';}).length;
+        var today=outsourceToday();
+        grid.innerHTML='<div class="outsource-register">'+
+          '<div class="outsource-hero"><div><div class="outsource-kicker">Live workspace · '+esc(today)+'</div><h2>OUTSOURCE SAMPLE REGISTER</h2><p>Register every referred / outsourced sample, follow its dispatch and result status, and keep the full traceable record inside Hoag Pathology.</p></div><div class="outsource-live">LIVE SYNC</div></div>'+
+          '<div class="outsource-grid">'+
+            '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTER SAMPLE</h3><span id="outsourceEditHint">NEW RECORD</span></div>'+
+              '<form class="outsource-form" id="outsourceForm" autocomplete="off">'+
+                '<input type="hidden" id="outsourceEditId">'+
+                '<div class="outsource-field"><label>Sample Date *</label><input type="date" id="osSampleDate" required value="'+esc(today)+'"></div>'+
+                '<div class="outsource-field"><label>Bar Code</label><input id="osBarCode" placeholder="e.g. 1036733"></div>'+
+                '<div class="outsource-field"><label>Name *</label><input id="osName" required placeholder="Patient name"></div>'+
+                '<div class="outsource-field"><label>ID / IC</label><input id="osIdIc" placeholder="NRIC / Passport"></div>'+
+                '<div class="outsource-field"><label>Sex</label><select id="osSex"><option value="">Select</option><option>P</option><option>L</option></select></div>'+
+                '<div class="outsource-field"><label>Age</label><input type="number" min="0" max="130" id="osAge" placeholder="Age"></div>'+
+                '<div class="outsource-field"><label>Unit</label><input id="osUnit" placeholder="WARD / OPD / ICU"></div>'+
+                '<div class="outsource-field"><label>Dispatch Date</label><input type="date" id="osDispatchDate" value="'+esc(today)+'"></div>'+
+                '<div class="outsource-field"><label>Referral</label><input id="osReferral" placeholder="HKL / IPR / Other"></div>'+
+                '<div class="outsource-field"><label>Outsource Lab</label><input id="osLab" placeholder="Receiving laboratory"></div>'+
+                '<div class="outsource-field full"><label>Test / Investigation *</label><input id="osTest" required placeholder="e.g. MTB Sputum Culture & Sensitivity"></div>'+
+                '<div class="outsource-field"><label>Result</label><input id="osResult" list="outsourceResultOptions" placeholder="PENDING / ADA / REJECT"><datalist id="outsourceResultOptions"><option value="PENDING"><option value="ADA"><option value="REJECT"><option value="POSITIVE"><option value="NEGATIVE"><option value="COMPLETED"></datalist></div>'+
+                '<div class="outsource-field"><label>Result Date</label><input type="date" id="osResultDate"></div>'+
+                '<div class="outsource-field"><label>Reference No.</label><input id="osReferenceNo" placeholder="External report / accession no."></div>'+
+                '<div class="outsource-field"><label>Reject Reason</label><input id="osRejectReason" placeholder="If rejected"></div>'+
+                '<div class="outsource-field full"><label>Notes</label><textarea id="osNotes" placeholder="Additional notes / follow-up"></textarea></div>'+
+                '<div class="outsource-form-actions"><button class="outsource-btn secondary" type="button" id="outsourceClearBtn">CLEAR</button><button class="outsource-btn primary" type="submit" id="outsourceSaveBtn">REGISTER SAMPLE</button></div>'+
+              '</form></section>'+
+            '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3><span>'+esc(total)+' TOTAL</span></div>'+
+              '<div class="outsource-summary"><div class="outsource-stat"><div class="num">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num">'+rejected+'</div><div class="lbl">Rejected</div></div></div>'+
+              '<div class="outsource-search"><input id="outsourceSearch" placeholder="Search barcode, name, IC, test, lab..." aria-label="Search outsource samples"><select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="ADA">ADA</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select></div>'+
+              '<div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>#</th><th>Sample Date</th><th>Bar Code</th><th>Name</th><th>ID/IC</th><th>Sex</th><th>Age</th><th>Unit</th><th>Dispatch</th><th>Referral</th><th>Lab</th><th>Test</th><th>Result</th><th>Result Date</th><th>Reference No.</th><th>Reject Reason</th><th>Notes</th><th>Action</th></tr></thead><tbody id="outsourceTableBody"></tbody></table><div class="outsource-empty" id="outsourceEmpty" hidden>No outsource sample registered yet.</div></div>'+
+            '</section>'+
+          '</div></div>';
+        renderOutsourceRows();
+        var form=$('outsourceForm'); if(form)form.addEventListener('submit',function(e){e.preventDefault();saveOutsourceSample();});
+        var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
+        var search=$('outsourceSearch'); if(search)search.addEventListener('input',renderOutsourceRows);
+        var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',renderOutsourceRows);
+        var body=$('outsourceTableBody'); if(body)body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(!btn)return;var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='edit')editOutsourceSample(id);if(action==='delete')deleteOutsourceSample(id);});
+      }
+      function renderOutsourceRows(){
+        var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
+        var q=String(($('outsourceSearch')||{}).value||'').trim().toLowerCase();
+        var status=String(($('outsourceStatusFilter')||{}).value||'ALL').toUpperCase();
+        var rows=(Array.isArray(data.outsourceSamples)?data.outsourceSamples:[]).filter(function(r){
+          var result=String(r.result||'PENDING').toUpperCase(); if(status!=='ALL'&&result!==status)return false; if(!q)return true;
+          return [r.sampleDate,r.barCode,r.name,r.idIc,r.sex,r.age,r.unit,r.dispatchDate,r.referral,r.lab,r.test,r.result,r.resultDate,r.referenceNo,r.rejectReason,r.notes].join(' ').toLowerCase().indexOf(q)>=0;
+        });
+        rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
+        body.innerHTML=rows.map(function(r,i){var cls=outsourceResultClass(r.result),result=String(r.result||'PENDING');return '<tr class="'+cls+'"><td>'+(i+1)+'</td><td>'+esc(r.sampleDate)+'</td><td>'+esc(r.barCode)+'</td><td><strong>'+esc(r.name)+'</strong></td><td>'+esc(r.idIc)+'</td><td>'+esc(r.sex)+'</td><td>'+esc(r.age)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.dispatchDate)+'</td><td>'+esc(r.referral)+'</td><td>'+esc(r.lab)+'</td><td>'+esc(r.test)+'</td><td class="outsource-result">'+esc(result)+'</td><td>'+esc(r.resultDate)+'</td><td>'+esc(r.referenceNo)+'</td><td>'+esc(r.rejectReason)+'</td><td>'+esc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+esc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+esc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
+        if(empty)empty.hidden=rows.length>0;
+      }
+      function clearOutsourceForm(){var form=$('outsourceForm');if(!form)return;form.reset();$('outsourceEditId').value='';$('osSampleDate').value=outsourceToday();$('osDispatchDate').value=outsourceToday();$('outsourceEditHint').textContent='NEW RECORD';$('outsourceSaveBtn').textContent='REGISTER SAMPLE';}
+      function saveOutsourceSample(){
+        var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(); if(!name||!test){alert('Name and Test / Investigation are required.');return;}
+        var editId=String($('outsourceEditId').value||'').trim(),existing=(data.outsourceSamples||[]).find(function(r){return String(r.id||'')===editId;});
+        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:String($('osReferral').value||'').trim(),lab:String($('osLab').value||'').trim(),test:test,result:String($('osResult').value||'PENDING').trim()||'PENDING',resultDate:String($('osResultDate').value||''),referenceNo:String($('osReferenceNo').value||'').trim(),rejectReason:String($('osRejectReason').value||'').trim(),notes:String($('osNotes').value||'').trim(),createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
+        data.outsourceSamples=Array.isArray(data.outsourceSamples)?data.outsourceSamples:[]; var idx=data.outsourceSamples.findIndex(function(r){return String(r.id||'')===row.id;}); if(idx>=0)data.outsourceSamples[idx]=row;else data.outsourceSamples.push(row);
+        saveLocal();renderOutsourceRows();clearOutsourceForm();saveRemote();
+      }
+      function editOutsourceSample(id){
+        var r=(data.outsourceSamples||[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
+        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';$('osTest').value=r.test||'';$('osResult').value=r.result||'PENDING';$('osResultDate').value=r.resultDate||'';$('osReferenceNo').value=r.referenceNo||'';$('osRejectReason').value=r.rejectReason||'';$('osNotes').value=r.notes||'';$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
+        var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+      function deleteOutsourceSample(id){var r=(data.outsourceSamples||[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;if(!confirm('Delete outsource sample for '+String(r.name||'this patient')+'?'))return;data.outsourceSamples=data.outsourceSamples.filter(function(x){return String(x.id||'')!==String(id||'');});saveLocal();renderOutsourceRows();saveRemote();}
+
+      /* +----------------------------------+
        * + renderModuleYearCards            +
        * +----------------------------------+ */
       function renderModuleYearCards(moduleName) {
@@ -13053,6 +13187,7 @@ if (token) {
         if (!grid || !title || !desc) return;
   
         var displayName = normalizeModuleName(moduleName);
+        if(displayName==='OUTSOURCE'){ renderOutsourcePage(); return; }
         var activeYear = currentYear();
         title.textContent = displayName;
         desc.textContent = moduleYearDescriptions[displayName] || 'Select a year for ' + displayName + '. The current year and previous year are open. Future years are locked and will unlock automatically when the new year begins.';
@@ -19485,7 +19620,7 @@ function exportMonthlySchedulePdfs() {
       var STORAGE_KEY = 'labAppInventoryV2';
       var initialized = false;
       var dbPath = 'labapp/inventory';
-      var data = { version: 4, items: [], transactions: [], deletedTransactionIds: {}, deletedItemIds: {}, monthlyPrices: {}, monthlySnapshots: {} };
+      var data = { version: 4, items: [], transactions: [], deletedTransactionIds: {}, deletedItemIds: {}, monthlyPrices: {}, monthlySnapshots: {}, outsourceSamples: [] };
       var sharedUpdatedAt = '';
       var sharedSyncBusy = false;
       var sharedPollTimer = null;
@@ -19514,6 +19649,7 @@ function exportMonthlySchedulePdfs() {
         if(!data||typeof data!=='object') data={};
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
+    data.outsourceSamples=Array.isArray(data.outsourceSamples)?data.outsourceSamples:[];
         if(!data.deletedTransactionIds||typeof data.deletedTransactionIds!=='object'||Array.isArray(data.deletedTransactionIds)) data.deletedTransactionIds={};
         if(!data.deletedItemIds||typeof data.deletedItemIds!=='object'||Array.isArray(data.deletedItemIds)) data.deletedItemIds={};
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
@@ -19837,6 +19973,14 @@ function exportMonthlySchedulePdfs() {
           if(!txMap[id]){ local.transactions.push(tx); txMap[id]=tx; changed=true; }
         });
         local.transactions=local.transactions.filter(function(tx){return !(tx&&tx.id&&local.deletedTransactionIds[String(tx.id)]);});
+        local.outsourceSamples=Array.isArray(local.outsourceSamples)?local.outsourceSamples:[];
+        var sampleMap={};
+        local.outsourceSamples.forEach(function(row){if(row&&row.id)sampleMap[String(row.id)]=row;});
+        (remote.outsourceSamples||[]).forEach(function(row){
+          if(!row||!row.id)return;
+          var id=String(row.id);
+          if(!sampleMap[id]){local.outsourceSamples.push(row);sampleMap[id]=row;changed=true;}
+        });
         local.monthlyPrices=local.monthlyPrices||{};
         Object.keys(remote.monthlyPrices||{}).forEach(function(month){
           local.monthlyPrices[month]=local.monthlyPrices[month]||{};
@@ -19862,33 +20006,10 @@ function exportMonthlySchedulePdfs() {
         var remote=wrapper.inventory||wrapper.data||wrapper;
         if(!remote||typeof remote!=='object'||!Array.isArray(remote.items)) return;
         sharedUpdatedAt=String(wrapper.updatedAt||sharedUpdatedAt||'');
-        var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
+        var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots,outsourceSamples:data.outsourceSamples});
         mergeCloudAuthoritative(remote, false);
-        var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
-        if(before!==after){
-          saveLocal();
-          render();
-          // Keep the ADMIN INVENTORY CONTROL window live as well. The main
-          // inventory view already refreshes from the same realtime stream,
-          // but the admin item-master list needs an explicit redraw because
-          // it is rendered inside a separate modal.
-          var adminModal=$('inventoryAdminItemsModal');
-          if(adminModal && !adminModal.hidden && inventoryAdminAllowed()){
-            renderAdminItemList();
-            var adminMsg=$('inventoryAdminItemMessage');
-            var editingId=cleanText(($('inventoryAdminEditingId')||{}).value);
-            if(editingId && !getItem(editingId)){
-              if(adminMsg) adminMsg.textContent='LIVE SYNC: This item was removed by another administrator. The form was cleared.';
-              clearAdminItemForm();
-            }else if(adminMsg && !String(adminMsg.textContent||'').trim()){
-              adminMsg.textContent='LIVE SYNC: Inventory updated just now.';
-              setTimeout(function(){
-                var m=$('inventoryAdminItemMessage');
-                if(m && m.textContent==='LIVE SYNC: Inventory updated just now.') m.textContent='';
-              },2200);
-            }
-          }
-        }
+        var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots,outsourceSamples:data.outsourceSamples});
+        if(before!==after){ saveLocal(); render(); }
       }
       function startSharedInventoryRealtime(){
         stopSharedInventoryRealtime();
@@ -19953,6 +20074,7 @@ function exportMonthlySchedulePdfs() {
         merged.version=4;
         merged.items=Array.isArray(cloud.items)?cloud.items.slice():[];
         merged.transactions=Array.isArray(cloud.transactions)?cloud.transactions.slice():[];
+        merged.outsourceSamples=Array.isArray(cloud.outsourceSamples)?cloud.outsourceSamples.slice():[];
         merged.deletedTransactionIds=merged.deletedTransactionIds&&typeof merged.deletedTransactionIds==='object'?merged.deletedTransactionIds:{};
         merged.deletedItemIds=merged.deletedItemIds&&typeof merged.deletedItemIds==='object'?merged.deletedItemIds:{};
         Object.keys(local.deletedItemIds||{}).forEach(function(id){ if(!merged.deletedItemIds[id]) merged.deletedItemIds[id]=local.deletedItemIds[id]; });
@@ -20351,7 +20473,7 @@ function exportMonthlySchedulePdfs() {
           scroller.scrollLeft=0;
         }
       }
-      function render(){normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
+      function render(){normalize();if($('moduleYears')&&$('moduleYears').classList.contains('active')&&String($('moduleYearsTitle')&&$('moduleYearsTitle').textContent||'').toUpperCase()==='OUTSOURCE'){renderOutsourcePage();return;}ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
       function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.hidden=!inventoryAdminAllowed();render();populateForm();requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);}
       function populateForm(){
         var sel=$('inventoryItemInput');if(!sel)return;var items=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
@@ -20457,31 +20579,14 @@ function exportMonthlySchedulePdfs() {
         if(!inventoryAdminAllowed())return;var item=getItem(itemId);if(!item)return;
         $('inventoryAdminEditingId').value=item.id;$('inventoryAdminName').value=item.name||'';$('inventoryAdminCategory').value=item.category||'ETC';$('inventoryAdminType').value=item.type||'';$('inventoryAdminPrice').value=Number(item.price||0);$('inventoryAdminOpening').value=Number(item.openingStock||0);$('inventoryAdminMin').value=Number(item.minStock||1);$('inventoryAdminItemSaveBtn').textContent='SAVE ITEM';$('inventoryAdminItemMessage').textContent='Editing '+item.name;
       }
-      function adminInventoryRequest(method,args,onSuccess,onFailure,retryCount){
-        retryCount=Number(retryCount||0);
+      function adminInventoryRequest(method,args,onSuccess,onFailure){
         var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
         if(!token||!hasVercelBackend()){if(onFailure)onFailure(new Error('Secure inventory backend is unavailable.'));return;}
         sharedSyncBusy=true;
         hoagApi.run.withSuccessHandler(function(result){
           sharedSyncBusy=false;
           if(result&&result.ok===false){
-            if(result.inventory){
-              data=result.inventory;normalize();
-              sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
-              saveLocal();
-            }
-            // The shared inventory can legitimately change while the admin form
-            // is open (another PC, realtime sync, or background polling). For an
-            // admin catalog operation, refresh the server revision and retry once
-            // instead of exposing a false "changed on another device" error.
-            if(result.conflict && retryCount<1 && result.updatedAt){
-              var retryArgs=args.slice();
-              if(retryArgs.length>=3) retryArgs[2]=String(result.updatedAt);
-              setTimeout(function(){
-                adminInventoryRequest(method,retryArgs,onSuccess,onFailure,retryCount+1);
-              },0);
-              return;
-            }
+            if(result.inventory)mergeCloudAuthoritative(result.inventory,true);
             if(onFailure)onFailure(new Error(result.error||'Inventory update failed.'));
             return;
           }
