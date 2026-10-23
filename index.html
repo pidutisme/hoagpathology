@@ -7842,9 +7842,9 @@
 .outsource-field{display:flex;flex-direction:column;gap:6px;}
 .outsource-field.full{grid-column:1/-1;}
 .outsource-field label{font-size:10px;font-weight:800;color:#547089;text-transform:uppercase;letter-spacing:.06em;}
-.outsource-field input,.outsource-field select,.outsource-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(205,216,230,.92);border-radius:12px;background:#e9eef5;color:#18354a;padding:10px 11px;font:600 12px inherit;outline:none;transition:.15s;box-shadow:inset 3px 3px 8px rgba(126,140,166,.14),inset -3px -3px 8px rgba(255,255,255,.82),inset 0 0 0 1px rgba(255,255,255,.42);min-height:38px;}
+.outsource-field input,.outsource-field select,.outsource-field textarea{width:100%;box-sizing:border-box;border:1px solid #d4e1ea;border-radius:10px;background:#fbfdff;color:#18354a;padding:10px 11px;font:600 12px inherit;outline:none;transition:.15s;}
 .outsource-field textarea{min-height:72px;resize:vertical;}
-.outsource-field input:focus,.outsource-field select:focus,.outsource-field textarea:focus{border-color:rgba(59,139,196,.48);box-shadow:inset 3px 3px 8px rgba(126,140,166,.10),inset -3px -3px 8px rgba(255,255,255,.88),0 0 0 3px rgba(59,139,196,.10);background:#edf2f8;}
+.outsource-field input:focus,.outsource-field select:focus,.outsource-field textarea:focus{border-color:#3b8bc4;box-shadow:0 0 0 3px rgba(59,139,196,.10);background:#fff;}
 .outsource-form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:4px;}
 .outsource-btn{border:0;border-radius:10px;padding:10px 16px;font-size:11px;font-weight:800;cursor:pointer;}
 .outsource-btn.primary{background:#2f80ed;color:#fff;box-shadow:0 5px 14px rgba(47,128,237,.22);}
@@ -9048,6 +9048,131 @@ body.dark-mode #inventory .inventory-record-close:hover {
   -webkit-overflow-scrolling:touch!important;
 }
 </style>
+
+<style id="outsource-neumorphism-final">
+/* OUTSOURCE FINAL NEUMORPHISM — all form controls use the same soft card language as inventory date cards. */
+#moduleYearGrid.outsource-active-grid .outsource-register,
+#moduleYearGrid.outsource-active-grid .outsource-card,
+#moduleYearGrid.outsource-active-grid .outsource-stat{
+  background:var(--neo-surface,#eef2f8)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-card{
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:20px!important;
+  box-shadow:10px 10px 24px rgba(145,155,175,.18),-10px -10px 24px rgba(255,255,255,.82)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-card-head{
+  background:transparent!important;
+  border-bottom:1px solid rgba(120,135,160,.10)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field{
+  min-width:0;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field label{
+  color:#607089!important;
+  font-weight:900!important;
+  letter-spacing:.06em!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input,
+#moduleYearGrid.outsource-active-grid .outsource-field select,
+#moduleYearGrid.outsource-active-grid .outsource-field textarea{
+  appearance:none;
+  -webkit-appearance:none;
+  width:100%!important;
+  box-sizing:border-box!important;
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:14px!important;
+  background:var(--neo-surface,#eef2f8)!important;
+  color:var(--text,#243047)!important;
+  padding:12px 14px!important;
+  min-height:42px!important;
+  font:700 12px/1.2 Nunito Sans,Inter,sans-serif!important;
+  outline:0!important;
+  box-shadow:inset 3px 3px 7px rgba(145,155,175,.16),inset -3px -3px 7px rgba(255,255,255,.82),4px 4px 10px rgba(145,155,175,.08),-4px -4px 10px rgba(255,255,255,.68)!important;
+  transition:box-shadow .16s ease,border-color .16s ease,transform .16s ease!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input[type="date"]{
+  color-scheme:light;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input:focus,
+#moduleYearGrid.outsource-active-grid .outsource-field select:focus,
+#moduleYearGrid.outsource-active-grid .outsource-field textarea:focus{
+  border-color:rgba(47,128,237,.30)!important;
+  box-shadow:inset 2px 2px 5px rgba(145,155,175,.15),inset -2px -2px 5px rgba(255,255,255,.82),0 0 0 3px rgba(47,128,237,.08)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input:active,
+#moduleYearGrid.outsource-active-grid .outsource-field select:active,
+#moduleYearGrid.outsource-active-grid .outsource-field textarea:active{
+  box-shadow:inset 4px 4px 8px rgba(145,155,175,.18),inset -4px -4px 8px rgba(255,255,255,.84)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input[readonly],
+#moduleYearGrid.outsource-active-grid .outsource-field select:disabled{
+  opacity:1!important;
+  color:#65748a!important;
+  cursor:not-allowed!important;
+  box-shadow:inset 4px 4px 8px rgba(145,155,175,.14),inset -4px -4px 8px rgba(255,255,255,.80)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field textarea{min-height:78px!important;resize:none!important;}
+#moduleYearGrid.outsource-active-grid .outsource-field input[type="date"]::-webkit-calendar-picker-indicator{
+  opacity:.65;
+  cursor:pointer;
+  padding:3px;
+}
+#moduleYearGrid.outsource-active-grid .outsource-btn{
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:13px!important;
+  padding:11px 17px!important;
+  font-weight:900!important;
+  background:var(--neo-surface,#eef2f8)!important;
+  color:#33445b!important;
+  box-shadow:5px 5px 10px rgba(145,155,175,.16),-5px -5px 10px rgba(255,255,255,.80)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-btn.primary{
+  background:linear-gradient(145deg,#3b82f6,#2563eb)!important;
+  color:#fff!important;
+  box-shadow:5px 5px 12px rgba(47,128,237,.22),-5px -5px 12px rgba(255,255,255,.58)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-btn:active{
+  transform:translateY(1px);
+  box-shadow:inset 3px 3px 6px rgba(90,110,140,.20),inset -3px -3px 6px rgba(255,255,255,.72)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-stat{
+  border:1px solid rgba(120,135,160,.10)!important;
+  box-shadow:5px 5px 11px rgba(145,155,175,.12),-5px -5px 11px rgba(255,255,255,.72)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search input,
+#moduleYearGrid.outsource-active-grid .outsource-search select{
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:13px!important;
+  background:var(--neo-surface,#eef2f8)!important;
+  box-shadow:inset 2px 2px 5px rgba(145,155,175,.13),inset -2px -2px 5px rgba(255,255,255,.78)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table-wrap{
+  border-radius:16px!important;
+  background:var(--neo-surface,#eef2f8)!important;
+  box-shadow:inset 3px 3px 8px rgba(145,155,175,.10),inset -3px -3px 8px rgba(255,255,255,.68)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field .os-auto-badge{
+  margin-left:5px;font-size:8px;letter-spacing:.04em;color:#2f80ed;font-weight:900;
+}
+@media(max-width:980px){
+  #moduleYearGrid.outsource-active-grid .outsource-form{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
+@media(max-width:700px){
+  #moduleYearGrid.outsource-active-grid .outsource-form{grid-template-columns:1fr!important;}
+}
+</style>
+
+
+<style id="outsource-scroll-static-final">
+/* FINAL: the OUTSOURCE page itself is static; only Registered Samples data area scrolls. */
+#moduleYearGrid.outsource-active-grid,
+#moduleYearGrid.outsource-active-grid .outsource-register,
+#moduleYearGrid.outsource-active-grid .outsource-grid{overflow:hidden!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table-wrap{overflow:auto!important;}
+#moduleYearGrid.outsource-active-grid .outsource-grid>.outsource-card:first-child{overflow:visible!important;}
+</style>
+
 </head>
 <body class="auth-locked">
 <!-- +----------------------------------+
@@ -13246,19 +13371,19 @@ if (token) {
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTER SAMPLE</h3><span id="outsourceEditHint">NEW RECORD</span></div>'+
               '<form class="outsource-form" id="outsourceForm" autocomplete="off">'+
                 '<input type="hidden" id="outsourceEditId">'+
-                '<div class="outsource-field inventory-date-field outsource-date-field"><label>Sample Date *</label><input type="hidden" id="osSampleDate" value="'+outsourceEsc(today)+'"><input class="inventory-neumorphic-date" id="osSampleDateVisible" type="text" readonly aria-label="Sample Date"></div>'+
+                '<div class="outsource-field"><label>Sample Date *</label><input type="date" id="osSampleDate" required value="'+outsourceEsc(today)+'"></div>'+
                 '<div class="outsource-field"><label>Bar Code</label><input id="osBarCode" placeholder="e.g. 1036733"></div>'+
                 '<div class="outsource-field"><label>Name *</label><input id="osName" required placeholder="Patient name"></div>'+
                 '<div class="outsource-field"><label>ID / IC</label><input id="osIdIc" placeholder="NRIC / Passport"></div>'+
-                '<div class="outsource-field"><label>Sex <span class="outsource-auto-hint">AUTO FROM IC</span></label><select id="osSex" disabled><option value="">Select</option><option value="P">P</option><option value="L">L</option></select></div>'+
-                '<div class="outsource-field"><label>Age <span class="outsource-auto-hint">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Age" readonly></div>'+
+                '<div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><select id="osSex" disabled><option value="">Auto from IC</option><option value="P">P</option><option value="L">L</option></select></div>'+
+                '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div>'+
-                '<div class="outsource-field inventory-date-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input class="inventory-neumorphic-date" id="osDispatchDateVisible" type="text" readonly aria-label="Dispatch Date"></div>'+
+                '<div class="outsource-field"><label>Dispatch Date</label><input type="date" id="osDispatchDate" value="'+outsourceEsc(today)+'"></div>'+
                 '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option><option>H SELAYANG</option><option>HKL</option><option>IPR</option><option>MKAK</option><option>MVN BOTANIK</option><option>H AMPANG</option><option>IMR/NIH</option><option>HTA</option><option>H PUTRAJAYA</option></select></div>'+
                 '<div class="outsource-field"><label>Outsource Lab</label><select id="osLab"><option value="">Select laboratory</option><option>BIOCHEMISTRY</option><option>MICROBIOLOGY</option><option>HEMATOLOGY</option><option>CYTOLOGY</option><option>HISTOLOGY</option></select></div>'+
                 '<div class="outsource-field full"><label>Test / Investigation *</label><input id="osTest" required placeholder="e.g. MTB Sputum Culture & Sensitivity"></div>'+
                 '<div class="outsource-field"><label>Result</label><input id="osResult" list="outsourceResultOptions" placeholder="PENDING / ADA / REJECT"><datalist id="outsourceResultOptions"><option value="PENDING"><option value="ADA"><option value="REJECT"><option value="POSITIVE"><option value="NEGATIVE"><option value="COMPLETED"></datalist></div>'+
-                '<div class="outsource-field inventory-date-field outsource-date-field"><label>Result Date</label><input type="hidden" id="osResultDate"><input class="inventory-neumorphic-date" id="osResultDateVisible" type="text" readonly aria-label="Result Date"></div>'+
+                '<div class="outsource-field"><label>Result Date</label><input type="date" id="osResultDate"></div>'+
                 '<div class="outsource-field"><label>Reference No.</label><input id="osReferenceNo" placeholder="External report / accession no."></div>'+
                 '<div class="outsource-field"><label>Reject Reason</label><input id="osRejectReason" placeholder="If rejected"></div>'+
                 '<div class="outsource-field full"><label>Notes</label><textarea id="osNotes" placeholder="Additional notes / follow-up"></textarea></div>'+
@@ -13270,11 +13395,10 @@ if (token) {
               '<div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>#</th><th>Sample Date</th><th>Bar Code</th><th>Name</th><th>ID/IC</th><th>Sex</th><th>Age</th><th>Unit</th><th>Dispatch</th><th>Referral</th><th>Lab</th><th>Test</th><th>Result</th><th>Result Date</th><th>Reference No.</th><th>Reject Reason</th><th>Notes</th><th>Action</th></tr></thead><tbody id="outsourceTableBody"></tbody></table><div class="outsource-empty" id="outsourceEmpty" hidden>No outsource sample registered yet.</div></div>'+
             '</section>'+
           '</div></div>';
-        if(window.OutsourceDatePicker)window.OutsourceDatePicker.init();
-        if(window.OutsourceIC)window.OutsourceIC.init();
-        if(window.OutsourceEnterNav)window.OutsourceEnterNav.init();
         renderOutsourceRows();
         var form=$('outsourceForm'); if(form)form.addEventListener('submit',function(e){e.preventDefault();saveOutsourceSample();});
+        bindOutsourceKeyboardFlow();
+        bindOutsourceIcAutofill();
         var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
         var search=$('outsourceSearch'); if(search)search.addEventListener('input',renderOutsourceRows);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',renderOutsourceRows);
@@ -13292,7 +13416,54 @@ if (token) {
         body.innerHTML=rows.map(function(r,i){var cls=outsourceResultClass(r.result),result=String(r.result||'PENDING');return '<tr class="'+cls+'"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
         if(empty)empty.hidden=rows.length>0;
       }
-      function clearOutsourceForm(){var form=$('outsourceForm');if(!form)return;form.reset();$('outsourceEditId').value='';$('osSampleDate').value=outsourceToday();$('osDispatchDate').value=outsourceToday();$('osResultDate').value='';$('osSex').value='';$('osAge').value='';if(window.OutsourceDatePicker)window.OutsourceDatePicker.sync();$('outsourceEditHint').textContent='NEW RECORD';$('outsourceSaveBtn').textContent='REGISTER SAMPLE';}
+      function calculateMalaysianIcDetails(rawIc, referenceDate){
+        var raw=String(rawIc||'').replace(/[^0-9]/g,'');
+        if(!/^\d{12}$/.test(raw)) return null;
+        var yy=Number(raw.slice(0,2)), mm=Number(raw.slice(2,4)), dd=Number(raw.slice(4,6));
+        var now=referenceDate instanceof Date?referenceDate:new Date();
+        var currentYY=Number(String(now.getFullYear()).slice(-2));
+        var year=yy<=currentYY?2000+yy:1900+yy;
+        var dob=new Date(year,mm-1,dd);
+        if(dob.getFullYear()!==year||dob.getMonth()!==mm-1||dob.getDate()!==dd) return null;
+        var genderDigit=Number(raw.charAt(11));
+        var sex=(genderDigit%2===1)?'L':'P';
+        var age=now.getFullYear()-year;
+        if(now.getMonth()<(mm-1)||(now.getMonth()===(mm-1)&&now.getDate()<dd)) age--;
+        if(age<0||age>130) return null;
+        return {sex:sex,age:age,dob:year+'-'+String(mm).padStart(2,'0')+'-'+String(dd).padStart(2,'0')};
+      }
+      function applyOutsourceIcAutofill(){
+        var ic=$('osIdIc'),sex=$('osSex'),age=$('osAge'); if(!ic||!sex||!age)return;
+        var ref=$('osSampleDate');
+        var refDate=ref&&ref.value?new Date(ref.value+'T12:00:00'):new Date();
+        var details=calculateMalaysianIcDetails(ic.value,refDate);
+        if(details){sex.value=details.sex;age.value=String(details.age);ic.setCustomValidity('');}
+        else {sex.value='';age.value='';ic.setCustomValidity('');}
+      }
+      function bindOutsourceIcAutofill(){
+        var ic=$('osIdIc');if(ic){ic.addEventListener('input',applyOutsourceIcAutofill);ic.addEventListener('blur',applyOutsourceIcAutofill);}
+        var date=$('osSampleDate');if(date)date.addEventListener('change',applyOutsourceIcAutofill);
+      }
+      function bindOutsourceKeyboardFlow(){
+        var flow=['osBarCode','osName','osIdIc','osTest'];
+        flow.forEach(function(id,index){
+          var el=$(id);if(!el)return;
+          el.addEventListener('keydown',function(e){
+            if(e.key!=='Enter')return;
+            e.preventDefault();
+            e.stopPropagation();
+            if(index<flow.length-1){var next=$(flow[index+1]);if(next){next.focus();if(next.select)next.select();}}
+            else {el.blur();}
+          });
+        });
+        var form=$('outsourceForm');if(form)form.addEventListener('keydown',function(e){
+          if(e.key==='Enter'&&flow.indexOf(document.activeElement.id)===-1){
+            if(document.activeElement.tagName==='TEXTAREA')return;
+            e.preventDefault();e.stopPropagation();
+          }
+        },true);
+      }
+      function clearOutsourceForm(){var form=$('outsourceForm');if(!form)return;form.reset();$('outsourceEditId').value='';$('osSampleDate').value=outsourceToday();$('osDispatchDate').value=outsourceToday();$('outsourceEditHint').textContent='NEW RECORD';$('outsourceSaveBtn').textContent='REGISTER SAMPLE';applyOutsourceIcAutofill();}
       function saveOutsourceSample(){
         var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(); if(!name||!test){alert('Name and Test / Investigation are required.');return;}
         var editId=String($('outsourceEditId').value||'').trim(),existing=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(r){return String(r.id||'')===editId;});
@@ -13301,7 +13472,7 @@ if (token) {
       }
       function editOutsourceSample(id){
         var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
-        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';$('osTest').value=r.test||'';$('osResult').value=r.result||'PENDING';$('osResultDate').value=r.resultDate||'';$('osReferenceNo').value=r.referenceNo||'';$('osRejectReason').value=r.rejectReason||'';$('osNotes').value=r.notes||'';if(window.OutsourceDatePicker)window.OutsourceDatePicker.sync();$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
+        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';$('osTest').value=r.test||'';$('osResult').value=r.result||'PENDING';$('osResultDate').value=r.resultDate||'';$('osReferenceNo').value=r.referenceNo||'';$('osRejectReason').value=r.rejectReason||'';$('osNotes').value=r.notes||'';$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
         var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
       }
       function deleteOutsourceSample(id){var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;if(!confirm('Delete outsource sample for '+String(r.name||'this patient')+'?'))return;if(typeof Inventory!=='undefined'&&Inventory.deleteOutsourceSample) Inventory.deleteOutsourceSample(id); renderOutsourceRows();}
@@ -21683,80 +21854,6 @@ if ("serviceWorker" in navigator) {
   opacity: 1 !important;
 }
 </style>
-
-<style id="outsource-register-enhancements">
-  #moduleYearGrid.outsource-active-grid .outsource-date-field{position:relative;}
-  #moduleYearGrid.outsource-active-grid .outsource-date-field .inventory-neumorphic-date{
-    height:44px!important; width:100%!important; box-sizing:border-box!important; padding:0 42px 0 14px!important;
-    border:1px solid rgba(148,163,184,.28)!important; border-radius:13px!important;
-    background:linear-gradient(145deg,#eef2f8,#e1e6ef)!important; color:#172033!important;
-    box-shadow:inset 2px 2px 5px rgba(148,163,184,.16), inset -2px -2px 5px rgba(255,255,255,.8), 0 3px 9px rgba(76,94,122,.07)!important;
-    cursor:pointer!important;
-  }
-  #moduleYearGrid.outsource-active-grid .outsource-date-field::after{content:'▣';position:absolute;right:14px;bottom:13px;color:#64748b;font-size:13px;pointer-events:none;opacity:.85;}
-  #moduleYearGrid.outsource-active-grid select:disabled,#moduleYearGrid.outsource-active-grid input[readonly]{opacity:1!important;color:#172033!important;cursor:not-allowed;}
-  .outsource-auto-hint{font-size:8px;color:#2563eb;font-weight:800;margin-left:4px;letter-spacing:.04em;}
-</style>
-<script id="outsource-register-enhancements">
-(function(){
-  function pad(n){return String(n).padStart(2,'0');}
-  function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-  function parse(v){if(!v)return null;var a=String(v).split('-').map(Number);if(a.length!==3||a.some(isNaN))return null;return new Date(a[0],a[1]-1,a[2]);}
-  function fmt(v){var d=parse(v);return d?pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear():'';}
-  var picker={pop:null,fields:[['osSampleDate','osSampleDateVisible'],['osDispatchDate','osDispatchDateVisible'],['osResultDate','osResultDateVisible']]};
-  function setup(){
-    if(!document.getElementById('outsourceForm'))return;
-    if(!picker.pop){
-      picker.pop=document.createElement('div'); picker.pop.className='inventory-date-popover'; picker.pop.hidden=true;
-      picker.pop.innerHTML='<div class="inventory-date-head"><div class="inventory-date-month"></div><div class="inventory-date-nav"><button type="button" data-prev>‹</button><button type="button" data-next>›</button></div></div><div class="inventory-date-week"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div><div class="inventory-date-grid"></div><div class="inventory-date-foot"><button type="button" data-clear>Clear</button><button type="button" data-today>Today</button></div>';
-      document.body.appendChild(picker.pop);
-      picker.pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var v=picker.active;if(!v)return;if(b.dataset.prev){picker.view=new Date(picker.view.getFullYear(),picker.view.getMonth()-1,1);draw();position();}else if(b.dataset.next){picker.view=new Date(picker.view.getFullYear(),picker.view.getMonth()+1,1);draw();position();}else if(b.dataset.date){choose(b.dataset.date);}else if(b.dataset.today){choose(key(new Date()));}else if(b.dataset.clear){choose('');}});
-      document.addEventListener('mousedown',function(e){if(picker.pop&&!picker.pop.contains(e.target)&&e.target!==picker.activeVisible)picker.pop.hidden=true;});
-      window.addEventListener('resize',function(){if(!picker.pop.hidden)position();});
-    }
-    picker.fields.forEach(function(pair){var h=document.getElementById(pair[0]),v=document.getElementById(pair[1]);if(!h||!v||v.dataset.bound)return;v.dataset.bound='1';v.value=fmt(h.value);v.addEventListener('click',function(){open(h,v);});v.addEventListener('focus',function(){open(h,v);});});
-  }
-  function open(h,v){picker.active=h;picker.activeVisible=v;picker.view=parse(h.value)||new Date();draw();picker.pop.hidden=false;position();}
-  function position(){var r=picker.activeVisible.getBoundingClientRect(),w=picker.pop.offsetWidth,h=picker.pop.offsetHeight,left=Math.min(Math.max(12,r.left),window.innerWidth-w-12),top=r.bottom+8;if(top+h>window.innerHeight-12)top=Math.max(12,r.top-h-8);picker.pop.style.left=left+'px';picker.pop.style.top=top+'px';}
-  function draw(){var view=picker.view;picker.pop.querySelector('.inventory-date-month').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});var g=picker.pop.querySelector('.inventory-date-grid');g.innerHTML='';var first=new Date(view.getFullYear(),view.getMonth(),1),start=(first.getDay()+6)%7,days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate(),prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(),today=key(new Date());for(var i=0;i<42;i++){var n=i-start+1,d=new Date(view.getFullYear(),view.getMonth(),n),muted=false;if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);muted=true;}else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);muted=true;}var b=document.createElement('button');b.type='button';b.className='inventory-date-day'+(muted?' muted':'')+(key(d)===today?' today':'')+(key(d)===picker.active.value?' selected':'');b.textContent=d.getDate();b.dataset.date=key(d);g.appendChild(b);}}
-  function choose(v){picker.active.value=v;picker.activeVisible.value=fmt(v);picker.active.dispatchEvent(new Event('input',{bubbles:true}));picker.active.dispatchEvent(new Event('change',{bubbles:true}));picker.pop.hidden=true;}
-  function sync(){picker.fields.forEach(function(pair){var h=document.getElementById(pair[0]),v=document.getElementById(pair[1]);if(h&&v)v.value=fmt(h.value);});}
-  window.OutsourceDatePicker={init:setup,sync:sync};
-  function calcFromIC(raw){var digits=String(raw||'').replace(/\D/g,'');if(digits.length!==12)return null;var yy=Number(digits.slice(0,2)),mm=Number(digits.slice(2,4)),dd=Number(digits.slice(4,6));if(mm<1||mm>12||dd<1||dd>31)return null;var now=new Date(),year=yy+(yy<=now.getFullYear()%100?2000:1900),birth=new Date(year,mm-1,dd);if(birth.getFullYear()!==year||birth.getMonth()!==mm-1||birth.getDate()!==dd||birth>now)return null;var age=now.getFullYear()-year;if(now.getMonth()<mm-1||(now.getMonth()===mm-1&&now.getDate()<dd))age--;var last=Number(digits.slice(-1));return {age:age,sex:last%2?'L':'P',birthDate:birth};}
-  function initIC(){var ic=document.getElementById('osIdIc'),sex=document.getElementById('osSex'),age=document.getElementById('osAge');if(!ic||!sex||!age||ic.dataset.icBound)return;ic.dataset.icBound='1';function apply(){var x=calcFromIC(ic.value);if(x){sex.value=x.sex;age.value=x.age;sex.title='Auto-detected from Malaysian NRIC';age.title='Auto-calculated from Malaysian NRIC';}else{sex.value='';age.value='';}}
-    ic.addEventListener('input',apply);ic.addEventListener('blur',apply);apply();}
-  window.OutsourceIC={init:initIC};
-  function bindEnterNavigation(){
-    var form=document.getElementById('outsourceForm');
-    if(!form||form.dataset.enterNavBound)return;
-    form.dataset.enterNavBound='1';
-    form.addEventListener('keydown',function(e){
-      if(e.key!=='Enter'||e.isComposing)return;
-      var target=e.target;
-      if(!target||target.tagName==='BUTTON')return;
-      e.preventDefault();
-      e.stopPropagation();
-      var fields=Array.prototype.slice.call(form.querySelectorAll('input,select,textarea')).filter(function(el){
-        if(el.type==='hidden')return false;
-        if(el.disabled||el.readOnly)return false;
-        if(el.offsetParent===null)return false;
-        return true;
-      });
-      var idx=fields.indexOf(target);
-      if(idx<0)return;
-      var next=fields[idx+1];
-      if(next){
-        next.focus();
-        if(next.select&&next.tagName==='INPUT'&&next.type!=='date')next.select();
-      }else{
-        var save=document.getElementById('outsourceSaveBtn');
-        if(save)save.focus();
-      }
-    });
-  }
-  window.OutsourceEnterNav={init:bindEnterNavigation};
-})();
-</script>
 </body>
 </html>
 
