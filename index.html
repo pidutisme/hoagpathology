@@ -9631,14 +9631,66 @@ select[data-auto-from-ic]{
   #moduleYearGrid.outsource-active-grid .outsource-search{grid-template-columns:1fr !important;}
 }
 </style>
-\n<style id="page-header-icons-v1">\n/* PAGE HEADER ICONS - single scoped enhancement */\n:is(#profile, #access, #calendar, #leavesCourses, #quickLinks, #notes, #moduleYears, #settings) h3 {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n\n:is(#profile, #access, #calendar, #leavesCourses, #quickLinks, #notes, #moduleYears, #settings) h3::before {\n  content: "";\n  flex: 0 0 46px;\n  width: 46px;\n  height: 46px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 14px;\n  border: 1px solid rgba(255,255,255,.72);\n  background: linear-gradient(145deg, rgba(246,249,255,.98), rgba(220,228,240,.92));\n  box-shadow: 7px 7px 14px rgba(154,166,185,.28), -5px -5px 12px rgba(255,255,255,.9), inset 1px 1px 2px rgba(255,255,255,.72);\n  font-size: 22px;\n  line-height: 1;\n}\n\n/* Page/card-specific icons */\n#profile .profile-card:nth-child(1) > h3::before { content: "🏥"; }\n#profile .profile-card:nth-child(2) > h3::before { content: "🔬"; }\n#access .profile-card:nth-child(1) > h3::before { content: "📋"; }\n#access .profile-card:nth-child(2) > h3::before { content: "⚠️"; }\n#access .profile-card:nth-child(3) > h3::before { content: "📚"; }\n#calendar .calendar-roster-head h3::before { content: "📅"; }\n#leavesCourses .leave-course-year-card:nth-child(1) h3::before { content: "🌿"; }\n#leavesCourses .leave-course-year-card:nth-child(2) h3::before { content: "🎓"; }\n#quickLinks .content-inner > div:first-child h3::before { content: "🔗"; }\n#notes .notes-editor-card .notes-card-head > h3::before { content: "📝"; }\n#notes .notes-list-head h3::before { content: "🗂️"; }\n#moduleYears .module-years-header h3::before { content: "🗃️"; }
-#moduleYears .module-years-header h3[data-module-icon="OUTSOURCE"]::before { content: "📦"; }
-#moduleYears .module-years-header h3[data-module-icon="TRANSFUSION"]::before { content: "🩸"; }
-#moduleYears .module-years-header h3[data-module-icon="POCT"]::before { content: "🖥️"; }
-#moduleYears .module-years-header h3[data-module-icon="CHEMICAL PATHOLOGY"]::before { content: "🧪"; }
-#moduleYears .module-years-header h3[data-module-icon="HEMATOLOGY"]::before { content: "🔬"; }
-#moduleYears .module-years-header h3[data-module-icon="MICROBIOLOGY"]::before { content: "🦠"; }
-#moduleYears .module-years-header h3[data-module-icon="URINE/STOOL ANALYSIS"]::before { content: "🧫"; }\n#settings .settings-standard-panel > h3::before { content: "⚙️"; }\n\n/* Inventory already has its own matching title icon; do not add another. */\n\n@media (max-width: 700px) {\n  :is(#profile, #access, #calendar, #leavesCourses, #quickLinks, #notes, #moduleYears, #settings) h3::before {\n    flex-basis: 40px;\n    width: 40px;\n    height: 40px;\n    border-radius: 12px;\n    font-size: 19px;\n  }\n}\n</style>\n
+\n<style id="page-header-icons-v1">
+/* PAGE HEADER ICONS - single scoped enhancement */
+:is(#profile, #access, #calendar, #leavesCourses, #quickLinks, #notes, #moduleYears, #settings) h3 {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+:is(#profile, #access, #calendar, #leavesCourses, #quickLinks, #notes, #moduleYears, #settings) h3::before {
+  content:"";
+  flex:0 0 46px;
+  width:46px;
+  height:46px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.72);
+  background:linear-gradient(145deg,rgba(246,249,255,.98),rgba(220,228,240,.92));
+  box-shadow:7px 7px 14px rgba(154,166,185,.28),-5px -5px 12px rgba(255,255,255,.9),inset 1px 1px 2px rgba(255,255,255,.72);
+  font-size:22px;
+  line-height:1;
+}
+/* 1. Hospital Profile */
+#profile .profile-card:nth-child(1)>h3::before{content:"🏥";}
+/* 2. Laboratory Profile */
+#profile .profile-card:nth-child(2)>h3::before{content:"🔬";}
+/* 3. Forms */
+#access .profile-card:nth-child(1)>h3::before{content:"📋";}
+/* 4. MSDS */
+#access .profile-card:nth-child(2)>h3::before{content:"⚠️";}
+/* 5. e-Book */
+#access .profile-card:nth-child(3)>h3::before{content:"📚";}
+/* 6. Calendar */
+#calendar .calendar-roster-head h3::before{content:"📅";}
+/* 7. Leave */
+#leavesCourses .leave-course-year-card:nth-child(1) h3::before{content:"🌿";}
+/* 8. Courses */
+#leavesCourses .leave-course-year-card:nth-child(2) h3::before{content:"🎓";}
+/* 9. Quick Links */
+#quickLinks .content-inner>div:first-child h3::before{content:"🔗";}
+/* 10. Notes */
+#notes .notes-editor-card .notes-card-head>h3::before{content:"📝";}
+/* 11. Saved Notes */
+#notes .notes-list-head h3::before{content:"🗂️";}
+/* 12. Module */
+#moduleYears .module-years-header h3[data-module-icon="OUTSOURCE"]::before{content:"📦";}
+#moduleYears .module-years-header h3[data-module-icon="TRANSFUSION"]::before{content:"🩸";}
+#moduleYears .module-years-header h3[data-module-icon="POCT"]::before{content:"🖥️";}
+#moduleYears .module-years-header h3[data-module-icon="CHEMICAL PATHOLOGY"]::before{content:"🧪";}
+#moduleYears .module-years-header h3[data-module-icon="HEMATOLOGY"]::before{content:"🔬";}
+#moduleYears .module-years-header h3[data-module-icon="MICROBIOLOGY"]::before{content:"🦠";}
+#moduleYears .module-years-header h3[data-module-icon="URINE/STOOL ANALYSIS"]::before{content:"🧫";}
+/* 13. Settings */
+#settings .settings-standard-panel>h3::before{content:"⚙️";}
+@media(max-width:700px){
+  :is(#profile,#access,#calendar,#leavesCourses,#quickLinks,#notes,#moduleYears,#settings) h3::before{
+    flex-basis:40px;width:40px;height:40px;border-radius:12px;font-size:19px;
+  }
+}
+</style>\n
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked">
@@ -13837,6 +13889,7 @@ if (token) {
         var grid=$('moduleYearGrid'); if(!grid)return;
         grid.classList.add('outsource-active-grid');
         $('moduleYearsTitle').textContent='OUTSOURCE';
+        $('moduleYearsTitle').setAttribute('data-module-icon','OUTSOURCE');
         $('moduleYearsDesc').textContent='Register, track and follow up outsourced laboratory samples in one live workspace. No external spreadsheet required.';
         var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[];
         rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
