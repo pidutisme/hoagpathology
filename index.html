@@ -9344,10 +9344,19 @@ select[data-auto-from-ic]{
 
 <style id="outsource-final-result-pill-fix">
 #moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result{font-weight:800!important;text-align:left!important;vertical-align:middle!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:6px 7px!important;white-space:nowrap!important;}
-#moduleYearGrid.outsource-active-grid .outsource-result-pill{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:20px!important;padding:3px 11px!important;border-radius:999px!important;border:0!important;outline:0!important;box-shadow:none!important;font-weight:800!important;line-height:1.1!important;color:#111827!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result{width:1%!important;min-width:92px!important;max-width:none!important;overflow:visible!important;white-space:nowrap!important;}
+#moduleYearGrid.outsource-active-grid .outsource-result-pill{display:inline-block!important;width:auto!important;max-width:none!important;min-width:0!important;min-height:0!important;padding:4px 10px!important;box-sizing:border-box!important;border-radius:999px!important;border:0!important;outline:0!important;box-shadow:none!important;font-weight:800!important;line-height:1.15!important;color:#111827!important;white-space:nowrap!important;vertical-align:middle!important;}
 #moduleYearGrid.outsource-active-grid .outsource-result-pill.status-done{background:#dff4e7!important;color:#111827!important;}
 #moduleYearGrid.outsource-active-grid .outsource-result-pill.status-reject{background:#fde3e5!important;color:#111827!important;}
 #moduleYearGrid.outsource-active-grid .outsource-result-pill.status-pending{background:transparent!important;color:#111827!important;padding-left:0!important;padding-right:0!important;}
+</style>
+
+<style id="outsource-result-final-v11">
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result{width:1%!important;min-width:92px!important;max-width:none!important;overflow:visible!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:6px 7px!important;text-align:left!important;vertical-align:middle!important;white-space:nowrap!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result .outsource-result-pill{display:inline-block!important;width:auto!important;max-width:none!important;min-width:0!important;padding:4px 10px!important;border:0!important;outline:none!important;box-shadow:none!important;border-radius:999px!important;color:#111827!important;white-space:nowrap!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result .outsource-result-pill.status-done{background:#dff4e7!important;color:#111827!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result .outsource-result-pill.status-reject{background:#fde3e5!important;color:#111827!important;}
+#moduleYearGrid.outsource-active-grid .outsource-table td.outsource-result .outsource-result-pill.status-pending{background:transparent!important;color:#111827!important;padding-left:0!important;padding-right:0!important;}
 </style>
 </head>
 <body class="auth-locked">
@@ -20247,6 +20256,7 @@ function exportMonthlySchedulePdfs() {
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
     data.outsourceSamples=Array.isArray(data.outsourceSamples)?data.outsourceSamples:[];
+        if(!data.deletedOutsourceSampleIds||typeof data.deletedOutsourceSampleIds!=='object'||Array.isArray(data.deletedOutsourceSampleIds)) data.deletedOutsourceSampleIds={};
         if(!data.deletedTransactionIds||typeof data.deletedTransactionIds!=='object'||Array.isArray(data.deletedTransactionIds)) data.deletedTransactionIds={};
         if(!data.deletedItemIds||typeof data.deletedItemIds!=='object'||Array.isArray(data.deletedItemIds)) data.deletedItemIds={};
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
@@ -20571,13 +20581,19 @@ function exportMonthlySchedulePdfs() {
         });
         local.transactions=local.transactions.filter(function(tx){return !(tx&&tx.id&&local.deletedTransactionIds[String(tx.id)]);});
         local.outsourceSamples=Array.isArray(local.outsourceSamples)?local.outsourceSamples:[];
+        local.deletedOutsourceSampleIds=local.deletedOutsourceSampleIds&&typeof local.deletedOutsourceSampleIds==='object'?local.deletedOutsourceSampleIds:{};
+        Object.keys(remote.deletedOutsourceSampleIds||{}).forEach(function(id){
+          if(!local.deletedOutsourceSampleIds[id]){local.deletedOutsourceSampleIds[id]=remote.deletedOutsourceSampleIds[id]||nowIso();changed=true;}
+        });
         var sampleMap={};
-        local.outsourceSamples.forEach(function(row){if(row&&row.id)sampleMap[String(row.id)]=row;});
+        local.outsourceSamples.forEach(function(row){if(row&&row.id&&!local.deletedOutsourceSampleIds[String(row.id)])sampleMap[String(row.id)]=row;});
         (remote.outsourceSamples||[]).forEach(function(row){
           if(!row||!row.id)return;
           var id=String(row.id);
+          if(local.deletedOutsourceSampleIds[id])return;
           if(!sampleMap[id]){local.outsourceSamples.push(row);sampleMap[id]=row;changed=true;}
         });
+        local.outsourceSamples=local.outsourceSamples.filter(function(row){return !(row&&row.id&&local.deletedOutsourceSampleIds[String(row.id)]);});
         local.monthlyPrices=local.monthlyPrices||{};
         Object.keys(remote.monthlyPrices||{}).forEach(function(month){
           local.monthlyPrices[month]=local.monthlyPrices[month]||{};
@@ -20678,19 +20694,23 @@ function exportMonthlySchedulePdfs() {
            prefer the newest updatedAt/createdAt record. */
         var cloudSamples=Array.isArray(cloud.outsourceSamples)?cloud.outsourceSamples:[];
         var localSamples=Array.isArray(local.outsourceSamples)?local.outsourceSamples:[];
+        merged.deletedOutsourceSampleIds=merged.deletedOutsourceSampleIds&&typeof merged.deletedOutsourceSampleIds==='object'?merged.deletedOutsourceSampleIds:{};
+        Object.keys(local.deletedOutsourceSampleIds||{}).forEach(function(id){if(!merged.deletedOutsourceSampleIds[id])merged.deletedOutsourceSampleIds[id]=local.deletedOutsourceSampleIds[id];});
+        Object.keys(cloud.deletedOutsourceSampleIds||{}).forEach(function(id){if(!merged.deletedOutsourceSampleIds[id])merged.deletedOutsourceSampleIds[id]=cloud.deletedOutsourceSampleIds[id];});
         var sampleMap={};
         function sampleStamp(row){
           var a=Date.parse(String(row&&row.updatedAt||''));
           if(!Number.isFinite(a)) a=Date.parse(String(row&&row.createdAt||''));
           return Number.isFinite(a)?a:0;
         }
-        localSamples.forEach(function(row){ if(row&&row.id) sampleMap[String(row.id)]=row; });
+        localSamples.forEach(function(row){ if(row&&row.id&&!merged.deletedOutsourceSampleIds[String(row.id)]) sampleMap[String(row.id)]=row; });
         cloudSamples.forEach(function(row){
           if(!row||!row.id) return;
-          var id=String(row.id), existing=sampleMap[id];
+          var id=String(row.id); if(merged.deletedOutsourceSampleIds[id]) return;
+          var existing=sampleMap[id];
           if(!existing || sampleStamp(row)>=sampleStamp(existing)) sampleMap[id]=row;
         });
-        merged.outsourceSamples=Object.keys(sampleMap).map(function(id){return sampleMap[id];});
+        merged.outsourceSamples=Object.keys(sampleMap).map(function(id){return sampleMap[id];}).filter(function(row){return !(row&&row.id&&merged.deletedOutsourceSampleIds[String(row.id)]);});
         merged.deletedTransactionIds=merged.deletedTransactionIds&&typeof merged.deletedTransactionIds==='object'?merged.deletedTransactionIds:{};
         merged.deletedItemIds=merged.deletedItemIds&&typeof merged.deletedItemIds==='object'?merged.deletedItemIds:{};
         Object.keys(local.deletedItemIds||{}).forEach(function(id){ if(!merged.deletedItemIds[id]) merged.deletedItemIds[id]=local.deletedItemIds[id]; });
@@ -21562,8 +21582,11 @@ function exportMonthlySchedulePdfs() {
       function ensureOutsourceReady(){ normalize(); data.outsourceSamples=Array.isArray(data.outsourceSamples)?data.outsourceSamples:[]; }
       function upsertOutsourceSample(row){
         ensureOutsourceReady();
+        var rid=String(row&&row.id||'');
+        data.deletedOutsourceSampleIds=data.deletedOutsourceSampleIds||{};
+        if(rid) delete data.deletedOutsourceSampleIds[rid];
         var list=data.outsourceSamples;
-        var idx=list.findIndex(function(x){return String(x&&x.id||'')===String(row&&row.id||'');});
+        var idx=list.findIndex(function(x){return String(x&&x.id||'')===rid;});
         if(idx>=0) list[idx]=row; else list.push(row);
         saveLocal();
         render();
@@ -21571,10 +21594,14 @@ function exportMonthlySchedulePdfs() {
       }
       function deleteOutsourceSample(id){
         ensureOutsourceReady();
-        data.outsourceSamples=data.outsourceSamples.filter(function(x){return String(x&&x.id||'')!==String(id||'');});
+        var rid=String(id||'');
+        if(!rid)return;
+        data.deletedOutsourceSampleIds=data.deletedOutsourceSampleIds||{};
+        data.deletedOutsourceSampleIds[rid]=nowIso();
+        data.outsourceSamples=data.outsourceSamples.filter(function(x){return String(x&&x.id||'')!==rid;});
         saveLocal();
         render();
-        saveRemote();
+        saveRemote({force:true});
       }
             return {init:init,open:open,load:load,render:render,handleFirebaseReady:handleFirebaseReady,handleAuthLogout:handleAuthLogout,getOutsourceSamples:getOutsourceSamples,ensureOutsourceReady:ensureOutsourceReady,upsertOutsourceSample:upsertOutsourceSample,deleteOutsourceSample:deleteOutsourceSample};
     })();
