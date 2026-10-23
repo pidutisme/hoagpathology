@@ -19481,26 +19481,22 @@ function exportMonthlySchedulePdfs() {
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
         if(!data.monthlySnapshots||typeof data.monthlySnapshots!=='object'||Array.isArray(data.monthlySnapshots)) data.monthlySnapshots={};
         var novacloneNames={
-          'novacloneantia10mlvial':true,
-          'novacloneantib10mlvial':true,
-          'novacloneantiab10mlvial':true,
-          'novacloneantidantirhig-igg10mlvial':true,
-          'novacloneantidantirhigmigg10mlvial':true
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
         };
-        function novacloneKey(name){
-          return String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
-        }
         // HARD CLIENT-SIDE BASELINE: Novaclone must never inherit a stale
         // openingStock from old localStorage/cloud snapshots. Its balance is
         // driven only by explicit Stock In / Stock Out movements.
         data.items.forEach(function(item){
           item.minStock=1;
-          var key=novacloneKey(item&&item.name||'');
+          var key=String(item&&item.name||'').trim().toLowerCase();
           if(novacloneNames[key]) item.openingStock=0;
         });
         data.transactions=data.transactions.filter(function(tx){
           var item=data.items.find(function(it){return it&&String(it.id||'')===String(tx&&tx.itemId||'');});
-          var key=item?novacloneKey(item.name||''):'';
+          var key=item?String(item.name||'').trim().toLowerCase():'';
           return !(novacloneNames[key] && String(tx&&tx.notes||'').trim()==='Initial catalog data');
         });
         data.version=4;
@@ -19595,13 +19591,16 @@ function exportMonthlySchedulePdfs() {
       }
       function ensureNovacloneInitialZero(){
         /*
-         * NOVACLONE ZERO-STOCK MIGRATION
-         * All four newly-added masters start at a genuine balance of ZERO.
-         * V3 is intentionally a one-time repair for existing cloud/local
-         * data that may have inherited an incorrect opening balance.
-         * After this migration, future manual Stock In/Out movements remain.
+         * NOVACLONE BASELINE INVARIANT
+         * These four masters NEVER carry opening stock. Their quantity must
+         * come only from explicit Stock In / Stock Out movements. This is an
+         * invariant, not a one-time migration: cloud-authoritative merges,
+         * stale browsers, October seed repairs and old snapshots can otherwise
+         * reintroduce openingStock=2 after a migration flag is already set.
+         *
+         * IMPORTANT: do not delete legitimate Stock In / Stock Out rows here.
+         * Only the synthetic legacy "Initial catalog data" movement is removed.
          */
-        if(data.novacloneInitialZeroedV3===true)return false;
         var names={
           'novaclone anti-a 10ml/vial':true,
           'novaclone anti-b 10ml/vial':true,
@@ -19609,26 +19608,23 @@ function exportMonthlySchedulePdfs() {
           'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
         };
         var changed=false;
-
-        data.items.forEach(function(item){
-          var key=String(item.name||'').trim().toLowerCase();
+        var novacloneIds={};
+        (data.items||[]).forEach(function(item){
+          var key=String(item&&item.name||'').trim().toLowerCase();
           if(!names[key])return;
-          if(Number(item.openingStock||0)!==0){
-            item.openingStock=0;
-            changed=true;
-          }
+          if(item&&item.id)novacloneIds[String(item.id)]=true;
+          if(Number(item.openingStock||0)!==0){item.openingStock=0;changed=true;}
         });
-
-        var before=data.transactions.length;
-        data.transactions=data.transactions.filter(function(t){
-          var item=data.items.find(function(it){return it.id===t.itemId;});
-          var key=item?String(item.name||'').trim().toLowerCase():'';
-          return !names[key];
+        var before=(data.transactions||[]).length;
+        data.transactions=(data.transactions||[]).filter(function(t){
+          if(!t)return false;
+          if(!novacloneIds[String(t.itemId||'')])return true;
+          return String(t.notes||'').trim()!=='Initial catalog data';
         });
         if(data.transactions.length!==before)changed=true;
-
         data.novacloneInitialZeroedV2=true;
         data.novacloneInitialZeroedV3=true;
+        data.novacloneBalanceInvariantV13=true;
         return changed;
       }
       function currentMonthKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
@@ -19762,6 +19758,9 @@ function exportMonthlySchedulePdfs() {
         merged.monthlyPrices=cloneData(cloud.monthlyPrices||{});
         merged.monthlySnapshots=cloneData(cloud.monthlySnapshots||{});
         data=merged; normalize();
+        // Cloud data is authoritative, but Novaclone openingStock is an
+        // application invariant and must remain zero after every merge.
+        ensureNovacloneInitialZero();
         return true;
       }
       function loadRemote(silent){
@@ -20190,16 +20189,9 @@ function exportMonthlySchedulePdfs() {
         data.monthlySnapshots={};
         var stockByName={};
         seedItems.forEach(function(x){stockByName[String(x[2]||'').trim().toLowerCase()]=Number(x[4]||0);});
-        var novacloneResetNames={
-          'novaclone anti-a 10ml/vial':true,
-          'novaclone anti-b 10ml/vial':true,
-          'novaclone anti-a,b 10ml/vial':true,
-          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
-        };
         data.items.forEach(function(item){
           var key=String(item.name||'').trim().toLowerCase();
-          if(novacloneResetNames[key]) item.openingStock=0;
-          else if(stockByName[key]!=null)item.openingStock=stockByName[key];
+          if(stockByName[key]!=null)item.openingStock=stockByName[key];
           else item.openingStock=0;
         });
         safeStorageSet(flagKey,'1');

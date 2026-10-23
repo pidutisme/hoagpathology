@@ -194,18 +194,16 @@ async function dispatch(db, method, a) {
       // openingStock. Enforce the baseline at the shared server boundary so
       // stale clients can no longer write openingStock=2 back to Firebase.
       const novacloneNames=new Set([
-        'novacloneantia10mlvial',
-        'novacloneantib10mlvial',
-        'novacloneantiab10mlvial',
-        'novacloneantidantirhig-migg10mlvial',
-        'novacloneantidantirhigmigg10mlvial'
+        'novaclone anti-a 10ml/vial',
+        'novaclone anti-b 10ml/vial',
+        'novaclone anti-a,b 10ml/vial',
+        'novaclone anti-d (anti rh) igm+igg 10ml/vial'
       ]);
-      const novacloneKey=(name)=>String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
       let changed=false;
       const items=Array.isArray(inventory.items)?inventory.items:[];
       const novacloneIds=new Set();
       items.forEach(item=>{
-        const key=novacloneKey(item?.name||'');
+        const key=String(item?.name||'').trim().replace(/\s+/g,' ').toLowerCase();
         if(!novacloneNames.has(key)) return;
         if(item?.id) novacloneIds.add(String(item.id));
         if(Number(item.openingStock||0)!==0){ item.openingStock=0; changed=true; }
@@ -236,16 +234,14 @@ async function dispatch(db, method, a) {
       // the backstop for old browsers whose local state still has openingStock=2.
       // Legitimate Stock In/Out transactions are untouched.
       const novacloneNames=new Set([
-        'novacloneantia10mlvial',
-        'novacloneantib10mlvial',
-        'novacloneantiab10mlvial',
-        'novacloneantidantirhig-migg10mlvial',
-        'novacloneantidantirhigmigg10mlvial'
+        'novaclone anti-a 10ml/vial',
+        'novaclone anti-b 10ml/vial',
+        'novaclone anti-a,b 10ml/vial',
+        'novaclone anti-d (anti rh) igm+igg 10ml/vial'
       ]);
-      const novacloneKey=(name)=>String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
       const novacloneIds=new Set();
       (Array.isArray(inventory.items)?inventory.items:[]).forEach(item=>{
-        const key=novacloneKey(item?.name||'');
+        const key=String(item?.name||'').trim().replace(/\s+/g,' ').toLowerCase();
         if(novacloneNames.has(key)){
           if(item?.id) novacloneIds.add(String(item.id));
           item.openingStock=0;
