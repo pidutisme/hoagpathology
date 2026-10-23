@@ -19728,7 +19728,11 @@ function exportMonthlySchedulePdfs() {
         });
         (local.transactions||[]).forEach(function(tx){
           if(!tx||!tx.id||txMap[String(tx.id)]) return;
-          if(suppressStaleNovaclone && cloud.novacloneBalanceResetV12===true && novacloneIds[String(tx.itemId||'')]) return;
+          if(suppressStaleNovaclone && cloud.novacloneBalanceResetV12===true && novacloneIds[String(tx.itemId||'')]){
+            // Do not resurrect the known legacy seed transaction. Legitimate
+            // Stock In / Stock Out movements from this device are preserved.
+            if(String(tx.notes||'').trim()==='Initial catalog data') return;
+          }
           merged.transactions.push(tx);
           txMap[String(tx.id)]=true;
         });
@@ -20179,10 +20183,19 @@ function exportMonthlySchedulePdfs() {
         if(!data.monthlyPrices[key])data.monthlyPrices[key]={};
         var byName={};
         seedItems.forEach(function(x){byName[String(x[2]||'').trim().toLowerCase()]=x;});
+        var novacloneNames={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
         data.items.forEach(function(item){
-          var seed=byName[String(item.name||'').trim().toLowerCase()];
+          var itemKey=String(item.name||'').trim().toLowerCase();
+          var seed=byName[itemKey];
           if(!seed)return;
-          item.openingStock=Number(seed[4]||0);
+          // Novaclone never inherits the October opening balance.
+          // Its balance must come only from explicit Stock In / Stock Out.
+          item.openingStock=novacloneNames[itemKey]?0:Number(seed[4]||0);
           item.price=Number(seed[3]||0);
           data.monthlyPrices[key][item.id]=Number(seed[3]||0);
         });

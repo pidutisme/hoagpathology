@@ -187,34 +187,42 @@ async function dispatch(db, method, a) {
       let inventory=v.inventory||v.data||v;
       inventory=inventory&&typeof inventory==='object'?inventory:{};
 
-      // INVENTORY BASELINE V12: one-time server-side reset for the four
-      // Novaclone masters. Firebase is the source of truth, so this migration
-      // runs on the shared record itself rather than relying on browser flags.
-      // It intentionally ignores older V4-V11 markers. After V12 is stored,
-      // normal Stock In/Out movements are never touched by this migration.
+      // NOVACLONE BASELINE GUARD: these four masters must always start from
+      // zero. Their real stock is represented only by Stock In / Stock Out
+      // transactions. Older V1-V11 migrations used one-time browser markers,
+      // and the October opening-balance repair could later restore 2 into
+      // openingStock. Enforce the baseline at the shared server boundary so
+      // stale clients can no longer write openingStock=2 back to Firebase.
       const novacloneNames=new Set([
         'novaclone anti-a 10ml/vial',
         'novaclone anti-b 10ml/vial',
         'novaclone anti-a,b 10ml/vial',
         'novaclone anti-d (anti rh) igm+igg 10ml/vial'
       ]);
-      if(inventory.novacloneBalanceResetV12 !== true){
-        const items=Array.isArray(inventory.items)?inventory.items:[];
-        const targetIds=new Set();
-        let changed=false;
-        items.forEach(item=>{
-          const key=String(item?.name||'').trim().toLowerCase();
-          if(!novacloneNames.has(key)) return;
-          if(item.openingStock!==0){ item.openingStock=0; changed=true; }
-          if(item.id) targetIds.add(String(item.id));
+      let changed=false;
+      const items=Array.isArray(inventory.items)?inventory.items:[];
+      const novacloneIds=new Set();
+      items.forEach(item=>{
+        const key=String(item?.name||'').trim().toLowerCase();
+        if(!novacloneNames.has(key)) return;
+        if(item?.id) novacloneIds.add(String(item.id));
+        if(Number(item.openingStock||0)!==0){ item.openingStock=0; changed=true; }
+      });
+      // Remove only the legacy seed movements that could recreate a false
+      // Novaclone opening balance. Real Stock In / Stock Out movements remain.
+      if(Array.isArray(inventory.transactions)){
+        const before=inventory.transactions.length;
+        inventory.transactions=inventory.transactions.filter(tx=>{
+          if(!tx || !novacloneIds.has(String(tx.itemId||''))) return true;
+          return String(tx.notes||'').trim()!=='Initial catalog data';
         });
-        const txs=Array.isArray(inventory.transactions)?inventory.transactions:[];
-        const kept=txs.filter(tx=>!targetIds.has(String(tx?.itemId||'')));
-        if(kept.length!==txs.length){ inventory.transactions=kept; changed=true; }
-        inventory.novacloneBalanceResetV12=true;
+        if(inventory.transactions.length!==before) changed=true;
+      }
+      inventory.novacloneBalanceResetV12=true;
+      if(changed){
         const next={version:4,scope:'team',updatedBy:s.userId,updatedAt:iso(),inventory};
         await ref.set(next);
-        return {ok:true,inventory,updatedAt:next.updatedAt,scope:'team',storageSource:'firebase-admin',version:VERSION,migration:'novaclone-v12',changed};
+        return {ok:true,inventory,updatedAt:next.updatedAt,scope:'team',storageSource:'firebase-admin',version:VERSION,migration:'novaclone-baseline-guard',changed:true};
       }
 
       return {ok:true,inventory,updatedAt:clean(v.updatedAt),scope:'team',storageSource:'firebase-admin',version:VERSION};
@@ -222,6 +230,30 @@ async function dispatch(db, method, a) {
     case 'saveSharedInventory': {
       const s=await requireSession(db,tokenAt(1));
       const inventory=a[0]&&typeof a[0]==='object'?a[0]:{};
+      // Enforce the Novaclone zero baseline on every write as well. This is
+      // the backstop for old browsers whose local state still has openingStock=2.
+      // Legitimate Stock In/Out transactions are untouched.
+      const novacloneNames=new Set([
+        'novaclone anti-a 10ml/vial',
+        'novaclone anti-b 10ml/vial',
+        'novaclone anti-a,b 10ml/vial',
+        'novaclone anti-d (anti rh) igm+igg 10ml/vial'
+      ]);
+      const novacloneIds=new Set();
+      (Array.isArray(inventory.items)?inventory.items:[]).forEach(item=>{
+        const key=String(item?.name||'').trim().toLowerCase();
+        if(novacloneNames.has(key)){
+          if(item?.id) novacloneIds.add(String(item.id));
+          item.openingStock=0;
+        }
+      });
+      if(Array.isArray(inventory.transactions)){
+        inventory.transactions=inventory.transactions.filter(tx=>{
+          if(!tx || !novacloneIds.has(String(tx.itemId||''))) return true;
+          return String(tx.notes||'').trim()!=='Initial catalog data';
+        });
+      }
+      inventory.novacloneBalanceResetV12=true;
       const old=(await db.ref(INVENTORY).get()).val()||{};
       const updatedAt=clean(old.updatedAt);
       if(clean(a[2])!==updatedAt){
