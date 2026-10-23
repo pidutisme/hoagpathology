@@ -24355,3 +24355,254 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
 <!-- OUTSOURCE FILTER NEUMORPHIC FINAL: one custom control per filter, no native duplicate. -->
 
 
+
+
+<style id="pressed-neumorphism-final">
+/*
+  PRESSED NEUMORPHISM VISUAL OVERRIDE
+  Visual-only CSS layer. Existing HTML structure, IDs, classes,
+  JavaScript, event handlers, content and layout are intentionally untouched.
+*/
+:root{
+  --pressed-bg:#edf1f5;
+  --pressed-surface:#e9edf2;
+  --pressed-text:#172033;
+  --pressed-muted:#7a8492;
+  --pressed-shadow:#d1d9e6;
+  --pressed-highlight:#ffffff;
+  --pressed-radius:22px;
+  --pressed-shadow-main:
+    inset 18px 18px 30px rgba(209,217,230,1),
+    inset -18px -18px 30px rgba(255,255,255,.96);
+  --pressed-shadow-soft:
+    inset 10px 10px 22px rgba(209,217,230,.86),
+    inset -10px -10px 22px rgba(255,255,255,.94);
+  --pressed-shadow-small:
+    inset 7px 7px 16px rgba(209,217,230,.82),
+    inset -7px -7px 16px rgba(255,255,255,.92);
+  --pressed-shadow-deep:
+    inset 20px 20px 34px rgba(209,217,230,1),
+    inset -20px -20px 34px rgba(255,255,255,.98);
+}
+
+html,body{
+  background:var(--pressed-bg)!important;
+  background-image:none!important;
+  color:var(--pressed-text)!important;
+}
+
+/* Core panels/cards: concave, pressed-in surface like the reference. */
+.sidebar,
+.display-board,
+.panel,
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.sidebar-footer,
+.theme-toggle,
+.display-title-box,
+.big-card-icon,
+.display-date,
+.display-clock-wrap,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card,
+.leave-course-year-card,
+.year-card,
+.leave-course-mini-year,
+.live-chat-shell,
+.live-chat-main,
+.live-chat-chatpane,
+.live-chat-people,
+.notes-two-cards,
+.notes-editor-shell,
+.notes-list-shell,
+.admin-control-card,
+.single-panel,
+.calendar-panel,
+.calendar-roster-board{
+  background:var(--pressed-surface)!important;
+  border-color:rgba(255,255,255,.56)!important;
+  box-shadow:var(--pressed-shadow-main)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+/* Keep the existing geometry; only refine the visual radius. */
+.sidebar,.display-board,.panel,.profile-card,.calendar-panel,.calendar-roster-board{
+  border-radius:var(--pressed-radius)!important;
+}
+
+/* Navigation and controls use the same recessed material. */
+.nav button,
+.calendar-toolbar-btn,
+.calendar-roster-nav-btn,
+.calendar-roster-month-btn,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn,
+.outsource-filter-neo-trigger,
+.settings-extra-card,
+button{
+  background:var(--pressed-surface)!important;
+  color:var(--pressed-text)!important;
+  border-color:rgba(255,255,255,.58)!important;
+  box-shadow:var(--pressed-shadow-soft)!important;
+}
+
+/* No floating/glass lift: preserve position and reinforce the pressed treatment. */
+.nav button:hover,
+.clickable-card:hover,
+.stat-card:hover,
+.bottom-card:hover,
+.profile-card:hover,
+.profile-info-box:hover,
+.setting-box:hover,
+.settings-extra-card:hover,
+.panel:hover,
+.calendar-toolbar-btn:hover,
+.calendar-roster-nav-btn:hover,
+.calendar-roster-month-btn:hover,
+.calendar-roster-today-btn:hover,
+.page-back-dashboard-btn:hover,
+.year-card:hover,
+.leave-course-year-card:hover,
+.leave-course-mini-year:hover,
+#calendar .calendar-mini-day:hover,
+button:hover{
+  transform:none!important;
+  box-shadow:var(--pressed-shadow-soft)!important;
+}
+
+/* Actual press state: deeper inset, still without moving the layout. */
+.nav button:active,
+button:active,
+.calendar-toolbar-btn:active,
+.calendar-roster-nav-btn:active,
+.calendar-roster-month-btn:active,
+.calendar-roster-today-btn:active,
+.page-back-dashboard-btn:active,
+.outsource-filter-neo-trigger:active,
+.stat-card:active,
+.bottom-card:active,
+.profile-info-box:active,
+.setting-box:active,
+.settings-extra-card:active,
+.notes-list-item:active,
+.calendar-mini-day:active,
+.module-year-card:active,
+.inventory-card:active{
+  transform:none!important;
+  box-shadow:var(--pressed-shadow-deep)!important;
+}
+
+/* Inputs/selects are recessed exactly like the reference tile. */
+input,textarea,select,
+.search-input,.inventory-select,.inventory-search-input,
+.outsource-search input,.outsource-search select,
+.notes-editor-shell input,.notes-editor-shell textarea,
+.live-chat-input,.modal input,.modal textarea,.modal select{
+  background:var(--pressed-surface)!important;
+  color:var(--pressed-text)!important;
+  border-color:rgba(255,255,255,.58)!important;
+  box-shadow:var(--pressed-shadow-soft)!important;
+}
+
+/* Icons / small wells stay visually pressed instead of raised. */
+.profile-link-card::before,
+.access-link-card::before,
+.quick-links-card::before,
+#settings .setting-box .settings-card-icon,
+#settings .settings-extra-icon,
+.settings-extra-icon,
+.calendar-icon,
+.admin-card-icon,
+.big-card-icon,
+.theme-toggle-knob{
+  background:var(--pressed-surface)!important;
+  border-color:rgba(255,255,255,.58)!important;
+  box-shadow:var(--pressed-shadow-small)!important;
+}
+
+/* Calendar cells: same concave material, no floating hover. */
+#calendar .calendar-mini-day{
+  background:var(--pressed-surface)!important;
+  border-color:rgba(255,255,255,.58)!important;
+  box-shadow:var(--pressed-shadow-soft)!important;
+}
+#calendar .calendar-mini-day:hover{
+  transform:none!important;
+  box-shadow:var(--pressed-shadow-soft)!important;
+}
+
+/* Typography matches the soft, low-contrast reference. */
+.brand h1,
+.display-title,
+.display-clock,
+.display-hero-title,
+.display-title-clock,
+.profile-card h3,
+.panel h3,
+.bottom-card-title,
+.module-years-header h3,
+.calendar-roster-head h3,
+.notes-card-head h3,
+.admin-card-title strong{
+  color:var(--pressed-text)!important;
+}
+.brand p,
+.panel p,
+.profile-card p,
+.bottom-card-desc,
+.profile-info-box span,
+.setting-box span,
+.calendar-roster-head p,
+.calendar-selected-sub,
+.display-mode-current,
+.sidebar-footer,
+.settings-extra-copy span{
+  color:var(--pressed-muted)!important;
+}
+
+/* Keep semantic/accent actions functional, but give them a pressed surface. */
+.btn-primary,.primary-btn,.save-btn,.submit-btn,.confirm-btn,
+button[data-action="save"],button[data-action="submit"]{
+  box-shadow:
+    inset 6px 6px 14px rgba(30,66,125,.22),
+    inset -6px -6px 14px rgba(255,255,255,.28)!important;
+}
+
+/* Remove legacy external/glass shadows that conflict with the pressed reference. */
+.modal,.dialog,.popover,.dropdown-menu,.outsource-select-menu,.inventory-date-popover,
+.custom-select-menu,.calendar-popover,.tooltip-panel{
+  background:var(--pressed-surface)!important;
+  border-color:rgba(255,255,255,.58)!important;
+  box-shadow:var(--pressed-shadow-main)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+/* Dark mode remains supported; only the visual skin changes. */
+body.dark-mode,
+html.dark-mode-preload{
+  --pressed-bg:#1c2430;
+  --pressed-surface:#202a38;
+  --pressed-text:#edf1f7;
+  --pressed-muted:#a5afbf;
+  --pressed-shadow:#121923;
+  --pressed-highlight:#303b4c;
+  --pressed-shadow-main:
+    inset 18px 18px 30px rgba(18,25,35,.92),
+    inset -18px -18px 30px rgba(48,59,76,.78);
+  --pressed-shadow-soft:
+    inset 10px 10px 22px rgba(18,25,35,.82),
+    inset -10px -10px 22px rgba(48,59,76,.68);
+  --pressed-shadow-small:
+    inset 7px 7px 16px rgba(18,25,35,.76),
+    inset -7px -7px 16px rgba(48,59,76,.62);
+  --pressed-shadow-deep:
+    inset 20px 20px 34px rgba(18,25,35,.96),
+    inset -20px -20px 34px rgba(48,59,76,.80);
+}
+</style>
