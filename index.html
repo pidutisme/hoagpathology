@@ -23263,6 +23263,272 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
 /* Accessibility / motion */
 :focus-visible{outline:none!important;box-shadow:var(--neo-focus)!important}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+
+/* =====================================================================
+   HOAG PATHOLOGY — EXTRUDED / RAISED NEUMORPHISM OVERHAUL
+   VISUAL-ONLY OVERRIDE: layout, DOM, event handlers and application logic
+   intentionally remain untouched.
+   ===================================================================== */
+:root{
+  --neo-bg:#e7ebf2;
+  --neo-surface:#e9edf4;
+  --neo-surface-2:#eef1f7;
+  --neo-light:#ffffff;
+  --neo-dark:#b9c1ce;
+  --neo-dark-strong:#aeb7c5;
+  --neo-text:#1a2435;
+  --neo-muted:#718097;
+  --neo-accent:#2563eb;
+  --neo-accent-2:#22c7d6;
+  --neo-shadow-out: 10px 10px 22px rgba(125,138,159,.34), -10px -10px 22px rgba(255,255,255,.92);
+  --neo-shadow-out-sm: 6px 6px 14px rgba(125,138,159,.30), -6px -6px 14px rgba(255,255,255,.88);
+  --neo-shadow-out-lg: 16px 16px 34px rgba(118,132,154,.36), -16px -16px 34px rgba(255,255,255,.96);
+  --neo-shadow-pressed: inset 5px 5px 11px rgba(126,139,160,.28), inset -5px -5px 11px rgba(255,255,255,.88);
+  --neo-focus: 0 0 0 3px rgba(37,99,235,.20), var(--neo-shadow-out-sm);
+  --neo-radius-xl:32px;
+  --neo-radius-lg:24px;
+  --neo-radius-md:18px;
+  --neo-border:1px solid rgba(255,255,255,.72);
+}
+
+html,body{
+  background:var(--neo-bg)!important;
+  color:var(--neo-text)!important;
+  background-image:
+    radial-gradient(circle at 12% 8%,rgba(255,255,255,.78),transparent 30%),
+    radial-gradient(circle at 92% 92%,rgba(74,112,190,.10),transparent 34%)!important;
+}
+body.dark-mode,html.dark-mode-preload{
+  --neo-bg:#171e2a;
+  --neo-surface:#1d2635;
+  --neo-surface-2:#222d3e;
+  --neo-light:#354257;
+  --neo-dark:#0b111b;
+  --neo-dark-strong:#080d15;
+  --neo-text:#f4f7fb;
+  --neo-muted:#a8b4c7;
+  --neo-shadow-out: 10px 10px 22px rgba(5,9,16,.62), -10px -10px 22px rgba(55,68,88,.34);
+  --neo-shadow-out-sm: 6px 6px 14px rgba(5,9,16,.56), -6px -6px 14px rgba(55,68,88,.28);
+  --neo-shadow-out-lg: 16px 16px 34px rgba(4,8,15,.68), -16px -16px 34px rgba(58,72,94,.30);
+  --neo-shadow-pressed: inset 5px 5px 11px rgba(4,8,15,.54), inset -5px -5px 11px rgba(67,80,101,.22);
+  --neo-focus: 0 0 0 3px rgba(96,165,250,.22), var(--neo-shadow-out-sm);
+  --neo-border:1px solid rgba(255,255,255,.055);
+  background-color:var(--neo-bg)!important;
+  background-image:
+    radial-gradient(circle at 14% 7%,rgba(255,255,255,.045),transparent 30%),
+    radial-gradient(circle at 90% 90%,rgba(59,130,246,.09),transparent 34%)!important;
+}
+
+/* Core surfaces: visibly ABOVE the page, never carved into it. */
+.sidebar,
+.display-board,
+.panel,
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.sidebar-footer,
+.theme-toggle,
+.display-title-box,
+.big-card-icon,
+.display-date,
+.display-clock-wrap,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card,
+.leave-course-year-card,
+.year-card,
+.leave-course-mini-year,
+.settings-extra-card,
+.admin-control-card,
+.live-chat-shell,
+.live-chat-main,
+.live-chat-chatpane,
+.live-chat-people,
+.notes-editor-shell,
+.notes-list-shell{
+  background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;
+  border:var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+/* Raised hierarchy — larger containers float higher than their children. */
+.sidebar{border-radius:var(--neo-radius-xl)!important}
+.display-board{border-radius:var(--neo-radius-xl)!important;box-shadow:var(--neo-shadow-out-lg)!important}
+.panel,.profile-card,.calendar-month-panel,.daily-roster-panel{border-radius:var(--neo-radius-xl)!important}
+.stat-card,.bottom-card,.setting-box,.profile-info-box,.daily-roster-card,.leave-course-year-card,.settings-extra-card,.admin-control-card{border-radius:var(--neo-radius-lg)!important}
+
+/* Navigation buttons become unmistakably extruded pills. */
+.nav button{
+  background:linear-gradient(145deg,#f2f5fa,#dde3ec)!important;
+  color:var(--neo-text)!important;
+  border:var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+}
+body.dark-mode .nav button{background:linear-gradient(145deg,#263246,#182231)!important;color:var(--neo-text)!important}
+.nav button:hover,
+.clickable-card:hover,
+.stat-card:hover,
+.bottom-card:hover,
+.profile-card:hover,
+.profile-info-box:hover,
+.setting-box:hover,
+.panel:hover,
+.year-card:hover,
+.leave-course-mini-year:hover,
+.settings-extra-card:hover,
+.admin-control-card:hover{
+  transform:translateY(-2px)!important;
+  box-shadow:var(--neo-shadow-out-lg)!important;
+}
+.nav button:active,
+.clickable-card:active,
+.stat-card:active,
+.bottom-card:active,
+.profile-card:active,
+.profile-info-box:active,
+.setting-box:active,
+.panel:active,
+.year-card:active,
+.leave-course-mini-year:active,
+.settings-extra-card:active,
+.admin-control-card:active{
+  transform:translateY(1px)!important;
+  box-shadow:var(--neo-shadow-pressed)!important;
+}
+
+/* Inputs / selects / textareas are raised controls by default. */
+input,textarea,select,
+.search-input,
+.filter-input,
+.filter-select,
+.search-box,
+.form-control,
+.modal input,
+.modal textarea,
+.modal select{
+  background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;
+  color:var(--neo-text)!important;
+  border:var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+  border-radius:16px!important;
+}
+input:focus,textarea:focus,select:focus,
+.search-input:focus,.filter-input:focus,.filter-select:focus,.search-box:focus,
+.form-control:focus,.modal input:focus,.modal textarea:focus,.modal select:focus{
+  outline:none!important;
+  box-shadow:var(--neo-focus)!important;
+}
+
+/* All common action controls share the same raised visual language. */
+button:not(.nav button):not(.theme-toggle),
+.calendar-toolbar-btn,
+.calendar-roster-nav-btn,
+.calendar-roster-month-btn,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn,
+.filter-btn,
+.action-btn,
+.primary-btn,
+.secondary-btn,
+.icon-btn,
+.close-btn,
+.modal button,
+.pagination button,
+.tab-btn{
+  background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;
+  color:var(--neo-text)!important;
+  border:var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+  border-radius:14px!important;
+}
+button:not(.nav button):not(.theme-toggle):hover,
+.calendar-toolbar-btn:hover,
+.calendar-roster-nav-btn:hover,
+.calendar-roster-month-btn:hover,
+.calendar-roster-today-btn:hover,
+.page-back-dashboard-btn:hover,
+.filter-btn:hover,.action-btn:hover,.primary-btn:hover,.secondary-btn:hover,.icon-btn:hover,.close-btn:hover,
+.modal button:hover,.pagination button:hover,.tab-btn:hover{
+  transform:translateY(-2px)!important;
+  box-shadow:var(--neo-shadow-out)!important;
+}
+button:not(.nav button):not(.theme-toggle):active,
+.calendar-toolbar-btn:active,.calendar-roster-nav-btn:active,.calendar-roster-month-btn:active,
+.calendar-roster-today-btn:active,.page-back-dashboard-btn:active,
+.filter-btn:active,.action-btn:active,.primary-btn:active,.secondary-btn:active,.icon-btn:active,
+.close-btn:active,.modal button:active,.pagination button:active,.tab-btn:active{
+  transform:translateY(1px)!important;
+  box-shadow:var(--neo-shadow-pressed)!important;
+}
+
+/* Primary controls retain HOAG blue while remaining raised. */
+.primary-btn,.btn-primary,[class*="primary"]:is(button,a),
+.nav button.active,
+.nav button[aria-current="page"]{
+  color:#fff!important;
+  background:linear-gradient(145deg,#3b7cff,#1d57d7)!important;
+  border-color:rgba(255,255,255,.22)!important;
+  box-shadow:7px 7px 16px rgba(40,76,145,.34),-6px -6px 14px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.25)!important;
+}
+
+/* Small icon wells remain raised, not recessed. */
+.profile-link-card::before,
+.access-link-card::before,
+.quick-links-card::before,
+.settings-card-icon,
+.settings-extra-icon,
+.big-card-icon{
+  background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;
+  border:var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+}
+
+/* Calendar cells: each date is an individual floating tile. */
+#calendar .calendar-mini-day{
+  background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;
+  border:var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+}
+#calendar .calendar-mini-day:hover{transform:translateY(-2px)!important;box-shadow:var(--neo-shadow-out)!important}
+#calendar .calendar-mini-day:active{transform:translateY(1px)!important;box-shadow:var(--neo-shadow-pressed)!important}
+
+/* Toggle track is raised; knob is a second raised object. */
+.theme-toggle{background:linear-gradient(145deg,var(--neo-surface),var(--neo-surface-2))!important;box-shadow:var(--neo-shadow-out-sm)!important}
+.theme-toggle-knob{background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;box-shadow:var(--neo-shadow-out-sm)!important}
+
+/* Modals, dialogs and overlays: floating objects rather than flat rectangles. */
+.modal,.dialog,.modal-content,.dialog-content,.popover,.dropdown-menu,.menu,.toast,
+[class*="modal"] .modal-content,[role="dialog"],[role="menu"]{
+  background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;
+  color:var(--neo-text)!important;
+  border:var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-lg)!important;
+  border-radius:24px!important;
+}
+
+/* Tables/lists: preserve geometry while lifting rows subtly. */
+table{border-collapse:separate!important;border-spacing:0 8px!important}
+tbody tr{background:linear-gradient(145deg,var(--neo-surface-2),var(--neo-surface))!important;box-shadow:var(--neo-shadow-out-sm)!important}
+tbody td,thead th{border:0!important}
+tbody tr td:first-child{border-radius:14px 0 0 14px}
+tbody tr td:last-child{border-radius:0 14px 14px 0}
+
+/* Scrollbars stay quiet so the surfaces remain the visual focus. */
+*{scrollbar-width:thin;scrollbar-color:rgba(117,132,154,.42) transparent}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(117,132,154,.38);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:rgba(78,99,132,.55);border:2px solid transparent;background-clip:padding-box}
+
+/* Preserve existing responsive breakpoints and every existing dimension rule. */
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
+
 </style>
 <!-- OUTSOURCE FILTER NEUMORPHIC FINAL: one custom control per filter, no native duplicate. -->
 
