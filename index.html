@@ -21990,7 +21990,7 @@ if ("serviceWorker" in navigator) {
 #moduleYearGrid.outsource-active-grid .outsource-result-modal[hidden]{display:none;}
 .outsource-result-dialog{position:relative;width:min(660px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:28px;border-radius:24px;background:linear-gradient(145deg,#eef2f8,#e1e6ef);border:1px solid rgba(148,163,184,.22);box-shadow:18px 18px 38px rgba(71,85,105,.22),-14px -14px 32px rgba(255,255,255,.95);color:#172033;}
 .outsource-result-close{position:absolute;right:18px;top:18px;width:40px;height:40px;border:0;border-radius:13px;background:linear-gradient(145deg,#f5f7fb,#dfe5ee);box-shadow:5px 5px 10px rgba(100,116,139,.16),-4px -4px 9px rgba(255,255,255,.9);font-size:24px;color:#64748b;cursor:pointer;}
-.outsource-modal-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;color:#2563eb;margin-bottom:4px}.outsource-result-dialog h2{margin:0 52px 5px 0;font-size:22px}.outsource-modal-sub{font-size:13px;color:#64748b;margin-bottom:22px}.outsource-modal-field{margin:0 0 16px}.outsource-modal-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;color:#64748b;margin:0 0 7px}.outsource-modal-field input,.outsource-modal-field select,.outsource-modal-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(148,163,184,.25);border-radius:14px;background:linear-gradient(145deg,#eef2f8,#e1e6ef);color:#172033;box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.82),0 3px 9px rgba(76,94,122,.06);outline:none;font:inherit}.outsource-modal-field input,.outsource-modal-field select{height:46px;padding:0 14px}.outsource-modal-field textarea{min-height:94px;padding:13px 14px;resize:vertical}.outsource-modal-field select{appearance:none;-webkit-appearance:none;cursor:pointer}.outsource-modal-field select:focus,.outsource-modal-field input:focus,.outsource-modal-field textarea:focus{border-color:rgba(37,99,235,.45);box-shadow:inset 2px 2px 5px rgba(148,163,184,.12),inset -2px -2px 5px rgba(255,255,255,.9),0 0 0 3px rgba(37,99,235,.08)}.outsource-modal-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.outsource-modal-field select:disabled{opacity:.55;cursor:not-allowed}.outsource-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.outsource-result-dialog .outsource-date-field{position:relative}.outsource-result-dialog .outsource-neumorphic-date{cursor:pointer}.outsource-result-dialog .outsource-date-field::after{content:'▣';position:absolute;right:14px;bottom:13px;color:#64748b;font-size:13px;pointer-events:none}.outsource-data-row{cursor:pointer}.outsource-data-row:hover td{background:rgba(37,99,235,.025)}
+.outsource-modal-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;color:#2563eb;margin-bottom:4px}.outsource-result-dialog h2{margin:0 52px 5px 0;font-size:22px}.outsource-modal-sub{font-size:13px;color:#64748b;margin-bottom:22px}.outsource-modal-field{margin:0 0 16px}.outsource-modal-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;color:#64748b;margin:0 0 7px}.outsource-modal-field input,.outsource-modal-field select,.outsource-modal-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(148,163,184,.25);border-radius:14px;background:linear-gradient(145deg,#eef2f8,#e1e6ef);color:#172033;box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.82),0 3px 9px rgba(76,94,122,.06);outline:none;font:inherit}.outsource-modal-field input,.outsource-modal-field select{height:46px;padding:0 14px}.outsource-modal-field textarea{min-height:94px;padding:13px 14px;resize:vertical}.outsource-modal-field select{appearance:none;-webkit-appearance:none;cursor:pointer}.outsource-modal-field select:focus,.outsource-modal-field input:focus,.outsource-modal-field textarea:focus{border-color:rgba(37,99,235,.45);box-shadow:inset 2px 2px 5px rgba(148,163,184,.12),inset -2px -2px 5px rgba(255,255,255,.9),0 0 0 3px rgba(37,99,235,.08)}.outsource-modal-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.outsource-modal-field select:disabled{opacity:.55;cursor:not-allowed}.outsource-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.outsource-result-dialog .outsource-date-field{position:relative}.outsource-result-dialog .outsource-neumorphic-date{cursor:pointer}.outsource-result-dialog .outsource-date-field::after{content:'▣';position:absolute;right:14px;bottom:13px;color:#64748b;font-size:13px;pointer-events:none}.outsource-data-row{cursor:pointer}
 @media(max-width:640px){.outsource-result-dialog{padding:22px}.outsource-modal-row{grid-template-columns:1fr}.outsource-result-close{right:14px;top:14px}}
 </style>
 <style id="outsource-neumorphic-date-picker-style">
@@ -22651,6 +22651,18 @@ if ("serviceWorker" in navigator) {
   setTimeout(run,0);setTimeout(run,120);setTimeout(run,500);
 })();
 </script>
+<style id="outsource-registered-samples-hover-only-final">
+/* FINAL SCOPE: only the Registered Samples data table loses hover highlighting.
+   Other Outsource cards/statistics/buttons keep their normal hover behavior. */
+#moduleYearGrid.outsource-active-grid .outsource-table tbody > tr:hover,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody > tr:hover > td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody > tr:hover > td.outsource-result,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody > tr > td:hover{
+  background:var(--neo-surface,#eef2f8)!important;
+  color:#233f54!important;
+  transition:none!important;
+}
+</style>
 </body>
 </html>
 
@@ -22870,3 +22882,275 @@ if ("serviceWorker" in navigator) {
 </script>
 
 <style id="outsource-audit-final-v1">...</style>
+
+
+<!-- OUTSOURCE FILTER NEUMORPHIC FINAL: one custom control per filter, no native duplicate. -->
+<style id="outsource-filter-neumorphic-final">
+#moduleYearGrid.outsource-active-grid .outsource-search > .outsource-filter-neo-wrap{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search select.outsource-filter-neo-native{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;
+  clip-path:inset(50%)!important;
+  white-space:nowrap!important;
+  border:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger{
+  width:100%!important;
+  min-height:38px!important;
+  height:38px!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:0 12px!important;
+  border:1px solid rgba(120,135,160,.14)!important;
+  border-radius:12px!important;
+  background:#e8edf5!important;
+  color:#30415a!important;
+  font:700 11px/1.2 Nunito Sans,Inter,sans-serif!important;
+  text-align:left!important;
+  outline:0!important;
+  cursor:pointer!important;
+  box-shadow:inset 3px 3px 7px rgba(163,177,198,.30),inset -3px -3px 7px rgba(255,255,255,.92),3px 3px 7px rgba(145,155,175,.08),-3px -3px 7px rgba(255,255,255,.65)!important;
+  transition:box-shadow .14s ease!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger:hover{
+  /* No lift/white flash: keep the control visually stable. */
+  transform:none!important;
+  background:#e8edf5!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger.is-open,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger:active{
+  box-shadow:inset 3px 3px 7px rgba(163,177,198,.34),inset -3px -3px 7px rgba(255,255,255,.92)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger:focus-visible{
+  box-shadow:0 0 0 2px rgba(47,128,237,.15),inset 3px 3px 7px rgba(163,177,198,.30),inset -3px -3px 7px rgba(255,255,255,.92)!important;
+}
+.outsource-filter-neo-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.outsource-filter-neo-chevron{flex:0 0 auto;font-size:10px;line-height:1;color:#718096;transition:transform .14s ease;}
+.outsource-filter-neo-trigger.is-open .outsource-filter-neo-chevron{transform:rotate(180deg);}
+.outsource-filter-neo-menu{
+  position:fixed!important;
+  z-index:2147483000!important;
+  display:none;
+  min-width:180px;
+  max-height:280px;
+  overflow:auto;
+  padding:6px!important;
+  box-sizing:border-box;
+  border:1px solid rgba(120,135,160,.14)!important;
+  border-radius:14px!important;
+  background:#e8edf5!important;
+  color:#30415a!important;
+  box-shadow:10px 12px 24px rgba(80,90,110,.18),-7px -7px 18px rgba(255,255,255,.88)!important;
+  scrollbar-width:none;
+}
+.outsource-filter-neo-menu.is-open{display:block!important;}
+.outsource-filter-neo-menu::-webkit-scrollbar{width:0!important;height:0!important;}
+.outsource-filter-neo-menu button{
+  display:block!important;
+  width:100%!important;
+  min-height:32px!important;
+  margin:2px 0!important;
+  padding:7px 9px!important;
+  border:0!important;
+  border-radius:9px!important;
+  background:transparent!important;
+  color:#30415a!important;
+  font:700 11px/1.2 Nunito Sans,Inter,sans-serif!important;
+  text-align:left!important;
+  cursor:pointer!important;
+  box-shadow:none!important;
+}
+.outsource-filter-neo-menu button:hover{
+  background:linear-gradient(145deg,#f8fafc,#e1e7f0)!important;
+  box-shadow:3px 3px 7px rgba(145,155,175,.12),-3px -3px 7px rgba(255,255,255,.82)!important;
+}
+.outsource-filter-neo-menu button.is-selected{
+  color:#2563eb!important;
+  background:linear-gradient(145deg,#f8fbff,#dfe8f5)!important;
+  box-shadow:inset 2px 2px 5px rgba(145,155,175,.14),inset -2px -2px 5px rgba(255,255,255,.82)!important;
+  font-weight:900!important;
+}
+
+/* OUTSOURCE REGISTERED SAMPLES DATA ONLY: keep every data row/cell identical on hover. */
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:focus,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:focus-within{
+  background:var(--neo-surface,#eef2f8)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr > td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:focus > td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:focus-within > td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td:hover{
+  background:var(--neo-surface,#eef2f8)!important;
+  color:#233f54!important;
+  transition:none!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr > td.outsource-result,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td.outsource-result{
+  background:var(--neo-surface,#eef2f8)!important;
+}
+</style>
+<script id="outsource-filter-neumorphic-final-js">
+(function(){
+  'use strict';
+  var IDS=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter'];
+  var active={menu:null,trigger:null,select:null};
+  var observer=null;
+
+  function closeMenu(){
+    if(active.menu) active.menu.remove();
+    if(active.trigger){
+      active.trigger.classList.remove('is-open');
+      active.trigger.setAttribute('aria-expanded','false');
+    }
+    active.menu=null; active.trigger=null; active.select=null;
+  }
+
+  function positionMenu(){
+    if(!active.menu||!active.trigger) return;
+    var r=active.trigger.getBoundingClientRect();
+    var menu=active.menu;
+    var width=Math.max(r.width,180);
+    menu.style.minWidth=width+'px';
+    var mh=menu.offsetHeight;
+    var top=r.bottom+6;
+    if(top+mh>window.innerHeight-8 && r.top-mh-6>8) top=r.top-mh-6;
+    var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-width-8));
+    menu.style.left=left+'px';
+    menu.style.top=top+'px';
+  }
+
+  function openMenu(trigger,select){
+    closeMenu();
+    var menu=document.createElement('div');
+    menu.className='outsource-filter-neo-menu';
+    menu.setAttribute('role','listbox');
+    Array.prototype.forEach.call(select.options,function(opt){
+      var b=document.createElement('button');
+      b.type='button';
+      b.textContent=opt.textContent;
+      b.dataset.value=opt.value;
+      b.className=opt.value===select.value?'is-selected':'';
+      b.addEventListener('click',function(e){
+        e.preventDefault(); e.stopPropagation();
+        if(select.value!==opt.value){
+          select.value=opt.value;
+          select.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+        sync(trigger,select);
+        closeMenu();
+      });
+      menu.appendChild(b);
+    });
+    document.body.appendChild(menu);
+    active.menu=menu; active.trigger=trigger; active.select=select;
+    trigger.classList.add('is-open');
+    trigger.setAttribute('aria-expanded','true');
+    menu.classList.add('is-open');
+    positionMenu();
+  }
+
+  function sync(trigger,select){
+    var label=trigger.querySelector('.outsource-filter-neo-label');
+    var opt=select.options[select.selectedIndex];
+    if(label) label.textContent=opt?opt.textContent:'All';
+    trigger.setAttribute('aria-label',opt?opt.textContent:'All');
+    if(active.menu&&active.select===select){
+      active.menu.querySelectorAll('button').forEach(function(b){
+        b.classList.toggle('is-selected',b.dataset.value===select.value);
+      });
+    }
+  }
+
+  function setup(select){
+    if(!select || !select.id || IDS.indexOf(select.id)<0) return;
+    var search=select.closest('.outsource-search');
+    if(!search) return;
+    if(select.closest('.outsource-filter-neo-wrap')){
+      var existing=select.closest('.outsource-filter-neo-wrap');
+      var existingTrigger=existing.querySelector('.outsource-filter-neo-trigger');
+      if(existingTrigger) sync(existingTrigger,select);
+      return;
+    }
+
+    /* Remove any legacy trigger/wrapper only for this filter, preventing duplicates. */
+    var legacy=select.parentElement;
+    if(legacy && legacy!==search && legacy.classList && (
+      legacy.classList.contains('outsource-custom-select-wrap') ||
+      legacy.classList.contains('outsource-filter-custom-wrap') ||
+      legacy.classList.contains('outsource-select-wrap')
+    )){
+      var legacyTrigger=legacy.querySelector('.outsource-select-trigger,.inventory-filter-trigger,.outsource-filter-trigger');
+      if(legacyTrigger) legacyTrigger.remove();
+      legacy.parentNode.insertBefore(select,legacy);
+      legacy.remove();
+    }
+    search.querySelectorAll('.outsource-select-trigger,.inventory-filter-trigger,.outsource-filter-trigger').forEach(function(el){el.remove();});
+
+    var wrap=document.createElement('div');
+    wrap.className='outsource-filter-neo-wrap';
+    var trigger=document.createElement('button');
+    trigger.type='button';
+    trigger.className='outsource-filter-neo-trigger';
+    trigger.setAttribute('aria-haspopup','listbox');
+    trigger.setAttribute('aria-expanded','false');
+    var label=document.createElement('span');
+    label.className='outsource-filter-neo-label';
+    var chev=document.createElement('span');
+    chev.className='outsource-filter-neo-chevron';
+    chev.textContent='⌄';
+    trigger.appendChild(label); trigger.appendChild(chev);
+    select.classList.add('outsource-filter-neo-native');
+    select.parentNode.insertBefore(wrap,select);
+    wrap.appendChild(trigger); wrap.appendChild(select);
+    sync(trigger,select);
+    trigger.addEventListener('click',function(e){
+      e.preventDefault(); e.stopPropagation();
+      if(active.trigger===trigger) closeMenu(); else openMenu(trigger,select);
+    });
+    select.addEventListener('change',function(){sync(trigger,select);});
+  }
+
+  function init(){
+    var grid=document.getElementById('moduleYearGrid');
+    if(!grid || !grid.classList.contains('outsource-active-grid')) return;
+    IDS.forEach(function(id){setup(document.getElementById(id));});
+  }
+
+  document.addEventListener('click',function(e){
+    if(active.menu && !e.target.closest('.outsource-filter-neo-menu') && !e.target.closest('.outsource-filter-neo-trigger')) closeMenu();
+  },true);
+  window.addEventListener('resize',positionMenu,true);
+  window.addEventListener('scroll',positionMenu,true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape') closeMenu();},true);
+
+  function start(){
+    init();
+    var grid=document.getElementById('moduleYearGrid');
+    if(grid && !observer){
+      observer=new MutationObserver(function(){
+        if(grid.classList.contains('outsource-active-grid')) init();
+      });
+      observer.observe(grid,{childList:true,subtree:true,attributes:false});
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+  setTimeout(init,120);
+  setTimeout(init,500);
+})();
+</script>
