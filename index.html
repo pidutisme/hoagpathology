@@ -22560,6 +22560,58 @@ if ("serviceWorker" in navigator) {
   #moduleYearGrid.outsource-active-grid .outsource-search > input{grid-column:auto!important;}
 }
 </style>
+
+<style id="outsource-filter-single-native-final">
+/* FINAL HARD FIX: Outsource must have ONE control per filter — native select only. */
+#moduleYearGrid.outsource-active-grid .outsource-search .inventory-filter-trigger,
+#moduleYearGrid.outsource-active-grid .outsource-search .inventory-filter-custom-trigger,
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-trigger{display:none!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-custom-wrap{display:contents!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search > select,
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-custom-wrap > select{
+  display:block!important;visibility:visible!important;opacity:1!important;position:static!important;
+  width:100%!important;height:38px!important;min-height:38px!important;min-width:0!important;
+  pointer-events:auto!important;appearance:auto!important;-webkit-appearance:auto!important;
+  box-sizing:border-box!important;border:0!important;border-radius:12px!important;
+  background:#e8edf5!important;color:#111827!important;
+  box-shadow:inset 3px 3px 7px rgba(163,177,198,.38),inset -3px -3px 7px rgba(255,255,255,.92)!important;
+  padding:0 12px!important;font-size:11px!important;font-weight:700!important;outline:none!important;cursor:pointer!important;
+}
+</style>
+<script id="outsource-filter-single-native-final-js">
+(function(){
+  function clean(){
+    var grid=document.getElementById('moduleYearGrid');
+    if(!grid || !grid.classList.contains('outsource-active-grid')) return;
+    var search=grid.querySelector('.outsource-search');
+    if(!search) return;
+    ['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter'].forEach(function(id){
+      var select=document.getElementById(id);
+      if(!select || !search.contains(select)) return;
+      var wrap=select.parentElement;
+      if(wrap && wrap.classList.contains('outsource-filter-custom-wrap')){
+        var trigger=wrap.querySelector('.inventory-filter-trigger');
+        if(trigger) trigger.remove();
+        /* Move select out of the wrapper so no hidden/custom control can duplicate it. */
+        wrap.parentNode.insertBefore(select,wrap);
+        wrap.remove();
+      }else{
+        var trigger=select.parentElement && select.parentElement.querySelector('.inventory-filter-trigger');
+        if(trigger) trigger.remove();
+      }
+      select.classList.remove('inventory-filter-native');
+      select.removeAttribute('aria-hidden');
+      select.style.cssText='';
+    });
+  }
+  function run(){clean();}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run();
+  window.setTimeout(run,0);
+  window.setTimeout(run,100);
+  window.setTimeout(run,500);
+  window.setTimeout(run,1000);
+})();
+</script>
 </body>
 </html>
 
