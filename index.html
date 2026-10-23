@@ -22989,7 +22989,281 @@ if ("serviceWorker" in navigator) {
   window.outsourceInitNeumorphicDropdowns=init;
 })();
 </script>
-<style id="outsource-audit-final-v1">...</style>
+\n<style id="neo-overhaul-v1">
+/* ================================================================
+   HOAG PATHOLOGY — PURE NEUMORPHISM UI OVERHAUL V1
+   CSS ONLY. Existing HTML, IDs, classes, JS and event wiring remain
+   untouched. This layer intentionally sits last in the cascade.
+   ================================================================ */
+:root{
+  --neo-bg:#e7ebf2;
+  --neo-surface:#e7ebf2;
+  --neo-surface-2:#edf0f5;
+  --neo-surface-3:#dde2ea;
+  --neo-text:#243044;
+  --neo-muted:#748096;
+  --neo-accent:#2f67d8;
+  --neo-accent-2:#4d7ee0;
+  --neo-success:#2f8b62;
+  --neo-danger:#c84c59;
+  --neo-warning:#b47b25;
+  --neo-radius-xl:28px;
+  --neo-radius-lg:22px;
+  --neo-radius-md:16px;
+  --neo-radius-sm:12px;
+  --neo-shadow-out:10px 10px 22px rgba(157,168,187,.58),-10px -10px 22px rgba(255,255,255,.92);
+  --neo-shadow-out-sm:6px 6px 14px rgba(157,168,187,.48),-6px -6px 14px rgba(255,255,255,.86);
+  --neo-shadow-in:inset 6px 6px 14px rgba(157,168,187,.46),inset -6px -6px 14px rgba(255,255,255,.86);
+  --neo-shadow-in-sm:inset 3px 3px 8px rgba(157,168,187,.38),inset -3px -3px 8px rgba(255,255,255,.82);
+  --neo-shadow-pressed:inset 8px 8px 18px rgba(157,168,187,.52),inset -8px -8px 18px rgba(255,255,255,.90);
+  --neo-border:rgba(139,151,171,.18);
+  --neo-focus:0 0 0 3px rgba(47,103,216,.16),var(--neo-shadow-in-sm);
+}
+
+html,body{
+  background:var(--neo-bg)!important;
+  color:var(--neo-text)!important;
+}
+body.dark-mode,html.dark-mode-preload{
+  --neo-bg:#202630;
+  --neo-surface:#202630;
+  --neo-surface-2:#252c37;
+  --neo-surface-3:#1b212b;
+  --neo-text:#edf1f7;
+  --neo-muted:#a5afbf;
+  --neo-accent:#7fa4f4;
+  --neo-accent-2:#9ab8f7;
+  --neo-success:#73c59c;
+  --neo-danger:#f28b96;
+  --neo-warning:#e3b86c;
+  --neo-shadow-out:10px 10px 22px rgba(12,16,22,.62),-10px -10px 22px rgba(53,62,75,.62);
+  --neo-shadow-out-sm:6px 6px 14px rgba(12,16,22,.58),-6px -6px 14px rgba(53,62,75,.56);
+  --neo-shadow-in:inset 6px 6px 14px rgba(12,16,22,.54),inset -6px -6px 14px rgba(53,62,75,.52);
+  --neo-shadow-in-sm:inset 3px 3px 8px rgba(12,16,22,.48),inset -3px -3px 8px rgba(53,62,75,.46);
+  --neo-shadow-pressed:inset 8px 8px 18px rgba(12,16,22,.58),inset -8px -8px 18px rgba(53,62,75,.58);
+  --neo-border:rgba(255,255,255,.055);
+  --neo-focus:0 0 0 3px rgba(127,164,244,.18),var(--neo-shadow-in-sm);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+
+.app{
+  gap:18px!important;
+  padding:18px!important;
+  background:var(--neo-bg)!important;
+}
+
+/* Core surfaces: one consistent neumorphic material. */
+.sidebar,
+.display-board,
+.panel,
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.sidebar-footer,
+.theme-toggle,
+.display-title-box,
+.big-card-icon,
+.display-date,
+.display-clock-wrap,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card,
+.leave-course-year-card,
+.year-card,
+.leave-course-mini-year,
+.live-chat-shell,
+.live-chat-main,
+.live-chat-chatpane,
+.live-chat-people,
+.notes-two-cards,
+.notes-editor-shell,
+.notes-list-shell,
+.admin-control-card,
+.single-panel,
+.calendar-panel,
+.calendar-roster-board{
+  background:var(--neo-surface)!important;
+  border:1px solid var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+.sidebar,.display-board,.panel,.profile-card,.calendar-panel,.calendar-roster-board{border-radius:var(--neo-radius-xl)!important}
+.stat-card,.bottom-card,.setting-box,.profile-info-box,.daily-roster-card,.year-card,.leave-course-year-card,.leave-course-mini-year,.admin-control-card{border-radius:var(--neo-radius-lg)!important}
+
+/* Typography hierarchy */
+.brand h1,.display-title,.display-clock,.display-hero-title,.display-title-clock,
+.profile-card h3,.panel h3,.bottom-card-title,.module-years-header h3,
+.calendar-roster-head h3,.notes-card-head h3,.admin-card-title strong{
+  color:var(--neo-text)!important;
+}
+.brand p,.panel p,.profile-card p,.bottom-card-desc,.profile-info-box span,
+.setting-box span,.calendar-roster-head p,.calendar-selected-sub,.display-mode-current,
+.sidebar-footer,.settings-extra-copy span{color:var(--neo-muted)!important}
+
+.brand h1{color:var(--neo-accent)!important;text-shadow:none!important}
+.display-accent-line{background:var(--neo-accent)!important;box-shadow:0 2px 8px rgba(47,103,216,.16)!important}
+
+/* Sidebar */
+.sidebar{padding:18px!important}
+.nav{gap:10px!important;padding:8px 8px 8px 2px!important}
+.nav button{
+  min-height:48px!important;
+  padding:12px 18px!important;
+  border-radius:16px!important;
+  color:var(--neo-text)!important;
+  background:var(--neo-surface)!important;
+  border:1px solid var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+}
+.nav button:hover{transform:translateY(-1px)!important;box-shadow:var(--neo-shadow-out)!important}
+.nav button:active,.nav button.active,[aria-current="page"]{transform:translateY(1px)!important;box-shadow:var(--neo-shadow-in)!important}
+.sidebar-footer{padding:16px!important;border-radius:20px!important}
+.theme-toggle{background:var(--neo-surface)!important;box-shadow:var(--neo-shadow-in)!important}
+.theme-toggle-knob{background:var(--neo-surface)!important;box-shadow:var(--neo-shadow-out-sm)!important}
+
+/* Dashboard */
+.display-board{padding:28px!important;gap:28px!important}
+.display-clock-wrap,.display-date,.big-card-icon{
+  background:var(--neo-surface)!important;
+  border:1px solid var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-in)!important;
+}
+.display-date{box-shadow:var(--neo-shadow-in-sm)!important}
+.stats-row,.bottom-cards-row{gap:18px!important}
+.stat-card,.bottom-card{background:var(--neo-surface)!important}
+.stat-card:hover,.bottom-card:hover,.profile-card:hover,.panel:hover,.setting-box:hover,.profile-info-box:hover,
+.year-card:hover,.leave-course-year-card:hover,.leave-course-mini-year:hover,.daily-roster-card:hover{
+  transform:translateY(-2px)!important;
+  box-shadow:var(--neo-shadow-out)!important;
+}
+.big-card-icon{border-radius:50%!important}
+
+/* Shared controls */
+input,textarea,select,
+.search-input,.inventory-select,.inventory-search-input,
+.outsource-search input,.outsource-search select,
+.notes-editor-shell input,.notes-editor-shell textarea,
+.live-chat-input,.modal input,.modal textarea,.modal select{
+  color:var(--neo-text)!important;
+  background:var(--neo-surface)!important;
+  border:1px solid var(--neo-border)!important;
+  border-radius:14px!important;
+  box-shadow:var(--neo-shadow-in-sm)!important;
+  outline:none!important;
+}
+input::placeholder,textarea::placeholder{color:var(--neo-muted)!important;opacity:.8!important}
+input:focus,textarea:focus,select:focus{box-shadow:var(--neo-focus)!important;border-color:rgba(47,103,216,.24)!important}
+
+button:not(.nav button){
+  border-radius:14px;
+}
+button,.calendar-toolbar-btn,.calendar-roster-nav-btn,.calendar-roster-month-btn,.calendar-roster-today-btn,
+.page-back-dashboard-btn,.outsource-filter-neo-trigger,.outsource-form button,.inventory-toolbar button,
+.settings-extra-card,.modal button{
+  background:var(--neo-surface)!important;
+  color:var(--neo-text)!important;
+  border:1px solid var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+}
+button:hover,.calendar-toolbar-btn:hover,.calendar-roster-nav-btn:hover,.calendar-roster-month-btn:hover,
+.calendar-roster-today-btn:hover,.page-back-dashboard-btn:hover,.outsource-filter-neo-trigger:hover,
+.settings-extra-card:hover{transform:translateY(-1px);box-shadow:var(--neo-shadow-out)!important}
+button:active,.calendar-toolbar-btn:active,.calendar-roster-nav-btn:active,.calendar-roster-month-btn:active,
+.calendar-roster-today-btn:active,.page-back-dashboard-btn:active,.outsource-filter-neo-trigger:active{
+  transform:translateY(1px);box-shadow:var(--neo-shadow-pressed)!important}
+
+/* Accent / semantic actions */
+.btn-primary,.primary-btn,.save-btn,.submit-btn,.confirm-btn,
+button[data-action="save"],button[data-action="submit"]{
+  color:#fff!important;
+  background:var(--neo-accent)!important;
+  border-color:transparent!important;
+  box-shadow:6px 6px 14px rgba(52,81,137,.28),-5px -5px 12px rgba(255,255,255,.42)!important;
+}
+body.dark-mode .btn-primary,body.dark-mode .primary-btn,body.dark-mode .save-btn,body.dark-mode .submit-btn,body.dark-mode .confirm-btn{color:#172033!important}
+
+/* Cards and nested items */
+.profile-info-box,.setting-box,.settings-extra-card,.notes-list-item,.notes-card,
+.live-chat-person,.live-chat-message,.admin-control-card,.calendar-mini-day,
+.module-year-card,.leave-course-mini-year,.inventory-card,.inventory-row-card{
+  background:var(--neo-surface-2)!important;
+  border:1px solid var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-out-sm)!important;
+}
+.profile-info-box:active,.setting-box:active,.settings-extra-card:active,.notes-list-item:active,
+.calendar-mini-day:active,.module-year-card:active,.inventory-card:active{box-shadow:var(--neo-shadow-in-sm)!important}
+
+/* Icon wells */
+.profile-link-card::before,.access-link-card::before,.quick-links-card::before,
+#settings .setting-box .settings-card-icon,#settings .settings-extra-icon,
+.settings-extra-icon,.calendar-icon,.admin-card-icon{
+  background:var(--neo-surface)!important;
+  border:1px solid var(--neo-border)!important;
+  box-shadow:var(--neo-shadow-in-sm)!important;
+  color:var(--neo-accent)!important;
+}
+
+/* Calendar */
+#calendar .calendar-full-grid{gap:12px!important}
+#calendar .calendar-mini-day{border-radius:18px!important;background:var(--neo-surface)!important;box-shadow:var(--neo-shadow-out-sm)!important}
+#calendar .calendar-mini-day:hover{transform:translateY(-2px);box-shadow:var(--neo-shadow-out)!important}
+#calendar .calendar-mini-day:active{box-shadow:var(--neo-shadow-in)!important}
+
+/* Modals / overlays */
+.modal,.dialog,.popover,.dropdown-menu,.outsource-select-menu,.inventory-date-popover,
+.custom-select-menu,.calendar-popover,.tooltip-panel{
+  background:var(--neo-surface)!important;
+  color:var(--neo-text)!important;
+  border:1px solid var(--neo-border)!important;
+  border-radius:20px!important;
+  box-shadow:16px 16px 34px rgba(128,141,161,.32),-12px -12px 28px rgba(255,255,255,.76)!important;
+}
+body.dark-mode .modal,body.dark-mode .dialog,body.dark-mode .popover,body.dark-mode .dropdown-menu,
+body.dark-mode .outsource-select-menu,body.dark-mode .inventory-date-popover,body.dark-mode .custom-select-menu,
+body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 16px 34px rgba(8,11,16,.62),-12px -12px 28px rgba(55,64,78,.42)!important}
+
+/* Scrollbars */
+*{scrollbar-width:thin;scrollbar-color:rgba(116,128,150,.42) transparent}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(116,128,150,.38);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+
+/* Remove accidental glow / glass treatment from legacy layers */
+.glass,.glass-card,.glass-panel,[class*="glass"]{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+
+/* Mobile: preserve existing functional layout while making it touch-friendly. */
+@media (max-width:1100px){
+  .app{gap:12px!important;padding:12px!important}
+  .display-board{padding:22px!important;gap:20px!important}
+  .stats-row,.bottom-cards-row{gap:12px!important}
+}
+@media (max-width:900px){
+  .app{display:block!important;padding:10px!important;overflow:hidden!important}
+  .sidebar{display:none!important}
+  .main,.pages,.page{width:100%!important;height:100%!important}
+  .display-board{grid-template-columns:1fr!important;min-height:0!important}
+  .display-daily-quote{position:relative!important;left:auto!important;top:auto!important;width:100%!important;min-width:0!important;transform:none!important}
+  .stats-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .bottom-cards-row{grid-template-columns:1fr 1fr!important}
+  .profile-two-cards,.access-three-cards,.leave-course-years-wrap{grid-template-columns:1fr!important}
+}
+@media (max-width:560px){
+  .display-board{padding:18px!important;border-radius:22px!important}
+  .stats-row,.bottom-cards-row{grid-template-columns:1fr!important}
+  .bottom-cards-row{grid-template-columns:1fr!important}
+  .profile-card,.panel{padding:16px!important;border-radius:22px!important}
+  .nav button{min-height:50px!important}
+}
+
+/* Accessibility / motion */
+:focus-visible{outline:none!important;box-shadow:var(--neo-focus)!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
 <!-- OUTSOURCE FILTER NEUMORPHIC FINAL: one custom control per filter, no native duplicate. -->
 
 
