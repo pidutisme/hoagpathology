@@ -14133,13 +14133,20 @@ if (token) {
       function deleteOutsourceSample(id){
         var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});
         if(!r)return;
-        if(!confirm('Delete outsource sample for '+String(r.name||'this patient')+'?'))return;
         if(typeof Inventory==='undefined'||typeof Inventory.deleteOutsourceSample!=='function'){alert('Delete function is unavailable.');return;}
-        Inventory.deleteOutsourceSample(id);
-        invalidateOutsourceRowsCache();
-        renderOutsourceRows();
-        /* Re-render once more after the shared save/realtime cycle so a stale snapshot cannot visually resurrect the row. */
-        setTimeout(function(){if(document.getElementById('moduleYearGrid')?.classList.contains('outsource-active-grid'))renderOutsourceRows();},450);
+        var itemLabel=String(r.name||'this patient');
+        var sampleLabel=[r.sampleDate,r.test,r.lab].filter(Boolean).join(' · ');
+        requestAppConfirm(
+          'DELETE OUTSOURCE SAMPLE?',
+          'Delete outsource sample for '+itemLabel+(sampleLabel?' · '+sampleLabel:'')+'? This cannot be undone.',
+          function(){
+            Inventory.deleteOutsourceSample(id);
+            invalidateOutsourceRowsCache();
+            renderOutsourceRows();
+            /* Re-render once more after the shared save/realtime cycle so a stale snapshot cannot visually resurrect the row. */
+            setTimeout(function(){if(document.getElementById('moduleYearGrid')?.classList.contains('outsource-active-grid'))renderOutsourceRows();},450);
+          }
+        );
       }
 
       function refreshOutsourceLive(){
