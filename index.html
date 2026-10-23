@@ -19480,7 +19480,25 @@ function exportMonthlySchedulePdfs() {
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
         if(!data.monthlySnapshots||typeof data.monthlySnapshots!=='object'||Array.isArray(data.monthlySnapshots)) data.monthlySnapshots={};
-        data.items.forEach(function(item){ item.minStock=1; });
+        var novacloneNames={
+          'novaclone anti-a 10ml/vial':true,
+          'novaclone anti-b 10ml/vial':true,
+          'novaclone anti-a,b 10ml/vial':true,
+          'novaclone anti-d (anti rh) igm+igg 10ml/vial':true
+        };
+        // HARD CLIENT-SIDE BASELINE: Novaclone must never inherit a stale
+        // openingStock from old localStorage/cloud snapshots. Its balance is
+        // driven only by explicit Stock In / Stock Out movements.
+        data.items.forEach(function(item){
+          item.minStock=1;
+          var key=String(item&&item.name||'').trim().toLowerCase();
+          if(novacloneNames[key]) item.openingStock=0;
+        });
+        data.transactions=data.transactions.filter(function(tx){
+          var item=data.items.find(function(it){return it&&String(it.id||'')===String(tx&&tx.itemId||'');});
+          var key=item?String(item.name||'').trim().toLowerCase():'';
+          return !(novacloneNames[key] && String(tx&&tx.notes||'').trim()==='Initial catalog data');
+        });
         data.version=4;
       }
       function seed(){
@@ -19628,7 +19646,7 @@ function exportMonthlySchedulePdfs() {
       function saveLocal(){try{safeStorageSet(STORAGE_KEY,JSON.stringify(data));}catch(e){}}
       function loadLocal(){
         var raw=safeStorageGet(STORAGE_KEY); if(!raw) return false;
-        var parsed=safeParse(raw); if(!parsed) return false; data=parsed; normalize(); return true;
+        var parsed=safeParse(raw); if(!parsed) return false; data=parsed; normalize(); saveLocal(); return true;
       }
       function db(){return typeof FirebaseBridge!=='undefined'&&FirebaseBridge.isReady&&FirebaseBridge.isReady()?FirebaseBridge.getDatabase():null;}
       function cloneData(value){
