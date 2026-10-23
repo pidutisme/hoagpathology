@@ -8,11 +8,19 @@ function getProductionUrl() {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     if (config.productionUrl && !config.productionUrl.includes('YOUR-VERCEL-DOMAIN')) return config.productionUrl;
   } catch (_) {}
-  return 'https://YOUR-VERCEL-DOMAIN.vercel.app';
+  throw new Error('Desktop production URL is not configured. Check desktop/config.json.');
 }
 
 function createWindow() {
-  const url = getProductionUrl();
+  let url;
+  try {
+    url = getProductionUrl();
+  } catch (error) {
+    const { dialog } = require('electron');
+    dialog.showErrorBox('Hoag Pathology', error.message);
+    app.quit();
+    return;
+  }
   const win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1000, minHeight: 700,
     title: 'Hoag Pathology', autoHideMenuBar: true,

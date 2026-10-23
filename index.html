@@ -21941,7 +21941,7 @@ if ("serviceWorker" in navigator) {
 .outsource-modal-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;color:#2563eb;margin-bottom:4px}.outsource-result-dialog h2{margin:0 52px 5px 0;font-size:22px}.outsource-modal-sub{font-size:13px;color:#64748b;margin-bottom:22px}.outsource-modal-field{margin:0 0 16px}.outsource-modal-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;color:#64748b;margin:0 0 7px}.outsource-modal-field input,.outsource-modal-field select,.outsource-modal-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(148,163,184,.25);border-radius:14px;background:linear-gradient(145deg,#eef2f8,#e1e6ef);color:#172033;box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.82),0 3px 9px rgba(76,94,122,.06);outline:none;font:inherit}.outsource-modal-field input,.outsource-modal-field select{height:46px;padding:0 14px}.outsource-modal-field textarea{min-height:94px;padding:13px 14px;resize:vertical}.outsource-modal-field select{appearance:none;-webkit-appearance:none;cursor:pointer}.outsource-modal-field select:focus,.outsource-modal-field input:focus,.outsource-modal-field textarea:focus{border-color:rgba(37,99,235,.45);box-shadow:inset 2px 2px 5px rgba(148,163,184,.12),inset -2px -2px 5px rgba(255,255,255,.9),0 0 0 3px rgba(37,99,235,.08)}.outsource-modal-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.outsource-modal-field select:disabled{opacity:.55;cursor:not-allowed}.outsource-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.outsource-result-dialog .outsource-date-field{position:relative}.outsource-result-dialog .outsource-neumorphic-date{cursor:pointer}.outsource-result-dialog .outsource-date-field::after{content:'▣';position:absolute;right:14px;bottom:13px;color:#64748b;font-size:13px;pointer-events:none}.outsource-data-row{cursor:pointer}.outsource-data-row:hover td{background:rgba(37,99,235,.025)}
 @media(max-width:640px){.outsource-result-dialog{padding:22px}.outsource-modal-row{grid-template-columns:1fr}.outsource-result-close{right:14px;top:14px}}
 </style>
-<style id="outsource-neumorphic-date-picker">
+<style id="outsource-neumorphic-date-picker-style">
 #moduleYearGrid.outsource-active-grid .outsource-date-field{position:relative;}
 #moduleYearGrid.outsource-active-grid .outsource-neumorphic-date{
   width:100%!important;box-sizing:border-box!important;height:44px!important;padding:0 42px 0 14px!important;
@@ -21967,7 +21967,7 @@ if ("serviceWorker" in navigator) {
 }
 #moduleYearGrid.outsource-active-grid input[type="date"]::-webkit-calendar-picker-indicator{display:none!important;opacity:0!important;pointer-events:none!important;}
 </style>
-<script id="outsource-neumorphic-date-picker">
+<script id="outsource-neumorphic-date-picker-script">
 (function(){
  function pad(n){return String(n).padStart(2,'0');} function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
  function parse(v){if(!v)return null;var a=String(v).split('-').map(Number);if(a.length!==3||a.some(isNaN))return null;return new Date(a[0],a[1]-1,a[2]);}
@@ -22129,7 +22129,7 @@ if ("serviceWorker" in navigator) {
 })();
 </script>
 
-<style id="inventory-filter-dropdown-polish-v8">
+<style id="inventory-filter-dropdown-polish-v8-style">
 /* v8: custom body-level filter menus matching the stable monthly selector. */
 #inventory .inventory-filter-custom-wrap {
   position: relative; min-width: 0; width: 100%;
@@ -22292,7 +22292,7 @@ if ("serviceWorker" in navigator) {
   window.addEventListener('resize',close);
 })();
 </script>
-<script id="inventory-filter-dropdown-polish-v8">
+<script id="inventory-filter-dropdown-polish-v8-script">
 (function(){
   var ids=['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'];
   var openMenu=null, openTrigger=null, openSelect=null;
@@ -22565,7 +22565,7 @@ if ("serviceWorker" in navigator) {
   border-color:rgba(37,99,235,.30)!important;box-shadow:inset 3px 3px 7px rgba(145,155,175,.18),inset -3px -3px 7px rgba(255,255,255,.88),0 0 0 3px rgba(37,99,235,.08)!important;
 }
 </style>
-<style id="outsource-neumorphic-dropdown-v3">
+<style id="outsource-neumorphic-dropdown-v3-style">
 /* OUTSOURCE V3 — native <select> menus replaced with a true Neumorphism popup. */
 #moduleYearGrid.outsource-active-grid .outsource-custom-select-wrap{position:relative;width:100%;}
 #moduleYearGrid.outsource-active-grid select.outsource-native-select{
@@ -22606,7 +22606,7 @@ if ("serviceWorker" in navigator) {
 .outsource-select-menu button:active{box-shadow:inset 2px 2px 5px rgba(145,155,175,.18),inset -2px -2px 5px rgba(255,255,255,.82);}
 .outsource-select-menu::-webkit-scrollbar{width:7px}.outsource-select-menu::-webkit-scrollbar-thumb{border-radius:8px;background:#cbd5e1}
 </style>
-<script id="outsource-neumorphic-dropdown-v3">
+<script id="outsource-neumorphic-dropdown-v3-script">
 (function(){
   var openMenu=null,openTrigger=null,openSelect=null;
   function close(){

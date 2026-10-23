@@ -1,8 +1,11 @@
 
 import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
 import { firebaseDb } from "../lib/firebase-admin.js";
 import { normalizeUserId } from "../lib/auth.js";
 
+const require = createRequire(import.meta.url);
+const VERSION = require("../package.json").version || "0.0.0";
 const SESSION_PATH = "labapp/auth/sessions";
 const USERS_PATH = "labapp/auth/users";
 
@@ -100,7 +103,7 @@ export default async function handler(req, res) {
         role: String(user.role || 'USER')
       },
       expiresAt: session.expiresAt,
-      version: "2.1.81"
+      version: VERSION
     };
     return res.status(200).json(result);
   } catch (error) {

@@ -1,7 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { firebaseDb } from '../lib/firebase-admin.js';
 import { normalizeUserId, normalizePassword, buildPasswordRecord, verifyPassword, isLegacyPassword } from '../lib/auth.js';
 
+const require = createRequire(import.meta.url);
+const VERSION = require('../package.json').version || '0.0.0';
 const SESSION_SECONDS = 6 * 60 * 60;
 const USERS_PATH = 'labapp/auth/users';
 const SESSIONS_PATH = 'labapp/auth/sessions';
@@ -65,7 +68,7 @@ export default async function handler(req, res) {
     await db.ref(`${SESSIONS_PATH}/${tokenHash(token)}`).set(session);
     // Session is returned to the client and kept in sessionStorage only.
     res.setHeader('Set-Cookie', 'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
-    return res.status(200).json({ ok:true, authenticated:true, token, expiresAt, expiresIn:SESSION_SECONDS, user:{id:username,name:session.name,role:session.role}, version:'2.1.81' });
+    return res.status(200).json({ ok:true, authenticated:true, token, expiresAt, expiresIn:SESSION_SECONDS, user:{id:username,name:session.name,role:session.role}, version:VERSION });
   } catch (error) {
     console.error('Login endpoint failed:', error?.message || 'Unknown error');
     return res.status(500).json({ ok:false, authenticated:false, error:'An unexpected system error occurred during sign-in.' });
