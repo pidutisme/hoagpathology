@@ -7891,8 +7891,10 @@
 .module-year-grid.outsource-active-grid .outsource-card{width:100%;}
 .module-year-grid.outsource-active-grid .outsource-form{grid-template-columns:repeat(4,minmax(0,1fr));}
 .module-year-grid.outsource-active-grid .outsource-field.full{grid-column:1/-1;}
+.module-year-grid.outsource-active-grid .outsource-field.outsource-test-field{grid-column:span 2;}
 .module-year-grid.outsource-active-grid .outsource-table-wrap{max-height:none;min-height:280px;}
 @media(max-width:1100px){.module-year-grid.outsource-active-grid .outsource-form{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:1100px){.module-year-grid.outsource-active-grid .outsource-field.outsource-test-field{grid-column:1/-1;}}
 @media(max-width:700px){.module-year-grid.outsource-active-grid .outsource-form{grid-template-columns:1fr;}}
 @media(max-width:1100px){.outsource-grid{grid-template-columns:1fr;}.outsource-summary{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:700px){.outsource-hero{padding:17px;}.outsource-form{grid-template-columns:1fr;}.outsource-field.full{grid-column:auto;}.outsource-form-actions{grid-column:auto;}.outsource-live{display:none;}}
@@ -13847,9 +13849,9 @@ if (token) {
                 '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div>'+
                 '<div class="outsource-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input type="text" id="osDispatchDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
-                '<div class="outsource-field"><label>Test / Investigation *</label><select id="osTest" required><option value="">Select test / investigation</option></select></div>'+
                 '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option><option>H SELAYANG</option><option>HKL</option><option>IPR</option><option>MKAK</option><option>MVN BOTANIK</option><option>H AMPANG</option><option>IMR/NIH</option><option>HTA</option><option>H PUTRAJAYA</option></select></div>'+
                 '<div class="outsource-field"><label>Outsource Lab</label><select id="osLab"><option value="">Select laboratory</option><option>BIOCHEMISTRY</option><option>MICROBIOLOGY</option><option>HEMATOLOGY</option><option>CYTOLOGY</option><option>HISTOLOGY</option></select></div>'+
+                '<div class="outsource-field outsource-test-field"><label>Test / Investigation *</label><select id="osTest" required><option value="">Select test / investigation</option></select></div>'+
                 
                 '<div class="outsource-form-actions"><button class="outsource-btn secondary" type="button" id="outsourceClearBtn">CLEAR</button><button class="outsource-btn primary" type="submit" id="outsourceSaveBtn">REGISTER SAMPLE</button></div>'+
               '</form></section>'+
