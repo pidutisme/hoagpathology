@@ -19593,6 +19593,121 @@ function exportMonthlySchedulePdfs() {
         if(changed) data.version=4;
         return changed;
       }
+      function repairDuplicateItemIds(){
+        /*
+         * CANONICAL ITEM-ID REPAIR.
+         * Some older inventory snapshots contain duplicate IDs (for example
+         * item-042 was persisted for both a Novaclone master and a Microbiology
+         * reagent). This makes getItem()/transactions ambiguous because stock
+         * is keyed by itemId. The seed catalog is the canonical name -> ID map.
+         * Restore those IDs after every cloud/local merge, while preserving
+         * transaction history by routing an ambiguous legacy ID to the item
+         * that owns that ID in the current canonical catalog.
+         */
+        var canonicalByName={};
+        seedItems.forEach(function(x,i){
+          var name=String(x[2]||'').trim().toLowerCase();
+          if(name) canonicalByName[name]='item-'+String(i+1).padStart(3,'0');
+        });
+
+        var items=Array.isArray(data.items)?data.items:[];
+        var oldIdByItem=[];
+        var canonicalOwnerByOldId={};
+        var used={};
+        var changed=false;
+
+        items.forEach(function(item){
+          var oldId=String(item&&item.id||'').trim();
+          var name=String(item&&item.name||'').trim().toLowerCase();
+          var canonical=canonicalByName[name]||'';
+          oldIdByItem.push({item:item,oldId:oldId,canonical:canonical});
+          if(canonical && oldId===canonical) canonicalOwnerByOldId[oldId]=item;
+        });
+
+        /* First reserve every canonical catalog ID. */
+        oldIdByItem.forEach(function(row){
+          if(row.canonical) used[row.canonical]=true;
+        });
+
+        var nextNo=1;
+        function nextUniqueId(){
+          while(used['item-'+String(nextNo).padStart(3,'0')]) nextNo+=1;
+          var value='item-'+String(nextNo).padStart(3,'0');
+          used[value]=true;
+          nextNo+=1;
+          return value;
+        }
+
+        oldIdByItem.forEach(function(row){
+          var item=row.item;
+          var target=row.canonical||row.oldId;
+          if(!target || !item) target=nextUniqueId();
+
+          /* Canonical catalog names always win their canonical IDs. */
+          if(row.canonical){
+            if(String(item.id||'')!==row.canonical){ item.id=row.canonical; changed=true; }
+            return;
+          }
+
+          /* Non-catalog/custom items keep their old ID unless it collides. */
+          if(used[target] && String(item.id||'')!==target){
+            target=nextUniqueId();
+            item.id=target;
+            changed=true;
+          } else {
+            used[target]=true;
+          }
+        });
+
+        /* If duplicate legacy IDs existed, canonical items provide the only
+         * deterministic owner for their old Stock In/Out references. */
+        var uniqueOldToNew={};
+        var ambiguousOld={};
+        oldIdByItem.forEach(function(row){
+          var oldId=row.oldId;
+          if(!oldId) return;
+          var nextId=String(row.item&&row.item.id||'');
+          if(ambiguousOld[oldId]) return;
+          if(uniqueOldToNew[oldId] && uniqueOldToNew[oldId]!==nextId){
+            ambiguousOld[oldId]=true;
+            delete uniqueOldToNew[oldId];
+            return;
+          }
+          uniqueOldToNew[oldId]=nextId;
+        });
+        Object.keys(canonicalOwnerByOldId).forEach(function(oldId){
+          uniqueOldToNew[oldId]=String(canonicalOwnerByOldId[oldId].id||oldId);
+          delete ambiguousOld[oldId];
+        });
+
+        (data.transactions||[]).forEach(function(tx){
+          var oldId=String(tx&&tx.itemId||'');
+          if(!oldId) return;
+          if(uniqueOldToNew[oldId] && String(tx.itemId)!==uniqueOldToNew[oldId]){
+            tx.itemId=uniqueOldToNew[oldId];
+            changed=true;
+          }
+        });
+
+        /* Re-key monthly prices only when the old ID maps uniquely. When an
+         * old ID was genuinely duplicated, the canonical owner receives the
+         * legacy price; the renamed duplicate keeps its own current item.price. */
+        Object.keys(data.monthlyPrices||{}).forEach(function(month){
+          var prices=data.monthlyPrices[month]||{};
+          Object.keys(prices).forEach(function(oldId){
+            var newId=uniqueOldToNew[oldId];
+            if(newId && newId!==oldId && prices[newId]==null){
+              prices[newId]=prices[oldId];
+              delete prices[oldId];
+              changed=true;
+            }
+          });
+        });
+
+        if(changed) data.version=Math.max(Number(data.version||0),4);
+        return changed;
+      }
+
       function ensureNovacloneInitialZero(){
         /*
          * NOVACLONE ZERO-STOCK MIGRATION
@@ -19790,12 +19905,13 @@ function exportMonthlySchedulePdfs() {
             // lots, transactions or prices.
             removeMalformedCatalogItems();
             mergeSeedCatalog();
+            var duplicateIdFix=repairDuplicateItemIds();
             ensureNovacloneInitialZero();
 
             // Remove only malformed catalog entries here. Novaclone zeroing is
             // controlled by the one-time shared V5 migration above so future
             // legitimate Stock In/Out movements are preserved.
-            var cloudChanged=removeMalformedCatalogItems();
+            var cloudChanged=removeMalformedCatalogItems() || duplicateIdFix;
             saveLocal();
             // Push the repaired cloud-authoritative state back to Vercel.
             saveRemote({force:true});
@@ -20480,13 +20596,14 @@ function exportMonthlySchedulePdfs() {
         migrateInventoryNames();
         removeMalformedCatalogItems();
         mergeSeedCatalog();
+        var repairDuplicateIds=repairDuplicateItemIds();
         var repairV4=repairInventoryCloudDataV4();
         var freshReset=resetInventoryForFreshStart();
         var balanceFix=repairOctober2026OpeningBalance();
         ensureCurrentMonthPrices();
         // Do not push local bootstrap data before checking the shared cloud.
         // The On Call roster follows the same rule: cloud first, local only when cloud is empty.
-        if(freshReset||balanceFix||repairV4){
+        if(freshReset||balanceFix||repairV4||repairDuplicateIds){
           saveLocal();
         }
         render();
