@@ -7858,10 +7858,10 @@
 .outsource-table th{position:sticky;top:0;z-index:2;background:#2f7fad;color:#fff;text-align:left;padding:9px 7px;font-size:9px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
 .outsource-table td{padding:8px 7px;border-bottom:1px solid #e6edf2;color:#233f54;vertical-align:top;white-space:nowrap;}
 .outsource-table tbody tr:hover{background:#f6fbfe;}
-.outsource-table tbody tr.status-reject{background:#fbe1e1;}
-.outsource-table tbody tr.status-done{background:#dff0d8;}
-.outsource-table tbody tr.status-pending{background:#fffdf0;}
-.outsource-result{font-weight:800;}
+.outsource-table tbody tr.status-reject,.outsource-table tbody tr.status-done{background:transparent;}
+.outsource-result{font-weight:900;padding:6px 10px!important;border-radius:8px!important;display:inline-block;min-width:76px;text-align:center;}
+.outsource-result.status-done{color:#176b43;background:#d9f3e4;border:1px solid #b8e5ca;box-shadow:inset 1px 1px 3px rgba(255,255,255,.8),2px 2px 5px rgba(85,130,105,.10);}
+.outsource-result.status-reject{color:#a62935;background:#f9dede;border:1px solid #efbfc3;box-shadow:inset 1px 1px 3px rgba(255,255,255,.8),2px 2px 5px rgba(150,80,90,.10);}
 .outsource-actions{display:flex;gap:5px;}
 .outsource-mini{border:1px solid #d5e0e8;background:#fff;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:800;cursor:pointer;}
 .outsource-mini.delete{color:#b72f3b;}
@@ -7882,6 +7882,17 @@
 @media(max-width:1100px){.outsource-grid{grid-template-columns:1fr;}.outsource-summary{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:700px){.outsource-hero{padding:17px;}.outsource-form{grid-template-columns:1fr;}.outsource-field.full{grid-column:auto;}.outsource-form-actions{grid-column:auto;}.outsource-live{display:none;}}
 
+<style id="outsource-filter-cards-v4">
+#moduleYearGrid.outsource-active-grid .outsource-filter-row{display:grid!important;grid-template-columns:minmax(0,1fr) 150px 170px 150px!important;gap:10px!important;align-items:stretch!important;padding:12px 18px!important;border-bottom:1px solid #e4edf3!important;}
+#moduleYearGrid.outsource-active-grid .outsource-filter-card{min-width:0;padding:8px 10px!important;border-radius:12px!important;background:var(--neo-surface,#eef2f8)!important;border:1px solid rgba(120,135,160,.13)!important;box-shadow:inset 2px 2px 5px rgba(145,155,175,.13),inset -2px -2px 5px rgba(255,255,255,.78),4px 4px 8px rgba(145,155,175,.06),-4px -4px 8px rgba(255,255,255,.52)!important;box-sizing:border-box!important;}
+#moduleYearGrid.outsource-active-grid .outsource-filter-label{display:block!important;margin:0 0 5px!important;font-size:8px!important;font-weight:900!important;letter-spacing:.08em!important;color:#718096!important;}
+#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-custom-select-wrap{width:100%!important;}
+#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-select-trigger{height:30px!important;padding:6px 9px!important;font-size:10px!important;border-radius:9px!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search{padding:0!important;border:0!important;min-height:0!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search input#outsourceSearch{height:46px!important;}
+@media(max-width:1000px){#moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:minmax(0,1fr) 140px 155px!important;}#moduleYearGrid.outsource-active-grid .outsource-status-card{grid-column:auto;}}
+@media(max-width:700px){#moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:1fr 1fr!important;}#moduleYearGrid.outsource-active-grid .outsource-search{grid-column:1/-1;}}
+</style>
 <style id="outsource-search-fix-v1">
 #moduleYearGrid.outsource-active-grid .outsource-search{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;box-sizing:border-box!important;min-height:54px!important;}
 #moduleYearGrid.outsource-active-grid .outsource-search input#outsourceSearch{display:block!important;visibility:visible!important;opacity:1!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;height:38px!important;box-sizing:border-box!important;margin:0!important;padding:10px 13px!important;color:#26354a!important;background:var(--neo-surface,#eef2f8)!important;border:1px solid rgba(120,135,160,.16)!important;border-radius:12px!important;box-shadow:inset 2px 2px 5px rgba(145,155,175,.13),inset -2px -2px 5px rgba(255,255,255,.78)!important;}
@@ -13636,7 +13647,12 @@ if (token) {
               '</form></section>'+
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3><span>'+outsourceEsc(total)+' TOTAL</span></div>'+
               '<div class="outsource-summary"><div class="outsource-stat"><div class="num">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num">'+rejected+'</div><div class="lbl">Rejected</div></div></div>'+
-              '<div class="outsource-search"><input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search barcode, name or IC / ID"><select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="ADA">ADA</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select></div>'+
+              '<div class="outsource-filter-row">'+
+                '<div class="outsource-search"><input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search barcode, name or IC / ID"></div>'+
+                '<div class="outsource-filter-card"><span class="outsource-filter-label">YEAR</span><select id="outsourceYearFilter"><option value="ALL">All years</option></select></div>'+
+                '<div class="outsource-filter-card"><span class="outsource-filter-label">MONTH</span><select id="outsourceMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>'+
+                '<div class="outsource-filter-card outsource-status-card"><span class="outsource-filter-label">STATUS</span><select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="COMPLETED">Completed</option><option value="REJECT">Reject</option></select></div>'+
+              '</div>'+
               '<div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>#</th><th>Sample Date</th><th>Bar Code</th><th>Name</th><th>ID/IC</th><th>Sex</th><th>Age</th><th>Unit</th><th>Dispatch</th><th>Referral</th><th>Lab</th><th>Test</th><th>Result</th><th>Result Date</th><th>Reference No.</th><th>Reject Reason</th><th>Notes</th><th>Action</th></tr></thead><tbody id="outsourceTableBody"></tbody></table><div class="outsource-empty" id="outsourceEmpty" hidden>No outsource sample registered yet.</div></div>'+
             '</section>'+
           '</div>'+
@@ -13663,20 +13679,42 @@ if (token) {
         var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
         var search=$('outsourceSearch'); if(search)search.addEventListener('input',renderOutsourceRows);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',renderOutsourceRows);
+        var yearFilter=$('outsourceYearFilter'); if(yearFilter)yearFilter.addEventListener('change',renderOutsourceRows);
+        var monthFilter=$('outsourceMonthFilter'); if(monthFilter)monthFilter.addEventListener('change',renderOutsourceRows);
         var body=$('outsourceTableBody'); if(body)body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(btn){var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='edit')editOutsourceSample(id);if(action==='delete')deleteOutsourceSample(id);return;}var row=e.target.closest('tr[data-outsource-id]');if(row)openOutsourceResultModal(row.getAttribute('data-outsource-id'));});
         var resultBtn=$('outsourceUpdateResultBtn'); if(resultBtn)resultBtn.addEventListener('click',saveOutsourceResultUpdate);
         document.querySelectorAll('[data-close-result-modal]').forEach(function(el){el.addEventListener('click',closeOutsourceResultModal);});
+      }
+      function populateOutsourceDateFilters(allRows){
+        var yearSel=$('outsourceYearFilter'),monthSel=$('outsourceMonthFilter');
+        if(!yearSel||!monthSel)return;
+        var previousYear=yearSel.value||'ALL', previousMonth=monthSel.value||'ALL';
+        var years={};
+        (allRows||[]).forEach(function(r){var d=String(r.sampleDate||r.createdAt||'').slice(0,10),m=d.match(/^(\d{4})-(\d{2})-/);if(m)years[m[1]]=true;});
+        var sorted=Object.keys(years).sort(function(a,b){return Number(b)-Number(a);});
+        yearSel.innerHTML='<option value="ALL">All years</option>'+sorted.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
+        yearSel.value=sorted.indexOf(previousYear)>=0?previousYear:'ALL';
+        monthSel.value=previousMonth;
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
         var q=String(($('outsourceSearch')||{}).value||'').trim().toLowerCase();
         var status=String(($('outsourceStatusFilter')||{}).value||'ALL').toUpperCase();
-        var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).filter(function(r){
-          var result=String(r.result||'PENDING').toUpperCase(); if(status!=='ALL'&&result!==status)return false; if(!q)return true;
+        var year=String(($('outsourceYearFilter')||{}).value||'ALL').toUpperCase();
+        var month=String(($('outsourceMonthFilter')||{}).value||'ALL').toUpperCase();
+        var allRows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]);
+        populateOutsourceDateFilters(allRows);
+        var rows=allRows.filter(function(r){
+          var result=String(r.result||'PENDING').toUpperCase();
+          var sampleDate=String(r.sampleDate||r.createdAt||'').slice(0,10);
+          if(status!=='ALL'&&result!==status)return false;
+          if(year!=='ALL'&&sampleDate.slice(0,4)!==year)return false;
+          if(month!=='ALL'&&sampleDate.slice(5,7)!==month)return false;
+          if(!q)return true;
           return [r.barCode,r.name,r.idIc].join(' ').toLowerCase().indexOf(q)>=0;
         });
         rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
-        body.innerHTML=rows.map(function(r,i){var cls=outsourceResultClass(r.result),result=String(r.result||'PENDING');return '<tr class="'+cls+'" data-outsource-id="'+outsourceEsc(r.id)+'" title="Click row to update result"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
+        body.innerHTML=rows.map(function(r,i){var result=String(r.result||'PENDING').toUpperCase();var resultClass=result==='REJECT'?'status-reject':'status-done';return '<tr data-outsource-id="'+outsourceEsc(r.id)+'" title="Click row to update result"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result '+resultClass+'">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
         if(empty)empty.hidden=rows.length>0;
       }
       function calculateMalaysianIcDetails(rawIc, referenceDate){
@@ -22392,7 +22430,7 @@ if ("serviceWorker" in navigator) {
   }
   function init(){
     if(!document.body||!document.getElementById('moduleYearGrid'))return;
-    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select, #moduleYearGrid.outsource-active-grid .outsource-search select, #moduleYearGrid.outsource-active-grid .outsource-result-field select').forEach(setup);
+    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select, #moduleYearGrid.outsource-active-grid .outsource-search select, #moduleYearGrid.outsource-active-grid .outsource-filter-card select, #moduleYearGrid.outsource-active-grid .outsource-result-field select').forEach(setup);
   }
   function delayed(){setTimeout(init,0);setTimeout(init,120);setTimeout(init,500);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',delayed);else delayed();
