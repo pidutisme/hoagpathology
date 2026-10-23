@@ -13399,7 +13399,7 @@ if (token) {
         var form=$('outsourceForm'); if(form)form.addEventListener('submit',function(e){e.preventDefault();saveOutsourceSample();});
         bindOutsourceKeyboardFlow();
         bindOutsourceIcAutofill();
-        initOutsourceNeumorphicDates();
+        initOutsourceNeumorphicDates(); window.setTimeout(initOutsourceNeumorphicDates,0);
         var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
         var search=$('outsourceSearch'); if(search)search.addEventListener('input',renderOutsourceRows);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',renderOutsourceRows);
@@ -21551,20 +21551,26 @@ if ("serviceWorker" in navigator) {
 #moduleYearGrid.outsource-active-grid .outsource-neumorphic-date{
   width:100%!important;box-sizing:border-box!important;height:44px!important;padding:0 42px 0 14px!important;
   border:1px solid rgba(148,163,184,.28)!important;border-radius:13px!important;
-  background:linear-gradient(145deg,#eef2f8,#e1e6ef)!important;color:#172033!important;
+  background:linear-gradient(145deg,#eef2f8,#e1e6ef)!important;color:#172033!important;-webkit-appearance:none!important;appearance:none!important;
   box-shadow:inset 2px 2px 5px rgba(148,163,184,.16),inset -2px -2px 5px rgba(255,255,255,.8),0 3px 9px rgba(76,94,122,.07)!important;
   outline:none!important;font:inherit;cursor:pointer;transition:.18s ease;
 }
 #moduleYearGrid.outsource-active-grid .outsource-neumorphic-date:hover{border-color:rgba(37,99,235,.25)!important;transform:translateY(-1px);}
 #moduleYearGrid.outsource-active-grid .outsource-neumorphic-date:focus{border-color:rgba(37,99,235,.48)!important;box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.9),0 0 0 3px rgba(37,99,235,.09)!important;}
 .outsource-date-field::after{content:'▣';position:absolute;right:14px;bottom:13px;color:#64748b;font-size:13px;pointer-events:none;opacity:.85;}
-.outsource-date-popover{position:fixed;z-index:99999;width:286px;padding:14px;border-radius:18px;background:linear-gradient(145deg,#eef2f8,#e0e5ee);border:1px solid rgba(148,163,184,.28);box-shadow:10px 10px 24px rgba(71,85,105,.18),-8px -8px 20px rgba(255,255,255,.9);color:#182235;user-select:none;}
+.outsource-date-popover{position:fixed;z-index:2147483647;width:286px;padding:14px;border-radius:18px;background:linear-gradient(145deg,#eef2f8,#e0e5ee);border:1px solid rgba(148,163,184,.28);box-shadow:10px 10px 24px rgba(71,85,105,.18),-8px -8px 20px rgba(255,255,255,.9);color:#182235;user-select:none;}
 .outsource-date-popover[hidden]{display:none;}
 .outsource-date-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.outsource-date-month{font-weight:800;font-size:14px;letter-spacing:.02em}.outsource-date-nav{display:flex;gap:7px}
 .outsource-date-nav button,.outsource-date-foot button{border:0;border-radius:10px;min-width:34px;height:32px;padding:0 9px;cursor:pointer;background:linear-gradient(145deg,#f5f7fb,#dfe5ee);color:#334155;box-shadow:4px 4px 8px rgba(100,116,139,.16),-3px -3px 7px rgba(255,255,255,.85);font-weight:700}
 .outsource-date-nav button:active,.outsource-date-foot button:active{box-shadow:inset 2px 2px 5px rgba(100,116,139,.18),inset -2px -2px 4px rgba(255,255,255,.8)}
 .outsource-date-week,.outsource-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.outsource-date-week span{text-align:center;font-size:10px;font-weight:800;color:#7b8799;padding:4px 0}.outsource-date-day{height:32px;border:0;border-radius:9px;background:transparent;color:#334155;cursor:pointer;font:700 12px inherit}.outsource-date-day:hover{background:rgba(37,99,235,.09);box-shadow:inset 2px 2px 4px rgba(100,116,139,.09),inset -2px -2px 4px rgba(255,255,255,.8)}.outsource-date-day.muted{color:#a3acba;font-weight:600}.outsource-date-day.today{box-shadow:inset 0 0 0 1px rgba(37,99,235,.35);color:#2563eb}.outsource-date-day.selected{background:linear-gradient(145deg,#3b82f6,#2563eb);color:#fff;box-shadow:3px 3px 7px rgba(37,99,235,.22),inset 1px 1px 2px rgba(255,255,255,.25)}
 .outsource-date-foot{display:flex;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid rgba(148,163,184,.18)}.outsource-date-foot button{min-width:auto;color:#2563eb}@media(max-width:560px){.outsource-date-popover{width:min(286px,calc(100vw - 24px));}}
+</style>
+<style id="outsource-native-date-kill">
+#moduleYearGrid.outsource-active-grid input[type="date"]{
+  -webkit-appearance:none!important;appearance:none!important;
+}
+#moduleYearGrid.outsource-active-grid input[type="date"]::-webkit-calendar-picker-indicator{display:none!important;opacity:0!important;pointer-events:none!important;}
 </style>
 <script id="outsource-neumorphic-date-picker">
 (function(){
