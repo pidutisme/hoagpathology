@@ -13265,25 +13265,29 @@ if (token) {
        * + open                             +
        * +----------------------------------+ */
       function open(cardName, activeButton) {
-        if (normalizeModuleName(cardName) === 'INVENTORY' && typeof Inventory !== 'undefined') {
+        var normalizedName = normalizeModuleName(cardName);
+        if (normalizedName === 'INVENTORY' && typeof Inventory !== 'undefined') {
           Inventory.open();
           return;
         }
-        renderModuleYearCards(cardName);
+
+        /* Activate the module page before rendering. OUTSOURCE is an internal live workspace. */
         var activePage = document.querySelector('.page.active');
         if (activePage) activePage.classList.remove('active');
-  
+
         var activeNavButton = document.querySelector('.nav-btn.active');
         if (activeNavButton) activeNavButton.classList.remove('active');
-  
+
         if (activeButton) activeButton.classList.add('active');
         var modulePage = $('moduleYears');
         if (modulePage) {
           modulePage.classList.add('active');
           Router.renderBackButton('moduleYears');
         }
+
+        renderModuleYearCards(normalizedName);
         if (typeof ActivityTracker !== 'undefined' && ActivityTracker.track) {
-          ActivityTracker.track('OPEN_MODULE', 'Opened ' + normalizeModuleName(cardName) + '.', { page: 'moduleYears', module: normalizeModuleName(cardName) }, { dedupeMs: 2000 });
+          ActivityTracker.track('OPEN_MODULE', 'Opened ' + normalizedName + '.', { page: 'moduleYears', module: normalizedName }, { dedupeMs: 2000 });
         }
       }
   
