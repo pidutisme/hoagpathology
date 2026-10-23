@@ -22268,6 +22268,26 @@ if ("serviceWorker" in navigator) {
 }
 </style>
 
+<style id="outsource-test-select-fallback-v1">
+/* Test / Investigation must always render as a Neumorphism select, even before the custom popup enhancer runs. */
+#moduleYearGrid.outsource-active-grid .outsource-field select#osTest,
+#moduleYearGrid.outsource-active-grid .outsource-field select#osLab,
+#moduleYearGrid.outsource-active-grid .outsource-field select#osReferral,
+#moduleYearGrid.outsource-active-grid .outsource-field select#osUnit{
+  width:100%!important;min-height:42px!important;box-sizing:border-box!important;
+  border:1px solid rgba(120,135,160,.12)!important;border-radius:14px!important;
+  background:linear-gradient(145deg,#eef2f8,#e3e8f0)!important;color:#243047!important;
+  box-shadow:inset 3px 3px 7px rgba(145,155,175,.16),inset -3px -3px 7px rgba(255,255,255,.82),4px 4px 10px rgba(145,155,175,.08),-4px -4px 10px rgba(255,255,255,.68)!important;
+  outline:0!important;padding:10px 42px 10px 14px!important;font:700 12px/1.2 Nunito Sans,Inter,sans-serif!important;
+  cursor:pointer!important;appearance:auto!important;-webkit-appearance:auto!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field select#osTest:focus,
+#moduleYearGrid.outsource-active-grid .outsource-field select#osLab:focus,
+#moduleYearGrid.outsource-active-grid .outsource-field select#osReferral:focus,
+#moduleYearGrid.outsource-active-grid .outsource-field select#osUnit:focus{
+  border-color:rgba(37,99,235,.30)!important;box-shadow:inset 3px 3px 7px rgba(145,155,175,.18),inset -3px -3px 7px rgba(255,255,255,.88),0 0 0 3px rgba(37,99,235,.08)!important;
+}
+</style>
 <style id="outsource-neumorphic-dropdown-v3">
 /* OUTSOURCE V3 — native <select> menus replaced with a true Neumorphism popup. */
 #moduleYearGrid.outsource-active-grid .outsource-custom-select-wrap{position:relative;width:100%;}
@@ -22362,7 +22382,13 @@ if ("serviceWorker" in navigator) {
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&openMenu)close();});
   window.addEventListener('resize',function(){if(openMenu)position();});
   window.addEventListener('scroll',function(){if(openMenu)position();},true);
-  window.setInterval(function(){if(document.getElementById('moduleYearGrid')?.classList.contains('outsource-active-grid'))init();},1000);
+  window.setInterval(function(){if(document.getElementById('moduleYearGrid')?.classList.contains('outsource-active-grid'))init();},500);
+  if(window.MutationObserver){
+    new MutationObserver(function(){
+      var grid=document.getElementById('moduleYearGrid');
+      if(grid&&grid.classList.contains('outsource-active-grid'))init();
+    }).observe(document.body,{childList:true,subtree:true});
+  }
   window.outsourceInitNeumorphicDropdowns=init;
 })();
 </script>
