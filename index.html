@@ -24013,6 +24013,104 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 
 
+
+/* --- HOVER PERFORMANCE PATCH: visual behavior preserved, expensive hover animation removed --- */
+@media (hover: hover) and (pointer: fine) {
+  /* Keep hover movement on the compositor; do not animate large box-shadows/backgrounds. */
+  .nav button,
+  .clickable-card,
+  .stat-card,
+  .bottom-card,
+  .profile-card,
+  .profile-info-box,
+  .setting-box,
+  .settings-extra-card,
+  .panel,
+  .calendar-toolbar-btn,
+  .calendar-roster-nav-btn,
+  .calendar-roster-month-btn,
+  .calendar-roster-today-btn,
+  .page-back-dashboard-btn,
+  .year-card,
+  .leave-course-year-card,
+  .leave-course-mini-year,
+  #calendar .calendar-mini-day,
+  button {
+    will-change: transform;
+    transition: transform .14s ease-out !important;
+  }
+
+  .nav button:hover,
+  .clickable-card:hover,
+  .stat-card:hover,
+  .bottom-card:hover,
+  .profile-card:hover,
+  .profile-info-box:hover,
+  .setting-box:hover,
+  .settings-extra-card:hover,
+  .panel:hover,
+  .calendar-toolbar-btn:hover,
+  .calendar-roster-nav-btn:hover,
+  .calendar-roster-month-btn:hover,
+  .calendar-roster-today-btn:hover,
+  .page-back-dashboard-btn:hover,
+  .year-card:hover,
+  .leave-course-year-card:hover,
+  .leave-course-mini-year:hover,
+  #calendar .calendar-mini-day:hover,
+  button:hover {
+    transition: transform .14s ease-out !important;
+  }
+
+  /* Prevent continuous shadow interpolation from forcing expensive repaints. */
+  .nav button,
+  .clickable-card,
+  .stat-card,
+  .bottom-card,
+  .profile-card,
+  .profile-info-box,
+  .setting-box,
+  .settings-extra-card,
+  .panel,
+  .calendar-toolbar-btn,
+  .calendar-roster-nav-btn,
+  .calendar-roster-month-btn,
+  .calendar-roster-today-btn,
+  .page-back-dashboard-btn,
+  .year-card,
+  .leave-course-year-card,
+  .leave-course-mini-year,
+  #calendar .calendar-mini-day,
+  button {
+    transition-property: transform !important;
+  }
+}
+
+/* Avoid promoting the entire page; only interactive hover targets get a compositor layer. */
+@media (hover: none), (pointer: coarse) {
+  .nav button,
+  .clickable-card,
+  .stat-card,
+  .bottom-card,
+  .profile-card,
+  .profile-info-box,
+  .setting-box,
+  .settings-extra-card,
+  .panel,
+  .calendar-toolbar-btn,
+  .calendar-roster-nav-btn,
+  .calendar-roster-month-btn,
+  .calendar-roster-today-btn,
+  .page-back-dashboard-btn,
+  .year-card,
+  .leave-course-year-card,
+  .leave-course-mini-year,
+  #calendar .calendar-mini-day,
+  button {
+    will-change: auto !important;
+  }
+}
+
 <!-- OUTSOURCE FILTER NEUMORPHIC FINAL: one custom control per filter, no native duplicate. -->
 
 
