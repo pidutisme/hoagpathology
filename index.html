@@ -13694,6 +13694,12 @@ if (token) {
         }
         ids.forEach(function(id){setup($(id));});
       }
+      function syncOutsourceFilterTrigger(select){
+        if(!select)return;
+        var wrap=select.parentElement, trigger=wrap&&wrap.querySelector('.inventory-filter-trigger'), label=trigger&&trigger.querySelector('[data-filter-label]');
+        var opt=select.options[select.selectedIndex];
+        if(label)label.textContent=opt?opt.textContent:'Select...';
+      }
       function renderOutsourceFilterYears(sourceRows){
         var select=$('outsourceYearFilter'); if(!select)return;
         var previous=String(select.value||'ALL');
@@ -13703,15 +13709,21 @@ if (token) {
         var list=Object.keys(years).sort(function(a,b){return Number(b)-Number(a);});
         select.innerHTML='<option value="ALL">All years</option>'+list.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
         if(list.indexOf(previous)>=0)select.value=previous; else select.value='ALL';
+        syncOutsourceFilterTrigger(select);
       }
       var outsourceRowsRenderTimer=null;
+      var outsourceRowsCache=null;
+      function getOutsourceRowsCached(){
+        if(!Array.isArray(outsourceRowsCache)) outsourceRowsCache=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]);
+        return outsourceRowsCache;
+      }
+      function invalidateOutsourceRowsCache(){outsourceRowsCache=null;}
       function queueOutsourceRowsRender(){
         if(outsourceRowsRenderTimer) return;
-        /* Let the custom dropdown close and the browser paint before rebuilding the table. */
-        outsourceRowsRenderTimer=setTimeout(function(){
+        outsourceRowsRenderTimer=requestAnimationFrame(function(){
           outsourceRowsRenderTimer=null;
           renderOutsourceRows();
-        },0);
+        });
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
@@ -13719,7 +13731,7 @@ if (token) {
         var year=String(($('outsourceYearFilter')||{}).value||'ALL');
         var month=String(($('outsourceMonthFilter')||{}).value||'ALL');
         var status=String(($('outsourceStatusFilter')||{}).value||'ALL').toUpperCase();
-        var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).filter(function(r){
+        var rows=getOutsourceRowsCached().filter(function(r){
           var result=String(r.result||'PENDING').toUpperCase();
           var sampleDate=String(r.sampleDate||'');
           if(status!=='ALL'&&result!==status)return false;
@@ -13798,7 +13810,7 @@ if (token) {
         var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(); if(!name||!test){alert('Name and Test / Investigation are required.');return;}
         var editId=String($('outsourceEditId').value||'').trim(),existing=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(r){return String(r.id||'')===editId;});
         var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:String($('osReferral').value||'').trim(),lab:String($('osLab').value||'').trim(),test:test,result:existing?String(existing.result||'PENDING').trim()||'PENDING':'PENDING',resultDate:existing?String(existing.resultDate||''):'',referenceNo:existing?String(existing.referenceNo||''):'',rejectReason:existing?String(existing.rejectReason||''):'',notes:String($('osNotes').value||'').trim(),createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
-        if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample) Inventory.upsertOutsourceSample(row); renderOutsourceRows();clearOutsourceForm();
+        if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample) Inventory.upsertOutsourceSample(row); invalidateOutsourceRowsCache(); renderOutsourceRows(); clearOutsourceForm();
       }
       function editOutsourceSample(id){
         var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
@@ -13820,7 +13832,7 @@ if (token) {
       function saveOutsourceResult(){
         var id=String(window.__outsourceResultEditId||'');if(!id)return;var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
         r.result=String($('outsourceModalResult').value||'PENDING');r.resultDate=String($('outsourceModalResultDate').value||'');r.referenceNo=String($('outsourceModalReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String($('outsourceModalRejectReason').value||'').trim():'';r.notes=String($('outsourceModalNotes').value||'').trim();r.updatedAt=new Date().toISOString();
-        if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample)Inventory.upsertOutsourceSample(r);closeOutsourceResultModal();renderOutsourceRows();
+        if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample)Inventory.upsertOutsourceSample(r); invalidateOutsourceRowsCache(); closeOutsourceResultModal(); renderOutsourceRows();
       }
       function deleteOutsourceSample(id){
         var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});
@@ -13828,6 +13840,7 @@ if (token) {
         if(!confirm('Delete outsource sample for '+String(r.name||'this patient')+'?'))return;
         if(typeof Inventory==='undefined'||typeof Inventory.deleteOutsourceSample!=='function'){alert('Delete function is unavailable.');return;}
         Inventory.deleteOutsourceSample(id);
+        invalidateOutsourceRowsCache();
         renderOutsourceRows();
         /* Re-render once more after the shared save/realtime cycle so a stale snapshot cannot visually resurrect the row. */
         setTimeout(function(){if(document.getElementById('moduleYearGrid')?.classList.contains('outsource-active-grid'))renderOutsourceRows();},450);
@@ -13838,6 +13851,7 @@ if (token) {
            Only the summary/table are refreshed; form state remains intact. */
         if(!$('moduleYears')||!$('moduleYears').classList.contains('active')) return;
         var root=$('moduleYearGrid'); if(!root||!root.classList.contains('outsource-active-grid')) return;
+        invalidateOutsourceRowsCache();
         renderOutsourceRows();
         var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[];
         var card=root.querySelector('.outsource-grid .outsource-card:nth-child(2)');
@@ -22443,7 +22457,7 @@ if ("serviceWorker" in navigator) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureFilters);else ensureFilters();
   window.setTimeout(ensureFilters,100);
   window.setTimeout(ensureFilters,500);
-  window.setInterval(ensureFilters,1000);
+
 })();
 </script>
 </body>
@@ -22655,3 +22669,5 @@ if ("serviceWorker" in navigator) {
   window.outsourceInitNeumorphicDropdowns=init;
 })();
 </script>
+
+<style id="outsource-audit-final-v1">...</style>
