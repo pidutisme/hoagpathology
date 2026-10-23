@@ -10953,6 +10953,211 @@ body.dark-mode tbody tr:hover td{
   }
 </style>
 
+<style>
+
+/* ================================================================
+ * PRESSED NEUMORPHISM — FINAL VISUAL OVERRIDE
+ * Visual only. No layout, markup, IDs, events or JS logic changed.
+ * ================================================================ */
+:root {
+  --pressed-bg: #e8edf5;
+  --pressed-dark: #D1D9E6;
+  --pressed-light: rgba(255,255,255,.96);
+  --pressed-shadow: inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px rgba(255,255,255,.96);
+  --pressed-shadow-sm: inset 9px 9px 18px rgba(209,217,230,.92), inset -9px -9px 18px rgba(255,255,255,.92);
+  --pressed-shadow-xs: inset 5px 5px 12px rgba(209,217,230,.82), inset -5px -5px 12px rgba(255,255,255,.92);
+}
+
+html, body {
+  background-color: var(--pressed-bg) !important;
+}
+
+/* Main surfaces: no visible rectangular border, only the recessed form. */
+.sidebar,
+.display-board,
+.panel,
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.sidebar-footer,
+.theme-toggle,
+.display-title-box,
+.display-date,
+.display-clock-wrap,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card,
+.leave-course-year-card,
+.year-card,
+.leave-course-mini-year,
+.settings-extra-card,
+.calendar-mini-day,
+.calendar-toolbar-btn,
+.calendar-roster-nav-btn,
+.calendar-roster-month-btn,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn,
+.profile-link-card,
+.access-link-card,
+.quick-links-card,
+.notes-card,
+.notes-editor-shell,
+.notes-list-shell,
+.live-chat-shell,
+.live-chat-main,
+.live-chat-chatpane,
+.live-chat-people,
+.admin-control-card,
+.admin-control-column,
+.single-panel,
+.module-year-grid,
+.leave-course-year-grid {
+  background: var(--pressed-bg) !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: var(--pressed-shadow) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Cards should feel carved into one continuous soft surface. */
+.stat-card,
+.bottom-card,
+.profile-card,
+.panel,
+.year-card,
+.leave-course-year-card,
+.leave-course-mini-year,
+.daily-roster-card,
+.settings-extra-card,
+.setting-box,
+.profile-info-box,
+.calendar-mini-day,
+.profile-link-card,
+.access-link-card,
+.quick-links-card {
+  border-radius: 28px !important;
+}
+
+/* Nested cards use the same language, just a tighter radius/shadow. */
+.profile-link-card,
+.access-link-card,
+.quick-links-card,
+.settings-extra-card,
+.setting-box,
+.profile-info-box,
+.calendar-mini-day,
+.daily-roster-card,
+.leave-course-mini-year {
+  box-shadow: var(--pressed-shadow-sm) !important;
+}
+
+/* Tiny chips / controls are also recessed rather than outlined boxes. */
+.display-date,
+.calendar-toolbar-btn,
+.calendar-roster-nav-btn,
+.calendar-roster-month-btn,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn,
+.theme-toggle {
+  background: var(--pressed-bg) !important;
+  border: 0 !important;
+  box-shadow: var(--pressed-shadow-xs) !important;
+}
+
+/* Navigation: same pressed language, active item gets a soft blue inset. */
+.nav button {
+  background: var(--pressed-bg) !important;
+  border: 0 !important;
+  box-shadow: var(--pressed-shadow-sm) !important;
+}
+
+.nav button.active,
+.nav button[aria-current="page"],
+.nav button.is-active {
+  background: linear-gradient(145deg, #5fa9ff, #2e86e8) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: inset 7px 7px 15px rgba(25,91,170,.42), inset -7px -7px 15px rgba(150,211,255,.56) !important;
+}
+
+/* Icons sit inside the same soft material instead of looking like separate boxes. */
+.big-card-icon,
+#profile .profile-link-card::before,
+#access .access-link-card::before,
+#quickLinks .quick-links-card::before,
+#settings .setting-box .settings-card-icon,
+#settings .settings-extra-icon,
+.settings-extra-icon,
+.theme-toggle-knob {
+  background: var(--pressed-bg) !important;
+  border: 0 !important;
+  box-shadow: var(--pressed-shadow-xs) !important;
+}
+
+/* Remove old rectangular inner frames/highlights that created the "box morphism" look. */
+.profile-link-card::after,
+.access-link-card::after,
+.quick-links-card::after,
+.setting-box::after,
+.settings-extra-card::after,
+.year-card::after,
+.leave-course-year-card::after {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Hover stays tactile/pressed; never turns into a floating card. */
+.nav button:hover,
+.stat-card:hover,
+.bottom-card:hover,
+.profile-card:hover,
+.profile-info-box:hover,
+.setting-box:hover,
+.panel:hover,
+.calendar-mini-day:hover,
+.year-card:hover,
+.leave-course-year-card:hover,
+.leave-course-mini-year:hover,
+.settings-extra-card:hover,
+.profile-link-card:hover,
+.access-link-card:hover,
+.quick-links-card:hover,
+.daily-roster-card:hover {
+  transform: none !important;
+  border-color: transparent !important;
+  background: var(--pressed-bg) !important;
+  box-shadow: var(--pressed-shadow) !important;
+}
+
+/* Smaller nested elements keep the recessed material instead of white rectangles. */
+:is(.year-card, .leave-course-year-card, .panel, .profile-card, .bottom-card, .setting-box, .settings-extra-card) :is(.card, [class*="card"], [class*="box"]):not(.sidebar):not(.display-board) {
+  border-color: transparent !important;
+}
+
+/* Preserve semantic status colours while removing boxy chrome. */
+.status,
+.badge,
+.chip,
+.tag,
+[class*="badge"],
+[class*="chip"] {
+  border: 0 !important;
+}
+
+body.dark-mode,
+html.dark-mode-preload {
+  --pressed-bg: #1c2635;
+  --pressed-dark: rgba(0,0,0,.48);
+  --pressed-light: rgba(255,255,255,.055);
+  --pressed-shadow: inset 18px 18px 30px rgba(0,0,0,.48), inset -18px -18px 30px rgba(255,255,255,.055);
+  --pressed-shadow-sm: inset 9px 9px 18px rgba(0,0,0,.40), inset -9px -9px 18px rgba(255,255,255,.045);
+  --pressed-shadow-xs: inset 5px 5px 12px rgba(0,0,0,.34), inset -5px -5px 12px rgba(255,255,255,.04);
+}
+
+</style>
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked">
