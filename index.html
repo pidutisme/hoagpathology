@@ -22228,6 +22228,61 @@ if ("serviceWorker" in navigator) {
   opacity: 1 !important;
 }
 </style>
+
+<style id="outsource-filter-one-row-v5">
+/* Registered Samples toolbar: compact single row */
+#moduleYearGrid.outsource-active-grid .outsource-filter-row{
+  display:grid!important;
+  grid-template-columns:minmax(260px,1.7fr) minmax(150px,.75fr) minmax(150px,.9fr) minmax(140px,.7fr)!important;
+  gap:10px!important;
+  align-items:center!important;
+  padding:10px 12px!important;
+  border-bottom:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search{
+  min-width:0!important;
+  width:100%!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  min-height:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search input#outsourceSearch{
+  width:100%!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:7px 11px!important;
+  font-size:10px!important;
+  box-sizing:border-box!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-card{
+  min-width:0!important;
+  height:34px!important;
+  padding:5px 8px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  box-sizing:border-box!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-filter-label{
+  flex:0 0 auto!important;
+  font-size:8px!important;
+  margin:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-card select,
+#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-custom-select-wrap{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  width:auto!important;
+}
+@media(max-width:900px){
+  #moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:minmax(220px,1.5fr) repeat(3,minmax(120px,1fr))!important;}
+}
+@media(max-width:700px){
+  #moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:1fr 1fr!important;}
+  #moduleYearGrid.outsource-active-grid .outsource-search{grid-column:auto!important;}
+}
+</style>
 </body>
 
 <style id="outsource-result-neumorphic-controls-final">
