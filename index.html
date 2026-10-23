@@ -9173,6 +9173,172 @@ body.dark-mode #inventory .inventory-record-close:hover {
 #moduleYearGrid.outsource-active-grid .outsource-grid>.outsource-card:first-child{overflow:visible!important;}
 </style>
 
+
+<style id="hoag-global-contrast-theme">
+/* ==========================================================
+   HOAG PATHOLOGY — GLOBAL NEUMORPHISM CONTRAST LAYER
+   Purpose: make small/nested cards and editable form controls
+   visibly darker than the page surface across ALL modules.
+   ========================================================== */
+:root{
+  --neo-sub-surface: linear-gradient(145deg,#e8edf5 0%,#d7deea 100%);
+  --neo-sub-surface-soft: linear-gradient(145deg,#edf1f7 0%,#dbe2ed 100%);
+  --neo-sub-border: rgba(103,120,148,.24);
+  --neo-sub-shadow:
+    inset 4px 4px 10px rgba(111,126,151,.19),
+    inset -4px -4px 10px rgba(255,255,255,.82),
+    inset 0 0 0 1px rgba(255,255,255,.46);
+  --neo-sub-shadow-focus:
+    inset 3px 3px 8px rgba(111,126,151,.16),
+    inset -3px -3px 8px rgba(255,255,255,.80),
+    0 0 0 2px rgba(35,103,242,.12);
+  --neo-sub-text:#25334a;
+  --neo-sub-muted:#68758a;
+}
+body.dark-mode,
+html.dark-mode-preload{
+  --neo-sub-surface:linear-gradient(145deg,#202b3b 0%,#151e2d 100%);
+  --neo-sub-surface-soft:linear-gradient(145deg,#253143 0%,#182231 100%);
+  --neo-sub-border:rgba(180,194,215,.14);
+  --neo-sub-shadow:
+    inset 4px 4px 10px rgba(0,0,0,.30),
+    inset -4px -4px 10px rgba(255,255,255,.035),
+    inset 0 0 0 1px rgba(255,255,255,.035);
+  --neo-sub-shadow-focus:
+    inset 3px 3px 8px rgba(0,0,0,.28),
+    inset -3px -3px 8px rgba(255,255,255,.03),
+    0 0 0 2px rgba(92,145,255,.16);
+  --neo-sub-text:#eef3fa;
+  --neo-sub-muted:#a8b4c6;
+}
+
+/* Small/nested cards — deliberately a little darker than their parent surface. */
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.admin-control-card,
+.inventory-kpi,
+.inventory-alert,
+.inventory-record-stat,
+.inventory-search-wrap,
+.inventory-table-wrap,
+.inventory-modal-card,
+.inventory-record-card,
+.inventory-form,
+.outsource-card,
+.outsource-stat,
+.outsource-search,
+.outsource-form,
+.outsource-empty,
+.notes-editor-shell,
+.notes-list-shell,
+.notes-two-cards,
+.leave-course-mini-year,
+.leave-course-year-card,
+.daily-roster-card,
+.daily-roster-panel,
+.calendar-month-panel{
+  background:var(--neo-sub-surface) !important;
+  border-color:var(--neo-sub-border) !important;
+  box-shadow:var(--neo-sub-shadow) !important;
+  background-clip:padding-box !important;
+  -webkit-background-clip:padding-box !important;
+}
+
+/* Editable controls — stronger contrast so the user can immediately see
+   where data is expected to be entered. */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea{
+  background:var(--neo-sub-surface-soft) !important;
+  color:var(--neo-sub-text) !important;
+  border:1px solid var(--neo-sub-border) !important;
+  box-shadow:var(--neo-sub-shadow) !important;
+}
+input:not([type="checkbox"]):not([type="radio"])::placeholder,
+textarea::placeholder{
+  color:var(--neo-sub-muted) !important;
+  opacity:.92;
+}
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus{
+  background:var(--neo-sub-surface-soft) !important;
+  border-color:rgba(35,103,242,.30) !important;
+  box-shadow:var(--neo-sub-shadow-focus) !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):disabled,
+select:disabled,
+textarea:disabled,
+input[readonly]:not([type="checkbox"]):not([type="radio"]){
+  opacity:1 !important;
+  cursor:default !important;
+  background:var(--neo-sub-surface) !important;
+  color:var(--neo-sub-muted) !important;
+}
+
+/* Common nested toolbars / filters should read as controls, not disappear
+   into the page background. */
+.filter-bar,
+.toolbar,
+.search-bar,
+.page-toolbar,
+.table-toolbar,
+.form-actions,
+.form-grid,
+.stats-row{
+  border-color:var(--neo-sub-border);
+}
+
+/* Preserve the existing bright/colored action buttons. */
+button.primary,
+button.danger,
+button.success,
+.inventory-action-btn.primary,
+.inventory-action-btn.danger,
+.outsource-btn.primary{
+  box-shadow:3px 3px 8px rgba(92,108,132,.18),-3px -3px 8px rgba(255,255,255,.42) !important;
+}
+
+/* Small cards get a restrained hover lift; no excessive glow. */
+.stat-card:hover,
+.bottom-card:hover,
+.setting-box:hover,
+.profile-info-box:hover,
+.admin-control-card:hover,
+.inventory-kpi:hover,
+.inventory-alert:hover,
+.outsource-stat:hover{
+  box-shadow:
+    inset 5px 5px 12px rgba(111,126,151,.20),
+    inset -5px -5px 12px rgba(255,255,255,.84),
+    inset 0 0 0 1px rgba(95,126,255,.12) !important;
+}
+
+/* Keep disabled/auto-filled fields visibly locked without browser
+   'not-allowed' stop-sign cursor. */
+input[readonly],
+input[data-auto-from-ic],
+select[data-auto-from-ic]{
+  cursor:default !important;
+}
+
+/* Mobile/WebView: retain contrast without adding heavy outer shadows. */
+@media (max-width:720px){
+  .stat-card,
+  .bottom-card,
+  .setting-box,
+  .profile-info-box,
+  .admin-control-card,
+  .inventory-kpi,
+  .inventory-alert,
+  .outsource-stat{
+    box-shadow:var(--neo-sub-shadow) !important;
+  }
+}
+</style>
+
 </head>
 <body class="auth-locked">
 <!-- +----------------------------------+
