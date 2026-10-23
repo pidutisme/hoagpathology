@@ -176,8 +176,7 @@
       --year-page-card-shadow: inset 5px 5px 14px rgba(0, 0, 0, .35), inset -5px -5px 14px rgba(255, 255, 255, .035), inset 0 0 0 1px rgba(255, 255, 255, .045);
       --year-page-card-hover-shadow: inset 6px 6px 16px rgba(0, 0, 0, .38), inset -6px -6px 16px rgba(255, 255, 255, .040), inset 0 0 0 1px rgba(143, 176, 255, .11), inset 0 0 30px rgba(143, 176, 255, .07);
       background-color: #111827;
-      /* Keep the dark page background flat for the same clean, box-free result. */
-      background-image: none;
+      background-image: radial-gradient(circle at 18% 10%, rgba(255, 255, 255, .040) 0px, transparent 32%), radial-gradient(circle at 92% 92%, rgba(35, 103, 242, .10) 0px, transparent 36%);
     }
 
     * {
@@ -196,9 +195,8 @@
       overflow: hidden;
       color: var(--text);
       background-color: var(--bg);
-      /* Keep the page background flat so glow does not read as rectangular/striped boxes. */
-      background-image: none;
-      background-size: auto;
+      background-image: radial-gradient(circle at 18% 8%, rgba(255, 255, 255, .72) 0, transparent 32%), radial-gradient(circle at 92% 88%, rgba(35, 103, 242, .075) 0, transparent 34%);
+      background-size: cover;
       animation: none;
       overscroll-behavior: none;
       -webkit-text-size-adjust: 100%;
@@ -9892,6 +9890,7 @@ html,body{
     radial-gradient(circle at 90% 12%,rgba(161,120,255,.18) 0,transparent 26%),
     radial-gradient(circle at 84% 88%,rgba(58,214,206,.15) 0,transparent 30%),
     radial-gradient(circle at 18% 92%,rgba(112,143,255,.12) 0,transparent 27%)!important;
+  background-repeat:no-repeat!important;
 }
 
 html::before,
@@ -9917,10 +9916,14 @@ html.dark-mode-preload::before{
 body::after{
   content:"";
   position:fixed;
-  inset:0;
+  inset:-12%;
   pointer-events:none;
   z-index:-1;
-  background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 42%,rgba(255,255,255,.04));
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.045),transparent 24%),
+    radial-gradient(circle at 50% 82%,rgba(255,255,255,.025),transparent 28%);
+  filter:blur(28px);
+  transform:translateZ(0);
 }
 
 /* --- typography: Apple-like, without changing content --- */
