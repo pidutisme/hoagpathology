@@ -13127,7 +13127,6 @@ if (token) {
         var rejected=rows.filter(function(r){return String(r.result||'').toUpperCase()==='REJECT';}).length;
         var today=outsourceToday();
         grid.innerHTML='<div class="outsource-register">'+
-          '<div class="outsource-hero"><div><div class="outsource-kicker">ALL USERS · LIVE WORKSPACE · '+outsourceEsc(today)+'</div><h2>SAMPLE REGISTER</h2><p>Register every referred / outsourced sample, follow its dispatch and result status, and keep the full traceable record inside Hoag Pathology.</p></div><div class="outsource-live">LIVE SYNC</div></div>'+
           '<div class="outsource-grid">'+
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTER SAMPLE</h3><span id="outsourceEditHint">NEW RECORD</span></div>'+
               '<form class="outsource-form" id="outsourceForm" autocomplete="off">'+
