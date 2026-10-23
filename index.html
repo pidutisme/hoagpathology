@@ -9384,7 +9384,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
   <div class="inventory-modal-backdrop" data-inventory-admin-close></div>
   <div class="inventory-modal-card" role="dialog" aria-modal="true" aria-labelledby="inventoryAdminItemsTitle">
     <div class="inventory-modal-head">
-      <div><span class="inventory-modal-kicker">ADMIN ONLY</span><h3 id="inventoryAdminItemsTitle">INVENTORY CONTROL</h3></div>
+      <div><span class="inventory-modal-kicker">ADMIN ONLY · LIVE SYNC</span><h3 id="inventoryAdminItemsTitle">INVENTORY CONTROL</h3></div>
       <button type="button" class="inventory-modal-close" data-inventory-admin-close aria-label="Close">×</button>
     </div>
     <form id="inventoryAdminItemForm" class="inventory-form" autocomplete="off">
@@ -19865,7 +19865,30 @@ function exportMonthlySchedulePdfs() {
         var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
         mergeCloudAuthoritative(remote, false);
         var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
-        if(before!==after){ saveLocal(); render(); }
+        if(before!==after){
+          saveLocal();
+          render();
+          // Keep the ADMIN INVENTORY CONTROL window live as well. The main
+          // inventory view already refreshes from the same realtime stream,
+          // but the admin item-master list needs an explicit redraw because
+          // it is rendered inside a separate modal.
+          var adminModal=$('inventoryAdminItemsModal');
+          if(adminModal && !adminModal.hidden && inventoryAdminAllowed()){
+            renderAdminItemList();
+            var adminMsg=$('inventoryAdminItemMessage');
+            var editingId=cleanText(($('inventoryAdminEditingId')||{}).value);
+            if(editingId && !getItem(editingId)){
+              if(adminMsg) adminMsg.textContent='LIVE SYNC: This item was removed by another administrator. The form was cleared.';
+              clearAdminItemForm();
+            }else if(adminMsg && !String(adminMsg.textContent||'').trim()){
+              adminMsg.textContent='LIVE SYNC: Inventory updated just now.';
+              setTimeout(function(){
+                var m=$('inventoryAdminItemMessage');
+                if(m && m.textContent==='LIVE SYNC: Inventory updated just now.') m.textContent='';
+              },2200);
+            }
+          }
+        }
       }
       function startSharedInventoryRealtime(){
         stopSharedInventoryRealtime();
@@ -20434,14 +20457,31 @@ function exportMonthlySchedulePdfs() {
         if(!inventoryAdminAllowed())return;var item=getItem(itemId);if(!item)return;
         $('inventoryAdminEditingId').value=item.id;$('inventoryAdminName').value=item.name||'';$('inventoryAdminCategory').value=item.category||'ETC';$('inventoryAdminType').value=item.type||'';$('inventoryAdminPrice').value=Number(item.price||0);$('inventoryAdminOpening').value=Number(item.openingStock||0);$('inventoryAdminMin').value=Number(item.minStock||1);$('inventoryAdminItemSaveBtn').textContent='SAVE ITEM';$('inventoryAdminItemMessage').textContent='Editing '+item.name;
       }
-      function adminInventoryRequest(method,args,onSuccess,onFailure){
+      function adminInventoryRequest(method,args,onSuccess,onFailure,retryCount){
+        retryCount=Number(retryCount||0);
         var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
         if(!token||!hasVercelBackend()){if(onFailure)onFailure(new Error('Secure inventory backend is unavailable.'));return;}
         sharedSyncBusy=true;
         hoagApi.run.withSuccessHandler(function(result){
           sharedSyncBusy=false;
           if(result&&result.ok===false){
-            if(result.inventory)mergeCloudAuthoritative(result.inventory,true);
+            if(result.inventory){
+              data=result.inventory;normalize();
+              sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
+              saveLocal();
+            }
+            // The shared inventory can legitimately change while the admin form
+            // is open (another PC, realtime sync, or background polling). For an
+            // admin catalog operation, refresh the server revision and retry once
+            // instead of exposing a false "changed on another device" error.
+            if(result.conflict && retryCount<1 && result.updatedAt){
+              var retryArgs=args.slice();
+              if(retryArgs.length>=3) retryArgs[2]=String(result.updatedAt);
+              setTimeout(function(){
+                adminInventoryRequest(method,retryArgs,onSuccess,onFailure,retryCount+1);
+              },0);
+              return;
+            }
             if(onFailure)onFailure(new Error(result.error||'Inventory update failed.'));
             return;
           }
