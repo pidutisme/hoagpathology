@@ -8387,7 +8387,7 @@ body.dark-mode select {
   }
 }
 </style>
-</link></link>
+
 <style id="settings-card-final-alignment">
 /* FINAL SETTINGS CARD ALIGNMENT */
 #settings .settings-content-grid {
@@ -11183,6 +11183,7 @@ body.dark-mode tbody tr:hover td{
 </div>
 </div>
 <div class="inventory-kpis" id="inventoryKpis"></div>
+<div class="inventory-alerts" id="inventoryAlerts" aria-live="polite"></div>
 <div class="inventory-toolbar">
 <div class="inventory-search-wrap">
 <span>⌕</span><input autocomplete="off" id="inventorySearch" placeholder="Search item, lot no., category..." type="search"/>
@@ -11344,7 +11345,7 @@ body.dark-mode tbody tr:hover td{
 <div class="admin-form-grid">
 <select aria-label="Select user to reset" class="admin-select is-full" id="adminResetUser"></select>
 <input autocomplete="new-password" class="admin-input is-full" id="adminResetPassword" maxlength="200" placeholder="NEW PASSWORD" type="password">
-</input></div>
+</div>
 <button class="admin-action-btn" type="submit">Reset Password</button>
 </form>
 <form autocomplete="off" class="admin-control-card" id="adminAddUserForm">
@@ -11354,7 +11355,7 @@ body.dark-mode tbody tr:hover td{
 <input class="admin-input" id="adminAddDisplayName" maxlength="80" placeholder="DISPLAY NAME" type="text">
 <select class="admin-select" id="adminAddRole"><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select>
 <input autocomplete="new-password" class="admin-input" id="adminAddPassword" maxlength="200" placeholder="PASSWORD" type="password">
-</input></input></input></div>
+</div>
 <button class="admin-action-btn" type="submit">Add User</button>
 </form>
 <form autocomplete="off" class="admin-control-card" id="adminBroadcastForm">
@@ -11368,7 +11369,7 @@ body.dark-mode tbody tr:hover td{
 <div class="admin-card-title">
 <strong>Maintenance Mode</strong><span>Blocks non-admin login</span>
 </div>
-<label class="admin-toggle-row"><input id="adminMaintenanceEnabled" type="checkbox"> Enable maintenance mode</input></label>
+<label class="admin-toggle-row"><input id="adminMaintenanceEnabled" type="checkbox"> Enable maintenance mode</label>
 <textarea class="admin-textarea" id="adminMaintenanceMessage" maxlength="300" placeholder="Maintenance message for users"></textarea>
 <button class="admin-action-btn" type="submit">Save Maintenance</button>
 </form>
@@ -15035,7 +15036,7 @@ if (token) {
         var result=String(r.result||'PENDING').toUpperCase();
         var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';
         return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Double-click Notes to edit notes">'+
-          '<td></td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td class="outsource-notes-cell" data-notes-id="'+outsourceEsc(r.id)+'" title="Double-click to edit notes">'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
+          '<td></td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td class="outsource-notes-cell" data-notes-id="'+outsourceEsc(r.id)+'" title="Double-click to edit notes">'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
@@ -22648,7 +22649,7 @@ function exportMonthlySchedulePdfs() {
           scroller.scrollLeft=0;
         }
       }
-      function render(){ensureInventoryMonthRollover(false);normalize();if($('moduleYears')&&$('moduleYears').classList.contains('active')&&String($('moduleYearsTitle')&&$('moduleYearsTitle').textContent||'').toUpperCase()==='OUTSOURCE'){if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();return;}ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
+      function render(){ensureInventoryMonthRollover(false);normalize();if($('moduleYears')&&$('moduleYears').classList.contains('active')&&String($('moduleYearsTitle')&&$('moduleYearsTitle').textContent||'').toUpperCase()==='OUTSOURCE'){if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();return;}ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();renderAlerts();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
       function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.hidden=!inventoryAdminAllowed();startInventoryMonthRolloverWatcher();ensureInventoryMonthRollover(false);render();populateForm();requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);}
       function populateForm(){
         var sel=$('inventoryItemInput');if(!sel)return;var items=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
