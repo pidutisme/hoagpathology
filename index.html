@@ -19478,6 +19478,12 @@ function exportMonthlySchedulePdfs() {
         if(!data||typeof data!=='object') data={};
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
+        data.deletedTransactionIds=Array.isArray(data.deletedTransactionIds)?Array.from(new Set(data.deletedTransactionIds.map(function(id){return String(id||'').trim();}).filter(Boolean))):[];
+        if(data.deletedTransactionIds.length){
+          var deletedTxMap={};
+          data.deletedTransactionIds.forEach(function(id){deletedTxMap[id]=true;});
+          data.transactions=data.transactions.filter(function(tx){return !(tx&&deletedTxMap[String(tx.id||'')]);});
+        }
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
         if(!data.monthlySnapshots||typeof data.monthlySnapshots!=='object'||Array.isArray(data.monthlySnapshots)) data.monthlySnapshots={};
         var novacloneNames={
@@ -19783,13 +19789,23 @@ function exportMonthlySchedulePdfs() {
           var id=String(item.id);
           if(!itemMap[id]){ local.items.push(item); itemMap[id]=item; changed=true; }
         });
+        var deletedMap={};
+        (local.deletedTransactionIds||[]).forEach(function(id){if(id)deletedMap[String(id)]=true;});
+        (remote.deletedTransactionIds||[]).forEach(function(id){if(id)deletedMap[String(id)]=true;});
+        local.deletedTransactionIds=Object.keys(deletedMap);
         var txMap={};
         (local.transactions||[]).forEach(function(tx){ if(tx&&tx.id)txMap[String(tx.id)]=tx; });
         (remote.transactions||[]).forEach(function(tx){
           if(!tx)return;
           var id=String(tx.id||'');
+          if(id && deletedMap[id]) return;
           if(id && !txMap[id]){ local.transactions.push(tx); txMap[id]=tx; changed=true; }
         });
+        if(local.transactions.length){
+          var beforeTxCount=local.transactions.length;
+          local.transactions=local.transactions.filter(function(tx){return !(tx&&deletedMap[String(tx.id||'')]);});
+          if(local.transactions.length!==beforeTxCount) changed=true;
+        }
         local.monthlyPrices=local.monthlyPrices||{};
         Object.keys(remote.monthlyPrices||{}).forEach(function(month){
           local.monthlyPrices[month]=local.monthlyPrices[month]||{};
@@ -19846,6 +19862,11 @@ function exportMonthlySchedulePdfs() {
         merged.version=4;
         merged.items=Array.isArray(cloud.items)?cloud.items.slice():[];
         merged.transactions=Array.isArray(cloud.transactions)?cloud.transactions.slice():[];
+        var deletedMap={};
+        (cloud.deletedTransactionIds||[]).forEach(function(id){if(id)deletedMap[String(id)]=true;});
+        (local.deletedTransactionIds||[]).forEach(function(id){if(id)deletedMap[String(id)]=true;});
+        merged.deletedTransactionIds=Object.keys(deletedMap);
+        merged.transactions=merged.transactions.filter(function(tx){return !(tx&&deletedMap[String(tx.id||'')]);});
         var txMap={};
         merged.transactions.forEach(function(tx){if(tx&&tx.id)txMap[String(tx.id)]=true;});
         // Preserve unsynced local movements, except for the four Novaclone
@@ -19864,7 +19885,7 @@ function exportMonthlySchedulePdfs() {
           if(novacloneNames[key]&&item&&item.id) novacloneIds[String(item.id)]=true;
         });
         (local.transactions||[]).forEach(function(tx){
-          if(!tx||!tx.id||txMap[String(tx.id)]) return;
+          if(!tx||!tx.id||deletedMap[String(tx.id)]||txMap[String(tx.id)]) return;
           if(suppressStaleNovaclone && cloud.novacloneBalanceResetV12===true && novacloneIds[String(tx.itemId||'')]){
             // Do not resurrect the known legacy seed transaction. Legitimate
             // Stock In / Stock Out movements from this device are preserved.
@@ -20180,12 +20201,14 @@ function exportMonthlySchedulePdfs() {
           var idx=data.transactions.findIndex(function(t){return String(t.id)===String(txId);});
           if(idx<0)return;
           var removed=data.transactions[idx];
+          if(!Array.isArray(data.deletedTransactionIds)) data.deletedTransactionIds=[];
+          if(removed&&removed.id&&!data.deletedTransactionIds.some(function(id){return String(id)===String(removed.id);})) data.deletedTransactionIds.push(String(removed.id));
           data.transactions.splice(idx,1);
           var oldMonth=removed&&removed.at?String(removed.at).slice(0,7):'';
           if(oldMonth)saveMonthlySnapshot(oldMonth);
           saveMonthlySnapshot(currentMonthKey());
           saveLocal();
-          try { saveRemote(); } catch(remoteErr) { console.warn('Inventory remote delete error:',remoteErr); }
+          try { saveRemote({force:true}); } catch(remoteErr) { console.warn('Inventory remote delete error:',remoteErr); }
           closeRecordModal();
           render();
         });
