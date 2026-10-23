@@ -62,6 +62,12 @@ if (appCss.includes('@import url("https://fonts.googleapis.com')) {
 }
 if (appJs.includes('YOUR-VERCEL-DOMAIN')) fail('Placeholder production domain found in frontend JS.');
 
+const dashboard = read('api/dashboard.js');
+if (!dashboard.includes('const VERSION = require("../package.json").version')) fail('Dashboard endpoint does not derive its version from package.json.');
+if (dashboard.includes('version: "2.1.81"')) fail('Dashboard endpoint contains a hard-coded application version.');
+if (!read('api/bridge.js').includes("chatId.startsWith('dm:')&&s.role!=='ADMIN'")) fail('Direct-chat read authorization guard is missing.');
+if (!read('api/bridge.js').includes("m.chatType==='direct'&&s.role!=='ADMIN'")) fail('Direct-chat reaction authorization guard is missing.');
+
 console.log(`Hoag Pathology audit v${pkg.version}`);
 console.log(`HTML IDs: ${ids.length} total / ${counts.size} unique`);
 console.log(`Inline CSS blocks: ${[...html.matchAll(/<style\b/gi)].length}`);
