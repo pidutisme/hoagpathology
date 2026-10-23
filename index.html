@@ -7842,9 +7842,9 @@
 .outsource-field{display:flex;flex-direction:column;gap:6px;}
 .outsource-field.full{grid-column:1/-1;}
 .outsource-field label{font-size:10px;font-weight:800;color:#547089;text-transform:uppercase;letter-spacing:.06em;}
-.outsource-field input,.outsource-field select,.outsource-field textarea{width:100%;box-sizing:border-box;border:1px solid #d4e1ea;border-radius:10px;background:#fbfdff;color:#18354a;padding:10px 11px;font:600 12px inherit;outline:none;transition:.15s;}
+.outsource-field input,.outsource-field select,.outsource-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(205,216,230,.92);border-radius:12px;background:#e9eef5;color:#18354a;padding:10px 11px;font:600 12px inherit;outline:none;transition:.15s;box-shadow:inset 3px 3px 8px rgba(126,140,166,.14),inset -3px -3px 8px rgba(255,255,255,.82),inset 0 0 0 1px rgba(255,255,255,.42);min-height:38px;}
 .outsource-field textarea{min-height:72px;resize:vertical;}
-.outsource-field input:focus,.outsource-field select:focus,.outsource-field textarea:focus{border-color:#3b8bc4;box-shadow:0 0 0 3px rgba(59,139,196,.10);background:#fff;}
+.outsource-field input:focus,.outsource-field select:focus,.outsource-field textarea:focus{border-color:rgba(59,139,196,.48);box-shadow:inset 3px 3px 8px rgba(126,140,166,.10),inset -3px -3px 8px rgba(255,255,255,.88),0 0 0 3px rgba(59,139,196,.10);background:#edf2f8;}
 .outsource-form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:4px;}
 .outsource-btn{border:0;border-radius:10px;padding:10px 16px;font-size:11px;font-weight:800;cursor:pointer;}
 .outsource-btn.primary{background:#2f80ed;color:#fff;box-shadow:0 5px 14px rgba(47,128,237,.22);}
@@ -13272,6 +13272,7 @@ if (token) {
           '</div></div>';
         if(window.OutsourceDatePicker)window.OutsourceDatePicker.init();
         if(window.OutsourceIC)window.OutsourceIC.init();
+        if(window.OutsourceEnterNav)window.OutsourceEnterNav.init();
         renderOutsourceRows();
         var form=$('outsourceForm'); if(form)form.addEventListener('submit',function(e){e.preventDefault();saveOutsourceSample();});
         var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
@@ -21725,6 +21726,35 @@ if ("serviceWorker" in navigator) {
   function initIC(){var ic=document.getElementById('osIdIc'),sex=document.getElementById('osSex'),age=document.getElementById('osAge');if(!ic||!sex||!age||ic.dataset.icBound)return;ic.dataset.icBound='1';function apply(){var x=calcFromIC(ic.value);if(x){sex.value=x.sex;age.value=x.age;sex.title='Auto-detected from Malaysian NRIC';age.title='Auto-calculated from Malaysian NRIC';}else{sex.value='';age.value='';}}
     ic.addEventListener('input',apply);ic.addEventListener('blur',apply);apply();}
   window.OutsourceIC={init:initIC};
+  function bindEnterNavigation(){
+    var form=document.getElementById('outsourceForm');
+    if(!form||form.dataset.enterNavBound)return;
+    form.dataset.enterNavBound='1';
+    form.addEventListener('keydown',function(e){
+      if(e.key!=='Enter'||e.isComposing)return;
+      var target=e.target;
+      if(!target||target.tagName==='BUTTON')return;
+      e.preventDefault();
+      e.stopPropagation();
+      var fields=Array.prototype.slice.call(form.querySelectorAll('input,select,textarea')).filter(function(el){
+        if(el.type==='hidden')return false;
+        if(el.disabled||el.readOnly)return false;
+        if(el.offsetParent===null)return false;
+        return true;
+      });
+      var idx=fields.indexOf(target);
+      if(idx<0)return;
+      var next=fields[idx+1];
+      if(next){
+        next.focus();
+        if(next.select&&next.tagName==='INPUT'&&next.type!=='date')next.select();
+      }else{
+        var save=document.getElementById('outsourceSaveBtn');
+        if(save)save.focus();
+      }
+    });
+  }
+  window.OutsourceEnterNav={init:bindEnterNavigation};
 })();
 </script>
 </body>
