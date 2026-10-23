@@ -13127,6 +13127,7 @@ if (token) {
         var rejected=rows.filter(function(r){return String(r.result||'').toUpperCase()==='REJECT';}).length;
         var today=outsourceToday();
         grid.innerHTML='<div class="outsource-register">'+
+
           '<div class="outsource-grid">'+
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTER SAMPLE</h3><span id="outsourceEditHint">NEW RECORD</span></div>'+
               '<form class="outsource-form" id="outsourceForm" autocomplete="off">'+
