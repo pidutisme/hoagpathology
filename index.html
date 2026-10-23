@@ -7858,10 +7858,12 @@
 .outsource-table th{position:sticky;top:0;z-index:2;background:#2f7fad;color:#fff;text-align:left;padding:9px 7px;font-size:9px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
 .outsource-table td{padding:8px 7px;border-bottom:1px solid #e6edf2;color:#233f54;vertical-align:top;white-space:nowrap;}
 .outsource-table tbody tr:hover{background:#f6fbfe;}
-.outsource-table tbody tr.status-reject,.outsource-table tbody tr.status-done{background:transparent;}
-.outsource-result{font-weight:900;padding:6px 10px!important;border-radius:8px!important;display:inline-block;min-width:76px;text-align:center;}
-.outsource-result.status-done{color:#176b43;background:#d9f3e4;border:1px solid #b8e5ca;box-shadow:inset 1px 1px 3px rgba(255,255,255,.8),2px 2px 5px rgba(85,130,105,.10);}
-.outsource-result.status-reject{color:#a62935;background:#f9dede;border:1px solid #efbfc3;box-shadow:inset 1px 1px 3px rgba(255,255,255,.8),2px 2px 5px rgba(150,80,90,.10);}
+.outsource-table tbody tr.status-reject,.outsource-table tbody tr.status-done,.outsource-table tbody tr.status-pending{background:transparent;}
+.outsource-result{font-weight:900;text-align:center;vertical-align:middle!important;}
+.outsource-result.status-cell{display:table-cell;}
+.outsource-result.status-done{color:#237a46;background:#dff4e7;border:1px solid #b8e2c8;border-radius:999px;padding:5px 10px!important;box-shadow:inset 1px 1px 3px rgba(80,120,90,.08),inset -1px -1px 3px rgba(255,255,255,.8);}
+.outsource-result.status-reject{color:#a52b35;background:#fde3e5;border:1px solid #f0bfc4;border-radius:999px;padding:5px 10px!important;box-shadow:inset 1px 1px 3px rgba(150,80,90,.08),inset -1px -1px 3px rgba(255,255,255,.8);}
+.outsource-result.status-pending{color:#687789;background:#eef2f7;border:1px solid #d9e0e8;border-radius:999px;padding:5px 10px!important;box-shadow:inset 1px 1px 3px rgba(100,115,135,.07),inset -1px -1px 3px rgba(255,255,255,.8);}
 .outsource-actions{display:flex;gap:5px;}
 .outsource-mini{border:1px solid #d5e0e8;background:#fff;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:800;cursor:pointer;}
 .outsource-mini.delete{color:#b72f3b;}
@@ -7882,23 +7884,6 @@
 @media(max-width:1100px){.outsource-grid{grid-template-columns:1fr;}.outsource-summary{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:700px){.outsource-hero{padding:17px;}.outsource-form{grid-template-columns:1fr;}.outsource-field.full{grid-column:auto;}.outsource-form-actions{grid-column:auto;}.outsource-live{display:none;}}
 
-<style id="outsource-filter-cards-v4">
-#moduleYearGrid.outsource-active-grid .outsource-filter-row{display:grid!important;grid-template-columns:minmax(0,1fr) 150px 170px 150px!important;gap:10px!important;align-items:stretch!important;padding:12px 18px!important;border-bottom:1px solid #e4edf3!important;}
-#moduleYearGrid.outsource-active-grid .outsource-filter-card{min-width:0;padding:8px 10px!important;border-radius:12px!important;background:var(--neo-surface,#eef2f8)!important;border:1px solid rgba(120,135,160,.13)!important;box-shadow:inset 2px 2px 5px rgba(145,155,175,.13),inset -2px -2px 5px rgba(255,255,255,.78),4px 4px 8px rgba(145,155,175,.06),-4px -4px 8px rgba(255,255,255,.52)!important;box-sizing:border-box!important;}
-#moduleYearGrid.outsource-active-grid .outsource-filter-label{display:block!important;margin:0 0 5px!important;font-size:8px!important;font-weight:900!important;letter-spacing:.08em!important;color:#718096!important;}
-#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-custom-select-wrap{width:100%!important;}
-#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-select-trigger{height:30px!important;padding:6px 9px!important;font-size:10px!important;border-radius:9px!important;}
-#moduleYearGrid.outsource-active-grid .outsource-search{padding:0!important;border:0!important;min-height:0!important;}
-#moduleYearGrid.outsource-active-grid .outsource-search input#outsourceSearch{height:46px!important;}
-@media(max-width:1000px){#moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:minmax(0,1fr) 140px 155px!important;}#moduleYearGrid.outsource-active-grid .outsource-status-card{grid-column:auto;}}
-@media(max-width:700px){#moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:1fr 1fr!important;}#moduleYearGrid.outsource-active-grid .outsource-search{grid-column:1/-1;}}
-</style>
-<style id="outsource-search-fix-v1">
-#moduleYearGrid.outsource-active-grid .outsource-search{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;box-sizing:border-box!important;min-height:54px!important;}
-#moduleYearGrid.outsource-active-grid .outsource-search input#outsourceSearch{display:block!important;visibility:visible!important;opacity:1!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;height:38px!important;box-sizing:border-box!important;margin:0!important;padding:10px 13px!important;color:#26354a!important;background:var(--neo-surface,#eef2f8)!important;border:1px solid rgba(120,135,160,.16)!important;border-radius:12px!important;box-shadow:inset 2px 2px 5px rgba(145,155,175,.13),inset -2px -2px 5px rgba(255,255,255,.78)!important;}
-#moduleYearGrid.outsource-active-grid .outsource-search input#outsourceSearch::placeholder{color:#7b8799!important;opacity:1!important;}
-#moduleYearGrid.outsource-active-grid .outsource-search select#outsourceStatusFilter{display:block!important;flex:0 0 145px!important;width:145px!important;height:38px!important;box-sizing:border-box!important;margin:0!important;}
-</style>
 </style>
 <style id="mobile-profile-card-centering-v6">
 /* V6 mobile-only: keep document link cards vertically stacked and centered.
@@ -9356,83 +9341,6 @@ select[data-auto-from-ic]{
 }
 </style>
 
-
-<style id="outsource-search-force-final">
-/* FINAL SEARCH FIX: Registered Samples search must always occupy the left side. */
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-search {
-  display:grid !important;
-  grid-template-columns:minmax(0,1fr) 145px !important;
-  gap:10px !important;
-  align-items:center !important;
-  width:100% !important;
-  min-height:62px !important;
-  box-sizing:border-box !important;
-  padding:12px 18px !important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-search input#outsourceSearch {
-  display:block !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  width:100% !important;
-  min-width:0 !important;
-  max-width:none !important;
-  height:38px !important;
-  box-sizing:border-box !important;
-  margin:0 !important;
-  padding:10px 13px !important;
-  border:1px solid rgba(120,135,160,.16) !important;
-  border-radius:13px !important;
-  background:var(--neo-surface,#eef2f8) !important;
-  color:#26354a !important;
-  box-shadow:inset 2px 2px 5px rgba(145,155,175,.13),inset -2px -2px 5px rgba(255,255,255,.78) !important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-search input#outsourceSearch::placeholder {
-  color:#7b8799 !important;
-  opacity:1 !important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-search select#outsourceStatusFilter {
-  display:block !important;
-  visibility:visible !important;
-  width:145px !important;
-  min-width:145px !important;
-  max-width:145px !important;
-  height:38px !important;
-  box-sizing:border-box !important;
-  margin:0 !important;
-}
-@media(max-width:700px){
-  #moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-search {
-    grid-template-columns:minmax(0,1fr) 120px !important;
-    padding:10px 12px !important;
-  }
-  #moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-search select#outsourceStatusFilter {
-    width:120px !important; min-width:120px !important; max-width:120px !important;
-  }
-}
-</style>
-<style id="outsource-result-modal-styles">
-.outsource-result-modal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;}
-.outsource-result-modal[hidden]{display:none!important;}
-.outsource-result-backdrop{position:absolute;inset:0;background:rgba(226,232,240,.62);backdrop-filter:blur(7px);}
-.outsource-result-dialog{position:relative;width:min(680px,94vw);max-height:90vh;overflow:auto;border-radius:22px;padding:22px;background:#e9eef6;box-shadow:14px 14px 32px rgba(148,163,184,.28),-10px -10px 24px rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.65);}
-.outsource-result-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px;}
-.outsource-result-kicker{font-size:10px;font-weight:800;letter-spacing:.12em;color:#3576c9;margin-bottom:4px;}
-.outsource-result-head h3{margin:0;font-size:20px;color:#1e293b;}
-.outsource-result-patient{margin-top:5px;color:#64748b;font-size:12px;font-weight:600;}
-.outsource-result-close{width:36px;height:36px;border:0;border-radius:12px;background:#e9eef6;color:#64748b;font-size:22px;cursor:pointer;box-shadow:5px 5px 10px rgba(148,163,184,.25),-4px -4px 9px rgba(255,255,255,.9);}
-.outsource-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.outsource-result-field{display:flex;flex-direction:column;gap:6px;}
-.outsource-result-field.full{grid-column:1/-1;}
-.outsource-result-field label{font-size:10px;font-weight:800;letter-spacing:.05em;color:#64748b;text-transform:uppercase;}
-.outsource-result-field input,.outsource-result-field select,.outsource-result-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(148,163,184,.18);border-radius:13px;background:#e9eef6;color:#334155;padding:11px 13px;outline:none;box-shadow:inset 3px 3px 7px rgba(148,163,184,.16),inset -3px -3px 7px rgba(255,255,255,.9);}
-.outsource-result-field textarea{min-height:90px;resize:vertical;}
-.outsource-result-field input:focus,.outsource-result-field select:focus,.outsource-result-field textarea:focus{border-color:rgba(37,99,235,.35);box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.9),0 0 0 3px rgba(37,99,235,.08);}
-.outsource-result-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
-.outsource-table tbody tr[data-outsource-id]{cursor:pointer;}
-.outsource-table tbody tr[data-outsource-id]:hover{filter:brightness(.985);box-shadow:inset 0 0 0 1px rgba(37,99,235,.12);}
-body.outsource-result-modal-open{overflow:hidden;}
-@media(max-width:700px){.outsource-result-grid{grid-template-columns:1fr}.outsource-result-field.full{grid-column:auto}.outsource-result-dialog{padding:18px;border-radius:18px;}}
-</style>
 </head>
 <body class="auth-locked">
 <!-- +----------------------------------+
@@ -13642,35 +13550,19 @@ if (token) {
                 '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option><option>H SELAYANG</option><option>HKL</option><option>IPR</option><option>MKAK</option><option>MVN BOTANIK</option><option>H AMPANG</option><option>IMR/NIH</option><option>HTA</option><option>H PUTRAJAYA</option></select></div>'+
                 '<div class="outsource-field"><label>Outsource Lab</label><select id="osLab"><option value="">Select laboratory</option><option>BIOCHEMISTRY</option><option>MICROBIOLOGY</option><option>HEMATOLOGY</option><option>CYTOLOGY</option><option>HISTOLOGY</option></select></div>'+
                 '<div class="outsource-field full"><label>Test / Investigation *</label><input id="osTest" required placeholder="e.g. MTB Sputum Culture & Sensitivity"></div>'+
+                '<div class="outsource-field"><label>Result</label><input id="osResult" list="outsourceResultOptions" placeholder="PENDING / ADA / REJECT"><datalist id="outsourceResultOptions"><option value="PENDING"><option value="ADA"><option value="REJECT"><option value="POSITIVE"><option value="NEGATIVE"><option value="COMPLETED"></datalist></div>'+
+                '<div class="outsource-field outsource-date-field"><label>Result Date</label><input type="hidden" id="osResultDate"><input type="text" id="osResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
+                '<div class="outsource-field"><label>Reference No.</label><input id="osReferenceNo" placeholder="External report / accession no."></div>'+
+                '<div class="outsource-field"><label>Reject Reason</label><input id="osRejectReason" placeholder="If rejected"></div>'+
                 '<div class="outsource-field full"><label>Notes</label><textarea id="osNotes" placeholder="Additional notes / follow-up"></textarea></div>'+
                 '<div class="outsource-form-actions"><button class="outsource-btn secondary" type="button" id="outsourceClearBtn">CLEAR</button><button class="outsource-btn primary" type="submit" id="outsourceSaveBtn">REGISTER SAMPLE</button></div>'+
               '</form></section>'+
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3><span>'+outsourceEsc(total)+' TOTAL</span></div>'+
               '<div class="outsource-summary"><div class="outsource-stat"><div class="num">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num">'+rejected+'</div><div class="lbl">Rejected</div></div></div>'+
-              '<div class="outsource-filter-row">'+
-                '<div class="outsource-search"><input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search barcode, name or IC / ID"></div>'+
-                '<div class="outsource-filter-card"><span class="outsource-filter-label">YEAR</span><select id="outsourceYearFilter"><option value="ALL">All years</option></select></div>'+
-                '<div class="outsource-filter-card"><span class="outsource-filter-label">MONTH</span><select id="outsourceMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>'+
-                '<div class="outsource-filter-card outsource-status-card"><span class="outsource-filter-label">STATUS</span><select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="COMPLETED">Completed</option><option value="REJECT">Reject</option></select></div>'+
-              '</div>'+
+              '<div class="outsource-search"><input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search outsource samples"><select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select></div>'+
               '<div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>#</th><th>Sample Date</th><th>Bar Code</th><th>Name</th><th>ID/IC</th><th>Sex</th><th>Age</th><th>Unit</th><th>Dispatch</th><th>Referral</th><th>Lab</th><th>Test</th><th>Result</th><th>Result Date</th><th>Reference No.</th><th>Reject Reason</th><th>Notes</th><th>Action</th></tr></thead><tbody id="outsourceTableBody"></tbody></table><div class="outsource-empty" id="outsourceEmpty" hidden>No outsource sample registered yet.</div></div>'+
             '</section>'+
-          '</div>'+
-          '<div class="outsource-result-modal" id="outsourceResultModal" hidden aria-hidden="true">'+
-            '<div class="outsource-result-backdrop" data-close-result-modal></div>'+
-            '<div class="outsource-result-dialog" role="dialog" aria-modal="true" aria-labelledby="outsourceResultModalTitle">'+
-              '<div class="outsource-result-head"><div><div class="outsource-result-kicker">UPDATE RESULT</div><h3 id="outsourceResultModalTitle">Sample Result</h3><div id="outsourceResultPatient" class="outsource-result-patient"></div></div><button type="button" class="outsource-result-close" data-close-result-modal aria-label="Close">×</button></div>'+
-              '<div class="outsource-result-grid">'+
-                '<div class="outsource-result-field full"><label>Result</label><select id="outsourceUpdateResult"><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECT</option></select></div>'+
-                '<div class="outsource-result-field outsource-date-field"><label>Result Date</label><input type="hidden" id="osResultDate" value=""><input type="text" id="osResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
-                '<div class="outsource-result-field"><label>Reference No.</label><input id="outsourceUpdateReferenceNo" placeholder="External report / accession no."></div>'+
-                '<div class="outsource-result-field full"><label>Reject Reason</label><select id="outsourceUpdateRejectReason"><option value="">Select reject reason</option><option value="Quantity Not Sufficient">Quantity Not Sufficient</option><option value="Clotted Sample">Clotted Sample</option><option value="Haemolysed Sample">Haemolysed Sample</option><option value="Lipemic Sample">Lipemic Sample</option><option value="Icteric Sample">Icteric Sample</option><option value="Wrong Specimen Type">Wrong Specimen Type</option><option value="Wrong Container">Wrong Container</option><option value="Wrong Anticoagulant">Wrong Anticoagulant</option><option value="Wrong Volume/Ratio">Wrong Volume/Ratio</option><option value="Unlabelled Sample">Unlabelled Sample</option><option value="Mismatched Identification">Mismatched Identification</option><option value="Incomplete Identification">Incomplete Identification</option><option value="No Requester Stamp/Sign">No Requester Stamp/Sign</option><option value="Leaking Container">Leaking Container</option><option value="Broken Container">Broken Container</option><option value="Contaminated Sample">Contaminated Sample</option><option value="Delayed Transport">Delayed Transport</option><option value="Improper Storage">Improper Storage</option><option value="Exceeded Stability">Exceeded Stability</option><option value="Duplicate Sample">Duplicate Sample</option><option value="No Specimen Received">No Specimen Received</option><option value="Improper Sample Collection">Improper Sample Collection</option><option value="Unsuitable Specimen">Unsuitable Specimen</option><option value="Test/Specimen Mismatch">Test/Specimen Mismatch</option><option value="Test Not Offered">Test Not Offered</option><option value="Redundant Request">Redundant Request</option><option value="Other">Other</option></select></div>'+
-                '<div class="outsource-result-field full"><label>Notes</label><textarea id="outsourceUpdateNotes" placeholder="Additional result / follow-up notes"></textarea></div>'+
-              '</div>'+
-              '<div class="outsource-result-actions"><button type="button" class="outsource-btn secondary" data-close-result-modal>CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceUpdateResultBtn">UPDATE RESULT</button></div>'+
-            '</div>'+
-          '</div>'+
-          '</div>';
+          '</div></div>';
         renderOutsourceRows();
         var form=$('outsourceForm'); if(form)form.addEventListener('submit',function(e){e.preventDefault();saveOutsourceSample();});
         bindOutsourceKeyboardFlow();
@@ -13679,42 +13571,18 @@ if (token) {
         var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
         var search=$('outsourceSearch'); if(search)search.addEventListener('input',renderOutsourceRows);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',renderOutsourceRows);
-        var yearFilter=$('outsourceYearFilter'); if(yearFilter)yearFilter.addEventListener('change',renderOutsourceRows);
-        var monthFilter=$('outsourceMonthFilter'); if(monthFilter)monthFilter.addEventListener('change',renderOutsourceRows);
-        var body=$('outsourceTableBody'); if(body)body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(btn){var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='edit')editOutsourceSample(id);if(action==='delete')deleteOutsourceSample(id);return;}var row=e.target.closest('tr[data-outsource-id]');if(row)openOutsourceResultModal(row.getAttribute('data-outsource-id'));});
-        var resultBtn=$('outsourceUpdateResultBtn'); if(resultBtn)resultBtn.addEventListener('click',saveOutsourceResultUpdate);
-        document.querySelectorAll('[data-close-result-modal]').forEach(function(el){el.addEventListener('click',closeOutsourceResultModal);});
-      }
-      function populateOutsourceDateFilters(allRows){
-        var yearSel=$('outsourceYearFilter'),monthSel=$('outsourceMonthFilter');
-        if(!yearSel||!monthSel)return;
-        var previousYear=yearSel.value||'ALL', previousMonth=monthSel.value||'ALL';
-        var years={};
-        (allRows||[]).forEach(function(r){var d=String(r.sampleDate||r.createdAt||'').slice(0,10),m=d.match(/^(\d{4})-(\d{2})-/);if(m)years[m[1]]=true;});
-        var sorted=Object.keys(years).sort(function(a,b){return Number(b)-Number(a);});
-        yearSel.innerHTML='<option value="ALL">All years</option>'+sorted.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
-        yearSel.value=sorted.indexOf(previousYear)>=0?previousYear:'ALL';
-        monthSel.value=previousMonth;
+        var body=$('outsourceTableBody'); if(body)body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(!btn)return;var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='edit')editOutsourceSample(id);if(action==='delete')deleteOutsourceSample(id);});
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
         var q=String(($('outsourceSearch')||{}).value||'').trim().toLowerCase();
         var status=String(($('outsourceStatusFilter')||{}).value||'ALL').toUpperCase();
-        var year=String(($('outsourceYearFilter')||{}).value||'ALL').toUpperCase();
-        var month=String(($('outsourceMonthFilter')||{}).value||'ALL').toUpperCase();
-        var allRows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]);
-        populateOutsourceDateFilters(allRows);
-        var rows=allRows.filter(function(r){
-          var result=String(r.result||'PENDING').toUpperCase();
-          var sampleDate=String(r.sampleDate||r.createdAt||'').slice(0,10);
-          if(status!=='ALL'&&result!==status)return false;
-          if(year!=='ALL'&&sampleDate.slice(0,4)!==year)return false;
-          if(month!=='ALL'&&sampleDate.slice(5,7)!==month)return false;
-          if(!q)return true;
+        var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).filter(function(r){
+          var result=String(r.result||'PENDING').toUpperCase(); if(status!=='ALL'&&result!==status)return false; if(!q)return true;
           return [r.barCode,r.name,r.idIc].join(' ').toLowerCase().indexOf(q)>=0;
         });
         rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
-        body.innerHTML=rows.map(function(r,i){var result=String(r.result||'PENDING').toUpperCase();var resultClass=result==='REJECT'?'status-reject':'status-done';return '<tr data-outsource-id="'+outsourceEsc(r.id)+'" title="Click row to update result"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result '+resultClass+'">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
+        body.innerHTML=rows.map(function(r,i){var cls=outsourceResultClass(r.result),result=String(r.result||'PENDING');return '<tr class="'+cls+'"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result status-cell '+cls+'">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
         if(empty)empty.hidden=rows.length>0;
       }
       function calculateMalaysianIcDetails(rawIc, referenceDate){
@@ -13764,43 +13632,17 @@ if (token) {
           }
         },true);
       }
-      function clearOutsourceForm(){var form=$('outsourceForm');if(!form)return;form.reset();$('outsourceEditId').value='';$('osSampleDate').value=outsourceToday();$('osDispatchDate').value=outsourceToday();['osSampleDate','osDispatchDate'].forEach(function(id){var el=$(id);if(el&&el._syncDate)el._syncDate();});$('outsourceEditHint').textContent='NEW RECORD';$('outsourceSaveBtn').textContent='REGISTER SAMPLE';applyOutsourceIcAutofill();}
+      function clearOutsourceForm(){var form=$('outsourceForm');if(!form)return;form.reset();$('outsourceEditId').value='';$('osSampleDate').value=outsourceToday();$('osDispatchDate').value=outsourceToday();$('osResultDate').value='';['osSampleDate','osDispatchDate','osResultDate'].forEach(function(id){var el=$(id);if(el&&el._syncDate)el._syncDate();});$('outsourceEditHint').textContent='NEW RECORD';$('outsourceSaveBtn').textContent='REGISTER SAMPLE';applyOutsourceIcAutofill();}
       function saveOutsourceSample(){
         var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(); if(!name||!test){alert('Name and Test / Investigation are required.');return;}
         var editId=String($('outsourceEditId').value||'').trim(),existing=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(r){return String(r.id||'')===editId;});
-        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:String($('osReferral').value||'').trim(),lab:String($('osLab').value||'').trim(),test:test,result:existing&&existing.result?String(existing.result):'PENDING',resultDate:existing&&existing.resultDate?String(existing.resultDate):'',referenceNo:existing&&existing.referenceNo?String(existing.referenceNo):'',rejectReason:existing&&existing.rejectReason?String(existing.rejectReason):'',notes:String($('osNotes').value||'').trim(),createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
+        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:String($('osReferral').value||'').trim(),lab:String($('osLab').value||'').trim(),test:test,result:String($('osResult').value||'PENDING').trim()||'PENDING',resultDate:String($('osResultDate').value||''),referenceNo:String($('osReferenceNo').value||'').trim(),rejectReason:String($('osRejectReason').value||'').trim(),notes:String($('osNotes').value||'').trim(),createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
         if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample) Inventory.upsertOutsourceSample(row); renderOutsourceRows();clearOutsourceForm();
       }
       function editOutsourceSample(id){
         var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
-        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';$('osTest').value=r.test||'';$('osNotes').value=r.notes||'';['osSampleDate','osDispatchDate'].forEach(function(id){var el=$(id);if(el&&el._syncDate)el._syncDate();});$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
+        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';$('osTest').value=r.test||'';$('osResult').value=r.result||'PENDING';$('osResultDate').value=r.resultDate||'';['osSampleDate','osDispatchDate','osResultDate'].forEach(function(id){var el=$(id);if(el&&el._syncDate)el._syncDate();});$('osReferenceNo').value=r.referenceNo||'';$('osRejectReason').value=r.rejectReason||'';$('osNotes').value=r.notes||'';$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
         var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
-      }
-      var outsourceResultEditId='';
-      function openOutsourceResultModal(id){
-        var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
-        outsourceResultEditId=String(r.id||'');
-        var modal=$('outsourceResultModal');if(!modal)return;
-        $('outsourceResultModalTitle').textContent=String(r.test||'Sample Result');
-        $('outsourceResultPatient').textContent=[r.name,r.idIc,r.barCode].filter(Boolean).join('  •  ');
-        $('outsourceUpdateResult').value=['COMPLETED','REJECT'].indexOf(String(r.result||'').toUpperCase())>=0?String(r.result).toUpperCase():'COMPLETED';
-        $('osResultDate').value=String(r.resultDate||'').slice(0,10); var resultDateVisible=$('osResultDateVisible'); if(resultDateVisible&&resultDateVisible._syncDate)resultDateVisible._syncDate();
-        $('outsourceUpdateReferenceNo').value=String(r.referenceNo||'');
-        $('outsourceUpdateRejectReason').value=String(r.rejectReason||'');
-        $('outsourceUpdateNotes').value=String(r.notes||'');
-        modal.hidden=false;modal.setAttribute('aria-hidden','false');
-        document.body.classList.add('outsource-result-modal-open');
-      }
-      function closeOutsourceResultModal(){
-        var modal=$('outsourceResultModal');if(modal) {modal.hidden=true;modal.setAttribute('aria-hidden','true');}
-        outsourceResultEditId='';document.body.classList.remove('outsource-result-modal-open');
-      }
-      function saveOutsourceResultUpdate(){
-        var id=outsourceResultEditId;if(!id)return;
-        var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
-        var updated=Object.assign({},r,{result:String($('outsourceUpdateResult').value||'PENDING').trim()||'PENDING',resultDate:String($('osResultDate').value||''),referenceNo:String($('outsourceUpdateReferenceNo').value||'').trim(),rejectReason:String($('outsourceUpdateRejectReason').value||'').trim(),notes:String($('outsourceUpdateNotes').value||'').trim(),updatedAt:new Date().toISOString()});
-        if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample) Inventory.upsertOutsourceSample(updated);
-        closeOutsourceResultModal();renderOutsourceRows();refreshOutsourceLive();
       }
       function deleteOutsourceSample(id){var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;if(!confirm('Delete outsource sample for '+String(r.name||'this patient')+'?'))return;if(typeof Inventory!=='undefined'&&Inventory.deleteOutsourceSample) Inventory.deleteOutsourceSample(id); renderOutsourceRows();}
 
@@ -22228,93 +22070,7 @@ if ("serviceWorker" in navigator) {
   opacity: 1 !important;
 }
 </style>
-
-<style id="outsource-filter-one-row-v5">
-/* Registered Samples toolbar: compact single row */
-#moduleYearGrid.outsource-active-grid .outsource-filter-row{
-  display:grid!important;
-  grid-template-columns:minmax(260px,1.7fr) minmax(150px,.75fr) minmax(150px,.9fr) minmax(140px,.7fr)!important;
-  gap:10px!important;
-  align-items:center!important;
-  padding:10px 12px!important;
-  border-bottom:0!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-search{
-  min-width:0!important;
-  width:100%!important;
-  padding:0!important;
-  margin:0!important;
-  border:0!important;
-  min-height:0!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-search input#outsourceSearch{
-  width:100%!important;
-  height:34px!important;
-  min-height:34px!important;
-  padding:7px 11px!important;
-  font-size:10px!important;
-  box-sizing:border-box!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-filter-card{
-  min-width:0!important;
-  height:34px!important;
-  padding:5px 8px!important;
-  display:flex!important;
-  align-items:center!important;
-  gap:7px!important;
-  box-sizing:border-box!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-filter-label{
-  flex:0 0 auto!important;
-  font-size:8px!important;
-  margin:0!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-filter-card select,
-#moduleYearGrid.outsource-active-grid .outsource-filter-card .outsource-custom-select-wrap{
-  flex:1 1 auto!important;
-  min-width:0!important;
-  width:auto!important;
-}
-@media(max-width:900px){
-  #moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:minmax(220px,1.5fr) repeat(3,minmax(120px,1fr))!important;}
-}
-@media(max-width:700px){
-  #moduleYearGrid.outsource-active-grid .outsource-filter-row{grid-template-columns:1fr 1fr!important;}
-  #moduleYearGrid.outsource-active-grid .outsource-search{grid-column:auto!important;}
-}
-</style>
 </body>
-
-<style id="outsource-result-neumorphic-controls-final">
-#moduleYearGrid.outsource-active-grid .outsource-result-field select.outsource-native-select{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;pointer-events:none!important;appearance:none!important;-webkit-appearance:none!important;}
-#moduleYearGrid.outsource-active-grid .outsource-result-field .outsource-select-trigger{min-height:44px!important;padding:11px 14px!important;border-radius:14px!important;background:var(--neo-surface,#e9eef6)!important;box-shadow:inset 3px 3px 7px rgba(145,155,175,.16),inset -3px -3px 7px rgba(255,255,255,.82),4px 4px 10px rgba(145,155,175,.08),-4px -4px 10px rgba(255,255,255,.68)!important;}
-#moduleYearGrid.outsource-active-grid .outsource-result-field .outsource-select-trigger:hover{transform:none!important;}
-#moduleYearGrid.outsource-active-grid .outsource-result-field .outsource-custom-select-wrap{position:relative;width:100%;}
-#moduleYearGrid.outsource-active-grid .outsource-result-field .outsource-neumorphic-date{height:44px!important;}
-</style>
-<script id="outsource-result-date-picker-final">
-(function(){
- function pad(n){return String(n).padStart(2,'0');} function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
- function parse(v){if(!v)return null;var a=String(v).split('-').map(Number);if(a.length!==3||a.some(isNaN))return null;return new Date(a[0],a[1]-1,a[2]);}
- function fmt(v){var d=parse(v);return d?pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear():'';}
- function init(){var h=document.getElementById('osResultDate'),v=document.getElementById('osResultDateVisible');if(!h||!v||v._outsourceResultDateReady)return;v._outsourceResultDateReady=true;
-  var pop=document.createElement('div');pop.className='outsource-date-popover';pop.hidden=true;pop.innerHTML='<div class="outsource-date-head"><div class="outsource-date-month"></div><div class="outsource-date-nav"><button type="button" data-prev>‹</button><button type="button" data-next>›</button></div></div><div class="outsource-date-week"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div><div class="outsource-date-grid"></div><div class="outsource-date-foot"><button type="button" data-clear>Clear</button><button type="button" data-today>Today</button></div>';document.body.appendChild(pop);
-  var view=parse(h.value)||new Date();
-  function position(){var r=v.getBoundingClientRect(),w=pop.offsetWidth,hh=pop.offsetHeight,left=Math.min(Math.max(12,r.left),window.innerWidth-w-12),top=r.bottom+8;if(top+hh>window.innerHeight-12)top=Math.max(12,r.top-hh-8);pop.style.left=left+'px';pop.style.top=top+'px';}
-  function render(){pop.querySelector('.outsource-date-month').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});var g=pop.querySelector('.outsource-date-grid');g.innerHTML='';var first=new Date(view.getFullYear(),view.getMonth(),1),start=(first.getDay()+6)%7,days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate(),prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(),today=key(new Date());for(var i=0;i<42;i++){var n=i-start+1,d=new Date(view.getFullYear(),view.getMonth(),n),muted=false;if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);muted=true}else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);muted=true}var b=document.createElement('button');b.type='button';b.className='outsource-date-day'+(muted?' muted':'')+(key(d)===today?' today':'')+(key(d)===h.value?' selected':'');b.textContent=d.getDate();b.dataset.date=key(d);g.appendChild(b);}}
-  function open(){view=parse(h.value)||new Date();render();pop.hidden=false;position();}
-  function close(){pop.hidden=true;}
-  function choose(k){h.value=k;v.value=fmt(k);h.dispatchEvent(new Event('input',{bubbles:true}));h.dispatchEvent(new Event('change',{bubbles:true}));close();}
-  function sync(){v.value=fmt(h.value);}
-  sync();v._syncDate=sync;v.addEventListener('click',open);v.addEventListener('focus',open);
-  pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-prev')){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position()}else if(b.hasAttribute('data-next')){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position()}else if(b.dataset.date)choose(b.dataset.date);else if(b.hasAttribute('data-today'))choose(key(new Date()));else if(b.hasAttribute('data-clear'))choose('');});
-  document.addEventListener('mousedown',function(e){if(!pop.contains(e.target)&&e.target!==v)close();});window.addEventListener('resize',function(){if(!pop.hidden)position();});window.addEventListener('scroll',function(){if(!pop.hidden)position();},true);
- }
- function delayed(){setTimeout(init,0);setTimeout(init,150);setTimeout(init,600);}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',delayed);else delayed();
- window.setInterval(function(){if(document.getElementById('outsourceResultModal'))init();},1000);
-})();
-</script>
 </html>
 
 <style id="outsource-data-only-scroll-v10">
@@ -22485,7 +22241,7 @@ if ("serviceWorker" in navigator) {
   }
   function init(){
     if(!document.body||!document.getElementById('moduleYearGrid'))return;
-    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select, #moduleYearGrid.outsource-active-grid .outsource-search select, #moduleYearGrid.outsource-active-grid .outsource-filter-card select, #moduleYearGrid.outsource-active-grid .outsource-result-field select').forEach(setup);
+    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select, #moduleYearGrid.outsource-active-grid .outsource-search select').forEach(setup);
   }
   function delayed(){setTimeout(init,0);setTimeout(init,120);setTimeout(init,500);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',delayed);else delayed();
