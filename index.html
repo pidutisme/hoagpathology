@@ -13371,19 +13371,19 @@ if (token) {
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTER SAMPLE</h3><span id="outsourceEditHint">NEW RECORD</span></div>'+
               '<form class="outsource-form" id="outsourceForm" autocomplete="off">'+
                 '<input type="hidden" id="outsourceEditId">'+
-                '<div class="outsource-field"><label>Sample Date *</label><input type="date" id="osSampleDate" required value="'+outsourceEsc(today)+'"></div>'+
+                '<div class="outsource-field outsource-date-field"><label>Sample Date *</label><input type="hidden" id="osSampleDate" value="'+outsourceEsc(today)+'"><input type="text" id="osSampleDateVisible" class="outsource-neumorphic-date" required readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
                 '<div class="outsource-field"><label>Bar Code</label><input id="osBarCode" placeholder="e.g. 1036733"></div>'+
                 '<div class="outsource-field"><label>Name *</label><input id="osName" required placeholder="Patient name"></div>'+
                 '<div class="outsource-field"><label>ID / IC</label><input id="osIdIc" placeholder="NRIC / Passport"></div>'+
                 '<div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><select id="osSex" disabled><option value="">Auto from IC</option><option value="P">P</option><option value="L">L</option></select></div>'+
                 '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div>'+
-                '<div class="outsource-field"><label>Dispatch Date</label><input type="date" id="osDispatchDate" value="'+outsourceEsc(today)+'"></div>'+
+                '<div class="outsource-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input type="text" id="osDispatchDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
                 '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option><option>H SELAYANG</option><option>HKL</option><option>IPR</option><option>MKAK</option><option>MVN BOTANIK</option><option>H AMPANG</option><option>IMR/NIH</option><option>HTA</option><option>H PUTRAJAYA</option></select></div>'+
                 '<div class="outsource-field"><label>Outsource Lab</label><select id="osLab"><option value="">Select laboratory</option><option>BIOCHEMISTRY</option><option>MICROBIOLOGY</option><option>HEMATOLOGY</option><option>CYTOLOGY</option><option>HISTOLOGY</option></select></div>'+
                 '<div class="outsource-field full"><label>Test / Investigation *</label><input id="osTest" required placeholder="e.g. MTB Sputum Culture & Sensitivity"></div>'+
                 '<div class="outsource-field"><label>Result</label><input id="osResult" list="outsourceResultOptions" placeholder="PENDING / ADA / REJECT"><datalist id="outsourceResultOptions"><option value="PENDING"><option value="ADA"><option value="REJECT"><option value="POSITIVE"><option value="NEGATIVE"><option value="COMPLETED"></datalist></div>'+
-                '<div class="outsource-field"><label>Result Date</label><input type="date" id="osResultDate"></div>'+
+                '<div class="outsource-field outsource-date-field"><label>Result Date</label><input type="hidden" id="osResultDate"><input type="text" id="osResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
                 '<div class="outsource-field"><label>Reference No.</label><input id="osReferenceNo" placeholder="External report / accession no."></div>'+
                 '<div class="outsource-field"><label>Reject Reason</label><input id="osRejectReason" placeholder="If rejected"></div>'+
                 '<div class="outsource-field full"><label>Notes</label><textarea id="osNotes" placeholder="Additional notes / follow-up"></textarea></div>'+
@@ -13399,6 +13399,7 @@ if (token) {
         var form=$('outsourceForm'); if(form)form.addEventListener('submit',function(e){e.preventDefault();saveOutsourceSample();});
         bindOutsourceKeyboardFlow();
         bindOutsourceIcAutofill();
+        initOutsourceNeumorphicDates();
         var clear=$('outsourceClearBtn'); if(clear)clear.addEventListener('click',clearOutsourceForm);
         var search=$('outsourceSearch'); if(search)search.addEventListener('input',renderOutsourceRows);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',renderOutsourceRows);
@@ -13463,7 +13464,7 @@ if (token) {
           }
         },true);
       }
-      function clearOutsourceForm(){var form=$('outsourceForm');if(!form)return;form.reset();$('outsourceEditId').value='';$('osSampleDate').value=outsourceToday();$('osDispatchDate').value=outsourceToday();$('outsourceEditHint').textContent='NEW RECORD';$('outsourceSaveBtn').textContent='REGISTER SAMPLE';applyOutsourceIcAutofill();}
+      function clearOutsourceForm(){var form=$('outsourceForm');if(!form)return;form.reset();$('outsourceEditId').value='';$('osSampleDate').value=outsourceToday();$('osDispatchDate').value=outsourceToday();$('osResultDate').value='';['osSampleDate','osDispatchDate','osResultDate'].forEach(function(id){var el=$(id);if(el&&el._syncDate)el._syncDate();});$('outsourceEditHint').textContent='NEW RECORD';$('outsourceSaveBtn').textContent='REGISTER SAMPLE';applyOutsourceIcAutofill();}
       function saveOutsourceSample(){
         var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(); if(!name||!test){alert('Name and Test / Investigation are required.');return;}
         var editId=String($('outsourceEditId').value||'').trim(),existing=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(r){return String(r.id||'')===editId;});
@@ -13472,7 +13473,7 @@ if (token) {
       }
       function editOutsourceSample(id){
         var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
-        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';$('osTest').value=r.test||'';$('osResult').value=r.result||'PENDING';$('osResultDate').value=r.resultDate||'';$('osReferenceNo').value=r.referenceNo||'';$('osRejectReason').value=r.rejectReason||'';$('osNotes').value=r.notes||'';$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
+        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';$('osTest').value=r.test||'';$('osResult').value=r.result||'PENDING';$('osResultDate').value=r.resultDate||'';['osSampleDate','osDispatchDate','osResultDate'].forEach(function(id){var el=$(id);if(el&&el._syncDate)el._syncDate();});$('osReferenceNo').value=r.referenceNo||'';$('osRejectReason').value=r.rejectReason||'';$('osNotes').value=r.notes||'';$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
         var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
       }
       function deleteOutsourceSample(id){var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;if(!confirm('Delete outsource sample for '+String(r.name||'this patient')+'?'))return;if(typeof Inventory!=='undefined'&&Inventory.deleteOutsourceSample) Inventory.deleteOutsourceSample(id); renderOutsourceRows();}
@@ -21543,6 +21544,47 @@ if ("serviceWorker" in navigator) {
   }
   function init(){setup('inventoryMovementDateInput','inventoryMovementDateVisible');setup('inventoryExpiryInput','inventoryExpiryVisible');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+<style id="outsource-neumorphic-date-picker">
+#moduleYearGrid.outsource-active-grid .outsource-date-field{position:relative;}
+#moduleYearGrid.outsource-active-grid .outsource-neumorphic-date{
+  width:100%!important;box-sizing:border-box!important;height:44px!important;padding:0 42px 0 14px!important;
+  border:1px solid rgba(148,163,184,.28)!important;border-radius:13px!important;
+  background:linear-gradient(145deg,#eef2f8,#e1e6ef)!important;color:#172033!important;
+  box-shadow:inset 2px 2px 5px rgba(148,163,184,.16),inset -2px -2px 5px rgba(255,255,255,.8),0 3px 9px rgba(76,94,122,.07)!important;
+  outline:none!important;font:inherit;cursor:pointer;transition:.18s ease;
+}
+#moduleYearGrid.outsource-active-grid .outsource-neumorphic-date:hover{border-color:rgba(37,99,235,.25)!important;transform:translateY(-1px);}
+#moduleYearGrid.outsource-active-grid .outsource-neumorphic-date:focus{border-color:rgba(37,99,235,.48)!important;box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.9),0 0 0 3px rgba(37,99,235,.09)!important;}
+.outsource-date-field::after{content:'▣';position:absolute;right:14px;bottom:13px;color:#64748b;font-size:13px;pointer-events:none;opacity:.85;}
+.outsource-date-popover{position:fixed;z-index:99999;width:286px;padding:14px;border-radius:18px;background:linear-gradient(145deg,#eef2f8,#e0e5ee);border:1px solid rgba(148,163,184,.28);box-shadow:10px 10px 24px rgba(71,85,105,.18),-8px -8px 20px rgba(255,255,255,.9);color:#182235;user-select:none;}
+.outsource-date-popover[hidden]{display:none;}
+.outsource-date-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.outsource-date-month{font-weight:800;font-size:14px;letter-spacing:.02em}.outsource-date-nav{display:flex;gap:7px}
+.outsource-date-nav button,.outsource-date-foot button{border:0;border-radius:10px;min-width:34px;height:32px;padding:0 9px;cursor:pointer;background:linear-gradient(145deg,#f5f7fb,#dfe5ee);color:#334155;box-shadow:4px 4px 8px rgba(100,116,139,.16),-3px -3px 7px rgba(255,255,255,.85);font-weight:700}
+.outsource-date-nav button:active,.outsource-date-foot button:active{box-shadow:inset 2px 2px 5px rgba(100,116,139,.18),inset -2px -2px 4px rgba(255,255,255,.8)}
+.outsource-date-week,.outsource-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.outsource-date-week span{text-align:center;font-size:10px;font-weight:800;color:#7b8799;padding:4px 0}.outsource-date-day{height:32px;border:0;border-radius:9px;background:transparent;color:#334155;cursor:pointer;font:700 12px inherit}.outsource-date-day:hover{background:rgba(37,99,235,.09);box-shadow:inset 2px 2px 4px rgba(100,116,139,.09),inset -2px -2px 4px rgba(255,255,255,.8)}.outsource-date-day.muted{color:#a3acba;font-weight:600}.outsource-date-day.today{box-shadow:inset 0 0 0 1px rgba(37,99,235,.35);color:#2563eb}.outsource-date-day.selected{background:linear-gradient(145deg,#3b82f6,#2563eb);color:#fff;box-shadow:3px 3px 7px rgba(37,99,235,.22),inset 1px 1px 2px rgba(255,255,255,.25)}
+.outsource-date-foot{display:flex;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid rgba(148,163,184,.18)}.outsource-date-foot button{min-width:auto;color:#2563eb}@media(max-width:560px){.outsource-date-popover{width:min(286px,calc(100vw - 24px));}}
+</style>
+<script id="outsource-neumorphic-date-picker">
+(function(){
+ function pad(n){return String(n).padStart(2,'0');} function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+ function parse(v){if(!v)return null;var a=String(v).split('-').map(Number);if(a.length!==3||a.some(isNaN))return null;return new Date(a[0],a[1]-1,a[2]);}
+ function fmt(v){var d=parse(v);return d?pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear():'';}
+ function setup(hiddenId,visibleId){var h=document.getElementById(hiddenId),v=document.getElementById(visibleId);if(!h||!v||v._outsourceDateReady)return;v._outsourceDateReady=true;
+  var pop=document.createElement('div');pop.className='outsource-date-popover';pop.hidden=true;pop.innerHTML='<div class="outsource-date-head"><div class="outsource-date-month"></div><div class="outsource-date-nav"><button type="button" data-prev>‹</button><button type="button" data-next>›</button></div></div><div class="outsource-date-week"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div><div class="outsource-date-grid"></div><div class="outsource-date-foot"><button type="button" data-clear>Clear</button><button type="button" data-today>Today</button></div>';document.body.appendChild(pop);
+  var view=parse(h.value)||new Date();
+  function position(){var r=v.getBoundingClientRect(),w=pop.offsetWidth,hh=pop.offsetHeight,left=Math.min(Math.max(12,r.left),window.innerWidth-w-12),top=r.bottom+8;if(top+hh>window.innerHeight-12)top=Math.max(12,r.top-hh-8);pop.style.left=left+'px';pop.style.top=top+'px';}
+  function render(){pop.querySelector('.outsource-date-month').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});var g=pop.querySelector('.outsource-date-grid');g.innerHTML='';var first=new Date(view.getFullYear(),view.getMonth(),1),start=(first.getDay()+6)%7,days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate(),prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(),today=key(new Date());for(var i=0;i<42;i++){var n=i-start+1,d=new Date(view.getFullYear(),view.getMonth(),n),muted=false;if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);muted=true}else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);muted=true}var b=document.createElement('button');b.type='button';b.className='outsource-date-day'+(muted?' muted':'')+(key(d)===today?' today':'')+(key(d)===h.value?' selected':'');b.textContent=d.getDate();b.dataset.date=key(d);g.appendChild(b);}}
+  function open(){view=parse(h.value)||new Date();render();pop.hidden=false;position();}
+  function close(){pop.hidden=true;}
+  function choose(k){h.value=k;v.value=fmt(k);h.dispatchEvent(new Event('input',{bubbles:true}));h.dispatchEvent(new Event('change',{bubbles:true}));close();}
+  v.value=fmt(h.value);v.addEventListener('click',open);v.addEventListener('focus',open);
+  pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-prev')){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position()}else if(b.hasAttribute('data-next')){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position()}else if(b.dataset.date){choose(b.dataset.date)}else if(b.hasAttribute('data-today')){choose(key(new Date()))}else if(b.hasAttribute('data-clear')){choose('')}});
+  document.addEventListener('mousedown',function(e){if(!pop.contains(e.target)&&e.target!==v)close()});window.addEventListener('resize',function(){if(!pop.hidden)position()});window.addEventListener('scroll',function(){if(!pop.hidden)position()},true);
+  v._syncDate=function(){v.value=fmt(h.value);};
+ }
+ window.initOutsourceNeumorphicDates=function(){[['osSampleDate','osSampleDateVisible'],['osDispatchDate','osDispatchDateVisible'],['osResultDate','osResultDateVisible']].forEach(function(x){setup(x[0],x[1]);});['osSampleDate','osDispatchDate','osResultDate'].forEach(function(id){var h=document.getElementById(id),v=document.getElementById(id+'Visible');if(h&&v&&v._syncDate)v._syncDate();});};
 })();
 </script>
 <style id="inventory-dropdown-and-toolbar-final-v7">
