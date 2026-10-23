@@ -20915,14 +20915,67 @@ function exportMonthlySchedulePdfs() {
         data.novacloneInitialZeroedV3=true;
         return changed;
       }
-      function currentMonthKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+      function currentMonthKey(){
+        /* Inventory accounting month is always based on Malaysia time (Asia/Kuala_Lumpur),
+         * not the browser/device timezone. */
+        var p=getAppNowParts();
+        return Number(p.year)+'-'+String(p.month).padStart(2,'0');
+      }
+      var inventoryRolloverMonthKey=null;
+      var inventoryRolloverTimer=null;
+      var inventoryRolloverBusy=false;
+      function ensureInventoryMonthRollover(force){
+        normalize();
+        var currentKey=currentMonthKey();
+        var previousKey=inventoryRolloverMonthKey || data.inventoryAccountingMonthKey || currentKey;
+        if(!force && currentKey===previousKey){
+          data.inventoryAccountingMonthKey=currentKey;
+          return false;
+        }
+        if(inventoryRolloverBusy) return false;
+        inventoryRolloverBusy=true;
+        try{
+          normalize();
+          /* Before the new MYT month becomes active, permanently save the
+           * previous month's final snapshot to the shared/cloud data. */
+          if(previousKey && previousKey!==currentKey){
+            saveMonthlySnapshot(previousKey);
+          }
+          inventoryRolloverMonthKey=currentKey;
+          data.inventoryAccountingMonthKey=currentKey;
+          /* The new month starts with the previous month's Closing Balance.
+           * With no new movement yet, Closing Balance therefore equals
+           * Last Month Balance automatically. */
+          saveMonthlySnapshot(currentKey);
+          saveLocal();
+          try{saveRemote({force:true});}catch(e){console.warn('Inventory month rollover cloud save failed:',e);}
+          if(currentView==='MONTHLY' && initialized) renderMonthlyMovement();
+          return true;
+        }finally{
+          inventoryRolloverBusy=false;
+        }
+      }
+      function startInventoryMonthRolloverWatcher(){
+        clearInterval(inventoryRolloverTimer);
+        inventoryRolloverMonthKey=data.inventoryAccountingMonthKey||null;
+        ensureInventoryMonthRollover(false);
+        inventoryRolloverTimer=setInterval(function(){
+          if(!initialized)return;
+          ensureInventoryMonthRollover(false);
+        },30000);
+      }
       function ensureCurrentMonthPrices(){
+        ensureInventoryMonthRollover(false);
         normalize();
         var key=currentMonthKey();
         if(!data.monthlyPrices[key]) data.monthlyPrices[key]={};
         var changed=false;
         data.items.forEach(function(item){
-          if(data.monthlyPrices[key][item.id]==null){data.monthlyPrices[key][item.id]=Number(item.price||0);changed=true;}
+          var price=Number(item.price||0);
+          if(Number(data.monthlyPrices[key][item.id])!==price){
+            data.monthlyPrices[key][item.id]=price;
+            changed=true;
+          }
         });
         return changed;
       }
@@ -21315,6 +21368,10 @@ function exportMonthlySchedulePdfs() {
       function priceForMonth(item, key){
         var bucket=data.monthlyPrices&&data.monthlyPrices[key];
         var v=bucket&&bucket[item.id];
+        // The current master PRICE / UNIT is the authoritative price for the
+        // active month. Legacy monthlyPrices entries must not freeze the
+        // Monthly Stock In / Out calculation at an old or zero price.
+        if(String(key||'')===currentMonthKey()) return Number(item.price||0);
         return v==null?Number(item.price||0):Number(v||0);
       }
       function monthKeyOffset(key, offset){
@@ -21326,31 +21383,38 @@ function exportMonthlySchedulePdfs() {
         var start=monthKey+'-01T00:00:00';
         var next=monthKeyOffset(monthKey,1)+'-01T00:00:00';
         var prevKey=monthKeyOffset(monthKey,-1);
-        var prevEnd=start;
         var items=data.items.filter(function(i){return i.active!==false&&(category==='ALL'||i.category===category);});
         var lastBalance=0, stockIn=0, stockOut=0;
-        items.forEach(function(item){
-          var price=priceForMonth(item,monthKey);
-          var before=data.transactions.filter(function(t){return t.itemId===item.id&&String(t.at||'')<prevEnd;}).reduce(function(sum,t){return sum+signedQty(t);},0);
-          var openingQty=Number(item.openingStock||0)+before;
-          var ins=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='IN'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
-          var outs=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='OUT'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
-          lastBalance+=openingQty*price;
-          stockIn+=ins*price;
-          stockOut+=outs*price;
-        });
 
-        // Use a previously saved closing balance only when it is a real, non-zero
-        // committed value. Older snapshots could contain RM0.00 for months with
-        // no movement, which incorrectly erased the calculated opening balance.
+        // The selected month's LAST MONTH BALANCE must be the immediately
+        // previous month's CLOSING BALANCE. This is the carry-forward rule.
         var previousSnapshot=data.monthlySnapshots&&data.monthlySnapshots[prevKey];
-        var previousCategory=previousSnapshot&&previousSnapshot.categories&&previousSnapshot.categories[category];
-        if(previousCategory&&Number(previousCategory.closing||0)>0){
-          lastBalance=Number(previousCategory.closing);
+        if(previousSnapshot&&previousSnapshot.categories&&previousSnapshot.categories[category]){
+          lastBalance=Number(previousSnapshot.categories[category].closing||0);
+        }else{
+          // For the first month that has no saved predecessor, derive the
+          // opening value from the inventory history using the previous
+          // month's price. This is only the fallback; once a month exists,
+          // its saved Closing Balance is the source of truth for the next month.
+          items.forEach(function(item){
+            var previousPrice=priceForMonth(item,prevKey);
+            var before=data.transactions.filter(function(t){return t.itemId===item.id&&String(t.at||'')<start;}).reduce(function(sum,t){return sum+signedQty(t);},0);
+            var openingQty=Number(item.openingStock||0)+before;
+            lastBalance+=openingQty*previousPrice;
+          });
         }
 
-        // A month with no movement still closes at its opening/last-month balance.
-        // Stock In/Out values are always calculated from quantity × monthly price.
+        items.forEach(function(item){
+          var currentPrice=priceForMonth(item,monthKey);
+          var ins=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='IN'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
+          var outs=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='OUT'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
+          stockIn+=ins*currentPrice;
+          stockOut+=outs*currentPrice;
+        });
+
+        // Closing Balance always carries forward from Last Month Balance,
+        // then applies this month's Stock In / Stock Out movement. Therefore,
+        // with no movement, Closing Balance === Last Month Balance exactly.
         var closing=lastBalance+stockIn-stockOut;
         return {lastBalance:lastBalance,stockIn:stockIn,stockOut:stockOut,closing:closing};
       }
@@ -21361,12 +21425,6 @@ function exportMonthlySchedulePdfs() {
         var snap={categories:{},total:{lastBalance:0,stockIn:0,stockOut:0,closing:0},savedAt:nowIso()};
         categories.forEach(function(c){
           var st=monthlyMovementStats(monthKey,c);
-          // Preserve an explicitly opened/closed month with no movements at RM0.00
-          // instead of silently carrying its last-month balance into closing.
-          if(existing&&existing.categories&&existing.categories[c]&&st.stockIn===0&&st.stockOut===0){
-            st.lastBalance=Number(existing.categories[c].lastBalance||st.lastBalance);
-            st.closing=Number(existing.categories[c].closing||0);
-          }
           snap.categories[c]=st;
           snap.total.lastBalance+=st.lastBalance;
           snap.total.stockIn+=st.stockIn;
@@ -21378,6 +21436,7 @@ function exportMonthlySchedulePdfs() {
       }
       function renderMonthlyMovement(){
         normalize();
+        ensureInventoryMonthRollover(false);
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();
         var cat=($('inventoryCategoryFilter')||{}).value||'ALL';
         var month=selectedPriceMonth||currentMonthKey();
@@ -21387,7 +21446,8 @@ function exportMonthlySchedulePdfs() {
           if(!q)return true;
           return data.items.some(function(i){return i.active!==false&&i.category===c&&[i.name,i.category].join(' ').toLowerCase().indexOf(q)!==-1;});
         });
-        var snap=saveMonthlySnapshot(month);
+        var snap=data.monthlySnapshots&&data.monthlySnapshots[month];
+        if(!snap){snap=saveMonthlySnapshot(month);saveLocal();}
         var movementMonths=data.transactions.map(function(t){return String(t.at||'').slice(0,7);}).filter(Boolean);
         var keys=Object.keys(data.monthlySnapshots||{}).concat(movementMonths,[currentMonthKey()]).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).sort().reverse();
         var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category. Monthly records are saved for review from the month selector.</span></div><div class="inventory-month-select-wrap"><select id="inventoryPriceMonth" aria-label="Movement month" class="inventory-month-native">';
@@ -21497,8 +21557,8 @@ function exportMonthlySchedulePdfs() {
           scroller.scrollLeft=0;
         }
       }
-      function render(){normalize();if($('moduleYears')&&$('moduleYears').classList.contains('active')&&String($('moduleYearsTitle')&&$('moduleYearsTitle').textContent||'').toUpperCase()==='OUTSOURCE'){if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();return;}ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
-      function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.hidden=!inventoryAdminAllowed();render();populateForm();requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);}
+      function render(){ensureInventoryMonthRollover(false);normalize();if($('moduleYears')&&$('moduleYears').classList.contains('active')&&String($('moduleYearsTitle')&&$('moduleYearsTitle').textContent||'').toUpperCase()==='OUTSOURCE'){if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();return;}ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
+      function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.hidden=!inventoryAdminAllowed();startInventoryMonthRolloverWatcher();ensureInventoryMonthRollover(false);render();populateForm();requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);}
       function populateForm(){
         var sel=$('inventoryItemInput');if(!sel)return;var items=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
         sel.innerHTML=items.map(function(i){return '<option value="'+esc(i.id)+'">'+esc(i.name)+' · '+esc(i.category)+' · '+money(i.price)+'</option>';}).join('');
@@ -21656,7 +21716,7 @@ function exportMonthlySchedulePdfs() {
         var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();});
         var itemTrigger=$('inventoryItemTrigger');if(itemTrigger)itemTrigger.addEventListener('click',function(e){e.stopPropagation();toggleItemCustom();});
         var itemMenu=$('inventoryItemMenu');if(itemMenu)itemMenu.addEventListener('click',function(e){var opt=e.target.closest('.inventory-custom-option');if(!opt)return;var sel=$('inventoryItemInput');if(sel){sel.value=opt.getAttribute('data-value')||'';syncItemCustom();updateLotSelect();}closeItemCustom();});
-        var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){var previousMonth=selectedPriceMonth;saveMonthlySnapshot(previousMonth);selectedPriceMonth=e.target.value;var target=selectedPriceMonth;if(!data.monthlySnapshots[target]){saveMonthlySnapshot(target);}else{saveMonthlySnapshot(target);}saveLocal();renderMonthlyMovement();}});if(tableWrap)tableWrap.addEventListener('click',function(e){var edit=e.target.closest('[data-inventory-edit-id]');if(edit){e.preventDefault();e.stopPropagation();closeRecordModal();editMovement(edit.getAttribute('data-inventory-edit-id'));return;}var del=e.target.closest('[data-inventory-delete-id]');if(del){e.preventDefault();e.stopPropagation();deleteMovement(del.getAttribute('data-inventory-delete-id'));return;}var row=e.target.closest('.inventory-item-row');if(row)showItemRecords(row.getAttribute('data-inventory-item-id'));});if(tableWrap)tableWrap.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.closest('.inventory-item-row')){e.preventDefault();showItemRecords(e.target.closest('.inventory-item-row').getAttribute('data-inventory-item-id'));}});
+        var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){ensureInventoryMonthRollover(false);selectedPriceMonth=e.target.value;var target=selectedPriceMonth;if(!data.monthlySnapshots[target]){saveMonthlySnapshot(target);saveLocal();}renderMonthlyMovement();}});if(tableWrap)tableWrap.addEventListener('click',function(e){var edit=e.target.closest('[data-inventory-edit-id]');if(edit){e.preventDefault();e.stopPropagation();closeRecordModal();editMovement(edit.getAttribute('data-inventory-edit-id'));return;}var del=e.target.closest('[data-inventory-delete-id]');if(del){e.preventDefault();e.stopPropagation();deleteMovement(del.getAttribute('data-inventory-delete-id'));return;}var row=e.target.closest('.inventory-item-row');if(row)showItemRecords(row.getAttribute('data-inventory-item-id'));});if(tableWrap)tableWrap.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.closest('.inventory-item-row')){e.preventDefault();showItemRecords(e.target.closest('.inventory-item-row').getAttribute('data-inventory-item-id'));}});
         document.addEventListener('click',function(e){if(!e.target.closest('#inventoryItemCustomWrap'))closeItemCustom();});
         document.querySelectorAll('[data-inventory-close]').forEach(function(n){n.addEventListener('click',closeModal);});document.querySelectorAll('[data-inventory-record-close]').forEach(function(n){n.addEventListener('click',closeRecordModal);});
         document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('inventoryModal')&&!$('inventoryModal').hidden)closeModal();if(e.key==='Escape'&&$('inventoryRecordModal')&&!$('inventoryRecordModal').hidden)closeRecordModal();});
