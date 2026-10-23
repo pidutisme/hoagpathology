@@ -21937,3 +21937,52 @@ if ("serviceWorker" in navigator) {
   box-sizing:border-box!important;
 }
 </style>
+<style id="outsource-date-picker-final-polish-v2">
+/* FINAL: compact Inventory-style calendar + date fields must behave like clickable pickers. */
+#moduleYearGrid.outsource-active-grid .outsource-neumorphic-date{
+  cursor:pointer!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input#osSampleDateVisible,
+#moduleYearGrid.outsource-active-grid .outsource-field input#osDispatchDateVisible,
+#moduleYearGrid.outsource-active-grid .outsource-field input#osResultDateVisible{
+  cursor:pointer!important;
+  opacity:1!important;
+  color:#243047!important;
+  box-shadow:inset 2px 2px 5px rgba(148,163,184,.16),inset -2px -2px 5px rgba(255,255,255,.8),0 3px 9px rgba(76,94,122,.07)!important;
+}
+.outsource-date-popover{
+  width:270px!important;
+  padding:10px!important;
+  border-radius:16px!important;
+  box-sizing:border-box!important;
+}
+.outsource-date-head{margin-bottom:8px!important;}
+.outsource-date-month{font-size:13px!important;}
+.outsource-date-nav{gap:5px!important;}
+.outsource-date-nav button,
+.outsource-date-foot button{
+  min-width:31px!important;
+  height:30px!important;
+  padding:0 8px!important;
+  border-radius:9px!important;
+  font-size:11px!important;
+}
+.outsource-date-week,
+.outsource-date-grid{gap:2px!important;}
+.outsource-date-week span{
+  font-size:9px!important;
+  padding:3px 0!important;
+}
+.outsource-date-day{
+  height:28px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+}
+.outsource-date-foot{
+  margin-top:8px!important;
+  padding-top:8px!important;
+}
+@media(max-width:560px){
+  .outsource-date-popover{width:min(270px,calc(100vw - 20px))!important;}
+}
+</style>
