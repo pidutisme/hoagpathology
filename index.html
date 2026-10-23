@@ -7899,6 +7899,247 @@
 @media(max-width:1100px){.outsource-grid{grid-template-columns:1fr;}.outsource-summary{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:700px){.outsource-hero{padding:17px;}.outsource-form{grid-template-columns:1fr;}.outsource-field.full{grid-column:auto;}.outsource-form-actions{grid-column:auto;}.outsource-live{display:none;}}
 
+
+/* ================================================================
+   VISUAL SKIN OVERRIDE — PRESSED / CONCAVE / INSET NEUMORPHISM
+   Structure, layout, content and JavaScript intentionally untouched.
+   ================================================================ */
+:root {
+  --bg: #e4e8ef;
+  --card: #e7ebf2;
+  --card-soft: #edf0f5;
+  --text: #202a3a;
+  --muted: #687487;
+  --primary: #2367f2;
+  --primary-2: #2bbdca;
+  --line: rgba(104, 116, 135, .12);
+  --glass: transparent;
+
+  --shadow: inset 7px 7px 16px rgba(120, 132, 151, .20),
+             inset -7px -7px 16px rgba(255, 255, 255, .78);
+  --shadow-soft: inset 4px 4px 10px rgba(120, 132, 151, .16),
+                 inset -4px -4px 10px rgba(255, 255, 255, .72);
+  --shadow-inset: inset 9px 9px 20px rgba(116, 128, 148, .22),
+                  inset -9px -9px 20px rgba(255, 255, 255, .82);
+
+  --year-page-card-bg: #e7ebf2;
+  --year-page-card-border: rgba(111, 124, 145, .10);
+  --year-page-card-shadow: inset 7px 7px 17px rgba(120, 132, 151, .19),
+                            inset -7px -7px 17px rgba(255, 255, 255, .76);
+  --year-page-card-hover-shadow: inset 8px 8px 19px rgba(120, 132, 151, .23),
+                                  inset -8px -8px 19px rgba(255, 255, 255, .80);
+  --neo-surface-light: #e7ebf2;
+  --neo-surface-soft: #edf0f5;
+  --calendar-date-card-bg: #e7ebf2;
+  --calendar-edge-border: rgba(111, 124, 145, .10);
+  --calendar-edge-shadow: var(--year-page-card-shadow);
+  --calendar-edge-shadow-sm: var(--shadow-soft);
+  --utility-card-surface: #e7ebf2;
+  --utility-card-surface-inner: #edf0f5;
+}
+
+html, body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.58) 0, transparent 30%),
+    radial-gradient(circle at 88% 92%, rgba(35,103,242,.045) 0, transparent 32%);
+}
+
+.sidebar,
+.display-board,
+.panel,
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.sidebar-footer,
+.theme-toggle,
+.display-title-box,
+.big-card-icon,
+.display-date,
+.display-clock-wrap,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card,
+.leave-course-year-card {
+  border-color: var(--year-page-card-border);
+  background: var(--year-page-card-bg);
+  box-shadow: var(--year-page-card-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.nav button,
+.clickable-card,
+.calendar-toolbar-btn,
+.calendar-roster-nav-btn,
+.calendar-roster-month-btn,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn,
+.year-card,
+.leave-course-mini-year {
+  border-color: var(--year-page-card-border);
+  background: var(--year-page-card-bg);
+  box-shadow: var(--shadow-soft);
+}
+
+.nav button:hover,
+.clickable-card:hover,
+.stat-card:hover,
+.bottom-card:hover,
+.profile-card:hover,
+.profile-info-box:hover,
+.setting-box:hover,
+.panel:hover,
+.calendar-toolbar-btn:hover,
+.calendar-roster-nav-btn:hover,
+.calendar-roster-month-btn:hover,
+.calendar-roster-today-btn:hover,
+.page-back-dashboard-btn:hover,
+.year-card:hover,
+.leave-course-mini-year:hover {
+  box-shadow: var(--year-page-card-hover-shadow);
+  transform: none;
+}
+
+.nav button:active,
+.clickable-card:active,
+.calendar-toolbar-btn:active,
+.calendar-roster-nav-btn:active,
+.calendar-roster-month-btn:active,
+.calendar-roster-today-btn:active,
+.page-back-dashboard-btn:active,
+button:active {
+  box-shadow: var(--shadow-inset);
+  transform: none;
+}
+
+.nav button:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(35,103,242,.32);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-soft), inset 0 0 0 1px rgba(35,103,242,.18);
+}
+
+.theme-toggle,
+.display-date,
+.display-clock-wrap,
+.big-card-icon,
+#profile .profile-link-card::before,
+#access .access-link-card::before,
+#quickLinks .quick-links-card::before {
+  box-shadow: var(--shadow-inset);
+}
+
+#calendar .calendar-mini-day {
+  border-color: var(--calendar-edge-border);
+  background: var(--calendar-date-card-bg);
+  box-shadow: var(--calendar-edge-shadow-sm);
+}
+
+#calendar .calendar-mini-day:hover,
+#calendar .calendar-mini-day:focus-visible {
+  box-shadow: var(--year-page-card-hover-shadow);
+}
+
+input,
+textarea,
+select {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--year-page-card-border);
+  box-shadow: var(--shadow-inset);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+.display-accent-line {
+  box-shadow: 0 0 0 1px rgba(35,103,242,.06);
+}
+
+/* Dark pressed/concave skin */
+body.dark-mode,
+html.dark-mode-preload {
+  --bg: #171f2c;
+  --card: #1b2534;
+  --card-soft: #202b3b;
+  --text: #e8edf5;
+  --muted: #9aa7ba;
+  --line: rgba(255,255,255,.07);
+
+  --shadow: inset 7px 7px 17px rgba(0,0,0,.36),
+             inset -7px -7px 17px rgba(255,255,255,.035);
+  --shadow-soft: inset 4px 4px 10px rgba(0,0,0,.30),
+                 inset -4px -4px 10px rgba(255,255,255,.028);
+  --shadow-inset: inset 9px 9px 20px rgba(0,0,0,.42),
+                  inset -9px -9px 20px rgba(255,255,255,.035);
+
+  --year-page-card-bg: #1b2534;
+  --year-page-card-border: rgba(255,255,255,.045);
+  --year-page-card-shadow: inset 7px 7px 17px rgba(0,0,0,.35),
+                            inset -7px -7px 17px rgba(255,255,255,.032);
+  --year-page-card-hover-shadow: inset 8px 8px 19px rgba(0,0,0,.39),
+                                  inset -8px -8px 19px rgba(255,255,255,.038),
+                                  inset 0 0 0 1px rgba(105,150,255,.08);
+  --neo-surface-light: #1b2534;
+  --neo-surface-soft: #202b3b;
+  --calendar-date-card-bg: #1b2534;
+  --calendar-edge-border: rgba(255,255,255,.045);
+  --calendar-edge-shadow: var(--year-page-card-shadow);
+  --calendar-edge-shadow-sm: var(--shadow-soft);
+  --utility-card-surface: #1b2534;
+  --utility-card-surface-inner: #202b3b;
+}
+
+body.dark-mode,
+html.dark-mode-preload,
+body.dark-mode .nav button,
+body.dark-mode .sidebar,
+body.dark-mode .display-board,
+body.dark-mode .panel,
+body.dark-mode .profile-card,
+body.dark-mode .stat-card,
+body.dark-mode .bottom-card,
+body.dark-mode .setting-box,
+body.dark-mode .profile-info-box,
+body.dark-mode .sidebar-footer,
+body.dark-mode .theme-toggle,
+body.dark-mode .display-title-box,
+body.dark-mode .big-card-icon,
+body.dark-mode .display-date,
+body.dark-mode .display-clock-wrap,
+body.dark-mode .calendar-month-panel,
+body.dark-mode .daily-roster-panel,
+body.dark-mode .daily-roster-card,
+body.dark-mode .leave-course-year-card {
+  background-image: none;
+}
+
+body.dark-mode,
+html.dark-mode-preload {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 14% 8%, rgba(255,255,255,.025) 0, transparent 28%),
+    radial-gradient(circle at 90% 92%, rgba(35,103,242,.055) 0, transparent 34%);
+}
+
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--year-page-card-border);
+  box-shadow: var(--shadow-inset);
+}
+
 </style>
 <style id="mobile-profile-card-centering-v6">
 /* V6 mobile-only: keep document link cards vertically stacked and centered.
@@ -9890,7 +10131,6 @@ html,body{
     radial-gradient(circle at 90% 12%,rgba(161,120,255,.18) 0,transparent 26%),
     radial-gradient(circle at 84% 88%,rgba(58,214,206,.15) 0,transparent 30%),
     radial-gradient(circle at 18% 92%,rgba(112,143,255,.12) 0,transparent 27%)!important;
-  background-repeat:no-repeat!important;
 }
 
 html::before,
@@ -9916,14 +10156,10 @@ html.dark-mode-preload::before{
 body::after{
   content:"";
   position:fixed;
-  inset:-12%;
+  inset:0;
   pointer-events:none;
   z-index:-1;
-  background:
-    radial-gradient(circle at 50% 18%,rgba(255,255,255,.045),transparent 24%),
-    radial-gradient(circle at 50% 82%,rgba(255,255,255,.025),transparent 28%);
-  filter:blur(28px);
-  transform:translateZ(0);
+  background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 42%,rgba(255,255,255,.04));
 }
 
 /* --- typography: Apple-like, without changing content --- */
