@@ -21340,15 +21340,18 @@ function exportMonthlySchedulePdfs() {
           stockOut+=outs*price;
         });
 
-        // Once a previous month has been closed, its closing value becomes the
-        // next month's opening/last-month balance. A newly opened month starts
-        // with a zero closing balance until that month has a movement.
+        // Use a previously saved closing balance only when it is a real, non-zero
+        // committed value. Older snapshots could contain RM0.00 for months with
+        // no movement, which incorrectly erased the calculated opening balance.
         var previousSnapshot=data.monthlySnapshots&&data.monthlySnapshots[prevKey];
-        if(previousSnapshot&&previousSnapshot.categories&&previousSnapshot.categories[category]){
-          lastBalance=Number(previousSnapshot.categories[category].closing||0);
+        var previousCategory=previousSnapshot&&previousSnapshot.categories&&previousSnapshot.categories[category];
+        if(previousCategory&&Number(previousCategory.closing||0)>0){
+          lastBalance=Number(previousCategory.closing);
         }
-        var hasMovement=(stockIn!==0||stockOut!==0);
-        var closing=hasMovement?lastBalance+stockIn-stockOut:0;
+
+        // A month with no movement still closes at its opening/last-month balance.
+        // Stock In/Out values are always calculated from quantity × monthly price.
+        var closing=lastBalance+stockIn-stockOut;
         return {lastBalance:lastBalance,stockIn:stockIn,stockOut:stockOut,closing:closing};
       }
       function saveMonthlySnapshot(monthKey){
