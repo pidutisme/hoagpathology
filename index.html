@@ -22612,6 +22612,45 @@ if ("serviceWorker" in navigator) {
   window.setTimeout(run,1000);
 })();
 </script>
+
+<style id="outsource-filter-no-double-v1">
+/* OUTSOURCE FILTER ROOT FIX: Registered Samples filters are native selects only. */
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-select-trigger,
+#moduleYearGrid.outsource-active-grid .outsource-search .inventory-filter-trigger,
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-trigger{display:none!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-custom-select-wrap,
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-custom-wrap{display:contents!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search > select,
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-custom-select-wrap > select,
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-custom-wrap > select{display:block!important;visibility:visible!important;opacity:1!important;position:static!important;}
+</style>
+<script id="outsource-filter-no-double-v1-js">
+(function(){
+  function clean(){
+    var grid=document.getElementById('moduleYearGrid');
+    if(!grid || !grid.classList.contains('outsource-active-grid')) return;
+    var search=grid.querySelector('.outsource-search');
+    if(!search) return;
+    ['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter'].forEach(function(id){
+      var select=document.getElementById(id);
+      if(!select || !search.contains(select)) return;
+      var wrap=select.parentElement;
+      if(wrap && (wrap.classList.contains('outsource-custom-select-wrap') || wrap.classList.contains('outsource-filter-custom-wrap'))){
+        var trigger=wrap.querySelector('.outsource-select-trigger, .inventory-filter-trigger, .outsource-filter-trigger');
+        if(trigger) trigger.remove();
+        wrap.parentNode.insertBefore(select,wrap);
+        wrap.remove();
+      }
+      select.classList.remove('outsource-native-select','inventory-filter-native');
+      select.removeAttribute('aria-hidden');
+    });
+    search.querySelectorAll('.outsource-select-trigger, .inventory-filter-trigger, .outsource-filter-trigger').forEach(function(el){el.remove();});
+  }
+  function run(){clean();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
+  setTimeout(run,0);setTimeout(run,120);setTimeout(run,500);
+})();
+</script>
 </body>
 </html>
 
@@ -22803,19 +22842,27 @@ if ("serviceWorker" in navigator) {
   }
   function init(){
     if(!document.body||!document.getElementById('moduleYearGrid'))return;
-    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select, #moduleYearGrid.outsource-active-grid .outsource-search select').forEach(setup);
+    /* IMPORTANT: the Registered Samples filters MUST stay native.
+       Never enhance selects inside .outsource-search. */
+    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select').forEach(setup);
   }
-  function delayed(){setTimeout(init,0);setTimeout(init,120);setTimeout(init,500);}
+  function delayed(){setTimeout(init,0);setTimeout(init,120);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',delayed);else delayed();
   document.addEventListener('click',function(e){if(openMenu&&!e.target.closest('.outsource-select-menu')&&!e.target.closest('.outsource-select-trigger'))close();},true);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&openMenu)close();});
   window.addEventListener('resize',function(){if(openMenu)position();});
   window.addEventListener('scroll',function(){if(openMenu)position();},true);
-  window.setInterval(function(){if(document.getElementById('moduleYearGrid')?.classList.contains('outsource-active-grid'))init();},500);
+  /* Observe structural changes only; do not poll every 500ms. */
   if(window.MutationObserver){
-    new MutationObserver(function(){
-      var grid=document.getElementById('moduleYearGrid');
-      if(grid&&grid.classList.contains('outsource-active-grid'))init();
+    var pending=false;
+    new MutationObserver(function(mutations){
+      var relevant=false;
+      for(var i=0;i<mutations.length;i++){
+        if(mutations[i].addedNodes && mutations[i].addedNodes.length){ relevant=true; break; }
+      }
+      if(!relevant || pending)return;
+      pending=true;
+      setTimeout(function(){pending=false;init();},60);
     }).observe(document.body,{childList:true,subtree:true});
   }
   window.outsourceInitNeumorphicDropdowns=init;
