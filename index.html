@@ -176,7 +176,8 @@
       --year-page-card-shadow: inset 5px 5px 14px rgba(0, 0, 0, .35), inset -5px -5px 14px rgba(255, 255, 255, .035), inset 0 0 0 1px rgba(255, 255, 255, .045);
       --year-page-card-hover-shadow: inset 6px 6px 16px rgba(0, 0, 0, .38), inset -6px -6px 16px rgba(255, 255, 255, .040), inset 0 0 0 1px rgba(143, 176, 255, .11), inset 0 0 30px rgba(143, 176, 255, .07);
       background-color: #111827;
-      background-image: radial-gradient(circle at 18% 10%, rgba(255, 255, 255, .040) 0px, transparent 32%), radial-gradient(circle at 92% 92%, rgba(35, 103, 242, .10) 0px, transparent 36%);
+      /* Keep the dark page background flat for the same clean, box-free result. */
+      background-image: none;
     }
 
     * {
@@ -195,8 +196,9 @@
       overflow: hidden;
       color: var(--text);
       background-color: var(--bg);
-      background-image: radial-gradient(circle at 18% 8%, rgba(255, 255, 255, .72) 0, transparent 32%), radial-gradient(circle at 92% 88%, rgba(35, 103, 242, .075) 0, transparent 34%);
-      background-size: cover;
+      /* Keep the page background flat so glow does not read as rectangular/striped boxes. */
+      background-image: none;
+      background-size: auto;
       animation: none;
       overscroll-behavior: none;
       -webkit-text-size-adjust: 100%;
