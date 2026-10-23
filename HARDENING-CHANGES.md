@@ -1,6 +1,6 @@
 # Security Hardening – 2.1.80
 
-This build keeps the existing UI and CSS unchanged. The only frontend source change is the password-change request now supplying the authenticated session token required by the hardened API.
+This build keeps the application behavior and visual cascade intact while moving the legacy inline frontend source into cacheable external assets. The password-change request also supplies the authenticated session token required by the hardened API.
 
 ## Included fixes
 
@@ -22,5 +22,5 @@ This build keeps the existing UI and CSS unchanged. The only frontend source cha
 ## Not changed
 
 - UI markup/layout/styling was not redesigned.
-- The CSS embedded in `index.html` is byte-for-byte unchanged.
+- The CSS rules are preserved in original cascade order, but are now consolidated in `assets/css/app.css`.
 - Firebase Realtime Database Rules were not invented or replaced because they are project-specific deployment configuration and must be reviewed against the actual Firebase project.
