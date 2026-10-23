@@ -10878,6 +10878,81 @@ body.dark-mode tbody tr:hover td{
 }
 </style>
 
+
+<style id="pressed-neumorphism-global-override">
+  /* UNIVERSAL PRESSED NEUMORPHISM — visual only; no layout/function changes */
+  :root {
+    --pressed-bg: #e8edf5;
+    --pressed-dark: #d1d9e6;
+    --pressed-light: #ffffff;
+    --pressed-border: rgba(126, 154, 202, .34);
+    --pressed-shadow: inset 18px 18px 30px #d1d9e6, inset -18px -18px 30px #ffffff;
+    --pressed-shadow-sm: inset 10px 10px 22px #d1d9e6, inset -10px -10px 22px #ffffff;
+  }
+
+  /* Every card / panel / nested card family gets the same recessed treatment. */
+  :where(
+    [class*="card"], [class*="panel"], [class*="box"], [class*="year"],
+    [class*="month"], [class*="roster"], [class*="utility"], [class*="setting"],
+    [class*="profile-info"], [class*="link-card"], [class*="mini"], [class*="shell"],
+    .sidebar-footer, .theme-toggle, .display-date, .calendar-toolbar-btn,
+    .calendar-roster-nav-btn, .calendar-roster-month-btn, .calendar-roster-today-btn,
+    .page-back-dashboard-btn
+  ) {
+    background: var(--pressed-bg) !important;
+    border: 1px solid var(--pressed-border) !important;
+    box-shadow: var(--pressed-shadow) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Nested/sub-sub cards: slightly tighter shadow, same visual language. */
+  :where(
+    [class*="card"] [class*="card"], [class*="panel"] [class*="card"],
+    [class*="card"] [class*="box"], [class*="card"] [class*="panel"],
+    [class*="panel"] [class*="box"], [class*="box"] [class*="box"],
+    [class*="year"] [class*="card"], [class*="roster"] [class*="card"],
+    [class*="setting"] [class*="card"]
+  ) {
+    box-shadow: var(--pressed-shadow-sm) !important;
+  }
+
+  /* Icons and small controls inside cards also read as pressed/recessed. */
+  :where(
+    [class*="card"]::before, [class*="panel"]::before, [class*="box"]::before
+  ) {
+    box-shadow: var(--pressed-shadow-sm) !important;
+  }
+
+  /* Keep interaction visual states pressed rather than floating. */
+  :where(
+    [class*="card"]:hover, [class*="panel"]:hover, [class*="box"]:hover,
+    [class*="year"]:hover, [class*="roster"]:hover, [class*="setting"]:hover
+  ) {
+    transform: none !important;
+    box-shadow: var(--pressed-shadow) !important;
+    background: var(--pressed-bg) !important;
+  }
+
+  :where(
+    [class*="card"]:active, [class*="panel"]:active, [class*="box"]:active,
+    [class*="year"]:active, [class*="roster"]:active, [class*="setting"]:active
+  ) {
+    transform: none !important;
+    box-shadow: inset 22px 22px 36px #d1d9e6, inset -22px -22px 36px #ffffff !important;
+  }
+
+  /* Dark mode equivalent — still recessed, never glass/floating. */
+  body.dark-mode {
+    --pressed-bg: #1b2432;
+    --pressed-dark: #101722;
+    --pressed-light: #283445;
+    --pressed-border: rgba(143, 176, 255, .16);
+    --pressed-shadow: inset 18px 18px 30px #101722, inset -18px -18px 30px #283445;
+    --pressed-shadow-sm: inset 10px 10px 22px #101722, inset -10px -10px 22px #283445;
+  }
+</style>
+
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked">
