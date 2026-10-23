@@ -7870,16 +7870,13 @@
 .outsource-search input{flex:1;border:1px solid #d4e1ea;border-radius:9px;padding:9px 11px;font-size:11px;outline:none;}
 .outsource-search select{border:1px solid #d4e1ea;border-radius:9px;padding:9px 11px;font-size:11px;background:#fff;}
 /* OUTSOURCE full-page workspace: no year-card grid constraints */
-.module-year-grid.outsource-active-grid{display:block!important;overflow:hidden!important;height:100%!important;max-height:none!important;min-height:0!important;padding:0!important;box-sizing:border-box!important;}
+.module-year-grid.outsource-active-grid{display:block!important;overflow:auto!important;height:auto!important;max-height:none!important;min-height:100%!important;padding:0!important;}
 .module-year-grid.outsource-active-grid .outsource-register{width:100%;max-width:none;box-sizing:border-box;}
 .module-year-grid.outsource-active-grid .outsource-grid{grid-template-columns:minmax(0,1fr);gap:18px;}
 .module-year-grid.outsource-active-grid .outsource-card{width:100%;}
 .module-year-grid.outsource-active-grid .outsource-form{grid-template-columns:repeat(4,minmax(0,1fr));}
 .module-year-grid.outsource-active-grid .outsource-field.full{grid-column:1/-1;}
-.module-year-grid.outsource-active-grid .outsource-register{height:100%;display:flex;flex-direction:column;min-height:0;}
-.module-year-grid.outsource-active-grid .outsource-grid{min-height:0;}
-.module-year-grid.outsource-active-grid .outsource-grid>.outsource-card:last-child{min-height:0;display:flex;flex-direction:column;}
-.module-year-grid.outsource-active-grid .outsource-table-wrap{max-height:none;height:min(52vh,620px);min-height:240px;overflow:auto;flex:0 1 auto;}
+.module-year-grid.outsource-active-grid .outsource-table-wrap{max-height:none;min-height:280px;}
 @media(max-width:1100px){.module-year-grid.outsource-active-grid .outsource-form{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:700px){.module-year-grid.outsource-active-grid .outsource-form{grid-template-columns:1fr;}}
 @media(max-width:1100px){.outsource-grid{grid-template-columns:1fr;}.outsource-summary{grid-template-columns:repeat(2,1fr);}}
@@ -8934,6 +8931,67 @@ body.dark-mode #inventory .inventory-record-close {
 }
 body.dark-mode #inventory .inventory-record-close:hover {
   background: #2a374a !important;
+}
+</style>
+
+<style id="outsource-layout-final-fix">
+/* OUTSOURCE: fixed page. Only REGISTERED SAMPLES table scrolls. */
+#moduleYears.outsource-active-grid{
+  display:block!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+#moduleYears.outsource-active-grid .outsource-register{
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:12px!important;
+  padding:0 0 8px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+#moduleYears.outsource-active-grid .outsource-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  gap:12px!important;
+  height:100%!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#moduleYears.outsource-active-grid .outsource-grid>.outsource-card:first-child{
+  min-height:0!important;
+  max-height:none!important;
+  flex:none!important;
+}
+#moduleYears.outsource-active-grid .outsource-grid>.outsource-card:nth-child(2){
+  min-height:0!important;
+  height:100%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+#moduleYears.outsource-active-grid .outsource-grid>.outsource-card:nth-child(2) .outsource-card-head,
+#moduleYears.outsource-active-grid .outsource-grid>.outsource-card:nth-child(2) .outsource-summary,
+#moduleYears.outsource-active-grid .outsource-grid>.outsource-card:nth-child(2) .outsource-search{
+  flex:none!important;
+}
+#moduleYears.outsource-active-grid .outsource-table-wrap{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain!important;
+}
+@media (max-width:980px){
+  #moduleYears.outsource-active-grid .outsource-form{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
 }
 </style>
 </head>
@@ -13130,7 +13188,6 @@ if (token) {
         var rejected=rows.filter(function(r){return String(r.result||'').toUpperCase()==='REJECT';}).length;
         var today=outsourceToday();
         grid.innerHTML='<div class="outsource-register">'+
-
           '<div class="outsource-grid">'+
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTER SAMPLE</h3><span id="outsourceEditHint">NEW RECORD</span></div>'+
               '<form class="outsource-form" id="outsourceForm" autocomplete="off">'+
@@ -19689,7 +19746,6 @@ function exportMonthlySchedulePdfs() {
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
     data.outsourceSamples=Array.isArray(data.outsourceSamples)?data.outsourceSamples:[];
-    if(!data.deletedOutsourceSampleIds||typeof data.deletedOutsourceSampleIds!=='object'||Array.isArray(data.deletedOutsourceSampleIds)) data.deletedOutsourceSampleIds={};
         if(!data.deletedTransactionIds||typeof data.deletedTransactionIds!=='object'||Array.isArray(data.deletedTransactionIds)) data.deletedTransactionIds={};
         if(!data.deletedItemIds||typeof data.deletedItemIds!=='object'||Array.isArray(data.deletedItemIds)) data.deletedItemIds={};
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
@@ -20014,19 +20070,12 @@ function exportMonthlySchedulePdfs() {
         });
         local.transactions=local.transactions.filter(function(tx){return !(tx&&tx.id&&local.deletedTransactionIds[String(tx.id)]);});
         local.outsourceSamples=Array.isArray(local.outsourceSamples)?local.outsourceSamples:[];
-        local.deletedOutsourceSampleIds=local.deletedOutsourceSampleIds&&typeof local.deletedOutsourceSampleIds==='object'?local.deletedOutsourceSampleIds:{};
         var sampleMap={};
         local.outsourceSamples.forEach(function(row){if(row&&row.id)sampleMap[String(row.id)]=row;});
         (remote.outsourceSamples||[]).forEach(function(row){
           if(!row||!row.id)return;
           var id=String(row.id);
-          if(local.deletedOutsourceSampleIds[id])return;
           if(!sampleMap[id]){local.outsourceSamples.push(row);sampleMap[id]=row;changed=true;}
-          else {
-            var localAt=Date.parse(String(sampleMap[id].updatedAt||sampleMap[id].createdAt||''))||0;
-            var remoteAt=Date.parse(String(row.updatedAt||row.createdAt||''))||0;
-            if(remoteAt>localAt){sampleMap[id]=row;var pos=local.outsourceSamples.findIndex(function(x){return String(x&&x.id||'')===id;});if(pos>=0)local.outsourceSamples[pos]=row;changed=true;}
-          }
         });
         local.monthlyPrices=local.monthlyPrices||{};
         Object.keys(remote.monthlyPrices||{}).forEach(function(month){
@@ -20053,9 +20102,9 @@ function exportMonthlySchedulePdfs() {
         var remote=wrapper.inventory||wrapper.data||wrapper;
         if(!remote||typeof remote!=='object'||!Array.isArray(remote.items)) return;
         sharedUpdatedAt=String(wrapper.updatedAt||sharedUpdatedAt||'');
-        var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots,outsourceSamples:data.outsourceSamples,deletedOutsourceSampleIds:data.deletedOutsourceSampleIds});
+        var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots,outsourceSamples:data.outsourceSamples});
         mergeCloudAuthoritative(remote, false);
-        var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots,outsourceSamples:data.outsourceSamples,deletedOutsourceSampleIds:data.deletedOutsourceSampleIds});
+        var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots,outsourceSamples:data.outsourceSamples});
         if(before!==after){ saveLocal(); render(); }
       }
       function startSharedInventoryRealtime(){
@@ -20121,32 +20170,26 @@ function exportMonthlySchedulePdfs() {
         merged.version=4;
         merged.items=Array.isArray(cloud.items)?cloud.items.slice():[];
         merged.transactions=Array.isArray(cloud.transactions)?cloud.transactions.slice():[];
-        // Merge outsource samples instead of blindly replacing local state. A realtime
-        // Firebase snapshot can legitimately arrive just before the Vercel write
-        // response; replacing local rows here would make a newly registered sample
-        // appear briefly and then disappear. Cloud + local are merged by id, with
-        // the newest updatedAt winning.
-        merged.outsourceSamples=Array.isArray(cloud.outsourceSamples)?cloud.outsourceSamples.slice():[];
-        merged.deletedOutsourceSampleIds=merged.deletedOutsourceSampleIds&&typeof merged.deletedOutsourceSampleIds==='object'?merged.deletedOutsourceSampleIds:{};
-        Object.keys(local.deletedOutsourceSampleIds||{}).forEach(function(id){
-          if(!merged.deletedOutsourceSampleIds[id]) merged.deletedOutsourceSampleIds[id]=local.deletedOutsourceSampleIds[id];
+        /* Preserve local outsource registrations that are newer than (or absent from)
+           the incoming cloud snapshot. A realtime snapshot can arrive while the
+           just-submitted save is still in flight; replacing the whole array here
+           would make the new row disappear for a moment. Merge by sample id and
+           prefer the newest updatedAt/createdAt record. */
+        var cloudSamples=Array.isArray(cloud.outsourceSamples)?cloud.outsourceSamples:[];
+        var localSamples=Array.isArray(local.outsourceSamples)?local.outsourceSamples:[];
+        var sampleMap={};
+        function sampleStamp(row){
+          var a=Date.parse(String(row&&row.updatedAt||''));
+          if(!Number.isFinite(a)) a=Date.parse(String(row&&row.createdAt||''));
+          return Number.isFinite(a)?a:0;
+        }
+        localSamples.forEach(function(row){ if(row&&row.id) sampleMap[String(row.id)]=row; });
+        cloudSamples.forEach(function(row){
+          if(!row||!row.id) return;
+          var id=String(row.id), existing=sampleMap[id];
+          if(!existing || sampleStamp(row)>=sampleStamp(existing)) sampleMap[id]=row;
         });
-        var outsourceMap={};
-        merged.outsourceSamples.forEach(function(row){if(row&&row.id)outsourceMap[String(row.id)]=row;});
-        (local.outsourceSamples||[]).forEach(function(row){
-          if(!row||!row.id)return;
-          var id=String(row.id);
-          if(merged.deletedOutsourceSampleIds[id])return;
-          var remoteRow=outsourceMap[id];
-          if(!remoteRow){ merged.outsourceSamples.push(row); outsourceMap[id]=row; return; }
-          var localAt=Date.parse(String(row.updatedAt||row.createdAt||''))||0;
-          var remoteAt=Date.parse(String(remoteRow.updatedAt||remoteRow.createdAt||''))||0;
-          if(localAt>remoteAt){
-            var pos=merged.outsourceSamples.findIndex(function(x){return String(x&&x.id||'')===id;});
-            if(pos>=0) merged.outsourceSamples[pos]=row;
-          }
-        });
-        merged.outsourceSamples=merged.outsourceSamples.filter(function(row){return !(row&&row.id&&merged.deletedOutsourceSampleIds[String(row.id)]);});
+        merged.outsourceSamples=Object.keys(sampleMap).map(function(id){return sampleMap[id];});
         merged.deletedTransactionIds=merged.deletedTransactionIds&&typeof merged.deletedTransactionIds==='object'?merged.deletedTransactionIds:{};
         merged.deletedItemIds=merged.deletedItemIds&&typeof merged.deletedItemIds==='object'?merged.deletedItemIds:{};
         Object.keys(local.deletedItemIds||{}).forEach(function(id){ if(!merged.deletedItemIds[id]) merged.deletedItemIds[id]=local.deletedItemIds[id]; });
@@ -21027,8 +21070,6 @@ function exportMonthlySchedulePdfs() {
       }
       function deleteOutsourceSample(id){
         ensureOutsourceReady();
-        data.deletedOutsourceSampleIds=data.deletedOutsourceSampleIds&&typeof data.deletedOutsourceSampleIds==='object'?data.deletedOutsourceSampleIds:{};
-        data.deletedOutsourceSampleIds[String(id||'')]=new Date().toISOString();
         data.outsourceSamples=data.outsourceSamples.filter(function(x){return String(x&&x.id||'')!==String(id||'');});
         saveLocal();
         render();
