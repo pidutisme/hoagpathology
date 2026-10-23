@@ -19856,7 +19856,7 @@ function exportMonthlySchedulePdfs() {
           sharedPollTimer=null;
           if(!initialized || sharedSyncBusy) { scheduleSharedPoll(); return; }
           loadRemote(true);
-        }, 12000);
+        }, 2000);
       }
       function saveRemote(options){
         options=options||{};
@@ -19877,6 +19877,10 @@ function exportMonthlySchedulePdfs() {
             return;
           }
           if(result && result.ok!==false) sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
+          // Re-check shortly after every successful write so another tab/window
+          // reflects the committed server state even if Firebase realtime delivery
+          // is delayed or blocked by a client-side rule/network condition.
+          setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
           scheduleSharedPoll();
         }).withFailureHandler(function(error){
           sharedSyncBusy=false;
@@ -20246,6 +20250,9 @@ function exportMonthlySchedulePdfs() {
           try { saveRemote(); } catch(remoteErr) { console.warn('Inventory remote delete error:',remoteErr); }
           closeRecordModal();
           render();
+          // Keep the UI responsive locally, then confirm the committed cloud state
+          // without requiring a manual page refresh.
+          setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
         });
       }
 
