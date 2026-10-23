@@ -260,6 +260,13 @@ async function dispatch(db, method, a) {
       inventory.novacloneBalanceResetV12=true;
       const old=(await db.ref(INVENTORY).get()).val()||{};
       const updatedAt=clean(old.updatedAt);
+      const oldInventory=old.inventory||old.data||{};
+      if(s.role!=='ADMIN'){
+        const protectedFields=item=>({id:String(item?.id||''),name:clean(item?.name,300),category:clean(item?.category,100),type:clean(item?.type,100),price:Number(item?.price||0),openingStock:Number(item?.openingStock||0),minStock:Number(item?.minStock||0),active:item?.active!==false});
+        const oldItems=(Array.isArray(oldInventory.items)?oldInventory.items:[]).map(protectedFields).sort((x,y)=>x.id.localeCompare(y.id));
+        const newItems=(Array.isArray(inventory.items)?inventory.items:[]).map(protectedFields).sort((x,y)=>x.id.localeCompare(y.id));
+        if(JSON.stringify(oldItems)!==JSON.stringify(newItems)||JSON.stringify(oldInventory.monthlyPrices||{})!==JSON.stringify(inventory.monthlyPrices||{})) fail('Administrator access is required to add, edit, delete items, opening stock, minimum stock or prices.',403);
+      }
       if(clean(a[2])!==updatedAt){
         return {ok:false,conflict:true,inventory:old.inventory||old.data||old,updatedAt,error:'Inventory was changed on another device. The latest inventory has been returned for merging.',version:VERSION};
       }
@@ -317,6 +324,31 @@ async function dispatch(db, method, a) {
     case 'adminSetLiveChatLocked': {const s=await requireAdmin(db,tokenAt(0));await db.ref(`${SETTINGS}/chatControl`).set({locked:!!a[1],updatedAt:iso(),updatedBy:s.userId});await log(db,s.userId,'ADMIN_CHAT_LOCK',`Locked ${!!a[1]}`,a[2]);return {ok:true,version:VERSION};}
     case 'adminClearLiveChat': {const s=await requireAdmin(db,tokenAt(0));await db.ref(CHAT).remove();await log(db,s.userId,'ADMIN_CLEAR_CHAT','Cleared live chat.',a[1]);return {ok:true,version:VERSION};}
     case 'adminClearUserNotes': {const s=await requireAdmin(db,tokenAt(0));await db.ref(NOTES).remove();await log(db,s.userId,'ADMIN_CLEAR_NOTES','Cleared notes.',a[1]);return {ok:true,version:VERSION};}
+    case 'adminInventoryUpsertItem': {
+      const s=await requireAdmin(db,tokenAt(0));
+      const item=a[1]&&typeof a[1]==='object'?{...a[1]}:{}; const expectedAt=clean(a[2]);
+      const ref=db.ref(INVENTORY); const old=(await ref.get()).val()||{}; const updatedAt=clean(old.updatedAt); const inventory=old.inventory||old.data||{};
+      if(expectedAt!==updatedAt)return {ok:false,conflict:true,inventory,updatedAt,error:'Inventory was changed on another device. Reload the latest inventory and try again.',version:VERSION};
+      const items=Array.isArray(inventory.items)?inventory.items.slice():[]; const name=clean(item.name,300); if(!name)fail('Item name is required.');
+      const id=clean(item.id,120)||`item-${randomUUID()}`; if(items.some(x=>String(x?.name||'').trim().toLowerCase()===name.toLowerCase()&&String(x?.id||'')!==id))fail('An item with this name already exists.');
+      const normalized={id,name,category:clean(item.category,100)||'ETC',type:clean(item.type,100)||'REAGENT',price:Number(item.price||0),openingStock:Math.max(0,Math.floor(Number(item.openingStock||0))),minStock:Math.max(0,Math.floor(Number(item.minStock||0))),active:item.active!==false};
+      if(!Number.isFinite(normalized.price)||normalized.price<0)fail('Invalid item price.');
+      const idx=items.findIndex(x=>String(x?.id||'')===id); if(idx>=0)items[idx]={...items[idx],...normalized}; else items.push(normalized);
+      const nextInventory={...inventory,version:4,items}; const next={version:4,scope:'team',updatedBy:s.userId,updatedAt:iso(),inventory:nextInventory};
+      await ref.set(next); await log(db,s.userId,idx>=0?'ADMIN_UPDATE_INVENTORY_ITEM':'ADMIN_ADD_INVENTORY_ITEM',`${idx>=0?'Updated':'Added'} item ${name}.`,a[3]);
+      return {ok:true,inventory:nextInventory,updatedAt:next.updatedAt,version:VERSION};
+    }
+    case 'adminInventoryDeleteItem': {
+      const s=await requireAdmin(db,tokenAt(0)); const itemId=clean(a[1],120), expectedAt=clean(a[2]); if(!itemId)fail('Item ID is required.');
+      const ref=db.ref(INVENTORY); const old=(await ref.get()).val()||{}; const updatedAt=clean(old.updatedAt); const inventory=old.inventory||old.data||{};
+      if(expectedAt!==updatedAt)return {ok:false,conflict:true,inventory,updatedAt,error:'Inventory was changed on another device. Reload the latest inventory and try again.',version:VERSION};
+      const items=Array.isArray(inventory.items)?inventory.items:[]; const target=items.find(x=>String(x?.id||'')===itemId); if(!target)fail('Item was not found.',404);
+      const allTx=Array.isArray(inventory.transactions)?inventory.transactions:[]; const transactions=allTx.filter(t=>String(t?.itemId||'')!==itemId); const deletedTransactionIds={...(inventory.deletedTransactionIds||{})}; allTx.forEach(t=>{if(String(t?.itemId||'')===itemId&&t?.id)deletedTransactionIds[String(t.id)]=iso();});
+      const deletedItemIds={...(inventory.deletedItemIds||{}),[itemId]:iso()}; const monthlyPrices={...(inventory.monthlyPrices||{})}; Object.keys(monthlyPrices).forEach(m=>{if(monthlyPrices[m]&&typeof monthlyPrices[m]==='object')delete monthlyPrices[m][itemId];});
+      const nextInventory={...inventory,version:4,items:items.filter(x=>String(x?.id||'')!==itemId),transactions,deletedTransactionIds,deletedItemIds,monthlyPrices}; const next={version:4,scope:'team',updatedBy:s.userId,updatedAt:iso(),inventory:nextInventory};
+      await ref.set(next); await log(db,s.userId,'ADMIN_DELETE_INVENTORY_ITEM',`Deleted item ${clean(target.name,300)}.`,a[3]);
+      return {ok:true,inventory:nextInventory,updatedAt:next.updatedAt,deletedItemId:itemId,version:VERSION};
+    }
     case 'changeAuthPassword': {const s=await requireSession(db,tokenAt(4));const id=normalizeUserId(a[0]);if(id!==s.userId)fail('You can only change your own password.',403);const current=normalizePassword(a[1]),nextPass=normalizePassword(a[2]);const users=await readUsers(db);const u=users.find(x=>normalizeUserId(x.userId||x.id)===id&&x.deleted!==true);if(!u||!verifyPassword(u,current))fail('Invalid current password.',401);if(nextPass.length<4)fail('New password must be at least 4 characters.',400);const now=iso();const updated=users.map(x=>normalizeUserId(x.userId||x.id)===id?{...x,...buildPasswordRecord(nextPass),sessionsRevokedAt:now,updatedAt:now}:x);await writeUsers(db,updated);await db.ref(`${SESSIONS}/${tokenHash(s.token)}`).remove();const loginResult=await login(db,id,nextPass,a[3],{});return {...loginResult,changed:true,message:'Password updated successfully.'};}
     default: throw Error(`API action not migrated yet: ${method}`);
   }

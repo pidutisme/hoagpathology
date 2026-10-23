@@ -9340,6 +9340,7 @@ body.dark-mode #inventory .inventory-record-close:hover {
   <div class="inventory-head-actions">
     <button type="button" class="inventory-action-btn primary" id="inventoryStockInBtn">＋ STOCK IN</button>
     <button type="button" class="inventory-action-btn danger" id="inventoryStockOutBtn">− STOCK OUT</button>
+    <button type="button" class="inventory-action-btn" id="inventoryAdminItemsBtn" hidden>⚙ INVENTORY CONTROL</button>
   </div>
 </div>
 
@@ -9378,6 +9379,37 @@ body.dark-mode #inventory .inventory-record-close:hover {
 </div>
 </div>
 </section>
+
+<div class="inventory-modal" id="inventoryAdminItemsModal" hidden>
+  <div class="inventory-modal-backdrop" data-inventory-admin-close></div>
+  <div class="inventory-modal-card" role="dialog" aria-modal="true" aria-labelledby="inventoryAdminItemsTitle">
+    <div class="inventory-modal-head">
+      <div><span class="inventory-modal-kicker">ADMIN ONLY</span><h3 id="inventoryAdminItemsTitle">INVENTORY CONTROL</h3></div>
+      <button type="button" class="inventory-modal-close" data-inventory-admin-close aria-label="Close">×</button>
+    </div>
+    <form id="inventoryAdminItemForm" class="inventory-form" autocomplete="off">
+      <input type="hidden" id="inventoryAdminEditingId" value="">
+      <div class="inventory-form-grid">
+        <label>ITEM NAME<input id="inventoryAdminName" type="text" maxlength="160" required placeholder="e.g. New Reagent"></label>
+        <label>CATEGORY<select id="inventoryAdminCategory" required><option value="BIOCHEMISTRY">BIOCHEMISTRY</option><option value="HAEMATOLOGY">HAEMATOLOGY</option><option value="MICROBIOLOGY">MICROBIOLOGY</option><option value="URINE/STOOL ANALYSIS">URINE / STOOL ANALYSIS</option><option value="ETC">ETC</option><option value="CONSUMABLES">CONSUMABLES</option><option value="OUTSOURCE INDENT">OUTSOURCE INDENT</option></select></label>
+      </div>
+      <div class="inventory-form-grid">
+        <label>TYPE<input id="inventoryAdminType" type="text" maxlength="80" placeholder="REAGENT / CONSUMABLE"></label>
+        <label>PRICE / UNIT<input id="inventoryAdminPrice" type="number" min="0" step="0.01" required></label>
+      </div>
+      <div class="inventory-form-grid">
+        <label>OPENING STOCK<input id="inventoryAdminOpening" type="number" min="0" step="1" value="0" required></label>
+        <label>MINIMUM STOCK<input id="inventoryAdminMin" type="number" min="0" step="1" value="1" required></label>
+      </div>
+      <div id="inventoryAdminItemMessage" class="inventory-form-message"></div>
+      <div class="inventory-form-actions"><button type="button" class="inventory-action-btn" id="inventoryAdminItemClearBtn">CLEAR</button><button type="submit" class="inventory-action-btn primary" id="inventoryAdminItemSaveBtn">ADD ITEM</button></div>
+    </form>
+    <div style="margin-top:16px;border-top:1px solid rgba(120,135,160,.14);padding-top:14px">
+      <div class="inventory-modal-kicker" style="margin-bottom:8px">ITEM MASTER</div>
+      <div id="inventoryAdminItemList"></div>
+    </div>
+  </div>
+</div>
 
 <div class="inventory-modal" id="inventoryModal" hidden>
   <div class="inventory-modal-backdrop" data-inventory-close></div>
@@ -19453,13 +19485,11 @@ function exportMonthlySchedulePdfs() {
       var STORAGE_KEY = 'labAppInventoryV2';
       var initialized = false;
       var dbPath = 'labapp/inventory';
-      var data = { version: 4, items: [], transactions: [], monthlyPrices: {}, monthlySnapshots: {} };
+      var data = { version: 4, items: [], transactions: [], deletedTransactionIds: {}, deletedItemIds: {}, monthlyPrices: {}, monthlySnapshots: {} };
       var sharedUpdatedAt = '';
       var sharedSyncBusy = false;
       var sharedPollTimer = null;
       var sharedRealtimeRef = null;
-      var sharedWritePending = false;
-      var sharedLastRealtimeUpdatedAt = '';
       var currentView = 'ITEMS';
       var selectedPriceMonth = new Date().toISOString().slice(0,7);
       var staffNames = ['SHOUNNA', 'LIZA', 'JAYANTHI', 'SURIANI', 'TOMMY', 'JAPIDI', 'NAZRAN'];
@@ -19485,6 +19515,7 @@ function exportMonthlySchedulePdfs() {
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
         if(!data.deletedTransactionIds||typeof data.deletedTransactionIds!=='object'||Array.isArray(data.deletedTransactionIds)) data.deletedTransactionIds={};
+        if(!data.deletedItemIds||typeof data.deletedItemIds!=='object'||Array.isArray(data.deletedItemIds)) data.deletedItemIds={};
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
         if(!data.monthlySnapshots||typeof data.monthlySnapshots!=='object'||Array.isArray(data.monthlySnapshots)) data.monthlySnapshots={};
         var novacloneNames={
@@ -19501,7 +19532,7 @@ function exportMonthlySchedulePdfs() {
         // openingStock from old localStorage/cloud snapshots. Its balance is
         // driven only by explicit Stock In / Stock Out movements.
         data.items.forEach(function(item){
-          item.minStock=1;
+          if(item.minStock==null||!isFinite(Number(item.minStock))) item.minStock=1;
           var key=novacloneKey(item&&item.name||'');
           if(novacloneNames[key]) item.openingStock=0;
         });
@@ -19585,6 +19616,8 @@ function exportMonthlySchedulePdfs() {
         data.items.forEach(function(item){byName[String(item.name||'').trim().toLowerCase()]=item;});
         var changed=false;
         seedItems.forEach(function(x,i){
+          var canonicalId='item-'+String(i+1).padStart(3,'0');
+          if(data.deletedItemIds&&data.deletedItemIds[canonicalId]) return;
           var key=String(x[2]||'').trim().toLowerCase();
           var item=byName[key];
           if(!item){
@@ -19824,19 +19857,11 @@ function exportMonthlySchedulePdfs() {
         sharedRealtimeRef=null;
       }
       function handleSharedInventoryRealtime(snapshot){
-        // Ignore snapshots arriving while this client is actively writing.
-        // The write callback performs a fresh authenticated read afterwards,
-        // preventing a stale realtime event from overwriting a just-saved move.
-        if(sharedSyncBusy || sharedWritePending) return;
         if(!snapshot||!snapshot.exists()) return;
         var wrapper=snapshot.val()||{};
         var remote=wrapper.inventory||wrapper.data||wrapper;
         if(!remote||typeof remote!=='object'||!Array.isArray(remote.items)) return;
-        var incomingUpdatedAt=String(wrapper.updatedAt||'');
-        if(incomingUpdatedAt && sharedLastRealtimeUpdatedAt && incomingUpdatedAt<sharedLastRealtimeUpdatedAt) return;
-        if(incomingUpdatedAt && sharedUpdatedAt && incomingUpdatedAt<sharedUpdatedAt) return;
-        sharedUpdatedAt=incomingUpdatedAt||sharedUpdatedAt||'';
-        sharedLastRealtimeUpdatedAt=incomingUpdatedAt||sharedLastRealtimeUpdatedAt||'';
+        sharedUpdatedAt=String(wrapper.updatedAt||sharedUpdatedAt||'');
         var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
         mergeCloudAuthoritative(remote, false);
         var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
@@ -19870,38 +19895,33 @@ function exportMonthlySchedulePdfs() {
       }
       function saveRemote(options){
         options=options||{};
-        if(sharedSyncBusy && !options.force) return false;
+        if(sharedSyncBusy && !options.force) return;
         var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
-        if(!token || !hasVercelBackend()) return false;
+        if(!token || !hasVercelBackend()) return;
         sharedSyncBusy=true;
-        sharedWritePending=true;
         hoagApi.run.withSuccessHandler(function(result){
           sharedSyncBusy=false;
-          sharedWritePending=false;
           if(result && result.ok===false && result.conflict){
             var cloud=result.inventory||{};
             mergeRemoteIntoLocal(cloud);
             saveLocal();
-            render();
-            // Retry against the latest server revision after merging the team state.
+            // Retry with the merged team state against the latest server revision.
             saveRemote({force:true});
+            render();
             scheduleSharedPoll();
             return;
           }
-          if(result && result.ok!==false){
-            sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
-            sharedLastRealtimeUpdatedAt=sharedUpdatedAt||sharedLastRealtimeUpdatedAt||'';
-            // Confirm the committed server state once. Do not create a save/load loop.
-            setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
-          }
+          if(result && result.ok!==false) sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
+          // Re-check shortly after every successful write so another tab/window
+          // reflects the committed server state even if Firebase realtime delivery
+          // is delayed or blocked by a client-side rule/network condition.
+          setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
           scheduleSharedPoll();
         }).withFailureHandler(function(error){
           sharedSyncBusy=false;
-          sharedWritePending=false;
           console.warn('Shared Inventory save failed:',error&&error.message?error.message:error);
           scheduleSharedPoll();
         }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
-        return true;
       }
       function mergeCloudAuthoritative(cloud, suppressStaleNovaclone){
         if(!cloud || typeof cloud!=='object' || !Array.isArray(cloud.items)) return false;
@@ -19911,6 +19931,9 @@ function exportMonthlySchedulePdfs() {
         merged.items=Array.isArray(cloud.items)?cloud.items.slice():[];
         merged.transactions=Array.isArray(cloud.transactions)?cloud.transactions.slice():[];
         merged.deletedTransactionIds=merged.deletedTransactionIds&&typeof merged.deletedTransactionIds==='object'?merged.deletedTransactionIds:{};
+        merged.deletedItemIds=merged.deletedItemIds&&typeof merged.deletedItemIds==='object'?merged.deletedItemIds:{};
+        Object.keys(local.deletedItemIds||{}).forEach(function(id){ if(!merged.deletedItemIds[id]) merged.deletedItemIds[id]=local.deletedItemIds[id]; });
+        merged.items=merged.items.filter(function(item){return !(item&&item.id&&merged.deletedItemIds[String(item.id)]);});
         Object.keys(local.deletedTransactionIds||{}).forEach(function(id){
           if(!merged.deletedTransactionIds[id]) merged.deletedTransactionIds[id]=local.deletedTransactionIds[id];
         });
@@ -19960,8 +19983,7 @@ function exportMonthlySchedulePdfs() {
               scheduleSharedPoll(); render(); resolve(false); return;
             }
             var remote=result.inventory||{};
-            sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
-            sharedLastRealtimeUpdatedAt=sharedUpdatedAt||sharedLastRealtimeUpdatedAt||'';
+            sharedUpdatedAt=String(result.updatedAt||'');
             var remoteHasData=Array.isArray(remote.items)&&remote.items.length>0;
             var localHasData=Array.isArray(data.items)&&data.items.length>0;
             if(!remoteHasData){
@@ -19969,27 +19991,23 @@ function exportMonthlySchedulePdfs() {
               if(localHasData) saveRemote({force:true});
               saveLocal(); render(); scheduleSharedPoll(); resolve(false); return;
             }
-
-            var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
             mergeCloudAuthoritative(remote, result.migration==='novaclone-v12');
             // Keep the built-in catalog complete after a cloud-authoritative load.
-            // These repairs must not be pushed unless they actually changed state.
+            // This adds missing master items without replacing existing stock,
+            // lots, transactions or prices.
             removeMalformedCatalogItems();
             mergeSeedCatalog();
             var duplicateIdFix=repairDuplicateItemIds();
             ensureNovacloneInitialZero();
-            normalize();
-            var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
-            var cloudChanged=before!==after;
-            if(cloudChanged){
-              saveLocal();
-              // Push only a real local repair/unsynced change. This avoids the old
-              // save -> load -> save -> load infinite loop.
-              saveRemote({force:true});
-            } else {
-              saveLocal();
-            }
-            render();
+
+            // Remove only malformed catalog entries here. Novaclone zeroing is
+            // controlled by the one-time shared V5 migration above so future
+            // legitimate Stock In/Out movements are preserved.
+            var cloudChanged=removeMalformedCatalogItems() || duplicateIdFix;
+            saveLocal();
+            // Push the repaired cloud-authoritative state back to Vercel.
+            saveRemote({force:true});
+            if(!silent) render(); else render();
             scheduleSharedPoll();
             resolve(true);
           }).withFailureHandler(function(error){
@@ -20009,9 +20027,6 @@ function exportMonthlySchedulePdfs() {
         stopSharedInventoryRealtime();
         clearTimeout(sharedPollTimer);
         sharedPollTimer=null;
-        sharedWritePending=false;
-        sharedSyncBusy=false;
-        sharedLastRealtimeUpdatedAt='';
       }
       function persist(){
         saveLocal();
@@ -20314,7 +20329,7 @@ function exportMonthlySchedulePdfs() {
         }
       }
       function render(){normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
-      function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');render();populateForm();requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);}
+      function open(){var page=$('inventory');if(!page)return;document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.hidden=!inventoryAdminAllowed();render();populateForm();requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);}
       function populateForm(){
         var sel=$('inventoryItemInput');if(!sel)return;var items=data.items.filter(function(i){return i.active!==false;}).slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
         sel.innerHTML=items.map(function(i){return '<option value="'+esc(i.id)+'">'+esc(i.name)+' · '+esc(i.category)+' · '+money(i.price)+'</option>';}).join('');
@@ -20347,10 +20362,6 @@ function exportMonthlySchedulePdfs() {
           var qty=Math.floor(Number(($('inventoryQtyInput')||{}).value));
           var item=getItem(itemId);
           if(!item||!qty||qty<1){if(msg)msg.textContent='Please select an item and enter a valid quantity.';return;}
-          if(editingId && data.deletedTransactionIds && data.deletedTransactionIds[String(editingId)]){
-            if(msg)msg.textContent='This movement was already deleted. Refresh the inventory and try again.';
-            return;
-          }
           var staff=(($('inventoryStaffInput')||{}).value)||getUserName();
           var notes=(($('inventoryNotesInput')||{}).value)||'';
           var lot=cleanText(($('inventoryLotInput')||{}).value);
@@ -20392,12 +20403,87 @@ function exportMonthlySchedulePdfs() {
         }
       }
 
+      function inventoryAdminAllowed(){ return String(state.authRole||'').toUpperCase()==='ADMIN'; }
+      function clearAdminItemForm(){
+        var f=$('inventoryAdminItemForm');if(f)f.reset();
+        var id=$('inventoryAdminEditingId');if(id)id.value='';
+        var opening=$('inventoryAdminOpening');if(opening)opening.value='0';
+        var min=$('inventoryAdminMin');if(min)min.value='1';
+        var msg=$('inventoryAdminItemMessage');if(msg)msg.textContent='';
+        var save=$('inventoryAdminItemSaveBtn');if(save)save.textContent='ADD ITEM';
+      }
+      function renderAdminItemList(){
+        var host=$('inventoryAdminItemList');if(!host)return;
+        if(!inventoryAdminAllowed()){host.innerHTML='';return;}
+        var rows=data.items.slice().sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{numeric:true,sensitivity:'base'});});
+        var html='<div style="display:grid;gap:7px">';
+        rows.forEach(function(item){
+          var bal=itemBalance(item.id);
+          html+='<div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;align-items:center;padding:9px 10px;border:1px solid rgba(120,135,160,.14);border-radius:12px;background:rgba(255,255,255,.3)">'+
+            '<div><strong style="display:block;font-size:11px">'+esc(item.name)+'</strong><span style="font-size:9px;color:#718096">'+esc(item.category)+' · '+money(item.price)+' · Opening '+Number(item.openingStock||0)+' · Balance '+bal+'</span></div>'+
+            '<button type="button" class="inventory-action-btn" data-admin-item-edit="'+esc(item.id)+'">EDIT</button>'+
+            '<button type="button" class="inventory-action-btn danger" data-admin-item-delete="'+esc(item.id)+'">DELETE</button></div>';
+        });
+        html+='</div>';host.innerHTML=html;
+      }
+      function openAdminItems(){
+        if(!inventoryAdminAllowed()){requestAppConfirm('ADMIN ONLY','Inventory Control is restricted to administrators.',function(){});return;}
+        clearAdminItemForm();renderAdminItemList();var m=$('inventoryAdminItemsModal');if(m)m.hidden=false;
+      }
+      function editAdminItem(itemId){
+        if(!inventoryAdminAllowed())return;var item=getItem(itemId);if(!item)return;
+        $('inventoryAdminEditingId').value=item.id;$('inventoryAdminName').value=item.name||'';$('inventoryAdminCategory').value=item.category||'ETC';$('inventoryAdminType').value=item.type||'';$('inventoryAdminPrice').value=Number(item.price||0);$('inventoryAdminOpening').value=Number(item.openingStock||0);$('inventoryAdminMin').value=Number(item.minStock||1);$('inventoryAdminItemSaveBtn').textContent='SAVE ITEM';$('inventoryAdminItemMessage').textContent='Editing '+item.name;
+      }
+      function adminInventoryRequest(method,args,onSuccess,onFailure){
+        var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
+        if(!token||!hasVercelBackend()){if(onFailure)onFailure(new Error('Secure inventory backend is unavailable.'));return;}
+        sharedSyncBusy=true;
+        hoagApi.run.withSuccessHandler(function(result){
+          sharedSyncBusy=false;
+          if(result&&result.ok===false){
+            if(result.inventory)mergeCloudAuthoritative(result.inventory,true);
+            if(onFailure)onFailure(new Error(result.error||'Inventory update failed.'));
+            return;
+          }
+          if(result&&result.inventory){data=result.inventory;normalize();sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');saveLocal();}
+          if(onSuccess)onSuccess(result);
+          scheduleSharedPoll();
+        }).withFailureHandler(function(error){
+          sharedSyncBusy=false;
+          if(onFailure)onFailure(error instanceof Error?error:new Error(error&&error.message?error.message:'Inventory update failed.'));
+          scheduleSharedPoll();
+        })[method].apply(null,args);
+      }
+      function saveAdminItem(e){
+        e.preventDefault();if(!inventoryAdminAllowed())return;
+        var msg=$('inventoryAdminItemMessage');if(msg)msg.textContent='';
+        var name=cleanText(($('inventoryAdminName')||{}).value);var category=cleanText(($('inventoryAdminCategory')||{}).value)||'ETC';var type=cleanText(($('inventoryAdminType')||{}).value)||'REAGENT';var price=Number(($('inventoryAdminPrice')||{}).value);var opening=Math.floor(Number(($('inventoryAdminOpening')||{}).value));var min=Math.floor(Number(($('inventoryAdminMin')||{}).value));var editing=cleanText(($('inventoryAdminEditingId')||{}).value);
+        if(!name){if(msg)msg.textContent='Item name is required.';return;}if(!isFinite(price)||price<0||!isFinite(opening)||opening<0||!isFinite(min)||min<0){if(msg)msg.textContent='Enter valid price, opening stock and minimum stock.';return;}
+        var duplicate=data.items.some(function(i){return String(i.name||'').trim().toLowerCase()===name.toLowerCase()&&String(i.id)!==String(editing);});if(duplicate){if(msg)msg.textContent='An item with this name already exists.';return;}
+        var item=editing?getItem(editing):null;var payload={id:editing||'',name:name,category:category,type:type,price:price,openingStock:opening,minStock:min,active:item?item.active!==false:true};
+        if(msg)msg.textContent=editing?'Saving item...':'Adding item...';
+        adminInventoryRequest('adminInventoryUpsertItem',[tokenForInventoryAdmin(),payload,sharedUpdatedAt],function(){
+          populateForm();renderAdminItemList();render();clearAdminItemForm();
+        },function(err){if(msg)msg.textContent=err&&err.message?err.message:'Unable to save item.';});
+      }
+      function tokenForInventoryAdmin(){return (typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';}
+      function deleteAdminItem(itemId){
+        if(!inventoryAdminAllowed())return;var item=getItem(itemId);if(!item)return;
+        requestAppConfirm('DELETE ITEM','Delete '+item.name+'? This permanently removes the item, its stock movements and monthly prices from the shared inventory.',function(){
+          var msg=$('inventoryAdminItemMessage');if(msg)msg.textContent='Deleting '+item.name+'...';
+          adminInventoryRequest('adminInventoryDeleteItem',[tokenForInventoryAdmin(),itemId,sharedUpdatedAt],function(){
+            populateForm();renderAdminItemList();render();clearAdminItemForm();
+          },function(err){if(msg)msg.textContent=err&&err.message?err.message:'Unable to delete item.';});
+        });
+      }
+      function closeAdminItems(){var m=$('inventoryAdminItemsModal');if(m)m.hidden=true;clearAdminItemForm();}
+
       function bind(){
         if(initialized)return;initialized=true;
         document.addEventListener('click',function(e){var edit=e.target.closest('[data-inventory-edit-id]');if(edit){e.preventDefault();e.stopPropagation();closeRecordModal();editMovement(edit.getAttribute('data-inventory-edit-id'));return;}var del=e.target.closest('[data-inventory-delete-id]');if(del){e.preventDefault();e.stopPropagation();deleteMovement(del.getAttribute('data-inventory-delete-id'));}});
         var search=$('inventorySearch');if(search)search.addEventListener('input',render);
         ['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'].forEach(function(id){var n=$(id);if(n)n.addEventListener('change',function(){if(id==='inventoryViewFilter')currentView=n.value;render();});});
-        var inBtn=$('inventoryStockInBtn');if(inBtn)inBtn.addEventListener('click',function(){showModal('IN');});var outBtn=$('inventoryStockOutBtn');if(outBtn)outBtn.addEventListener('click',function(){showModal('OUT');});
+        var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.addEventListener('click',openAdminItems);var adminForm=$('inventoryAdminItemForm');if(adminForm)adminForm.addEventListener('submit',saveAdminItem);var adminClear=$('inventoryAdminItemClearBtn');if(adminClear)adminClear.addEventListener('click',clearAdminItemForm);var adminList=$('inventoryAdminItemList');if(adminList)adminList.addEventListener('click',function(e){var edit=e.target.closest('[data-admin-item-edit]');if(edit){editAdminItem(edit.getAttribute('data-admin-item-edit'));return;}var del=e.target.closest('[data-admin-item-delete]');if(del){deleteAdminItem(del.getAttribute('data-admin-item-delete'));return;}});document.querySelectorAll('[data-inventory-admin-close]').forEach(function(n){n.addEventListener('click',closeAdminItems);});var inBtn=$('inventoryStockInBtn');if(inBtn)inBtn.addEventListener('click',function(){showModal('IN');});var outBtn=$('inventoryStockOutBtn');if(outBtn)outBtn.addEventListener('click',function(){showModal('OUT');});
         var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();});
         var itemTrigger=$('inventoryItemTrigger');if(itemTrigger)itemTrigger.addEventListener('click',function(e){e.stopPropagation();toggleItemCustom();});
         var itemMenu=$('inventoryItemMenu');if(itemMenu)itemMenu.addEventListener('click',function(e){var opt=e.target.closest('.inventory-custom-option');if(!opt)return;var sel=$('inventoryItemInput');if(sel){sel.value=opt.getAttribute('data-value')||'';syncItemCustom();updateLotSelect();}closeItemCustom();});
