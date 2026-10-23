@@ -9653,43 +9653,6 @@ select[data-auto-from-ic]{
   font-size:22px;
   line-height:1;
 }
-/* 1. Hospital Profile */
-#profile .profile-card:nth-child(1)>h3::before{content:"🏥";}
-/* 2. Laboratory Profile */
-#profile .profile-card:nth-child(2)>h3::before{content:"🔬";}
-/* 3. Forms */
-#access .profile-card:nth-child(1)>h3::before{content:"📋";}
-/* 4. MSDS */
-#access .profile-card:nth-child(2)>h3::before{content:"⚠️";}
-/* 5. e-Book */
-#access .profile-card:nth-child(3)>h3::before{content:"📚";}
-/* 6. Calendar */
-#calendar .calendar-roster-head h3::before{content:"📅";}
-/* 7. Leave */
-#leavesCourses .leave-course-year-card:nth-child(1) h3::before{content:"🌿";}
-/* 8. Courses */
-#leavesCourses .leave-course-year-card:nth-child(2) h3::before{content:"🎓";}
-/* 9. Quick Links */
-#quickLinks .content-inner>div:first-child h3::before{content:"🔗";}
-/* 10. Notes */
-#notes .notes-editor-card .notes-card-head>h3::before{content:"📝";}
-/* 11. Saved Notes */
-#notes .notes-list-head h3::before{content:"🗂️";}
-/* 12. Module */
-#moduleYears .module-years-header h3[data-module-icon="OUTSOURCE"]::before{content:"📦";}
-#moduleYears .module-years-header h3[data-module-icon="TRANSFUSION"]::before{content:"🩸";}
-#moduleYears .module-years-header h3[data-module-icon="POCT"]::before{content:"🖥️";}
-#moduleYears .module-years-header h3[data-module-icon="CHEMICAL PATHOLOGY"]::before{content:"🧪";}
-#moduleYears .module-years-header h3[data-module-icon="HEMATOLOGY"]::before{content:"🔬";}
-#moduleYears .module-years-header h3[data-module-icon="MICROBIOLOGY"]::before{content:"🦠";}
-#moduleYears .module-years-header h3[data-module-icon="URINE/STOOL ANALYSIS"]::before{content:"🧫";}
-/* 13. Settings */
-#settings .settings-standard-panel>h3::before{content:"⚙️";}
-@media(max-width:700px){
-  :is(#profile,#access,#calendar,#leavesCourses,#quickLinks,#notes,#moduleYears,#settings) h3::before{
-    flex-basis:40px;width:40px;height:40px;border-radius:12px;font-size:19px;
-  }
-}
 </style>\n
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
@@ -13889,7 +13852,6 @@ if (token) {
         var grid=$('moduleYearGrid'); if(!grid)return;
         grid.classList.add('outsource-active-grid');
         $('moduleYearsTitle').textContent='OUTSOURCE';
-        $('moduleYearsTitle').setAttribute('data-module-icon','OUTSOURCE');
         $('moduleYearsDesc').textContent='Register, track and follow up outsourced laboratory samples in one live workspace. No external spreadsheet required.';
         var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[];
         rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
@@ -14236,7 +14198,6 @@ if (token) {
         if(displayName==='OUTSOURCE'){ if(typeof Inventory!=='undefined' && Inventory.ensureOutsourceReady) Inventory.ensureOutsourceReady(); renderOutsourcePage(); if(window.outsourceInitNeumorphicDropdowns)setTimeout(window.outsourceInitNeumorphicDropdowns,30); return; }
         var activeYear = currentYear();
         title.textContent = displayName;
-        title.setAttribute('data-module-icon', displayName);
         desc.textContent = moduleYearDescriptions[displayName] || 'Select a year for ' + displayName + '. The current year and previous year are open. Future years are locked and will unlock automatically when the new year begins.';
         grid.textContent = '';
   
