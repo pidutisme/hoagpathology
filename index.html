@@ -9414,6 +9414,7 @@ select[data-auto-from-ic]{
 }
 </style>
 </head>
+<!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked">
 <!-- +----------------------------------+
        + HTML BODY / PAGE MARKUP          +
@@ -13673,39 +13674,23 @@ if (token) {
         bindOutsourceResultModal();
       }
       function initOutsourceFilterDropdowns(){
+        /* OUTSOURCE FILTER FIX v2: use the native select controls.
+           The previous custom body-level menus caused delayed opening,
+           duplicate initializers and selected-label desynchronisation. */
         var ids=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter'];
-        function closeMenu(){
-          var m=window.__outsourceFilterMenu,t=window.__outsourceFilterTrigger;
-          if(m){m.remove();window.__outsourceFilterMenu=null;}
-          if(t){t.classList.remove('is-open');t.setAttribute('aria-expanded','false');window.__outsourceFilterTrigger=null;}
-        }
-        function openMenu(trigger,select){
-          closeMenu();
-          var menu=document.createElement('div');
-          menu.className='inventory-filter-menu is-open outsource-filter-menu';
-          menu.setAttribute('role','listbox');
-          Array.prototype.forEach.call(select.options,function(opt){
-            var b=document.createElement('button');b.type='button';b.textContent=opt.textContent;b.dataset.value=opt.value;b.setAttribute('role','option');
-            if(opt.value===select.value)b.classList.add('is-selected');
-            if(select.id==='outsourceStatusFilter'&&opt.value==='COMPLETED')b.classList.add('status-completed-option');
-            if(select.id==='outsourceStatusFilter'&&opt.value==='REJECT')b.classList.add('status-reject-option');
-            b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();select.value=b.dataset.value;sync();select.dispatchEvent(new Event('change',{bubbles:true}));closeMenu();});
-            menu.appendChild(b);
-          });
-          document.body.appendChild(menu);window.__outsourceFilterMenu=menu;window.__outsourceFilterTrigger=trigger;trigger.classList.add('is-open');trigger.setAttribute('aria-expanded','true');
-          var r=trigger.getBoundingClientRect(),w=Math.max(r.width,180),h=menu.offsetHeight;menu.style.minWidth=w+'px';menu.style.left=Math.min(Math.max(8,r.left),window.innerWidth-w-8)+'px';menu.style.top=(r.bottom+h>window.innerHeight-8?Math.max(8,r.top-h-6):r.bottom+6)+'px';
-        }
-        function setup(select){
-          if(!select||select.dataset.outsourceCustom==='1')return;
-          select.dataset.outsourceCustom='1';
-          var wrap=document.createElement('div');wrap.className='inventory-filter-custom-wrap outsource-filter-custom-wrap';
-          select.parentNode.insertBefore(wrap,select);wrap.appendChild(select);
-          select.classList.add('inventory-filter-native');
-          var trigger=document.createElement('button');trigger.type='button';trigger.className='inventory-filter-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');trigger.innerHTML='<span data-filter-label></span><span class="inventory-filter-chevron">⌄</span>';wrap.insertBefore(trigger,select);
-          function sync(){var o=select.options[select.selectedIndex],label=trigger.querySelector('[data-filter-label]');if(label)label.textContent=o?o.textContent:'Select...';}
-          sync();trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(window.__outsourceFilterMenu&&window.__outsourceFilterTrigger===trigger)closeMenu();else openMenu(trigger,select);});select.addEventListener('change',sync);
-        }
-        ids.forEach(function(id){setup($(id));});
+        ids.forEach(function(id){
+          var select=$(id);
+          if(!select)return;
+          select.classList.remove('inventory-filter-native');
+          select.removeAttribute('aria-hidden');
+          select.style.removeProperty('position');
+          select.style.removeProperty('width');
+          select.style.removeProperty('height');
+          select.style.removeProperty('opacity');
+          select.style.removeProperty('pointer-events');
+          select.style.removeProperty('left');
+          select.style.removeProperty('top');
+        });
       }
       function syncOutsourceFilterTrigger(select){
         if(!select)return;
@@ -13726,11 +13711,22 @@ if (token) {
       }
       var outsourceRowsRenderTimer=null;
       var outsourceRowsCache=null;
+      var outsourceRowsViewCache=null;
+      var outsourceRowsDomSignature='';
+      var outsourceRowsDomMap=null;
+      var outsourceRowsSorted=null;
+
       function getOutsourceRowsCached(){
         if(!Array.isArray(outsourceRowsCache)) outsourceRowsCache=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]);
         return outsourceRowsCache;
       }
-      function invalidateOutsourceRowsCache(){outsourceRowsCache=null;}
+      function invalidateOutsourceRowsCache(){
+        outsourceRowsCache=null;
+        outsourceRowsViewCache=null;
+        outsourceRowsSorted=null;
+        outsourceRowsDomSignature='';
+        outsourceRowsDomMap=null;
+      }
       function queueOutsourceRowsRender(){
         if(outsourceRowsRenderTimer) return;
         outsourceRowsRenderTimer=requestAnimationFrame(function(){
@@ -13738,24 +13734,67 @@ if (token) {
           renderOutsourceRows();
         });
       }
+      function getOutsourceRowSignature(rows){
+        return rows.map(function(r){
+          return [r.id,r.updatedAt,r.createdAt,r.sampleDate,r.barCode,r.name,r.idIc,r.sex,r.age,r.unit,r.dispatchDate,r.referral,r.lab,r.test,r.result,r.resultDate,r.referenceNo,r.rejectReason,r.notes].join('\u001f');
+        }).join('\u001e');
+      }
+      function buildOutsourceRowHtml(r){
+        var result=String(r.result||'PENDING').toUpperCase();
+        var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';
+        return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Click to update result">'+
+          '<td></td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
+      }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
+        var allRows=getOutsourceRowsCached();
+        var signature=getOutsourceRowSignature(allRows);
+
+        /* Build the DOM only when the underlying data actually changed.
+           Filter/search changes simply toggle existing rows. */
+        if(signature!==outsourceRowsDomSignature || !outsourceRowsDomMap){
+          outsourceRowsDomSignature=signature;
+          outsourceRowsSorted=allRows.slice().sort(function(a,b){
+            return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));
+          });
+          outsourceRowsDomMap={};
+          var frag=document.createDocumentFragment();
+          outsourceRowsSorted.forEach(function(r){
+            var holder=document.createElement('tbody');
+            holder.innerHTML=buildOutsourceRowHtml(r);
+            var tr=holder.firstElementChild;
+            if(tr){outsourceRowsDomMap[String(r.id)]=tr;frag.appendChild(tr);}
+          });
+          body.replaceChildren(frag);
+        }
+
         var q=String(($('outsourceSearch')||{}).value||'').trim().toLowerCase();
         var year=String(($('outsourceYearFilter')||{}).value||'ALL');
         var month=String(($('outsourceMonthFilter')||{}).value||'ALL');
         var status=String(($('outsourceStatusFilter')||{}).value||'ALL').toUpperCase();
-        var rows=getOutsourceRowsCached().filter(function(r){
+        var visibleCount=0;
+
+        outsourceRowsSorted.forEach(function(r){
           var result=String(r.result||'PENDING').toUpperCase();
           var sampleDate=String(r.sampleDate||'');
-          if(status!=='ALL'&&result!==status)return false;
-          if(year!=='ALL'&&sampleDate.slice(0,4)!==year)return false;
-          if(month!=='ALL'&&sampleDate.slice(5,7)!==month)return false;
-          if(!q)return true;
-          return [r.barCode,r.name,r.idIc].join(' ').toLowerCase().indexOf(q)>=0;
+          var match=true;
+          if(status!=='ALL'&&result!==status)match=false;
+          if(match&&year!=='ALL'&&sampleDate.slice(0,4)!==year)match=false;
+          if(match&&month!=='ALL'&&sampleDate.slice(5,7)!==month)match=false;
+          if(match&&q){
+            var hay=[r.barCode,r.name,r.idIc].join(' ').toLowerCase();
+            if(hay.indexOf(q)<0)match=false;
+          }
+          var tr=outsourceRowsDomMap[String(r.id)];
+          if(tr){
+            tr.hidden=!match;
+            if(match){
+              visibleCount++;
+              if(tr.cells[0])tr.cells[0].textContent=String(visibleCount);
+            }
+          }
         });
-        rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
-        body.innerHTML=rows.map(function(r,i){var result=String(r.result||'PENDING').toUpperCase();var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Click to update result"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
-        if(empty)empty.hidden=rows.length>0;
+        if(empty)empty.hidden=visibleCount>0;
       }
       function calculateMalaysianIcDetails(rawIc, referenceDate){
         var raw=String(rawIc||'').replace(/[^0-9]/g,'');
@@ -22462,10 +22501,8 @@ if ("serviceWorker" in navigator) {
     var month=search.querySelector('#outsourceMonthFilter');
     var status=search.querySelector('#outsourceStatusFilter');
     if(!input||!year||!month||!status)return;
-    /* Re-run the custom dropdown initializer after every Outsource render. */
-    if(typeof initOutsourceFilterDropdowns==='function'){
-      try{initOutsourceFilterDropdowns();}catch(e){}
-    }
+    /* Native selects are already stable; do not rebuild or wrap them. */
+    if(typeof initOutsourceFilterDropdowns==='function') initOutsourceFilterDropdowns();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureFilters);else ensureFilters();
   window.setTimeout(ensureFilters,100);
@@ -22473,6 +22510,56 @@ if ("serviceWorker" in navigator) {
 
 })();
 </script>
+
+<style id="outsource-filter-fixed-v2">
+/* OUTSOURCE FILTER FIX v2: fast native dropdowns, no custom overlay menu. */
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-custom-wrap{
+  display:contents!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search select#outsourceYearFilter,
+#moduleYearGrid.outsource-active-grid .outsource-search select#outsourceMonthFilter,
+#moduleYearGrid.outsource-active-grid .outsource-search select#outsourceStatusFilter{
+  position:static!important;
+  width:100%!important;
+  min-width:0!important;
+  height:38px!important;
+  min-height:38px!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  display:block!important;
+  visibility:visible!important;
+  appearance:auto!important;
+  -webkit-appearance:auto!important;
+  border:0!important;
+  border-radius:12px!important;
+  background:#e8edf5!important;
+  color:#111827!important;
+  box-shadow:inset 3px 3px 7px rgba(163,177,198,.38),inset -3px -3px 7px rgba(255,255,255,.92)!important;
+  padding:0 12px!important;
+  font-size:11px!important;
+  font-weight:700!important;
+  outline:none!important;
+  cursor:pointer!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search select#outsourceYearFilter:focus,
+#moduleYearGrid.outsource-active-grid .outsource-search select#outsourceMonthFilter:focus,
+#moduleYearGrid.outsource-active-grid .outsource-search select#outsourceStatusFilter:focus{
+  box-shadow:inset 3px 3px 7px rgba(163,177,198,.38),inset -3px -3px 7px rgba(255,255,255,.92),0 0 0 2px rgba(47,128,237,.16)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search .inventory-filter-trigger{display:none!important;}
+#moduleYearGrid.outsource-active-grid .outsource-search .inventory-filter-native{
+  position:static!important;width:100%!important;height:38px!important;opacity:1!important;pointer-events:auto!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr[hidden]{display:none!important;}
+@media(max-width:900px){
+  #moduleYearGrid.outsource-active-grid .outsource-search{grid-template-columns:1fr 1fr!important;}
+  #moduleYearGrid.outsource-active-grid .outsource-search > input{grid-column:1/-1!important;}
+}
+@media(max-width:560px){
+  #moduleYearGrid.outsource-active-grid .outsource-search{grid-template-columns:1fr!important;}
+  #moduleYearGrid.outsource-active-grid .outsource-search > input{grid-column:auto!important;}
+}
+</style>
 </body>
 </html>
 
