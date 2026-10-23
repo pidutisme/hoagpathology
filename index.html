@@ -9553,6 +9553,82 @@ select[data-auto-from-ic]{
   window.setTimeout(init,100);
 })();
 </script>
+
+<style id="outsource-layout-and-notes-final">
+/* OUTSOURCE FINAL LAYOUT: compact form + visible search + inline notes editing. */
+#moduleYearGrid.outsource-active-grid .outsource-form{
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  grid-auto-flow:row !important;
+  align-items:end !important;
+  gap:10px !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-form .outsource-field.full{
+  grid-column:auto !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-form .outsource-form-actions{
+  grid-column:1 / -1 !important;
+  margin-top:0 !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search{
+  display:grid !important;
+  grid-template-columns:minmax(220px,1.6fr) repeat(3,minmax(150px,1fr)) !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search > input#outsourceSearch{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  flex:none !important;
+  box-sizing:border-box !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search > .outsource-filter-neo-wrap{
+  width:auto !important;
+  min-width:0 !important;
+  flex:none !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger{
+  width:100% !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-notes-cell{
+  cursor:text !important;
+  min-width:150px !important;
+  max-width:320px !important;
+  white-space:normal !important;
+  word-break:break-word !important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-inline-notes-input{
+  width:100% !important;
+  min-width:120px !important;
+  box-sizing:border-box !important;
+  border:1px solid rgba(120,135,160,.18) !important;
+  border-radius:10px !important;
+  padding:6px 8px !important;
+  background:#e8edf5 !important;
+  color:#233f54 !important;
+  outline:none !important;
+  box-shadow:inset 2px 2px 5px rgba(145,155,175,.18),inset -2px -2px 5px rgba(255,255,255,.82) !important;
+  font:600 11px/1.2 Nunito Sans,Inter,sans-serif !important;
+}
+/* Registered Samples data only: absolutely no hover recolour. */
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td:hover{
+  background:#eef2f8 !important;
+}
+@media(max-width:1100px){
+  #moduleYearGrid.outsource-active-grid .outsource-search{grid-template-columns:minmax(180px,1.3fr) repeat(3,minmax(125px,1fr)) !important;}
+}
+@media(max-width:800px){
+  #moduleYearGrid.outsource-active-grid .outsource-form{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+  #moduleYearGrid.outsource-active-grid .outsource-search{grid-template-columns:1fr 1fr !important;}
+  #moduleYearGrid.outsource-active-grid .outsource-search > input#outsourceSearch{grid-column:1 / -1 !important;}
+}
+@media(max-width:560px){
+  #moduleYearGrid.outsource-active-grid .outsource-form{grid-template-columns:1fr !important;}
+  #moduleYearGrid.outsource-active-grid .outsource-search{grid-template-columns:1fr !important;}
+}
+</style>
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked">
@@ -13771,10 +13847,10 @@ if (token) {
                 '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div>'+
                 '<div class="outsource-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input type="text" id="osDispatchDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
+                '<div class="outsource-field"><label>Test / Investigation *</label><select id="osTest" required><option value="">Select test / investigation</option></select></div>'+
                 '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option><option>H SELAYANG</option><option>HKL</option><option>IPR</option><option>MKAK</option><option>MVN BOTANIK</option><option>H AMPANG</option><option>IMR/NIH</option><option>HTA</option><option>H PUTRAJAYA</option></select></div>'+
                 '<div class="outsource-field"><label>Outsource Lab</label><select id="osLab"><option value="">Select laboratory</option><option>BIOCHEMISTRY</option><option>MICROBIOLOGY</option><option>HEMATOLOGY</option><option>CYTOLOGY</option><option>HISTOLOGY</option></select></div>'+
-                '<div class="outsource-field full"><label>Test / Investigation *</label><select id="osTest" required><option value="">Select test / investigation</option></select></div>'+
-                '<div class="outsource-field full"><label>Notes</label><textarea id="osNotes" placeholder="Additional registration / follow-up notes"></textarea></div>'+
+                
                 '<div class="outsource-form-actions"><button class="outsource-btn secondary" type="button" id="outsourceClearBtn">CLEAR</button><button class="outsource-btn primary" type="submit" id="outsourceSaveBtn">REGISTER SAMPLE</button></div>'+
               '</form></section>'+
             '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3><span>'+outsourceEsc(total)+' TOTAL</span></div>'+
@@ -13799,8 +13875,9 @@ if (token) {
         var monthFilter=$('outsourceMonthFilter'); if(monthFilter)monthFilter.addEventListener('change',queueOutsourceRowsRender);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',queueOutsourceRowsRender);
         initOutsourceFilterDropdowns();
-        var body=$('outsourceTableBody'); if(body)body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(btn){e.preventDefault();e.stopPropagation();var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='edit')editOutsourceSample(id);if(action==='delete')deleteOutsourceSample(id);return;}var row=e.target.closest('[data-result-id]');if(row)openOutsourceResultModal(row.getAttribute('data-result-id'));});
+        var body=$('outsourceTableBody'); if(body)body.addEventListener('click',function(e){if(e.target.closest('.outsource-notes-cell'))return;var btn=e.target.closest('[data-outsource-action]');if(btn){e.preventDefault();e.stopPropagation();var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='edit')editOutsourceSample(id);if(action==='delete')deleteOutsourceSample(id);return;}var row=e.target.closest('[data-result-id]');if(row)openOutsourceResultModal(row.getAttribute('data-result-id'));});
         bindOutsourceResultModal();
+        bindOutsourceNotesEditing();
       }
       function initOutsourceFilterDropdowns(){
         /* OUTSOURCE FILTER FIX v2: use the native select controls.
@@ -13871,8 +13948,8 @@ if (token) {
       function buildOutsourceRowHtml(r){
         var result=String(r.result||'PENDING').toUpperCase();
         var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';
-        return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Click to update result">'+
-          '<td></td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
+        return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Double-click Notes to edit notes">'+
+          '<td></td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td class="outsource-notes-cell" data-notes-id="'+outsourceEsc(r.id)+'" title="Double-click to edit notes">'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
@@ -13911,7 +13988,7 @@ if (token) {
           if(match&&year!=='ALL'&&sampleDate.slice(0,4)!==year)match=false;
           if(match&&month!=='ALL'&&sampleDate.slice(5,7)!==month)match=false;
           if(match&&q){
-            var hay=[r.barCode,r.name,r.idIc].join(' ').toLowerCase();
+            var hay=[r.barCode,r.name,r.idIc,r.sex,r.age,r.unit,r.dispatchDate,r.referral,r.lab,r.test,r.result,r.resultDate,r.referenceNo,r.rejectReason,r.notes].join(' ').toLowerCase();
             if(hay.indexOf(q)<0)match=false;
           }
           var tr=outsourceRowsDomMap[String(r.id)];
@@ -13924,6 +14001,43 @@ if (token) {
           }
         });
         if(empty)empty.hidden=visibleCount>0;
+      }
+      function bindOutsourceNotesEditing(){
+        var body=$('outsourceTableBody');
+        if(!body || body._notesEditBound) return;
+        body._notesEditBound=true;
+        body.addEventListener('dblclick',function(e){
+          var cell=e.target.closest('.outsource-notes-cell');
+          if(!cell || cell.querySelector('input,textarea')) return;
+          e.preventDefault(); e.stopPropagation();
+          var id=String(cell.getAttribute('data-notes-id')||'');
+          if(!id) return;
+          var rows=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[];
+          var row=rows.find(function(x){return String(x.id||'')===id;});
+          if(!row) return;
+          var oldValue=String(row.notes||'');
+          var input=document.createElement('input');
+          input.type='text'; input.value=oldValue; input.placeholder='Enter notes...';
+          input.className='outsource-inline-notes-input';
+          cell.textContent=''; cell.appendChild(input); input.focus(); input.select();
+          var finished=false;
+          function finish(save){
+            if(finished)return; finished=true;
+            var value=String(input.value||'').trim();
+            if(save && value!==oldValue){
+              row.notes=value; row.updatedAt=new Date().toISOString();
+              if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample) Inventory.upsertOutsourceSample(row);
+              invalidateOutsourceRowsCache();
+            }
+            cell.textContent=save?value:oldValue;
+            if(save && value!==oldValue) renderOutsourceRows();
+          }
+          input.addEventListener('keydown',function(ev){
+            if(ev.key==='Enter'){ev.preventDefault();finish(true);}
+            else if(ev.key==='Escape'){ev.preventDefault();finish(false);}
+          });
+          input.addEventListener('blur',function(){finish(true);});
+        });
       }
       function calculateMalaysianIcDetails(rawIc, referenceDate){
         var raw=String(rawIc||'').replace(/[^0-9]/g,'');
@@ -13990,12 +14104,12 @@ if (token) {
       function saveOutsourceSample(){
         var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(); if(!name||!test){alert('Name and Test / Investigation are required.');return;}
         var editId=String($('outsourceEditId').value||'').trim(),existing=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(r){return String(r.id||'')===editId;});
-        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:String($('osReferral').value||'').trim(),lab:String($('osLab').value||'').trim(),test:test,result:existing?String(existing.result||'PENDING').trim()||'PENDING':'PENDING',resultDate:existing?String(existing.resultDate||''):'',referenceNo:existing?String(existing.referenceNo||''):'',rejectReason:existing?String(existing.rejectReason||''):'',notes:String($('osNotes').value||'').trim(),createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
+        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:String($('osReferral').value||'').trim(),lab:String($('osLab').value||'').trim(),test:test,result:existing?String(existing.result||'PENDING').trim()||'PENDING':'PENDING',resultDate:existing?String(existing.resultDate||''):'',referenceNo:existing?String(existing.referenceNo||''):'',rejectReason:existing?String(existing.rejectReason||''):'',notes:existing?String(existing.notes||'').trim():'',createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
         if(typeof Inventory!=='undefined'&&Inventory.upsertOutsourceSample) Inventory.upsertOutsourceSample(row); invalidateOutsourceRowsCache(); renderOutsourceRows(); clearOutsourceForm();
       }
       function editOutsourceSample(id){
         var r=(typeof Inventory!=='undefined'&&Inventory.getOutsourceSamples?Inventory.getOutsourceSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
-        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';populateOutsourceTests(r.test||'');$('osNotes').value=r.notes||'';$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
+        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';populateOutsourceTests(r.test||'');$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
         var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
       }
       function bindOutsourceResultModal(){
