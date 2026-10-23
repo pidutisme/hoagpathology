@@ -19458,6 +19458,8 @@ function exportMonthlySchedulePdfs() {
       var sharedSyncBusy = false;
       var sharedPollTimer = null;
       var sharedRealtimeRef = null;
+      var sharedWritePending = false;
+      var sharedLastRealtimeUpdatedAt = '';
       var currentView = 'ITEMS';
       var selectedPriceMonth = new Date().toISOString().slice(0,7);
       var staffNames = ['SHOUNNA', 'LIZA', 'JAYANTHI', 'SURIANI', 'TOMMY', 'JAPIDI', 'NAZRAN'];
@@ -19822,11 +19824,19 @@ function exportMonthlySchedulePdfs() {
         sharedRealtimeRef=null;
       }
       function handleSharedInventoryRealtime(snapshot){
+        // Ignore snapshots arriving while this client is actively writing.
+        // The write callback performs a fresh authenticated read afterwards,
+        // preventing a stale realtime event from overwriting a just-saved move.
+        if(sharedSyncBusy || sharedWritePending) return;
         if(!snapshot||!snapshot.exists()) return;
         var wrapper=snapshot.val()||{};
         var remote=wrapper.inventory||wrapper.data||wrapper;
         if(!remote||typeof remote!=='object'||!Array.isArray(remote.items)) return;
-        sharedUpdatedAt=String(wrapper.updatedAt||sharedUpdatedAt||'');
+        var incomingUpdatedAt=String(wrapper.updatedAt||'');
+        if(incomingUpdatedAt && sharedLastRealtimeUpdatedAt && incomingUpdatedAt<sharedLastRealtimeUpdatedAt) return;
+        if(incomingUpdatedAt && sharedUpdatedAt && incomingUpdatedAt<sharedUpdatedAt) return;
+        sharedUpdatedAt=incomingUpdatedAt||sharedUpdatedAt||'';
+        sharedLastRealtimeUpdatedAt=incomingUpdatedAt||sharedLastRealtimeUpdatedAt||'';
         var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
         mergeCloudAuthoritative(remote, false);
         var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
@@ -19860,33 +19870,38 @@ function exportMonthlySchedulePdfs() {
       }
       function saveRemote(options){
         options=options||{};
-        if(sharedSyncBusy && !options.force) return;
+        if(sharedSyncBusy && !options.force) return false;
         var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
-        if(!token || !hasVercelBackend()) return;
+        if(!token || !hasVercelBackend()) return false;
         sharedSyncBusy=true;
+        sharedWritePending=true;
         hoagApi.run.withSuccessHandler(function(result){
           sharedSyncBusy=false;
+          sharedWritePending=false;
           if(result && result.ok===false && result.conflict){
             var cloud=result.inventory||{};
             mergeRemoteIntoLocal(cloud);
             saveLocal();
-            // Retry with the merged team state against the latest server revision.
-            saveRemote({force:true});
             render();
+            // Retry against the latest server revision after merging the team state.
+            saveRemote({force:true});
             scheduleSharedPoll();
             return;
           }
-          if(result && result.ok!==false) sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
-          // Re-check shortly after every successful write so another tab/window
-          // reflects the committed server state even if Firebase realtime delivery
-          // is delayed or blocked by a client-side rule/network condition.
-          setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
+          if(result && result.ok!==false){
+            sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
+            sharedLastRealtimeUpdatedAt=sharedUpdatedAt||sharedLastRealtimeUpdatedAt||'';
+            // Confirm the committed server state once. Do not create a save/load loop.
+            setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
+          }
           scheduleSharedPoll();
         }).withFailureHandler(function(error){
           sharedSyncBusy=false;
+          sharedWritePending=false;
           console.warn('Shared Inventory save failed:',error&&error.message?error.message:error);
           scheduleSharedPoll();
         }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
+        return true;
       }
       function mergeCloudAuthoritative(cloud, suppressStaleNovaclone){
         if(!cloud || typeof cloud!=='object' || !Array.isArray(cloud.items)) return false;
@@ -19945,7 +19960,8 @@ function exportMonthlySchedulePdfs() {
               scheduleSharedPoll(); render(); resolve(false); return;
             }
             var remote=result.inventory||{};
-            sharedUpdatedAt=String(result.updatedAt||'');
+            sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
+            sharedLastRealtimeUpdatedAt=sharedUpdatedAt||sharedLastRealtimeUpdatedAt||'';
             var remoteHasData=Array.isArray(remote.items)&&remote.items.length>0;
             var localHasData=Array.isArray(data.items)&&data.items.length>0;
             if(!remoteHasData){
@@ -19953,23 +19969,27 @@ function exportMonthlySchedulePdfs() {
               if(localHasData) saveRemote({force:true});
               saveLocal(); render(); scheduleSharedPoll(); resolve(false); return;
             }
+
+            var before=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
             mergeCloudAuthoritative(remote, result.migration==='novaclone-v12');
             // Keep the built-in catalog complete after a cloud-authoritative load.
-            // This adds missing master items without replacing existing stock,
-            // lots, transactions or prices.
+            // These repairs must not be pushed unless they actually changed state.
             removeMalformedCatalogItems();
             mergeSeedCatalog();
             var duplicateIdFix=repairDuplicateItemIds();
             ensureNovacloneInitialZero();
-
-            // Remove only malformed catalog entries here. Novaclone zeroing is
-            // controlled by the one-time shared V5 migration above so future
-            // legitimate Stock In/Out movements are preserved.
-            var cloudChanged=removeMalformedCatalogItems() || duplicateIdFix;
-            saveLocal();
-            // Push the repaired cloud-authoritative state back to Vercel.
-            saveRemote({force:true});
-            if(!silent) render(); else render();
+            normalize();
+            var after=JSON.stringify({items:data.items,transactions:data.transactions,deletedTransactionIds:data.deletedTransactionIds,monthlyPrices:data.monthlyPrices,monthlySnapshots:data.monthlySnapshots});
+            var cloudChanged=before!==after;
+            if(cloudChanged){
+              saveLocal();
+              // Push only a real local repair/unsynced change. This avoids the old
+              // save -> load -> save -> load infinite loop.
+              saveRemote({force:true});
+            } else {
+              saveLocal();
+            }
+            render();
             scheduleSharedPoll();
             resolve(true);
           }).withFailureHandler(function(error){
@@ -19989,6 +20009,9 @@ function exportMonthlySchedulePdfs() {
         stopSharedInventoryRealtime();
         clearTimeout(sharedPollTimer);
         sharedPollTimer=null;
+        sharedWritePending=false;
+        sharedSyncBusy=false;
+        sharedLastRealtimeUpdatedAt='';
       }
       function persist(){
         saveLocal();
@@ -20324,6 +20347,10 @@ function exportMonthlySchedulePdfs() {
           var qty=Math.floor(Number(($('inventoryQtyInput')||{}).value));
           var item=getItem(itemId);
           if(!item||!qty||qty<1){if(msg)msg.textContent='Please select an item and enter a valid quantity.';return;}
+          if(editingId && data.deletedTransactionIds && data.deletedTransactionIds[String(editingId)]){
+            if(msg)msg.textContent='This movement was already deleted. Refresh the inventory and try again.';
+            return;
+          }
           var staff=(($('inventoryStaffInput')||{}).value)||getUserName();
           var notes=(($('inventoryNotesInput')||{}).value)||'';
           var lot=cleanText(($('inventoryLotInput')||{}).value);
