@@ -24475,5 +24475,66 @@ th,td{border-color:var(--border-subtle)!important}
 *::-webkit-scrollbar-thumb{background:var(--surface-raised);border:2px solid var(--surface-deep);border-radius:999px}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
+
+
+/* FINAL CARD SURFACES — restore the actual card bodies without changing layout/geometry. */
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.admin-control-card,
+.notes-two-cards > *,
+#quickLinks .quick-links-card,
+#profile .profile-info-box,
+#access .profile-info-box,
+#dashboard .stat-card,
+#dashboard .bottom-card {
+  background: var(--surface-raised) !important;
+  background-image: none !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--inset-medium) !important;
+}
+
+#quickLinks .quick-links-card {
+  display: grid !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: clamp(92px, 8.2vh, 104px) !important;
+  padding: clamp(14px, 1.05vw, 18px) clamp(16px, 1.2vw, 20px) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+#quickLinks .quick-links-card:hover,
+#quickLinks .quick-links-card:focus-visible,
+.profile-card:hover,
+.stat-card:hover,
+.bottom-card:hover,
+.setting-box:hover,
+.profile-info-box:hover {
+  transform: none !important;
+  box-shadow: var(--inset-medium) !important;
+}
+
+#quickLinks .quick-links-card::before {
+  background: var(--surface-soft) !important;
+  background-image: none !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: var(--inset-soft) !important;
+}
+
+body.dark-mode .profile-card,
+body.dark-mode .stat-card,
+body.dark-mode .bottom-card,
+body.dark-mode .setting-box,
+body.dark-mode .profile-info-box,
+body.dark-mode .admin-control-card,
+body.dark-mode #quickLinks .quick-links-card {
+  background: var(--surface-raised) !important;
+  border-color: var(--border-subtle) !important;
+  box-shadow: var(--inset-medium) !important;
+}
 </style>
 
