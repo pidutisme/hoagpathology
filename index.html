@@ -7859,11 +7859,11 @@
 .outsource-table td{padding:8px 7px;border-bottom:1px solid #e6edf2;color:#233f54;vertical-align:top;white-space:nowrap;}
 .outsource-table tbody tr:hover{background:#f6fbfe;}
 .outsource-table tbody tr.status-reject,.outsource-table tbody tr.status-done,.outsource-table tbody tr.status-pending{background:transparent;}
-.outsource-result{font-weight:900;text-align:center;vertical-align:middle!important;}
-.outsource-result.status-cell{display:table-cell;}
-.outsource-result.status-done{color:#111827;background:#dff4e7;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
-.outsource-result.status-reject{color:#111827;background:#fde3e5;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
-.outsource-result.status-pending{color:#111827;background:transparent;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
+.outsource-result{font-weight:700;text-align:center;vertical-align:middle!important;background:transparent!important;border:0!important;border-radius:0!important;padding:8px 7px!important;box-shadow:none!important;}
+.outsource-result-pill{display:inline-block;min-width:76px;padding:4px 10px;border-radius:999px;color:#111827!important;font-weight:800;line-height:1.1;text-align:center;box-sizing:border-box;}
+.outsource-result-pill.status-done{background:#dff4e7;}
+.outsource-result-pill.status-reject{background:#fde3e5;}
+.outsource-result-pill.status-pending{background:#e7e9ec;}
 .outsource-actions{display:flex;gap:5px;}
 .outsource-mini{border:1px solid #d5e0e8;background:#fff;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:800;cursor:pointer;}
 .outsource-mini.delete{color:#b72f3b;}
@@ -13661,7 +13661,7 @@ if (token) {
           return [r.barCode,r.name,r.idIc].join(' ').toLowerCase().indexOf(q)>=0;
         });
         rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
-        body.innerHTML=rows.map(function(r,i){var result=String(r.result||'PENDING').toUpperCase();var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Click to update result"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result '+cls+'">'+outsourceEsc(result)+'</td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
+        body.innerHTML=rows.map(function(r,i){var result=String(r.result||'PENDING').toUpperCase();var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Click to update result"><td>'+(i+1)+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.sex)+'</td><td>'+outsourceEsc(r.age)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td>'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
         if(empty)empty.hidden=rows.length>0;
       }
       function calculateMalaysianIcDetails(rawIc, referenceDate){
@@ -20239,6 +20239,8 @@ function exportMonthlySchedulePdfs() {
         data.items=Array.isArray(data.items)?data.items:[];
         data.transactions=Array.isArray(data.transactions)?data.transactions:[];
     data.outsourceSamples=Array.isArray(data.outsourceSamples)?data.outsourceSamples:[];
+        if(!data.deletedOutsourceSampleIds||typeof data.deletedOutsourceSampleIds!=='object'||Array.isArray(data.deletedOutsourceSampleIds)) data.deletedOutsourceSampleIds={};
+        data.outsourceSamples=data.outsourceSamples.filter(function(row){return !(row&&row.id&&data.deletedOutsourceSampleIds[String(row.id)]);});
         if(!data.deletedTransactionIds||typeof data.deletedTransactionIds!=='object'||Array.isArray(data.deletedTransactionIds)) data.deletedTransactionIds={};
         if(!data.deletedItemIds||typeof data.deletedItemIds!=='object'||Array.isArray(data.deletedItemIds)) data.deletedItemIds={};
         if(!data.monthlyPrices||typeof data.monthlyPrices!=='object'||Array.isArray(data.monthlyPrices)) data.monthlyPrices={};
@@ -20563,11 +20565,15 @@ function exportMonthlySchedulePdfs() {
         });
         local.transactions=local.transactions.filter(function(tx){return !(tx&&tx.id&&local.deletedTransactionIds[String(tx.id)]);});
         local.outsourceSamples=Array.isArray(local.outsourceSamples)?local.outsourceSamples:[];
+        local.deletedOutsourceSampleIds=local.deletedOutsourceSampleIds&&typeof local.deletedOutsourceSampleIds==='object'?local.deletedOutsourceSampleIds:{};
+        Object.keys(remote.deletedOutsourceSampleIds||{}).forEach(function(id){if(!local.deletedOutsourceSampleIds[id]) local.deletedOutsourceSampleIds[id]=remote.deletedOutsourceSampleIds[id]||nowIso();});
+        local.outsourceSamples=local.outsourceSamples.filter(function(row){return !(row&&row.id&&local.deletedOutsourceSampleIds[String(row.id)]);});
         var sampleMap={};
         local.outsourceSamples.forEach(function(row){if(row&&row.id)sampleMap[String(row.id)]=row;});
         (remote.outsourceSamples||[]).forEach(function(row){
           if(!row||!row.id)return;
           var id=String(row.id);
+          if(local.deletedOutsourceSampleIds[id]) return;
           if(!sampleMap[id]){local.outsourceSamples.push(row);sampleMap[id]=row;changed=true;}
         });
         local.monthlyPrices=local.monthlyPrices||{};
@@ -20670,6 +20676,10 @@ function exportMonthlySchedulePdfs() {
            prefer the newest updatedAt/createdAt record. */
         var cloudSamples=Array.isArray(cloud.outsourceSamples)?cloud.outsourceSamples:[];
         var localSamples=Array.isArray(local.outsourceSamples)?local.outsourceSamples:[];
+        merged.deletedOutsourceSampleIds=merged.deletedOutsourceSampleIds&&typeof merged.deletedOutsourceSampleIds==='object'?merged.deletedOutsourceSampleIds:{};
+        Object.keys(local.deletedOutsourceSampleIds||{}).forEach(function(id){if(!merged.deletedOutsourceSampleIds[id]) merged.deletedOutsourceSampleIds[id]=local.deletedOutsourceSampleIds[id];});
+        Object.keys(cloud.deletedOutsourceSampleIds||{}).forEach(function(id){if(!merged.deletedOutsourceSampleIds[id]) merged.deletedOutsourceSampleIds[id]=cloud.deletedOutsourceSampleIds[id];});
+        localSamples=localSamples.filter(function(row){return !(row&&row.id&&merged.deletedOutsourceSampleIds[String(row.id)]);});
         var sampleMap={};
         function sampleStamp(row){
           var a=Date.parse(String(row&&row.updatedAt||''));
@@ -20680,6 +20690,7 @@ function exportMonthlySchedulePdfs() {
         cloudSamples.forEach(function(row){
           if(!row||!row.id) return;
           var id=String(row.id), existing=sampleMap[id];
+          if(merged.deletedOutsourceSampleIds[id]) return;
           if(!existing || sampleStamp(row)>=sampleStamp(existing)) sampleMap[id]=row;
         });
         merged.outsourceSamples=Object.keys(sampleMap).map(function(id){return sampleMap[id];});
@@ -21555,6 +21566,8 @@ function exportMonthlySchedulePdfs() {
       function upsertOutsourceSample(row){
         ensureOutsourceReady();
         var list=data.outsourceSamples;
+        data.deletedOutsourceSampleIds=data.deletedOutsourceSampleIds&&typeof data.deletedOutsourceSampleIds==='object'?data.deletedOutsourceSampleIds:{};
+        if(row&&row.id) delete data.deletedOutsourceSampleIds[String(row.id)];
         var idx=list.findIndex(function(x){return String(x&&x.id||'')===String(row&&row.id||'');});
         if(idx>=0) list[idx]=row; else list.push(row);
         saveLocal();
@@ -21563,6 +21576,8 @@ function exportMonthlySchedulePdfs() {
       }
       function deleteOutsourceSample(id){
         ensureOutsourceReady();
+        data.deletedOutsourceSampleIds=data.deletedOutsourceSampleIds&&typeof data.deletedOutsourceSampleIds==='object'?data.deletedOutsourceSampleIds:{};
+        data.deletedOutsourceSampleIds[String(id||'')]=nowIso();
         data.outsourceSamples=data.outsourceSamples.filter(function(x){return String(x&&x.id||'')!==String(id||'');});
         saveLocal();
         render();
