@@ -9726,6 +9726,754 @@ html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tb
 }
 </style>
 
+
+<style id="ios-glassmorphism-overhaul-v1">
+/*
+  HOAG PATHOLOGY — iOS GLASSMORPHISM VISUAL OVERHAUL
+  CSS ONLY: no markup, JavaScript, layout structure, function, or application logic changed.
+  The existing DOM, grids, dimensions, navigation, interactions, and scripts remain intact.
+*/
+
+:root{
+  --bg:#edf3fb;
+  --card:rgba(255,255,255,.56);
+  --card-soft:rgba(255,255,255,.42);
+  --text:#142033;
+  --muted:#66758c;
+  --primary:#1677ff;
+  --primary-2:#58d5ff;
+  --danger:#ff4d67;
+  --ok:#20b979;
+  --warning:#ffb020;
+  --line:rgba(255,255,255,.62);
+
+  --glass-0:rgba(255,255,255,.24);
+  --glass-1:rgba(255,255,255,.40);
+  --glass-2:rgba(255,255,255,.56);
+  --glass-3:rgba(255,255,255,.68);
+  --glass-border:rgba(255,255,255,.72);
+  --glass-border-soft:rgba(255,255,255,.46);
+
+  --glass-shadow:
+    0 22px 55px rgba(35,66,105,.10),
+    0 7px 22px rgba(35,66,105,.07),
+    inset 0 1px 0 rgba(255,255,255,.90),
+    inset 0 -1px 0 rgba(120,150,190,.08);
+
+  --glass-shadow-soft:
+    0 12px 30px rgba(35,66,105,.08),
+    inset 0 1px 0 rgba(255,255,255,.82),
+    inset 0 -1px 0 rgba(120,150,190,.07);
+
+  --glass-shadow-inset:
+    inset 0 1px 0 rgba(255,255,255,.78),
+    inset 0 0 0 1px rgba(255,255,255,.20);
+
+  --ios-blur:blur(22px) saturate(145%);
+  --ios-blur-strong:blur(30px) saturate(155%);
+  --radius-xl:30px;
+  --radius-lg:23px;
+  --radius-md:17px;
+  --edge-light:rgba(255,255,255,.82);
+  --edge-inner-light:rgba(255,255,255,.92);
+  --edge-inner-dark:rgba(72,98,133,.12);
+  --edge-aa-outline:rgba(255,255,255,.32);
+
+  --neo-surface-light:linear-gradient(145deg,rgba(255,255,255,.68),rgba(226,237,250,.38));
+  --neo-surface-soft:linear-gradient(145deg,rgba(255,255,255,.72),rgba(235,242,251,.40));
+  --neo-border-soft:rgba(255,255,255,.58);
+  --neo-shadow-flat:var(--glass-shadow);
+  --neo-shadow-flat-sm:var(--glass-shadow-soft);
+  --nested-panel-shadow:var(--glass-shadow-soft);
+  --viewport-safe-shadow:var(--glass-shadow);
+  --viewport-safe-hover-shadow:
+    0 26px 65px rgba(24,82,150,.14),
+    0 10px 28px rgba(24,82,150,.10),
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 0 0 1px rgba(70,160,255,.12);
+
+  --calendar-date-card-bg:linear-gradient(145deg,rgba(255,255,255,.64),rgba(229,239,249,.40));
+  --calendar-edge-border:rgba(255,255,255,.64);
+  --calendar-edge-outline:rgba(255,255,255,.50);
+  --calendar-edge-glow:rgba(255,255,255,.86);
+  --calendar-edge-shadow:var(--glass-shadow-soft);
+  --calendar-edge-shadow-sm:var(--glass-shadow-soft);
+  --calendar-edge-subcard-shadow:var(--glass-shadow-soft);
+  --calendar-edge-subcard-hover-shadow:var(--viewport-safe-hover-shadow);
+
+  --utility-card-surface:linear-gradient(145deg,rgba(255,255,255,.64),rgba(226,238,250,.38));
+  --utility-card-surface-inner:linear-gradient(145deg,rgba(255,255,255,.72),rgba(231,240,250,.42));
+  --utility-card-border:rgba(255,255,255,.64);
+  --utility-card-shadow:var(--glass-shadow);
+  --utility-card-shadow-sm:var(--glass-shadow-soft);
+  --utility-card-hover-shadow:var(--viewport-safe-hover-shadow);
+
+  --year-page-card-bg:linear-gradient(145deg,rgba(255,255,255,.62),rgba(225,237,249,.38));
+  --year-page-card-border:rgba(255,255,255,.62);
+  --year-page-card-shadow:var(--glass-shadow);
+  --year-page-card-hover-shadow:var(--viewport-safe-hover-shadow);
+}
+
+body.dark-mode,
+html.dark-mode-preload{
+  --bg:#0a1220;
+  --card:rgba(20,31,49,.62);
+  --card-soft:rgba(25,38,59,.50);
+  --text:#f5f8ff;
+  --muted:#9aa9bf;
+  --primary:#72a9ff;
+  --primary-2:#65e4ff;
+  --line:rgba(255,255,255,.12);
+
+  --glass-0:rgba(19,31,49,.28);
+  --glass-1:rgba(22,35,55,.44);
+  --glass-2:rgba(25,39,61,.58);
+  --glass-3:rgba(31,47,72,.70);
+  --glass-border:rgba(255,255,255,.15);
+  --glass-border-soft:rgba(255,255,255,.09);
+
+  --glass-shadow:
+    0 26px 65px rgba(0,0,0,.30),
+    0 8px 24px rgba(0,0,0,.20),
+    inset 0 1px 0 rgba(255,255,255,.09),
+    inset 0 -1px 0 rgba(0,0,0,.22);
+
+  --glass-shadow-soft:
+    0 15px 35px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.075),
+    inset 0 -1px 0 rgba(0,0,0,.18);
+
+  --glass-shadow-inset:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 0 0 1px rgba(255,255,255,.035);
+
+  --neo-surface-light:linear-gradient(145deg,rgba(34,51,76,.68),rgba(12,21,35,.54));
+  --neo-surface-soft:linear-gradient(145deg,rgba(39,58,85,.68),rgba(14,24,40,.54));
+  --neo-border-soft:rgba(255,255,255,.12);
+  --neo-shadow-flat:var(--glass-shadow);
+  --neo-shadow-flat-sm:var(--glass-shadow-soft);
+  --nested-panel-shadow:var(--glass-shadow-soft);
+  --viewport-safe-shadow:var(--glass-shadow);
+  --viewport-safe-hover-shadow:
+    0 28px 70px rgba(0,0,0,.38),
+    0 10px 30px rgba(40,120,255,.12),
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 0 0 1px rgba(100,170,255,.12);
+
+  --calendar-date-card-bg:linear-gradient(145deg,rgba(34,51,76,.64),rgba(13,23,38,.52));
+  --calendar-edge-border:rgba(255,255,255,.12);
+  --calendar-edge-outline:rgba(255,255,255,.07);
+  --calendar-edge-glow:rgba(255,255,255,.10);
+  --calendar-edge-shadow:var(--glass-shadow-soft);
+  --calendar-edge-shadow-sm:var(--glass-shadow-soft);
+  --calendar-edge-subcard-shadow:var(--glass-shadow-soft);
+  --calendar-edge-subcard-hover-shadow:var(--viewport-safe-hover-shadow);
+
+  --utility-card-surface:linear-gradient(145deg,rgba(33,50,75,.66),rgba(12,21,35,.52));
+  --utility-card-surface-inner:linear-gradient(145deg,rgba(39,58,86,.70),rgba(14,24,40,.54));
+  --utility-card-border:rgba(255,255,255,.12);
+  --utility-card-shadow:var(--glass-shadow);
+  --utility-card-shadow-sm:var(--glass-shadow-soft);
+  --utility-card-hover-shadow:var(--viewport-safe-hover-shadow);
+
+  --year-page-card-bg:linear-gradient(145deg,rgba(34,51,76,.64),rgba(12,21,35,.50));
+  --year-page-card-border:rgba(255,255,255,.12);
+  --year-page-card-shadow:var(--glass-shadow);
+  --year-page-card-hover-shadow:var(--viewport-safe-hover-shadow);
+}
+
+/* --- atmospheric iOS-style background --- */
+html,body{
+  background-color:var(--bg)!important;
+  background-image:
+    radial-gradient(circle at 8% 8%,rgba(87,181,255,.24) 0,transparent 28%),
+    radial-gradient(circle at 90% 12%,rgba(161,120,255,.18) 0,transparent 26%),
+    radial-gradient(circle at 84% 88%,rgba(58,214,206,.15) 0,transparent 30%),
+    radial-gradient(circle at 18% 92%,rgba(112,143,255,.12) 0,transparent 27%)!important;
+}
+
+html::before,
+body::before{
+  content:"";
+  position:fixed;
+  inset:-15%;
+  z-index:-2;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 25% 30%,rgba(255,255,255,.62),transparent 24%),
+    radial-gradient(circle at 70% 70%,rgba(92,179,255,.14),transparent 30%);
+  filter:blur(35px);
+}
+
+body.dark-mode::before,
+html.dark-mode-preload::before{
+  background:
+    radial-gradient(circle at 20% 20%,rgba(56,129,255,.13),transparent 25%),
+    radial-gradient(circle at 75% 72%,rgba(80,224,224,.08),transparent 28%);
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 42%,rgba(255,255,255,.04));
+}
+
+/* --- typography: Apple-like, without changing content --- */
+*{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","Nunito Sans",Inter,Arial,sans-serif!important;
+}
+
+.brand h1,
+.display-title,
+.display-clock,
+.display-hero-title,
+.display-title-clock,
+.panel h3,
+.profile-card h3{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif!important;
+  letter-spacing:-.025em!important;
+}
+
+/* --- common glass material --- */
+.app{
+  position:relative;
+  isolation:isolate;
+}
+
+.sidebar,
+.display-board,
+.panel,
+.profile-card,
+.stat-card,
+.bottom-card,
+.setting-box,
+.profile-info-box,
+.sidebar-footer,
+.theme-toggle,
+.display-title-box,
+.big-card-icon,
+.display-date,
+.display-clock-wrap,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card,
+.leave-course-year-card,
+.settings-extra-card,
+.year-card,
+.leave-course-mini-year,
+.admin-control-card,
+.admin-control-column,
+.live-chat-shell,
+.live-chat-main,
+.live-chat-chatpane,
+.live-chat-people,
+.notes-two-cards,
+.notes-editor-shell,
+.notes-list-shell{
+  background:var(--glass-1)!important;
+  background-image:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 45%,rgba(110,170,255,.05))!important;
+  border:1px solid var(--glass-border)!important;
+  box-shadow:var(--glass-shadow)!important;
+  -webkit-backdrop-filter:var(--ios-blur);
+  backdrop-filter:var(--ios-blur);
+}
+
+.sidebar{
+  background:linear-gradient(145deg,rgba(255,255,255,.50),rgba(255,255,255,.22))!important;
+}
+
+body.dark-mode .sidebar,
+body.dark-mode .display-board,
+body.dark-mode .panel,
+body.dark-mode .profile-card,
+body.dark-mode .stat-card,
+body.dark-mode .bottom-card,
+body.dark-mode .setting-box,
+body.dark-mode .profile-info-box,
+body.dark-mode .sidebar-footer,
+body.dark-mode .theme-toggle,
+body.dark-mode .display-title-box,
+body.dark-mode .big-card-icon,
+body.dark-mode .display-date,
+body.dark-mode .display-clock-wrap,
+body.dark-mode .calendar-month-panel,
+body.dark-mode .daily-roster-panel,
+body.dark-mode .daily-roster-card,
+body.dark-mode .leave-course-year-card,
+body.dark-mode .settings-extra-card,
+body.dark-mode .year-card,
+body.dark-mode .leave-course-mini-year,
+body.dark-mode .admin-control-card,
+body.dark-mode .admin-control-column,
+body.dark-mode .live-chat-shell,
+body.dark-mode .live-chat-main,
+body.dark-mode .live-chat-chatpane,
+body.dark-mode .live-chat-people,
+body.dark-mode .notes-two-cards,
+body.dark-mode .notes-editor-shell,
+body.dark-mode .notes-list-shell{
+  background-image:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.015) 45%,rgba(78,150,255,.07))!important;
+}
+
+/* Keep internal scroll areas visually transparent so the glass reads as one material. */
+.page-scroll,
+.content-inner,
+.profile-info-grid,
+.nav,
+.settings-content-grid,
+#profile .profile-link-grid,
+#access .access-link-grid,
+#quickLinks .quick-links-grid{
+  scrollbar-color:rgba(95,125,165,.28) transparent;
+}
+
+/* --- sidebar navigation: frosted pills --- */
+.nav button{
+  background:rgba(255,255,255,.34)!important;
+  border:1px solid rgba(255,255,255,.58)!important;
+  box-shadow:
+    0 8px 20px rgba(34,74,120,.06),
+    inset 0 1px 0 rgba(255,255,255,.78)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  backdrop-filter:blur(18px) saturate(140%);
+  color:var(--text)!important;
+}
+
+.nav button:hover{
+  transform:translateY(-2px);
+  background:rgba(255,255,255,.52)!important;
+  border-color:rgba(255,255,255,.82)!important;
+  box-shadow:
+    0 13px 28px rgba(34,94,160,.12),
+    inset 0 1px 0 rgba(255,255,255,.92)!important;
+}
+
+.nav button.active,
+.nav button[aria-current="page"]{
+  color:#fff!important;
+  background:linear-gradient(135deg,rgba(22,119,255,.94),rgba(84,171,255,.76))!important;
+  border-color:rgba(255,255,255,.72)!important;
+  box-shadow:
+    0 12px 30px rgba(22,119,255,.28),
+    inset 0 1px 0 rgba(255,255,255,.48),
+    inset 0 -1px 0 rgba(0,70,170,.18)!important;
+}
+
+/* --- dashboard hero --- */
+.display-board{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.66),rgba(255,255,255,.24) 48%,rgba(93,178,255,.12))!important;
+  overflow:hidden;
+}
+
+.display-board::before{
+  content:"";
+  position:absolute;
+  width:360px;
+  height:360px;
+  right:-120px;
+  top:-170px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(88,213,255,.22),transparent 68%);
+  filter:blur(8px);
+  pointer-events:none;
+}
+
+.display-board::after{
+  content:"";
+  position:absolute;
+  width:280px;
+  height:280px;
+  left:32%;
+  bottom:-190px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(124,111,255,.16),transparent 68%);
+  filter:blur(10px);
+  pointer-events:none;
+}
+
+.display-clock-wrap{
+  background:rgba(255,255,255,.24)!important;
+  border-color:rgba(255,255,255,.64)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.78),
+    inset 0 0 0 1px rgba(255,255,255,.18),
+    0 16px 34px rgba(30,74,125,.08)!important;
+  -webkit-backdrop-filter:var(--ios-blur-strong);
+  backdrop-filter:var(--ios-blur-strong);
+}
+
+.display-date{
+  background:rgba(255,255,255,.40)!important;
+  border-color:rgba(255,255,255,.68)!important;
+  box-shadow:var(--glass-shadow-soft)!important;
+}
+
+.display-accent-line{
+  height:5px!important;
+  width:66px!important;
+  background:linear-gradient(90deg,var(--primary),var(--primary-2))!important;
+  box-shadow:0 4px 14px rgba(22,119,255,.25);
+}
+
+/* --- cards --- */
+.stat-card,
+.bottom-card,
+.profile-card,
+.panel,
+.setting-box,
+.profile-info-box,
+.settings-extra-card,
+.year-card,
+.leave-course-year-card,
+.leave-course-mini-year{
+  background:rgba(255,255,255,.34)!important;
+}
+
+.stat-card:hover,
+.bottom-card:hover,
+.profile-card:hover,
+.panel:hover,
+.setting-box:hover,
+.profile-info-box:hover,
+.settings-extra-card:hover,
+.year-card:hover,
+.leave-course-year-card:hover,
+.leave-course-mini-year:hover{
+  transform:translateY(-3px);
+  border-color:rgba(255,255,255,.84)!important;
+  box-shadow:var(--viewport-safe-hover-shadow)!important;
+}
+
+.dashboard-card-title,
+.bottom-card-desc,
+.panel p,
+.profile-card p,
+.profile-info-box span,
+.setting-box span,
+.settings-extra-copy span{
+  color:var(--muted)!important;
+}
+
+.big-card-icon,
+.dashboard-card-icon{
+  color:var(--primary);
+}
+
+.big-card-icon{
+  background:rgba(255,255,255,.42)!important;
+  border:1px solid rgba(255,255,255,.62)!important;
+}
+
+/* --- icon tiles --- */
+#profile .profile-link-card::before,
+#access .access-link-card::before,
+#quickLinks .quick-links-card::before,
+#settings .setting-box .settings-card-icon,
+#settings .settings-extra-icon{
+  background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(205,226,248,.30))!important;
+  border:1px solid rgba(255,255,255,.70)!important;
+  box-shadow:
+    0 7px 18px rgba(34,80,130,.08),
+    inset 0 1px 0 rgba(255,255,255,.84)!important;
+  -webkit-backdrop-filter:blur(14px) saturate(135%);
+  backdrop-filter:blur(14px) saturate(135%);
+}
+
+/* --- controls: glass buttons / fields --- */
+button,
+input,
+textarea,
+select{
+  border-color:rgba(255,255,255,.58)!important;
+}
+
+input,
+textarea,
+select,
+.calendar-toolbar-btn,
+.calendar-roster-nav-btn,
+.calendar-roster-month-btn,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn{
+  background:rgba(255,255,255,.34)!important;
+  color:var(--text)!important;
+  border:1px solid rgba(255,255,255,.66)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.74),
+    0 6px 18px rgba(35,75,120,.05)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(135%);
+  backdrop-filter:blur(16px) saturate(135%);
+}
+
+input:focus,
+textarea:focus,
+select:focus{
+  outline:none!important;
+  border-color:rgba(22,119,255,.46)!important;
+  box-shadow:
+    0 0 0 4px rgba(22,119,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.84)!important;
+}
+
+button:active,
+.calendar-toolbar-btn:active,
+.calendar-roster-nav-btn:active,
+.calendar-roster-month-btn:active,
+.calendar-roster-today-btn:active,
+.page-back-dashboard-btn:active{
+  transform:translateY(1px) scale(.985);
+}
+
+/* --- primary action language --- */
+button[class*="primary"],
+button.primary,
+.btn-primary,
+.action-primary,
+.calendar-roster-today-btn,
+.page-back-dashboard-btn{
+  background:linear-gradient(135deg,rgba(22,119,255,.94),rgba(91,190,255,.78))!important;
+  color:#fff!important;
+  border-color:rgba(255,255,255,.62)!important;
+  box-shadow:
+    0 10px 24px rgba(22,119,255,.22),
+    inset 0 1px 0 rgba(255,255,255,.50)!important;
+}
+
+/* --- theme toggle --- */
+.theme-toggle{
+  background:rgba(255,255,255,.30)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 8px 20px rgba(35,75,120,.06)!important;
+}
+
+.theme-toggle-knob{
+  background:linear-gradient(145deg,#ffffff,#dce9f7)!important;
+  box-shadow:
+    0 5px 14px rgba(30,65,110,.13),
+    inset 0 1px 0 rgba(255,255,255,.95)!important;
+}
+
+/* --- calendar / date cells --- */
+#calendar .calendar-mini-day,
+.calendar-month-panel,
+.daily-roster-panel,
+.daily-roster-card{
+  background:rgba(255,255,255,.32)!important;
+  border-color:rgba(255,255,255,.64)!important;
+  box-shadow:var(--glass-shadow-soft)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(135%);
+  backdrop-filter:blur(18px) saturate(135%);
+}
+
+#calendar .calendar-mini-day:hover{
+  transform:translateY(-2px);
+  background:rgba(255,255,255,.48)!important;
+  border-color:rgba(255,255,255,.84)!important;
+}
+
+#calendar .calendar-mini-day[aria-current="date"],
+#calendar .calendar-mini-day.today,
+#calendar .calendar-mini-day.is-today{
+  background:linear-gradient(135deg,rgba(22,119,255,.88),rgba(91,190,255,.68))!important;
+  color:#fff!important;
+  border-color:rgba(255,255,255,.68)!important;
+  box-shadow:0 12px 28px rgba(22,119,255,.22),inset 0 1px 0 rgba(255,255,255,.52)!important;
+}
+
+/* --- menus / popovers / dropdowns --- */
+.inventory-month-menu,
+.inventory-filter-menu,
+.inventory-date-popover,
+.outsource-date-popover,
+[role="dialog"],
+.modal,
+.popover,
+.dropdown-menu{
+  background:rgba(244,249,255,.82)!important;
+  color:var(--text)!important;
+  border:1px solid rgba(255,255,255,.78)!important;
+  border-radius:18px!important;
+  box-shadow:
+    0 24px 60px rgba(25,58,98,.18),
+    inset 0 1px 0 rgba(255,255,255,.90)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(155%);
+  backdrop-filter:blur(28px) saturate(155%);
+}
+
+.inventory-month-menu button,
+.inventory-filter-menu button{
+  border-radius:12px!important;
+  color:var(--text)!important;
+}
+
+.inventory-month-menu button:hover,
+.inventory-month-menu button.is-selected,
+.inventory-filter-menu button:hover,
+.inventory-filter-menu button.is-selected{
+  background:rgba(22,119,255,.11)!important;
+}
+
+body.dark-mode .inventory-month-menu,
+body.dark-mode .inventory-filter-menu,
+body.dark-mode .inventory-date-popover,
+body.dark-mode .outsource-date-popover,
+body.dark-mode [role="dialog"],
+body.dark-mode .modal,
+body.dark-mode .popover,
+body.dark-mode .dropdown-menu{
+  background:rgba(20,32,50,.86)!important;
+  border-color:rgba(255,255,255,.14)!important;
+  box-shadow:
+    0 28px 70px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.10)!important;
+}
+
+/* --- tables --- */
+table{
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+
+th{
+  background:rgba(22,119,255,.80)!important;
+  color:#fff!important;
+  border-color:rgba(255,255,255,.24)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24)!important;
+}
+
+td{
+  background:rgba(255,255,255,.24)!important;
+  border-color:rgba(255,255,255,.44)!important;
+}
+
+tbody tr:hover td{
+  background:rgba(255,255,255,.38)!important;
+}
+
+/* Preserve existing special outsource table behavior while giving it the same material. */
+#moduleYearGrid.outsource-active-grid .outsource-table thead th{
+  background:linear-gradient(135deg,rgba(22,119,255,.90),rgba(84,175,255,.76))!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td{
+  background:rgba(255,255,255,.26)!important;
+}
+
+/* --- separators / badges --- */
+hr{
+  border-color:rgba(255,255,255,.45)!important;
+}
+
+.badge,
+.status-badge,
+.chip,
+.tag,
+.pill{
+  background:rgba(255,255,255,.38)!important;
+  border:1px solid rgba(255,255,255,.60)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72)!important;
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+}
+
+/* --- links --- */
+a{
+  color:var(--primary);
+}
+
+a:hover{
+  color:#0b62df;
+}
+
+/* --- selection / scrollbars --- */
+::selection{
+  background:rgba(22,119,255,.22);
+  color:var(--text);
+}
+
+*{
+  scrollbar-width:thin;
+  scrollbar-color:rgba(84,125,170,.30) transparent;
+}
+
+*::-webkit-scrollbar{
+  width:8px;
+  height:8px;
+}
+
+*::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+*::-webkit-scrollbar-thumb{
+  background:rgba(88,122,164,.26);
+  border:2px solid transparent;
+  background-clip:padding-box;
+  border-radius:999px;
+}
+
+*::-webkit-scrollbar-thumb:hover{
+  background:rgba(64,108,160,.42);
+  border:2px solid transparent;
+  background-clip:padding-box;
+}
+
+/* --- dark mode material --- */
+body.dark-mode .nav button{
+  background:rgba(25,39,61,.48)!important;
+  border-color:rgba(255,255,255,.12)!important;
+  box-shadow:
+    0 10px 25px rgba(0,0,0,.16),
+    inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+
+body.dark-mode .nav button:hover{
+  background:rgba(37,56,84,.64)!important;
+}
+
+body.dark-mode .nav button.active,
+body.dark-mode .nav button[aria-current="page"]{
+  background:linear-gradient(135deg,rgba(49,124,255,.92),rgba(63,205,238,.70))!important;
+  color:#fff!important;
+}
+
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select,
+body.dark-mode .calendar-toolbar-btn,
+body.dark-mode .calendar-roster-nav-btn,
+body.dark-mode .calendar-roster-month-btn,
+body.dark-mode .calendar-roster-today-btn,
+body.dark-mode .page-back-dashboard-btn{
+  background:rgba(23,36,56,.52)!important;
+  border-color:rgba(255,255,255,.12)!important;
+  color:var(--text)!important;
+}
+
+body.dark-mode td{
+  background:rgba(18,30,47,.40)!important;
+  border-color:rgba(255,255,255,.08)!important;
+}
+
+body.dark-mode tbody tr:hover td{
+  background:rgba(45,69,101,.42)!important;
+}
+
+/* --- reduce motion only when the OS requests it; logic remains untouched --- */
+@media (prefers-reduced-motion:reduce){
+  *,
+  *::before,
+  *::after{
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+  }
+}
+</style>
+
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked">
