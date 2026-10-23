@@ -7798,7 +7798,7 @@
 .inventory-shell{max-width:1500px;margin:0 auto}
 .inventory-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:18px}
 .inventory-title-row{display:flex;align-items:center;gap:14px;margin-top:6px}
-.inventory-title-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:16px;background:var(--neo-surface,#eef2f8);box-shadow:var(--neo-shadow-inset, inset 3px 3px 7px rgba(150,160,180,.18), inset -3px -3px 7px rgba(255,255,255,.9));font-size:24px}
+
 .inventory-title-row h3{margin:0;font-size:25px;font-weight:950;line-height:1.15;letter-spacing:.8px}.inventory-title-row p{margin:4px 0 0;color:var(--muted-text,#64748b);font-size:12px}
 .inventory-head-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.inventory-action-btn{border:1px solid rgba(120,135,160,.18);background:var(--neo-surface,#eef2f8);color:var(--text,#243047);border-radius:12px;padding:11px 14px;font-weight:800;font-size:11px;letter-spacing:.35px;box-shadow:var(--neo-shadow-soft,3px 3px 8px rgba(145,155,175,.16),-3px -3px 8px rgba(255,255,255,.8));cursor:pointer}.inventory-action-btn:hover{transform:translateY(-1px)}.inventory-action-btn.primary{color:#fff;background:#2f80ed;border-color:#2f80ed}.inventory-action-btn.danger{color:#fff;background:#d95d66;border-color:#d95d66}
 .inventory-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px;align-items:stretch}.inventory-kpi{box-sizing:border-box;width:100%;min-width:0;min-height:96px;padding:15px;border-radius:16px;background:var(--neo-surface,#eef2f8);box-shadow:var(--neo-shadow-soft,4px 4px 10px rgba(145,155,175,.14),-4px -4px 10px rgba(255,255,255,.78));border:1px solid rgba(120,135,160,.12)}.inventory-kpi span{display:block;font-size:10px;font-weight:900;letter-spacing:.5px;color:#718096}.inventory-kpi strong{display:block;margin-top:5px;font-size:23px}.inventory-kpi small{display:block;margin-top:3px;color:#8a96a8;font-size:10px}
@@ -8697,7 +8697,6 @@ body.dark-mode #inventory .inventory-scroll,
 body.dark-mode #inventory .inventory-shell {
   background: transparent !important;
 }
-body.dark-mode #inventory .inventory-title-icon,
 body.dark-mode #inventory .inventory-action-btn,
 body.dark-mode #inventory .inventory-kpi,
 body.dark-mode #inventory .inventory-search-wrap,
@@ -8789,7 +8788,6 @@ body.dark-mode #inventory .inventory-custom-option.is-selected {
 </style>
 <style id="inventory-dark-polish-and-alert-filter">
 /* Dark mode polish: remove the bright/neumorphic white glow from Inventory. */
-body.dark-mode #inventory .inventory-title-icon,
 body.dark-mode #inventory .inventory-action-btn,
 body.dark-mode #inventory .inventory-kpi,
 body.dark-mode #inventory .inventory-search-wrap,
@@ -10086,7 +10084,7 @@ select[data-auto-from-ic]{
 <div>
 <button class="page-back-dashboard-btn inventory-back-btn" type="button">← BACK TO DASHBOARD</button>
 <div class="inventory-title-row">
-<div class="inventory-title-icon">📦</div>
+
 <div>
 <h3>INVENTORY</h3>
 <p>Live reagent and consumables stock control with lot-level traceability.</p>
