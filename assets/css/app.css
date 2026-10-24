@@ -950,8 +950,7 @@
       grid-auto-rows: clamp(92px, 8.2vh, 104px);
       align-content: start;
       align-items: stretch;
-      overflow-x: hidden;
-      overflow-y: auto;
+      overflow: visible;
     }
 
     /* +----------------------------------+
