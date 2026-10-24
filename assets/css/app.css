@@ -11478,3 +11478,66 @@ body.dark-mode [class*="box"],
 html.dark-mode-preload [class*="box"] {
   border-color: rgba(176, 190, 211, .24) !important;
 }
+
+/* REGISTERED SAMPLES DROPDOWNS: match the REGISTER form dropdown exactly. */
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-neo-trigger{
+  width:100%!important;
+  min-height:42px!important;
+  height:42px!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:10px 14px!important;
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:14px!important;
+  background:var(--os-field,var(--neo-surface,#eef2f8))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  box-shadow:var(--os-shadow-inset,var(--neo-shadow-in-sm))!important;
+  font:700 12px/1.2 "Nunito Sans",Inter,sans-serif!important;
+  text-align:left!important;
+  outline:none!important;
+  cursor:pointer!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-neo-trigger:hover,
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-neo-trigger.is-open{
+  transform:none!important;
+  background:var(--os-field,var(--neo-surface,#eef2f8))!important;
+  box-shadow:var(--os-shadow-inset,var(--neo-shadow-in-sm))!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-search .outsource-filter-neo-chevron{
+  flex:0 0 auto!important;
+  color:#718096!important;
+  font-size:13px!important;
+  line-height:1!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu{
+  padding:7px!important;
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:16px!important;
+  background:var(--os-field,var(--neo-surface,#eef2f8))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  box-shadow:10px 10px 24px rgba(80,90,110,.18),-8px -8px 20px rgba(255,255,255,.88)!important;
+  scrollbar-width:thin!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu button{
+  display:block!important;
+  width:100%!important;
+  min-height:38px!important;
+  margin:2px 0!important;
+  padding:9px 12px!important;
+  border:0!important;
+  border-radius:11px!important;
+  background:transparent!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  font:700 12px/1.2 "Nunito Sans",Inter,sans-serif!important;
+  text-align:left!important;
+  box-shadow:none!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu button:hover,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu button.is-selected{
+  background:var(--os-card-2,var(--neo-surface-2,#edf0f5))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  box-shadow:var(--neo-shadow-in-sm)!important;
+}
