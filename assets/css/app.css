@@ -11539,27 +11539,30 @@ html.dark-mode-preload [class*="box"] {
   display:block!important;
   width:100%!important;
   min-height:38px!important;
-  margin:2px 0!important;
-  padding:9px 11px!important;
+  margin:4px 0!important;
+  padding:9px 12px!important;
   box-sizing:border-box!important;
-  border:0!important;
-  border-radius:10px!important;
-  background:transparent!important;
-  color:#243047!important;
+  border:1px solid rgba(126,140,166,.16)!important;
+  border-radius:11px!important;
+  background:var(--os-field,var(--neo-surface,#eef2f8))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
   font:700 12px/1.2 "Nunito Sans",Inter,sans-serif!important;
   text-align:left!important;
   cursor:pointer!important;
-  box-shadow:none!important;
-  transition:.14s ease!important;
+  box-shadow:3px 3px 7px rgba(139,151,171,.12),-3px -3px 7px rgba(255,255,255,.62)!important;
+  transition:box-shadow .14s ease,transform .14s ease,background .14s ease!important;
 }
 .outsource-filter-neo-menu button:hover{
-  background:linear-gradient(145deg,#f8fafc,#e1e7f0)!important;
-  box-shadow:4px 4px 8px rgba(145,155,175,.16),-4px -4px 8px rgba(255,255,255,.82)!important;
+  background:var(--os-card-2,var(--neo-surface-2,#edf0f5))!important;
+  border-color:rgba(126,140,166,.24)!important;
+  box-shadow:4px 4px 8px rgba(139,151,171,.16),-4px -4px 8px rgba(255,255,255,.70)!important;
+  transform:translateY(-1px)!important;
 }
 .outsource-filter-neo-menu button.is-selected{
   color:#2563eb!important;
-  background:linear-gradient(145deg,#f8fbff,#dfe5ee)!important;
-  box-shadow:inset 2px 2px 5px rgba(145,155,175,.16),inset -2px -2px 5px rgba(255,255,255,.82)!important;
+  background:var(--os-card-2,var(--neo-surface-2,#edf0f5))!important;
+  border-color:rgba(47,103,216,.20)!important;
+  box-shadow:inset 2px 2px 5px rgba(139,151,171,.16),inset -2px -2px 5px rgba(255,255,255,.72)!important;
   font-weight:900!important;
 }
 .outsource-filter-neo-menu button:active{
@@ -11578,15 +11581,17 @@ body.dark-mode .outsource-filter-neo-menu button,
 html.dark-mode-preload .outsource-filter-neo-menu button{
   color:#e8edf5!important;
 }
-body.dark-mode .outsource-filter-neo-menu button:hover,
+ body.dark-mode .outsource-filter-neo-menu button:hover,
 html.dark-mode-preload .outsource-filter-neo-menu button:hover{
-  background:linear-gradient(145deg,#2a374a,#1b2534)!important;
-  box-shadow:4px 4px 8px rgba(0,0,0,.22),-4px -4px 8px rgba(255,255,255,.025)!important;
+  background:#252f3e!important;
+  border-color:rgba(176,190,211,.24)!important;
+  box-shadow:4px 4px 8px rgba(0,0,0,.24),-4px -4px 8px rgba(255,255,255,.035)!important;
 }
-body.dark-mode .outsource-filter-neo-menu button.is-selected,
+ body.dark-mode .outsource-filter-neo-menu button.is-selected,
 html.dark-mode-preload .outsource-filter-neo-menu button.is-selected{
   color:#7fb0ff!important;
-  background:linear-gradient(145deg,#26364c,#1b2534)!important;
-  box-shadow:inset 2px 2px 5px rgba(0,0,0,.22),inset -2px -2px 5px rgba(255,255,255,.025)!important;
+  background:#252f3e!important;
+  border-color:rgba(127,176,255,.22)!important;
+  box-shadow:inset 2px 2px 5px rgba(0,0,0,.24),inset -2px -2px 5px rgba(255,255,255,.025)!important;
 }
 
