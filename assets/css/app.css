@@ -2871,8 +2871,7 @@
     .app,
     .main,
     .pages,
-    .page,
-    .page-scroll {
+    .page {
       overflow: hidden;
     }
 
