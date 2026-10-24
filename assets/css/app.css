@@ -11266,15 +11266,15 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
 }
 #moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2){
   min-height:0!important;
-  height:100%!important;
+  height:auto!important;
   display:flex!important;
   flex-direction:column!important;
   overflow:hidden!important;
 }
 #moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-table-wrap{
-  flex:1 1 0!important;
-  min-height:0!important;
-  height:0!important;
+  flex:0 0 auto!important;
+  min-height:180px!important;
+  height:min(620px,max(180px,calc(100vh - 540px)))!important;
   max-height:none!important;
   overflow:auto!important;
   overscroll-behavior:contain!important;
