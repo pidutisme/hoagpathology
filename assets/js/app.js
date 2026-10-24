@@ -2512,6 +2512,15 @@
          * opened page/app instance must invalidate any older HttpOnly cookie. */
         updateResumeSessionButton_();
         var hasPageSession = !!getStoredPublicUser_();
+        if (hasPageSession) {
+          // A verified page-session marker means this is a refresh/reload of the
+          // same page session. Keep the current page visible while the HttpOnly
+          // cookie is re-verified so the login screen never flashes on refresh.
+          document.body.classList.remove('auth-locked');
+          document.body.classList.add('auth-ready');
+          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
+          if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
+        }
         hoagApiRequest('loginState', { freshSession: !hasPageSession })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
