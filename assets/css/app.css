@@ -8039,7 +8039,6 @@ html.dark-mode-preload {
 body.dark-mode,
 html.dark-mode-preload,
 body.dark-mode .nav button,
-body.dark-mode .sidebar,
 body.dark-mode .display-board,
 body.dark-mode .panel,
 body.dark-mode .profile-card,
@@ -9865,6 +9864,15 @@ body::after{
 
 .sidebar{
   background:linear-gradient(145deg,rgba(255,255,255,.50),rgba(255,255,255,.22))!important;
+  border:0!important;
+  box-shadow:0 18px 40px rgba(35,66,105,.07)!important;
+}
+
+body.dark-mode .sidebar,
+html.dark-mode-preload .sidebar{
+  background:linear-gradient(145deg,rgba(34,51,76,.52),rgba(12,21,35,.38))!important;
+  border:0!important;
+  box-shadow:0 18px 40px rgba(0,0,0,.20)!important;
 }
 
 body.dark-mode .sidebar,
@@ -10555,7 +10563,6 @@ body.dark-mode,html.dark-mode-preload{
 }
 
 /* Core surfaces: one consistent neumorphic material. */
-.sidebar,
 .display-board,
 .panel,
 .profile-card,
