@@ -42,7 +42,7 @@
       --neo-shadow-flat-sm: var(--year-page-card-shadow);
       --viewport-safe-hover-shadow: var(--year-page-card-hover-shadow);
       --calendar-date-card-bg: linear-gradient(145deg, #f4f6fa 0%, #e2e7f1 100%);
-      --calendar-edge-border: rgba(118, 134, 160, 0.22);
+      --calendar-edge-border: rgba(118, 134, 160, 0.08);
       --calendar-edge-shadow: var(--year-page-card-shadow);
       --calendar-edge-shadow-sm: var(--shadow-soft);
       --calendar-edge-subcard-hover-shadow: var(--year-page-card-hover-shadow);
@@ -103,7 +103,7 @@
       --neo-shadow-flat-sm: var(--year-page-card-shadow);
       --viewport-safe-hover-shadow: var(--year-page-card-hover-shadow);
       --calendar-date-card-bg: linear-gradient(145deg, #202b3b, #131b28);
-      --calendar-edge-border: rgba(176, 190, 211, 0.135);
+      --calendar-edge-border: rgba(176, 190, 211, 0.065);
       --calendar-edge-shadow: var(--year-page-card-shadow);
       --calendar-edge-shadow-sm: var(--shadow-soft);
       --calendar-edge-subcard-hover-shadow: var(--year-page-card-hover-shadow);
@@ -10526,7 +10526,7 @@ body.dark-mode tbody tr:hover td{
   --neo-shadow-in:inset 6px 6px 14px rgba(139,151,171,.24),inset -6px -6px 14px rgba(255,255,255,.78),inset 0 0 0 1px rgba(255,255,255,.42);
   --neo-shadow-in-sm:inset 3px 3px 8px rgba(139,151,171,.20),inset -3px -3px 8px rgba(255,255,255,.76),inset 0 0 0 1px rgba(255,255,255,.38);
   --neo-shadow-pressed:inset 8px 8px 18px rgba(139,151,171,.28),inset -8px -8px 18px rgba(255,255,255,.82),inset 0 0 0 1px rgba(255,255,255,.40);
-  --neo-border:rgba(139,151,171,.13);
+  --neo-border:rgba(139,151,171,.07);
   --neo-focus:0 0 0 3px rgba(47,103,216,.16),var(--neo-shadow-in-sm);
 }
 
@@ -10546,7 +10546,7 @@ body.dark-mode,html.dark-mode-preload{
   --neo-shadow-in:inset 6px 6px 14px rgba(12,16,22,.54),inset -6px -6px 14px rgba(53,62,75,.52);
   --neo-shadow-in-sm:inset 3px 3px 8px rgba(12,16,22,.48),inset -3px -3px 8px rgba(53,62,75,.46);
   --neo-shadow-pressed:inset 8px 8px 18px rgba(12,16,22,.58),inset -8px -8px 18px rgba(53,62,75,.58);
-  --neo-border:rgba(255,255,255,.055);
+  --neo-border:rgba(255,255,255,.035);
   --neo-focus:0 0 0 3px rgba(127,164,244,.18),var(--neo-shadow-in-sm);
 }
 
