@@ -9119,171 +9119,6 @@ body.dark-mode #inventory .inventory-record-close:hover {
 }
 
 
-/* ===== ORIGINAL STYLE BLOCK: hoag-global-contrast-theme ===== */
-/* ==========================================================
-   HOAG PATHOLOGY — GLOBAL NEUMORPHISM CONTRAST LAYER
-   Purpose: make small/nested cards and editable form controls
-   visibly darker than the page surface across ALL modules.
-   ========================================================== */
-:root{
-  --neo-sub-surface: linear-gradient(145deg,#e8edf5 0%,#d7deea 100%);
-  --neo-sub-surface-soft: linear-gradient(145deg,#edf1f7 0%,#dbe2ed 100%);
-  --neo-sub-border: rgba(103,120,148,.24);
-  --neo-sub-shadow:
-    inset 4px 4px 10px rgba(111,126,151,.19),
-    inset -4px -4px 10px rgba(255,255,255,.82),
-    inset 0 0 0 1px rgba(255,255,255,.46);
-  --neo-sub-shadow-focus:
-    inset 3px 3px 8px rgba(111,126,151,.16),
-    inset -3px -3px 8px rgba(255,255,255,.80),
-    0 0 0 2px rgba(35,103,242,.12);
-  --neo-sub-text:#25334a;
-  --neo-sub-muted:#68758a;
-}
-body.dark-mode,
-html.dark-mode-preload{
-  --neo-sub-surface:linear-gradient(145deg,#202b3b 0%,#151e2d 100%);
-  --neo-sub-surface-soft:linear-gradient(145deg,#253143 0%,#182231 100%);
-  --neo-sub-border:rgba(180,194,215,.14);
-  --neo-sub-shadow:
-    inset 4px 4px 10px rgba(0,0,0,.30),
-    inset -4px -4px 10px rgba(255,255,255,.035),
-    inset 0 0 0 1px rgba(255,255,255,.035);
-  --neo-sub-shadow-focus:
-    inset 3px 3px 8px rgba(0,0,0,.28),
-    inset -3px -3px 8px rgba(255,255,255,.03),
-    0 0 0 2px rgba(92,145,255,.16);
-  --neo-sub-text:#eef3fa;
-  --neo-sub-muted:#a8b4c6;
-}
-
-/* Small/nested cards — deliberately a little darker than their parent surface. */
-.stat-card,
-.bottom-card,
-.setting-box,
-.profile-info-box,
-.admin-control-card,
-.inventory-kpi,
-.inventory-alert,
-.inventory-record-stat,
-.inventory-search-wrap,
-.inventory-table-wrap,
-.inventory-modal-card,
-.inventory-record-card,
-.inventory-form,
-.outsource-card,
-.outsource-stat,
-.outsource-search,
-.outsource-form,
-.outsource-empty,
-.notes-editor-shell,
-.notes-list-shell,
-.notes-two-cards,
-.leave-course-mini-year,
-.leave-course-year-card,
-.daily-roster-card,
-.daily-roster-panel,
-.calendar-month-panel{
-  background:var(--neo-sub-surface) !important;
-  border-color:var(--neo-sub-border) !important;
-  box-shadow:var(--neo-sub-shadow) !important;
-  background-clip:padding-box !important;
-  -webkit-background-clip:padding-box !important;
-}
-
-/* Editable controls — stronger contrast so the user can immediately see
-   where data is expected to be entered. */
-input:not([type="checkbox"]):not([type="radio"]),
-select,
-textarea{
-  background:var(--neo-sub-surface-soft) !important;
-  color:var(--neo-sub-text) !important;
-  border:1px solid var(--neo-sub-border) !important;
-  box-shadow:var(--neo-sub-shadow) !important;
-}
-input:not([type="checkbox"]):not([type="radio"])::placeholder,
-textarea::placeholder{
-  color:var(--neo-sub-muted) !important;
-  opacity:.92;
-}
-input:not([type="checkbox"]):not([type="radio"]):focus,
-select:focus,
-textarea:focus{
-  background:var(--neo-sub-surface-soft) !important;
-  border-color:rgba(35,103,242,.30) !important;
-  box-shadow:var(--neo-sub-shadow-focus) !important;
-}
-input:not([type="checkbox"]):not([type="radio"]):disabled,
-select:disabled,
-textarea:disabled,
-input[readonly]:not([type="checkbox"]):not([type="radio"]){
-  opacity:1 !important;
-  cursor:default !important;
-  background:var(--neo-sub-surface) !important;
-  color:var(--neo-sub-muted) !important;
-}
-
-/* Common nested toolbars / filters should read as controls, not disappear
-   into the page background. */
-.filter-bar,
-.toolbar,
-.search-bar,
-.page-toolbar,
-.table-toolbar,
-.form-actions,
-.form-grid,
-.stats-row{
-  border-color:var(--neo-sub-border);
-}
-
-/* Preserve the existing bright/colored action buttons. */
-button.primary,
-button.danger,
-button.success,
-.inventory-action-btn.primary,
-.inventory-action-btn.danger,
-.outsource-btn.primary{
-  box-shadow:3px 3px 8px rgba(92,108,132,.18),-3px -3px 8px rgba(255,255,255,.42) !important;
-}
-
-/* Small cards get a restrained hover lift; no excessive glow. */
-.stat-card:hover,
-.bottom-card:hover,
-.setting-box:hover,
-.profile-info-box:hover,
-.admin-control-card:hover,
-.inventory-kpi:hover,
-.inventory-alert:hover,
-.outsource-stat:hover{
-  box-shadow:
-    inset 5px 5px 12px rgba(111,126,151,.20),
-    inset -5px -5px 12px rgba(255,255,255,.84),
-    inset 0 0 0 1px rgba(95,126,255,.12) !important;
-}
-
-/* Keep disabled/auto-filled fields visibly locked without browser
-   'not-allowed' stop-sign cursor. */
-input[readonly],
-input[data-auto-from-ic],
-select[data-auto-from-ic]{
-  cursor:default !important;
-}
-
-/* Mobile/WebView: retain contrast without adding heavy outer shadows. */
-@media (max-width:720px){
-  .stat-card,
-  .bottom-card,
-  .setting-box,
-  .profile-info-box,
-  .admin-control-card,
-  .inventory-kpi,
-  .inventory-alert,
-  .outsource-stat{
-    box-shadow:var(--neo-sub-shadow) !important;
-  }
-}
-
-
 /* ===== ORIGINAL STYLE BLOCK: outsource-filter-clean-final ===== */
 /* OUTSOURCE / REGISTERED SAMPLES — ONE authoritative filter implementation. */
 #moduleYearGrid.outsource-active-grid .outsource-search > .outsource-filter-neo-wrap{
@@ -10680,13 +10515,13 @@ body.dark-mode tbody tr:hover td{
   --neo-text:#243044;
   --neo-muted:#748096;
   --neo-accent:#2f67d8;
-  --neo-radius-xl:28px;
-  --neo-radius-lg:22px;
-  --neo-shadow-out:10px 10px 22px rgba(157,168,187,.58),-10px -10px 22px rgba(255,255,255,.92);
-  --neo-shadow-out-sm:6px 6px 14px rgba(157,168,187,.48),-6px -6px 14px rgba(255,255,255,.86);
-  --neo-shadow-in:inset 6px 6px 14px rgba(157,168,187,.46),inset -6px -6px 14px rgba(255,255,255,.86);
-  --neo-shadow-in-sm:inset 3px 3px 8px rgba(157,168,187,.38),inset -3px -3px 8px rgba(255,255,255,.82);
-  --neo-shadow-pressed:inset 8px 8px 18px rgba(157,168,187,.52),inset -8px -8px 18px rgba(255,255,255,.90);
+  --neo-radius-xl:30px;
+  --neo-radius-lg:28px;
+  --neo-shadow-out:7px 8px 18px rgba(139,151,171,.26),-7px -8px 18px rgba(255,255,255,.92),inset 1px 1px 0 rgba(255,255,255,.52),inset -1px -1px 0 rgba(126,140,166,.07);
+  --neo-shadow-out-sm:5px 5px 12px rgba(139,151,171,.22),-5px -5px 12px rgba(255,255,255,.86),inset 1px 1px 0 rgba(255,255,255,.48),inset -1px -1px 0 rgba(126,140,166,.06);
+  --neo-shadow-in:inset 6px 6px 14px rgba(139,151,171,.24),inset -6px -6px 14px rgba(255,255,255,.78),inset 0 0 0 1px rgba(255,255,255,.42);
+  --neo-shadow-in-sm:inset 3px 3px 8px rgba(139,151,171,.20),inset -3px -3px 8px rgba(255,255,255,.76),inset 0 0 0 1px rgba(255,255,255,.38);
+  --neo-shadow-pressed:inset 8px 8px 18px rgba(139,151,171,.28),inset -8px -8px 18px rgba(255,255,255,.82),inset 0 0 0 1px rgba(255,255,255,.40);
   --neo-border:rgba(139,151,171,.18);
   --neo-focus:0 0 0 3px rgba(47,103,216,.16),var(--neo-shadow-in-sm);
 }
@@ -10737,6 +10572,7 @@ body.dark-mode,html.dark-mode-preload{
 .calendar-month-panel,
 .daily-roster-panel,
 .daily-roster-card,
+.calendar-mini-day,
 .leave-course-year-card,
 .year-card,
 .leave-course-mini-year,
@@ -10747,7 +10583,31 @@ body.dark-mode,html.dark-mode-preload{
 .notes-two-cards,
 .notes-editor-shell,
 .notes-list-shell,
+.notes-editor-card,
+.notes-list-card,
+.notes-list-item,
+.notes-card,
+.live-chat-person,
+.live-chat-message,
+.module-year-card,
+.inventory-card,
+.inventory-row-card,
 .admin-control-card,
+.settings-extra-card,
+.inventory-kpi,
+.inventory-alert,
+.inventory-record-stat,
+.inventory-search-wrap,
+.inventory-table-wrap,
+.inventory-modal-card,
+.inventory-record-card,
+.inventory-form,
+.outsource-card,
+.outsource-stat,
+.outsource-search,
+.outsource-form,
+.outsource-empty,
+.auth-card,
 .single-panel,
 .calendar-panel,
 .calendar-roster-board{
@@ -10758,8 +10618,8 @@ body.dark-mode,html.dark-mode-preload{
   -webkit-backdrop-filter:none!important;
 }
 
-.sidebar,.display-board,.panel,.profile-card,.calendar-panel,.calendar-roster-board{border-radius:var(--neo-radius-xl)!important}
-.stat-card,.bottom-card,.setting-box,.profile-info-box,.daily-roster-card,.year-card,.leave-course-year-card,.leave-course-mini-year,.admin-control-card{border-radius:var(--neo-radius-lg)!important}
+.sidebar,.display-board,.panel,.profile-card,.calendar-panel,.calendar-roster-board,.auth-card,.single-panel{border-radius:var(--neo-radius-xl)!important}
+.stat-card,.bottom-card,.setting-box,.profile-info-box,.daily-roster-card,.calendar-mini-day,.year-card,.leave-course-year-card,.leave-course-mini-year,.admin-control-card,.settings-extra-card,.inventory-kpi,.inventory-alert,.inventory-record-stat,.inventory-search-wrap,.inventory-table-wrap,.inventory-modal-card,.inventory-record-card,.inventory-form,.outsource-card,.outsource-stat,.outsource-search,.outsource-form,.outsource-empty,.notes-editor-card,.notes-list-card,.notes-two-cards,.notes-editor-shell,.notes-list-shell,.live-chat-shell,.live-chat-main,.live-chat-chatpane,.live-chat-people{border-radius:var(--neo-radius-lg)!important}
 
 /* Typography hierarchy */
 .brand h1,.display-title,.display-clock,.display-hero-title,.display-title-clock,
@@ -10801,7 +10661,7 @@ body.dark-mode,html.dark-mode-preload{
 }
 .display-date{box-shadow:var(--neo-shadow-in-sm)!important}
 .stats-row,.bottom-cards-row{gap:18px!important}
-.stat-card,.bottom-card{background:var(--neo-surface)!important}
+.stat-card,.bottom-card,.setting-box,.profile-info-box,.daily-roster-card,.calendar-mini-day,.year-card,.leave-course-year-card,.leave-course-mini-year,.admin-control-card,.settings-extra-card,.inventory-kpi,.inventory-alert,.inventory-record-stat,.inventory-search-wrap,.inventory-table-wrap,.inventory-modal-card,.inventory-record-card,.inventory-form,.outsource-card,.outsource-stat,.outsource-search,.outsource-form,.outsource-empty,.notes-editor-card,.notes-list-card,.notes-two-cards,.notes-editor-shell,.notes-list-shell,.live-chat-shell,.live-chat-main,.live-chat-chatpane,.live-chat-people,.auth-card{background:var(--neo-surface)!important}
 .stat-card:hover,.bottom-card:hover,.profile-card:hover,.panel:hover,.setting-box:hover,.profile-info-box:hover,
 .year-card:hover,.leave-course-year-card:hover,.leave-course-mini-year:hover,.daily-roster-card:hover{
   transform:translateY(-2px)!important;
@@ -10853,17 +10713,6 @@ button[data-action="save"],button[data-action="submit"]{
 }
 body.dark-mode .btn-primary,body.dark-mode .primary-btn,body.dark-mode .save-btn,body.dark-mode .submit-btn,body.dark-mode .confirm-btn{color:#172033!important}
 
-/* Cards and nested items */
-.profile-info-box,.setting-box,.settings-extra-card,.notes-list-item,.notes-card,
-.live-chat-person,.live-chat-message,.admin-control-card,.calendar-mini-day,
-.module-year-card,.leave-course-mini-year,.inventory-card,.inventory-row-card{
-  background:var(--neo-surface-2)!important;
-  border:1px solid var(--neo-border)!important;
-  box-shadow:var(--neo-shadow-out-sm)!important;
-}
-.profile-info-box:active,.setting-box:active,.settings-extra-card:active,.notes-list-item:active,
-.calendar-mini-day:active,.module-year-card:active,.inventory-card:active{box-shadow:var(--neo-shadow-in-sm)!important}
-
 /* Icon wells */
 .profile-link-card::before,.access-link-card::before,.quick-links-card::before,
 #settings .setting-box .settings-card-icon,#settings .settings-extra-icon,
@@ -10876,7 +10725,7 @@ body.dark-mode .btn-primary,body.dark-mode .primary-btn,body.dark-mode .save-btn
 
 /* Calendar */
 #calendar .calendar-full-grid{gap:12px!important}
-#calendar .calendar-mini-day{border-radius:18px!important;background:var(--neo-surface)!important;box-shadow:var(--neo-shadow-out-sm)!important}
+#calendar .calendar-mini-day{border-radius:var(--neo-radius-lg)!important;background:var(--neo-surface)!important;box-shadow:var(--neo-shadow-out)!important}
 #calendar .calendar-mini-day:hover{transform:translateY(-2px);box-shadow:var(--neo-shadow-out)!important}
 #calendar .calendar-mini-day:active{box-shadow:var(--neo-shadow-in)!important}
 
