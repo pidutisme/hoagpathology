@@ -11224,3 +11224,73 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* ===== OUTSOURCE SCROLL / RESULT FINAL OVERRIDE ===== */
+/* Keep the OUTSOURCE page viewport fixed; the registered-data panel owns the only scroll. */
+#moduleYears.outsource-page-fixed > .page-scroll,
+#moduleYears:has(#moduleYearGrid.outsource-active-grid) > .page-scroll{
+  overflow:hidden!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+}
+#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-page,
+#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-panel,
+#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-inner{
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+}
+#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-inner{
+  grid-template-rows:auto auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid{
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-register{
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid{
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2){
+  min-height:0!important;
+  height:100%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-table-wrap{
+  flex:1 1 0!important;
+  min-height:0!important;
+  height:0!important;
+  max-height:none!important;
+  overflow:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+/* Result column uses the exact same surface as every other data cell. */
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill{
+  background:var(--os-page,var(--neo-surface,#fff))!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-result-pill.status-done,
+#moduleYearGrid.outsource-active-grid .outsource-result-pill.status-reject,
+#moduleYearGrid.outsource-active-grid .outsource-result-pill.status-pending{
+  background:transparent!important;
+  color:var(--os-muted,var(--text,#243047))!important;
+}
+
