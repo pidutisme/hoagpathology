@@ -10670,7 +10670,7 @@ body.dark-mode,html.dark-mode-preload{
 .stat-card,.bottom-card,.setting-box,.profile-info-box,.daily-roster-card,.calendar-mini-day,.year-card,.leave-course-year-card,.leave-course-mini-year,.admin-control-card,.settings-extra-card,.inventory-kpi,.inventory-alert,.inventory-record-stat,.inventory-search-wrap,.inventory-table-wrap,.inventory-modal-card,.inventory-record-card,.inventory-form,.outsource-card,.outsource-stat,.outsource-search,.outsource-form,.outsource-empty,.notes-editor-card,.notes-list-card,.notes-two-cards,.notes-editor-shell,.notes-list-shell,.live-chat-shell,.live-chat-main,.live-chat-chatpane,.live-chat-people,.auth-card{background:var(--neo-surface)!important}
 .stat-card:hover,.bottom-card:hover,.profile-card:hover,.panel:hover,.setting-box:hover,.profile-info-box:hover,
 .year-card:hover,.leave-course-year-card:hover,.leave-course-mini-year:hover,.daily-roster-card:hover{
-  transform:translateY(-2px)!important;
+  transform:none!important;
   box-shadow:var(--neo-shadow-out)!important;
 }
 .big-card-icon{border-radius:50%!important}
