@@ -7808,7 +7808,7 @@
 .outsource-table td{padding:8px 7px;border-bottom:1px solid #e6edf2;color:#233f54;vertical-align:top;white-space:nowrap;}
 .outsource-table tbody tr:hover{background:#f6fbfe;}
 .outsource-table tbody tr.status-reject,.outsource-table tbody tr.status-done,.outsource-table tbody tr.status-pending{background:transparent;}
-.outsource-result{font-weight:900;text-align:center;vertical-align:middle!important;}
+.outsource-result{font-weight:inherit;text-align:inherit;vertical-align:middle!important;}
 .outsource-result.status-cell{display:table-cell;}
 .outsource-result.status-done{color:#111827;background:#dff4e7;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
 .outsource-result.status-reject{color:#111827;background:#fde3e5;border:0;border-radius:0;padding:5px 7px!important;box-shadow:none;}
@@ -9381,9 +9381,9 @@ html.dark-mode-preload #moduleYearGrid.outsource-active-grid{
 
 #moduleYearGrid.outsource-active-grid .outsource-field input[readonly],
 #moduleYearGrid.outsource-active-grid .outsource-field select:disabled{
-  background: var(--os-card-2) !important;
-  color: var(--os-muted) !important;
-  box-shadow: inset 2px 2px 6px rgba(95,110,132,.10), inset -2px -2px 6px rgba(255,255,255,.45) !important;
+  background: var(--os-field) !important;
+  color: var(--os-text) !important;
+  box-shadow: var(--os-shadow-inset) !important;
 }
 
 body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-field input[readonly],
@@ -9477,13 +9477,14 @@ html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-btn.prim
 #moduleYearGrid.outsource-active-grid .outsource-search input,
 #moduleYearGrid.outsource-active-grid .outsource-search select,
 #moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger{
-  min-height: 36px !important;
-  height: 36px !important;
-  border-radius: 10px !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  border-radius: 11px !important;
   background: var(--os-field) !important;
   color: var(--os-text) !important;
   border: 1px solid var(--os-border) !important;
   box-shadow: var(--os-shadow-inset) !important;
+  font: 600 12px inherit !important;
 }
 
 #moduleYearGrid.outsource-active-grid .outsource-search input{
@@ -9495,8 +9496,8 @@ html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-btn.prim
 }
 
 #moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger{
-  padding: 0 11px !important;
-  font-weight: 800 !important;
+  padding: 9px 11px !important;
+  font-weight: 600 !important;
 }
 
 #moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu{
@@ -11441,9 +11442,25 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-done,
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-reject,
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-pending{
-  background:var(--neo-surface,#fff)!important;
-  color:var(--neo-text,#243047)!important;
+  background:transparent!important;
+  color:inherit!important;
   border:0!important;
+  box-shadow:none!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-done,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-reject,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-pending{
+  display:inline!important;
+  margin:0!important;
+  padding:0!important;
+  font:inherit!important;
+  font-weight:inherit!important;
+  line-height:inherit!important;
+  color:inherit!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
   box-shadow:none!important;
 }
 

@@ -3601,7 +3601,7 @@ hoagApiRequest('logout', {
                 '<div class="outsource-field"><label>Bar Code</label><input id="osBarCode" placeholder="e.g. 1036733"></div>'+
                 '<div class="outsource-field"><label>Name *</label><input id="osName" required placeholder="Patient name"></div>'+
                 '<div class="outsource-field"><label>ID / IC</label><input id="osIdIc" placeholder="NRIC / Passport"></div>'+
-                '<div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><select id="osSex" disabled><option value="">Auto from IC</option><option value="P">P</option><option value="L">L</option></select></div>'+
+                '<div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><input id="osSex" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div>'+
                 '<div class="outsource-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input type="text" id="osDispatchDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
