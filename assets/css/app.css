@@ -10385,6 +10385,72 @@ body.dark-mode tbody tr:hover td{
 }
 
 
+
+/* ===== ORIGINAL STYLE BLOCK: outsource-viewport-scroll-final-v11 ===== */
+/* OUTSOURCE v11: page itself never scrolls; only the Registered Samples data area does. */
+#moduleYears > .page-scroll{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+#moduleYearGrid.outsource-active-grid{
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-register{
+  height:100%!important;
+  min-height:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  padding-bottom:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid{
+  height:100%!important;
+  min-height:0!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card{
+  min-height:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2){
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-table-wrap{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:auto!important;
+  overscroll-behavior:contain!important;
+}
+
+/* Result cells use exactly the same surface as the other registered-data cells. */
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result{
+  background:var(--neo-surface,#fff)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td.outsource-result,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td:hover{
+  background:#eef2f8!important;
+}
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td,
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result{
+  background:var(--neo-surface,#1b2635)!important;
+}
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td,
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td:hover,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td:hover{
+  background:#243244!important;
+}
+
 /* ===== ORIGINAL STYLE BLOCK: outsource-date-picker-final-polish-v2 ===== */
 /* FINAL: compact Inventory-style calendar + date fields must behave like clickable pickers. */
 #moduleYearGrid.outsource-active-grid .outsource-neumorphic-date{
