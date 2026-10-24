@@ -10521,12 +10521,12 @@ body.dark-mode tbody tr:hover td{
   --neo-accent:#2f67d8;
   --neo-radius-xl:30px;
   --neo-radius-lg:28px;
-  --neo-shadow-out:6px 7px 16px rgba(139,151,171,.22),inset 1px 1px 0 rgba(255,255,255,.48),inset -1px -1px 0 rgba(126,140,166,.07);
-  --neo-shadow-out-sm:4px 5px 11px rgba(139,151,171,.18),inset 1px 1px 0 rgba(255,255,255,.44),inset -1px -1px 0 rgba(126,140,166,.06);
+  --neo-shadow-out:4px 5px 12px rgba(139,151,171,.15),inset 1px 1px 0 rgba(255,255,255,.42),inset -1px -1px 0 rgba(126,140,166,.06);
+  --neo-shadow-out-sm:3px 4px 9px rgba(139,151,171,.12),inset 1px 1px 0 rgba(255,255,255,.38),inset -1px -1px 0 rgba(126,140,166,.05);
   --neo-shadow-in:inset 6px 6px 14px rgba(139,151,171,.24),inset -6px -6px 14px rgba(255,255,255,.78),inset 0 0 0 1px rgba(255,255,255,.42);
   --neo-shadow-in-sm:inset 3px 3px 8px rgba(139,151,171,.20),inset -3px -3px 8px rgba(255,255,255,.76),inset 0 0 0 1px rgba(255,255,255,.38);
   --neo-shadow-pressed:inset 8px 8px 18px rgba(139,151,171,.28),inset -8px -8px 18px rgba(255,255,255,.82),inset 0 0 0 1px rgba(255,255,255,.40);
-  --neo-border:rgba(139,151,171,.07);
+  --neo-border:rgba(126,140,166,.08);
   --neo-focus:0 0 0 3px rgba(47,103,216,.16),var(--neo-shadow-in-sm);
 }
 
@@ -10541,12 +10541,12 @@ body.dark-mode,html.dark-mode-preload{
   --neo-text:#edf1f7;
   --neo-muted:#a5afbf;
   --neo-accent:#7fa4f4;
-  --neo-shadow-out:10px 10px 22px rgba(12,16,22,.62),-10px -10px 22px rgba(53,62,75,.62);
-  --neo-shadow-out-sm:6px 6px 14px rgba(12,16,22,.58),-6px -6px 14px rgba(53,62,75,.56);
+  --neo-shadow-out:8px 8px 18px rgba(12,16,22,.50),-8px -8px 18px rgba(53,62,75,.48);
+  --neo-shadow-out-sm:5px 5px 12px rgba(12,16,22,.46),-5px -5px 12px rgba(53,62,75,.44);
   --neo-shadow-in:inset 6px 6px 14px rgba(12,16,22,.54),inset -6px -6px 14px rgba(53,62,75,.52);
   --neo-shadow-in-sm:inset 3px 3px 8px rgba(12,16,22,.48),inset -3px -3px 8px rgba(53,62,75,.46);
   --neo-shadow-pressed:inset 8px 8px 18px rgba(12,16,22,.58),inset -8px -8px 18px rgba(53,62,75,.58);
-  --neo-border:rgba(255,255,255,.035);
+  --neo-border:rgba(176,190,211,.06);
   --neo-focus:0 0 0 3px rgba(127,164,244,.18),var(--neo-shadow-in-sm);
 }
 
