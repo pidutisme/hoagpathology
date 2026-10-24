@@ -4517,14 +4517,22 @@
 
     @supports (overflow: clip) {
 
-      .sidebar,
-      .display-board,
       .panel,
       .profile-card,
       .stat-card,
       .bottom-card,
       .setting-box,
       .profile-info-box,
+      .daily-roster-card,
+      .leave-course-year-card,
+      .year-card,
+      .leave-course-mini-year,
+      .calendar-mini-day {
+        overflow: visible;
+      }
+
+      .sidebar,
+      .display-board,
       .nav button,
       .sidebar-footer,
       .theme-toggle,
@@ -4532,10 +4540,6 @@
       .display-clock-wrap,
       .calendar-month-panel,
       .daily-roster-panel,
-      .daily-roster-card,
-      .leave-course-year-card,
-      .year-card,
-      .leave-course-mini-year,
       .big-card-icon,
       .year-card-icon-shell,
       .leave-course-mini-icon-shell,
