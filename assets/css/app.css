@@ -11226,14 +11226,16 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
   box-shadow: none !important;
 }
 
-/* ===== OUTSOURCE SCROLL / RESULT FINAL OVERRIDE ===== */
-/* Keep the OUTSOURCE page viewport fixed; the registered-data panel owns the only scroll. */
-#moduleYears.outsource-page-fixed > .page-scroll,
+/* ===== OUTSOURCE FINAL VISUAL + SCROLL AUTHORITY ===== */
+/* One scoped override for the OUTSOURCE screen only. No JS or application logic changed. */
 #moduleYears:has(#moduleYearGrid.outsource-active-grid) > .page-scroll{
-  overflow:hidden!important;
   height:100%!important;
   min-height:0!important;
   max-height:100%!important;
+  overflow:hidden!important;
+  overflow-x:hidden!important;
+  overflow-y:hidden!important;
+  overscroll-behavior:none!important;
 }
 #moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-page,
 #moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-panel,
@@ -11241,84 +11243,27 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
   height:100%!important;
   min-height:0!important;
   max-height:100%!important;
+  overflow:hidden!important;
 }
 #moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-inner{
-  grid-template-rows:auto auto minmax(0,1fr)!important;
-  overflow:hidden!important;
-}
-#moduleYearGrid.outsource-active-grid{
-  height:100%!important;
-  min-height:0!important;
-  max-height:none!important;
-  overflow:hidden!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-register{
-  height:100%!important;
-  min-height:0!important;
-  max-height:none!important;
-  overflow:hidden!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid{
-  height:100%!important;
-  min-height:0!important;
-  max-height:none!important;
-  grid-template-rows:auto minmax(0,1fr)!important;
-  overflow:hidden!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2){
-  min-height:0!important;
-  height:auto!important;
   display:flex!important;
   flex-direction:column!important;
-  overflow:hidden!important;
+  gap:var(--gap)!important;
 }
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-table-wrap{
-  flex:0 0 auto!important;
-  min-height:180px!important;
-  height:min(620px,max(180px,calc(100vh - 540px)))!important;
-  max-height:none!important;
-  overflow:auto!important;
-  overscroll-behavior:contain!important;
-  -webkit-overflow-scrolling:touch!important;
-}
-/* Result column uses the exact same surface as every other data cell. */
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill{
-  background:var(--os-page,var(--neo-surface,#fff))!important;
-  border-color:transparent!important;
-  box-shadow:none!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-result-pill.status-done,
-#moduleYearGrid.outsource-active-grid .outsource-result-pill.status-reject,
-#moduleYearGrid.outsource-active-grid .outsource-result-pill.status-pending{
-  background:transparent!important;
-  color:var(--os-muted,var(--text,#243047))!important;
-}
-
-
-/* ===== OUTSOURCE SCROLL / RESULT TARGETED FIX ===== */
-/* Keep the OUTSOURCE viewport fixed and give only the registered-data list a real flex-sized scroll area. */
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) > .page-scroll,
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-page,
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-panel,
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-inner{
-  height:100%!important;
-  min-height:0!important;
-  max-height:100%!important;
-  overflow:hidden!important;
-}
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-inner{
-  display:grid!important;
-  grid-template-rows:auto auto minmax(0,1fr)!important;
-}
-#moduleYearGrid.outsource-active-grid{
-  display:block!important;
-  height:100%!important;
+#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-year-grid{
+  flex:1 1 auto!important;
+  width:100%!important;
   min-height:0!important;
   max-height:none!important;
   overflow:hidden!important;
-  padding:0!important;
 }
+
+/* The whole OUTSOURCE screen uses the same font family as the form dropdowns. */
+#moduleYearGrid.outsource-active-grid,
+#moduleYearGrid.outsource-active-grid *{
+  font-family:"Nunito Sans",Inter,sans-serif!important;
+}
+
 #moduleYearGrid.outsource-active-grid > .outsource-register{
   display:flex!important;
   flex-direction:column!important;
@@ -11327,125 +11272,178 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
   min-height:0!important;
   max-height:none!important;
   box-sizing:border-box!important;
-  padding:4px 0 0!important;
   overflow:hidden!important;
+  padding:0 0 8px!important;
+  gap:12px!important;
 }
 #moduleYearGrid.outsource-active-grid .outsource-grid{
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  grid-template-rows:auto minmax(0,1fr)!important;
+  display:flex!important;
+  flex-direction:column!important;
   flex:1 1 auto!important;
+  width:100%!important;
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
   overflow:hidden!important;
+  gap:12px!important;
 }
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card{
+#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:first-child{
+  flex:0 0 auto!important;
+  min-height:0!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2){
+  display:flex!important;
+  flex:1 1 0!important;
+  flex-direction:column!important;
   min-width:0!important;
   min-height:0!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2){
-  display:flex!important;
-  flex-direction:column!important;
-  height:auto!important;
-  min-height:0!important;
-  overflow:hidden!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-table-wrap{
-  flex:1 1 auto!important;
-  min-height:0!important;
   height:auto!important;
   max-height:none!important;
-  overflow:auto!important;
-  overscroll-behavior:contain!important;
-  -webkit-overflow-scrolling:touch!important;
-}
-/* RESULT cells use the same surface as ordinary table cells; status text remains readable. */
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-done,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-reject,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-pending,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-done,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-reject,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-pending{
-  background:transparent!important;
-  border:0!important;
-  box-shadow:none!important;
-}
-
-
-/* ===== OUTSOURCE FINAL TABLE SCROLL + RESULT SURFACE FIX ===== */
-/* Final targeted fix: keep the OUTSOURCE viewport static while giving the registered-data area a real, finite scroll box. */
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) > .page-scroll,
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-page,
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-panel,
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-inner,
-#moduleYearGrid.outsource-active-grid,
-#moduleYearGrid.outsource-active-grid > .outsource-register{
-  overflow:hidden!important;
-  overscroll-behavior:none!important;
-}
-#moduleYears:has(#moduleYearGrid.outsource-active-grid) .module-years-inner{
-  display:grid!important;
-  grid-template-rows:auto auto minmax(0,1fr)!important;
-  height:100%!important;
-  min-height:0!important;
-}
-#moduleYearGrid.outsource-active-grid > .outsource-register{
-  display:block!important;
-  height:100%!important;
-  min-height:0!important;
-  max-height:100%!important;
-  padding:0 0 8px!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid{
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  grid-template-rows:auto minmax(0,1fr)!important;
-  height:100%!important;
-  min-height:0!important;
-  max-height:100%!important;
-  overflow:hidden!important;
-}
-#moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2){
-  display:flex!important;
-  flex-direction:column!important;
-  min-height:0!important;
-  height:100%!important;
   overflow:hidden!important;
 }
 #moduleYearGrid.outsource-active-grid .outsource-grid > .outsource-card:nth-child(2) .outsource-table-wrap{
+  position:relative!important;
   display:block!important;
   flex:1 1 0!important;
   width:100%!important;
   min-width:0!important;
-  min-height:140px!important;
-  height:0!important;
+  min-height:0!important;
+  height:auto!important;
   max-height:none!important;
   overflow:auto!important;
   overflow-x:auto!important;
   overflow-y:auto!important;
   overscroll-behavior:contain!important;
   -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:thin!important;
 }
-#moduleYearGrid.outsource-active-grid .outsource-table-wrap .outsource-table{
+#moduleYearGrid.outsource-active-grid .outsource-table-wrap::-webkit-scrollbar{
+  width:8px!important;
+  height:8px!important;
+  display:block!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table-wrap::-webkit-scrollbar-thumb{
+  background:rgba(116,128,150,.42)!important;
+  border-radius:999px!important;
+  border:2px solid transparent!important;
+  background-clip:padding-box!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table{
   width:max-content!important;
   min-width:100%!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
 }
-/* RESULT column must use the exact same surface as normal data cells. */
+#moduleYearGrid.outsource-active-grid .outsource-table thead th{
+  position:sticky!important;
+  top:0!important;
+  z-index:5!important;
+}
+
+/* All form controls share the same material as the Referral dropdown. */
+#moduleYearGrid.outsource-active-grid .outsource-field input,
+#moduleYearGrid.outsource-active-grid .outsource-field select,
+#moduleYearGrid.outsource-active-grid .outsource-field textarea,
+#moduleYearGrid.outsource-active-grid .outsource-select-trigger,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger{
+  width:100%!important;
+  min-height:42px!important;
+  height:42px!important;
+  box-sizing:border-box!important;
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:14px!important;
+  background:var(--os-field,var(--neo-surface,#eef2f8))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  box-shadow:var(--os-shadow-inset,var(--neo-shadow-in-sm))!important;
+  font:700 12px/1.2 "Nunito Sans",Inter,sans-serif!important;
+  outline:none!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input,
+#moduleYearGrid.outsource-active-grid .outsource-field textarea{
+  padding:10px 14px!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field select{
+  padding:10px 42px 10px 14px!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-select-trigger,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:10px 14px!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input::placeholder,
+#moduleYearGrid.outsource-active-grid .outsource-field textarea::placeholder{
+  color:var(--os-muted,var(--neo-muted,#748096))!important;
+  opacity:.82!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-field input:focus,
+#moduleYearGrid.outsource-active-grid .outsource-field select:focus,
+#moduleYearGrid.outsource-active-grid .outsource-field textarea:focus,
+#moduleYearGrid.outsource-active-grid .outsource-select-trigger.is-open,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-trigger.is-open{
+  border-color:rgba(120,135,160,.12)!important;
+  box-shadow:var(--os-shadow-inset,var(--neo-shadow-in-sm))!important;
+  outline:none!important;
+}
+
+/* Both native-enhanced dropdown menus use exactly the same Neumorphism treatment. */
+#moduleYearGrid.outsource-active-grid .outsource-select-menu,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu{
+  position:fixed!important;
+  z-index:2147483000!important;
+  box-sizing:border-box!important;
+  padding:7px!important;
+  border:1px solid rgba(120,135,160,.12)!important;
+  border-radius:16px!important;
+  background:var(--os-field,var(--neo-surface,#eef2f8))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  box-shadow:10px 10px 24px rgba(80,90,110,.18),-8px -8px 20px rgba(255,255,255,.88)!important;
+  scrollbar-width:thin!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-select-menu button,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu button{
+  display:block!important;
+  width:100%!important;
+  min-height:38px!important;
+  margin:2px 0!important;
+  padding:9px 12px!important;
+  border:0!important;
+  border-radius:11px!important;
+  background:transparent!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  font:700 12px/1.2 "Nunito Sans",Inter,sans-serif!important;
+  text-align:left!important;
+  box-shadow:none!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-select-menu button:hover,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu button:hover,
+#moduleYearGrid.outsource-active-grid .outsource-select-menu button.is-selected,
+#moduleYearGrid.outsource-active-grid .outsource-filter-neo-menu button.is-selected{
+  background:var(--os-card-2,var(--neo-surface-2,#edf0f5))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
+  box-shadow:var(--neo-shadow-in-sm)!important;
+}
+
+/* RESULT is a completely ordinary table cell — no pill, colour block, border or special padding. */
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-done,
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-reject,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-pending,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-done,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-reject,
-#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-pending{
-  background:transparent!important;
-  color:inherit!important;
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-pending{
+  background:var(--os-page,var(--neo-surface,#e7ebf2))!important;
+  color:var(--os-text,var(--neo-text,#243047))!important;
   border:0!important;
+  border-bottom:1px solid var(--os-border,rgba(94,111,137,.20))!important;
+  border-radius:0!important;
   box-shadow:none!important;
+  padding:7px!important;
+  font:inherit!important;
+  font-weight:inherit!important;
+  text-align:inherit!important;
+  vertical-align:top!important;
 }
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill,
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result .outsource-result-pill.status-done,
@@ -11454,13 +11452,16 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
   display:inline!important;
   margin:0!important;
   padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:inherit!important;
+  box-shadow:none!important;
   font:inherit!important;
   font-weight:inherit!important;
   line-height:inherit!important;
-  color:inherit!important;
-  background:transparent!important;
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
 }
-
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td.outsource-result,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result:hover{
+  background:var(--os-page,var(--neo-surface,#e7ebf2))!important;
+}
