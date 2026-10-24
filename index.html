@@ -56,7 +56,7 @@
 <div class="auth-title-block">
 <h1 class="auth-title">HOAG<br/>PATHOLOGY</h1>
 </div>
-<form action="javascript:void(0);" autocomplete="off" class="auth-form" id="loginForm">
+<form autocomplete="off" class="auth-form" id="loginForm">
 <label class="auth-field" for="loginUsername">
 <span class="auth-input-wrap">
 <input autocapitalize="characters" autocomplete="off" class="auth-input" data-1p-ignore="true" data-lpignore="true" id="loginUsername" inputmode="text" maxlength="60" name="labapp_login_username" placeholder="USERNAME" spellcheck="false" type="text"/>
@@ -81,7 +81,7 @@
 <div class="auth-title-block">
 <h1 class="auth-title">CHANGE<br/>PASSWORD</h1>
 </div>
-<form action="javascript:void(0);" autocomplete="off" class="auth-form" id="changePasswordForm">
+<form autocomplete="off" class="auth-form" id="changePasswordForm">
 <label class="auth-field" for="changeUsername">
 <span class="auth-input-wrap">
 <input autocapitalize="characters" autocomplete="username" class="auth-input" id="changeUsername" inputmode="text" maxlength="60" name="username" placeholder="USERNAME" spellcheck="false" type="text"/>
@@ -130,10 +130,10 @@
 <span class="display-mode-title">DISPLAY MODE</span>
 <span class="display-mode-current" id="themeText">Light Mode</span>
 </div>
-<button aria-label="Toggle dark mode" class="theme-toggle" onclick="LabApp.Theme.toggle()" type="button">
+<button aria-label="Toggle dark mode" class="theme-toggle" id="themeToggleBtn" type="button">
 <span class="theme-toggle-knob" id="themeIcon">☀️</span>
 </button>
-<button class="logout-btn" id="logoutBtn" onclick="LabApp.Auth.logout()" type="button">LOG OUT</button>
+<button class="logout-btn" id="logoutBtn" type="button">LOG OUT</button>
 </div>
 </aside>
 <main class="main">
@@ -143,7 +143,7 @@
 <div class="dashboard-layout">
 <div class="display-board">
 <div class="display-board-left">
-<div class="display-time-block" onclick="LabApp.Dashboard.refreshClock()">
+<div class="display-time-block" >
 <div class="display-title display-title-clock" id="displayBoardTitle">02:38:38 AM</div>
 </div>
 <div aria-hidden="true" class="display-accent-line"></div>
@@ -307,10 +307,10 @@
 </div>
 <div class="calendar-month-actions">
 <div aria-label="Calendar month navigation" class="calendar-roster-nav">
-<button aria-label="Previous month" class="calendar-roster-nav-btn" onclick="LabApp.Calendar.changeMonth(-1)" type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></svg></button>
-<button aria-label="Back to current date" class="calendar-roster-month-btn" id="calendarCurrentMonthBtn" onclick="LabApp.Calendar.goToday()" title="Back to current date" type="button">JUNE 2026</button>
-<button aria-label="Next month" class="calendar-roster-nav-btn" onclick="LabApp.Calendar.changeMonth(1)" type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg></button>
-<button aria-label="Download monthly on-call schedule PDFs" class="calendar-roster-month-btn calendar-roster-export-btn" onclick="LabApp.Calendar.exportMonthlySchedulePdfs()" title="Download before and after assign PDFs" type="button">EXPORT</button>
+<button aria-label="Previous month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<button aria-label="Back to current date" class="calendar-roster-month-btn" id="calendarCurrentMonthBtn"  title="Back to current date" type="button">JUNE 2026</button>
+<button aria-label="Next month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg></button>
+<button aria-label="Download monthly on-call schedule PDFs" class="calendar-roster-month-btn calendar-roster-export-btn"  title="Download before and after assign PDFs" type="button">EXPORT</button>
 </div>
 </div>
 </div>
@@ -332,7 +332,7 @@
 <div class="calendar-selected-sub" id="calendarSelectedDateSub">Daily roster editor</div>
 </div>
 <div class="daily-roster-actions">
-<button aria-label="Add roster row" class="calendar-toolbar-btn" onclick="LabApp.Calendar.addRosterRow()" type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button aria-label="Add roster row" class="calendar-toolbar-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
 </div>
 </div>
 <div class="daily-roster-card">

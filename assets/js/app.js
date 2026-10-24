@@ -506,7 +506,7 @@
       const response = await fetch(authEndpoint || '/api/bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
+        credentials: 'include',
         cache: 'no-store',
         body: body
       });
@@ -2770,7 +2770,9 @@
        * + logout                           +
        * +----------------------------------+ */
       function logout(message, type, reason) {
-        var token = getStoredToken();
+        // The real credential lives in the HttpOnly cookie and is intentionally
+        // not readable from JavaScript. Always call the logout endpoint so the
+        // server can revoke the cookie-backed session.
         stopSessionControls();
         clearStoredSession();
         if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.clearLastPage === 'function') {
@@ -2789,17 +2791,14 @@
           FirebaseBridge.signOut();
         }
   
-if (token) {
-  hoagApiRequest('logout', {
-    token: token,
-    clientInfo: typeof ActivityTracker !== 'undefined' &&
-      ActivityTracker.getClientInfo
-      ? ActivityTracker.getClientInfo({ page: reason || 'logout' })
-      : {}
-  }).catch(function (error) {
-    console.warn('Vercel logout request failed:', error);
-  });
-}
+hoagApiRequest('logout', {
+  clientInfo: typeof ActivityTracker !== 'undefined' &&
+    ActivityTracker.getClientInfo
+    ? ActivityTracker.getClientInfo({ page: reason || 'logout' })
+    : {}
+}).catch(function (error) {
+  console.warn('Vercel logout request failed:', error);
+});
         lock(message || '', type || '');
       }
   
@@ -2823,6 +2822,28 @@ if (token) {
         }
         if (nodes.passwordToggle) nodes.passwordToggle.addEventListener('click', togglePassword);
         if (nodes.showChangePassword) nodes.showChangePassword.addEventListener('click', showChangePanel);
+
+        // CSP-safe replacements for legacy inline handlers.
+        var logoutButton = $('logoutBtn');
+        if (logoutButton) logoutButton.addEventListener('click', function () { logout(); });
+        var themeButton = $('themeToggleBtn');
+        if (themeButton && window.LabApp && window.LabApp.Theme) {
+          themeButton.addEventListener('click', function () { window.LabApp.Theme.toggle(); });
+        }
+        var clockBlock = document.querySelector('.display-time-block');
+        if (clockBlock && window.LabApp && window.LabApp.Dashboard) {
+          clockBlock.addEventListener('click', function () { window.LabApp.Dashboard.refreshClock(); });
+        }
+        var prevMonth = document.querySelector('.calendar-roster-nav-btn[aria-label="Previous month"]');
+        if (prevMonth) prevMonth.addEventListener('click', function () { window.LabApp.Calendar.changeMonth(-1); });
+        var nextMonth = document.querySelector('.calendar-roster-nav-btn[aria-label="Next month"]');
+        if (nextMonth) nextMonth.addEventListener('click', function () { window.LabApp.Calendar.changeMonth(1); });
+        var todayMonth = $('calendarCurrentMonthBtn');
+        if (todayMonth) todayMonth.addEventListener('click', function () { window.LabApp.Calendar.goToday(); });
+        var exportMonth = document.querySelector('.calendar-roster-export-btn');
+        if (exportMonth) exportMonth.addEventListener('click', function () { window.LabApp.Calendar.exportMonthlySchedulePdfs(); });
+        var addRoster = document.querySelector('.calendar-toolbar-btn');
+        if (addRoster) addRoster.addEventListener('click', function () { window.LabApp.Calendar.addRosterRow(); });
         if (nodes.backToLogin) {
           nodes.backToLogin.addEventListener('click', function () {
             showLoginPanel('', '');

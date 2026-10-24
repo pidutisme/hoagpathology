@@ -43,3 +43,17 @@ test('Dashboard cards use CSP-compatible data actions instead of inline onclick 
   assert.match(js, /bindDashboardCards/);
   assert.match(js, /data-dashboard-module/);
 });
+
+test('Login and logout remain functional under strict CSP', () => {
+  const html = read('index.html');
+  assert.doesNotMatch(html, /onclick=/);
+  assert.doesNotMatch(html, /action=["']javascript:/i);
+  assert.match(html, /id="loginForm"/);
+  assert.match(html, /id="logoutBtn"/);
+
+  const app = read('assets/js/app.js');
+  assert.match(app, /nodes\.form\.addEventListener\('submit', submitLogin\)/);
+  assert.match(app, /logoutButton\.addEventListener\('click', function \(\) \{ logout\(\); \}\)/);
+  assert.match(app, /hoagApiRequest\('logout'/);
+  assert.doesNotMatch(app, /if \(token\) \{\s*hoagApiRequest\('logout'/);
+});
