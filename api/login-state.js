@@ -24,9 +24,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Authentication is stored only in an HttpOnly session cookie.
-    // A cookie may be absent on the first request; that simply means logged out.
+    // A fresh page/app instance must not inherit an older HttpOnly cookie.
+    // sessionStorage on the client marks a refresh of the same page session.
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
     const token = String(cookieValue(req, COOKIE_NAME) || '').trim();
+    if (body.freshSession === true && token && token.length <= 300) {
+      const tokenHash = createHash("sha256")
+        .update(`token\n${token}`, "utf8")
+        .digest("hex");
+      await firebaseDb().ref(`${SESSION_PATH}/${tokenHash}`).remove();
+      clearSessionCookie(res);
+      return res.status(200).json({ ok: true, authenticated: false });
+    }
     if (!token || token.length > 300) {
       return res.status(200).json({ ok: true, authenticated: false });
     }

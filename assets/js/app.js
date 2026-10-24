@@ -2508,10 +2508,11 @@
        * + checkStoredSession               +
        * +----------------------------------+ */
       function checkStoredSession() {
-        /* The HttpOnly cookie is intentionally invisible to JavaScript.
-         * Always ask the server whether the browser session is valid. */
+        /* Refreshes keep the page-session identity in sessionStorage; a newly
+         * opened page/app instance must invalidate any older HttpOnly cookie. */
         updateResumeSessionButton_();
-        hoagApiRequest('loginState', {})
+        var hasPageSession = !!getStoredPublicUser_();
+        hoagApiRequest('loginState', { freshSession: !hasPageSession })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               clearStoredSession();

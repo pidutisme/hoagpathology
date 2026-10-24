@@ -11,6 +11,15 @@ test('HttpOnly session cookie is configured and raw token is not returned by ded
   assert.match(login, /delete result\.token|return res\.status\(200\)\.json\(\{ ok:true, authenticated:true/);
 });
 
+test('Fresh page sessions cannot inherit an older HttpOnly auth cookie', () => {
+  const loginState = read('api/login-state.js');
+  const app = read('assets/js/app.js');
+  assert.match(loginState, /freshSession === true/);
+  assert.match(loginState, /Max-Age=0; Path=\/; HttpOnly; Secure; SameSite=Lax/);
+  assert.match(app, /var hasPageSession = !!getStoredPublicUser_\(\);/);
+  assert.match(app, /hoagApiRequest\('loginState', \{ freshSession: !hasPageSession \}\)/);
+});
+
 test('CSP is present and does not enable unsafe-eval', () => {
   const vercel = read('vercel.json');
   assert.match(vercel, /Content-Security-Policy/);

@@ -6,8 +6,8 @@
 - A normal page refresh/reload keeps the login session.
 - Closing the tab/window/app and opening it again requires login.
 - There is no **Continue Session** button.
-- Authentication credentials are stored in `sessionStorage` only. `localStorage` is explicitly removed for auth state.
-- Server-side auth APIs require the session token supplied by the current page session and do not recover authentication from a persistent cookie.
+- The authenticated user marker is stored in `sessionStorage` only; `localStorage` is explicitly removed for auth state.
+- The server credential remains in an HttpOnly cookie. A newly opened page/app session explicitly invalidates any older cookie before checking login state; a normal refresh keeps the `sessionStorage` marker and therefore keeps the login.
 
 ## Why
 
