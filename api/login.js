@@ -12,6 +12,18 @@ const SETTINGS_PATH = 'labapp/settings';
 const clean = (v, max=3000) => String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0,max);
 const tokenHash = token => createHash('sha256').update(`token\n${String(token || '')}`, 'utf8').digest('hex');
 const getIp = req => (String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || String(req.headers['x-real-ip'] || '') || 'unknown').slice(0,120);
+const sessionCookie = token => `labapp_session=${encodeURIComponent(token)}; Max-Age=${SESSION_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+async function bumpFailure(ref, kind, lockAfter) {
+  let next = { count: 0, until: 0, kind };
+  await ref.transaction(current => {
+    const row = current && typeof current === 'object' ? current : {};
+    const count = Number(row.count || 0) + 1;
+    next = { count, until: count >= lockAfter ? Date.now() + 300000 : 0, kind, updatedAt: new Date().toISOString() };
+    return next;
+  });
+  return next;
+}
+
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -44,8 +56,8 @@ export default async function handler(req, res) {
       const userCount = Number(failedUser.count || 0) + 1;
       const ipCount = Number(failedIp.count || 0) + 1;
       await Promise.all([
-        db.ref(`${SETTINGS_PATH}/loginFailures/${userKey}`).set({count:userCount,until:userCount>=5?Date.now()+300000:0,kind:'user'}),
-        db.ref(`${SETTINGS_PATH}/loginFailures/${ipKey}`).set({count:ipCount,until:ipCount>=20?Date.now()+300000:0,kind:'ip'})
+        bumpFailure(db.ref(`${SETTINGS_PATH}/loginFailures/${userKey}`), 'user', 5),
+        bumpFailure(db.ref(`${SETTINGS_PATH}/loginFailures/${ipKey}`), 'ip', 20)
       ]);
       return res.status(401).json({ ok:false, authenticated:false, error:'Invalid username or password.' });
     }
@@ -66,9 +78,9 @@ export default async function handler(req, res) {
     const token = `${randomUUID()}.${randomUUID()}.${now}`;
     const session = { userId:username, name:String(user.displayName || username), role:String(user.role || 'USER'), issuedAt, expiresAt };
     await db.ref(`${SESSIONS_PATH}/${tokenHash(token)}`).set(session);
-    // Session is returned to the client and kept in sessionStorage only.
-    res.setHeader('Set-Cookie', 'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
-    return res.status(200).json({ ok:true, authenticated:true, token, expiresAt, expiresIn:SESSION_SECONDS, user:{id:username,name:session.name,role:session.role}, version:VERSION });
+    // Authentication credential is HttpOnly; JavaScript never receives the session token.
+    res.setHeader('Set-Cookie', sessionCookie(token));
+    return res.status(200).json({ ok:true, authenticated:true, expiresAt, expiresIn:SESSION_SECONDS, user:{id:username,name:session.name,role:session.role}, version:VERSION });
   } catch (error) {
     console.error('Login endpoint failed:', error?.message || 'Unknown error');
     return res.status(500).json({ ok:false, authenticated:false, error:'An unexpected system error occurred during sign-in.' });

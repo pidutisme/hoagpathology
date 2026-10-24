@@ -1,0 +1,56 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "labapp": {
+      "presence": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && (auth.token.labUserId === $uid || auth.token.role === 'ADMIN')"
+        }
+      },
+      "notes": {
+        "items": {
+          ".read": "auth != null",
+          "$noteId": {
+            ".write": "auth != null && (auth.token.role === 'ADMIN' || newData.child('savedByUserId').val() === auth.token.labUserId || (data.exists() && data.child('savedByUserId').val() === auth.token.labUserId))"
+          }
+        },
+        "userState": {
+          "$uid": {
+            ".read": "auth != null && (auth.token.labUserId === $uid || auth.token.role === 'ADMIN')",
+            ".write": "auth != null && (auth.token.labUserId === $uid || auth.token.role === 'ADMIN')"
+          }
+        },
+        "meta": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.token.role === 'ADMIN'"
+        }
+      },
+      "inventory": {
+        ".read": "auth != null",
+        ".write": false
+      },
+      "auth": {
+        ".read": false,
+        ".write": false
+      },
+      "settings": {
+        ".read": false,
+        ".write": false
+      },
+      "roster": {
+        ".read": false,
+        ".write": false
+      },
+      "liveChat": {
+        ".read": false,
+        ".write": false
+      },
+      "systemLogs": {
+        ".read": false,
+        ".write": false
+      }
+    }
+  }
+}

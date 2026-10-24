@@ -25,6 +25,7 @@ const fail = (message, status=400) => { const e = new Error(message); e.status =
 const getClientIp = req => { const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim(); return (forwarded || String(req.headers['x-real-ip'] || '') || 'unknown').slice(0, 120); };
 const cookieValue = (req, name) => { const raw = String(req.headers.cookie || ''); const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '=')); return hit ? decodeURIComponent(hit.slice(name.length + 1)) : ''; };
 const clearSessionCookie = res => res.setHeader('Set-Cookie', 'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
+const sessionTokenFromRequest = (req, supplied='') => { const value=clean(supplied,300); return value && value !== '__HTTPONLY_SESSION__' ? value : cookieValue(req,'labapp_session'); };
 
 async function readUsers(db) {
   const snap = await db.ref(USERS).get(); const value = snap.val();
@@ -102,20 +103,21 @@ export default async function handler(req,res) {
       const now=new Date(); const parts=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).formatToParts(now); const get=t=>parts.find(p=>p.type===t)?.value||'';
       return res.status(200).json({ok:true,appName:'LabApp',boardTitle:'HOAG PATHOLOGY',subtitle:'SPA Single Page Application',version:VERSION,serverDate:`${get('day')} ${get('month')} ${get('year')}`,serverTime:`${get('hour')}:${get('minute')}:${get('second')} ${get('dayPeriod')}`,serverIso:now.toISOString(),timeZone:TZ});
     }
-    if(action==='action') return res.status(200).json(await dispatch(db,clean(payload.method,100),Array.isArray(payload.args)?payload.args:[]));
+    if(action==='action') return res.status(200).json(await dispatch(db,clean(payload.method,100),Array.isArray(payload.args)?payload.args:[],req));
     if(action==='login') {
       const result = await login(db,payload.username,payload.password,payload.clientInfo,{ip:getClientIp(req)});
-      // Authentication is sessionStorage-only on the client; do not create a persistent cookie.
-      clearSessionCookie(res);
+      if (result.ok && result.token) res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(result.token)}; Max-Age=21600; Path=/; HttpOnly; Secure; SameSite=Lax`);
+      else clearSessionCookie(res);
+      if (result && result.token) delete result.token;
       return res.status(result.ok ? 200 : 401).json(result);
     }
     if(action==='loginState') {
-      const token = clean(payload.token, 300);
+      const token = sessionTokenFromRequest(req, payload.token);
       const result = await loginState(db, token);
       return res.status(200).json(result);
     }
     if(action==='logout') {
-      const token = clean(payload.token, 300);
+      const token = sessionTokenFromRequest(req, payload.token);
       if (token) {
         const auth = await sessionFor(db, token);
         if (auth) await log(db, auth.userId, 'LOGOUT', 'Signed out safely.', payload.clientInfo || {});
@@ -169,8 +171,8 @@ async function login(db, username, password, clientInfo={}, requestInfo={}) {
 }
 async function loginState(db, token) { const auth=await sessionFor(db,token); if(!auth)return {ok:true,authenticated:false,version:VERSION}; return {ok:true,authenticated:true,user:{id:auth.userId,name:clean(auth.user.displayName||auth.session.name||auth.userId),role:auth.role},expiresAt:auth.session.expiresAt,version:VERSION}; }
 
-async function dispatch(db, method, a) {
-  const tokenAt = i => a[i];
+async function dispatch(db, method, a, req) {
+  const tokenAt = i => { const supplied = clean(a[i], 300); return supplied === '__HTTPONLY_SESSION__' || !supplied ? cookieValue(req, 'labapp_session') : supplied; };
   switch(method) {
     case 'getDashboardData': return (await handlerDashboard());
     case 'recordSuccessfulLogin': {const s=await requireSession(db,tokenAt(0));await log(db,s.userId,'LOGIN','Signed in successfully.',a[1]);return {ok:true,authenticated:true,version:VERSION};}

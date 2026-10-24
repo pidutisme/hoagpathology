@@ -8,6 +8,9 @@ const require = createRequire(import.meta.url);
 const VERSION = require("../package.json").version || "0.0.0";
 const SESSION_PATH = "labapp/auth/sessions";
 const USERS_PATH = "labapp/auth/users";
+const COOKIE_NAME = 'labapp_session';
+const cookieValue = (req, name) => { const raw = String(req.headers.cookie || ''); const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '=')); return hit ? decodeURIComponent(hit.slice(name.length + 1)) : ''; };
+const clearSessionCookie = res => res.setHeader('Set-Cookie', `${COOKIE_NAME}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`);
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -21,10 +24,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Authentication is intentionally sessionStorage-only. Do not recover from
-    // a persistent browser/WebView cookie after the app/tab has been closed.
-    const token = String(req.body?.token ?? '').trim();
-
+    // Authentication is stored only in an HttpOnly session cookie.
+    // A cookie may be absent on the first request; that simply means logged out.
+    const token = String(cookieValue(req, COOKIE_NAME) || '').trim();
     if (!token || token.length > 300) {
       return res.status(200).json({ ok: true, authenticated: false });
     }
@@ -41,10 +43,8 @@ export default async function handler(req, res) {
     ]);
 
     if (!sessionSnapshot.exists()) {
-      return res.status(200).json({
-        ok: true,
-        authenticated: false
-      });
+      clearSessionCookie(res);
+      return res.status(200).json({ ok: true, authenticated: false });
     }
 
     const session = sessionSnapshot.val();
@@ -58,10 +58,8 @@ export default async function handler(req, res) {
       expiresAt <= Date.now() ||
       !Number.isFinite(issuedAt)
     ) {
-      return res.status(200).json({
-        ok: true,
-        authenticated: false
-      });
+      clearSessionCookie(res);
+      return res.status(200).json({ ok: true, authenticated: false });
     }
 
     const stored = usersSnapshot.val();
@@ -88,10 +86,8 @@ export default async function handler(req, res) {
         Date.parse(user.sessionsRevokedAt) >= issuedAt
       )
     ) {
-      return res.status(200).json({
-        ok: true,
-        authenticated: false
-      });
+      clearSessionCookie(res);
+      return res.status(200).json({ ok: true, authenticated: false });
     }
 
     const result = {

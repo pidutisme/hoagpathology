@@ -36,3 +36,7 @@ The Electron launcher is under `desktop/`. Installer artifacts are generated int
 ## Security
 
 Authentication remains session-scoped. Review Firebase Realtime Database rules and Vercel environment variables before production deployment.
+
+
+## Security hardening
+See `SECURITY-HARDENING-1-5.md`. Deploy `database.rules.json` with Firebase CLI before production use.

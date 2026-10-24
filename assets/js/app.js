@@ -1793,6 +1793,7 @@
      * + CLIENT MODULE                    +
      * +----------------------------------+ */
     var Auth = (function () {
+      var HTTPONLY_SESSION_SENTINEL = '__HTTPONLY_SESSION__';
       var TOKEN_KEY = 'labAppAuthTokenV1';
       var USER_KEY = 'labAppAuthUserV1';
       var UPDATE_BYPASS_KEY = 'labAppUpdateInProgressV1';
@@ -1992,11 +1993,10 @@
        * + getStoredToken                   +
        * +----------------------------------+ */
       function getStoredToken() {
-        /* AUTH POLICY: session-only authentication.
-         * sessionStorage survives normal page refresh/reload, but is cleared
-         * when the browser tab/window or the WebView/Electron page session is
-         * destroyed. localStorage is deliberately NOT used for auth. */
-        return safeSessionGet(TOKEN_KEY) || '';
+        /* AUTH POLICY: the real credential is an HttpOnly cookie and is never
+         * readable by JavaScript. Existing modules receive a non-secret
+         * sentinel only so their API signatures remain compatible. */
+        return state.authUserId ? HTTPONLY_SESSION_SENTINEL : '';
       }
 
       /* +----------------------------------+
@@ -2056,9 +2056,8 @@
        * +----------------------------------+ */
       function storeSession(envelope) {
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
-        var token = envelope.token || '';
-        safeSessionSet(TOKEN_KEY, token);
-        // Remove any legacy persistent auth token from older builds.
+        // Never persist or inspect the server session credential in JavaScript.
+        safeSessionRemove(TOKEN_KEY);
         safeStorageRemove(TOKEN_KEY);
         storePublicAuthUser_(envelope);
       }
@@ -2454,8 +2453,7 @@
           return;
         }
   
-        if (envelope.token) storeSession(envelope);
-        else storePublicAuthUser_(envelope);
+        storeSession(envelope);
   
         unlock(envelope.user || getStoredPublicUser_() || {}, options || {});
         if (!envelope.token && typeof ActivityTracker !== 'undefined' && ActivityTracker.track) {
@@ -2482,75 +2480,46 @@
        * + checkStoredSession               +
        * +----------------------------------+ */
       function checkStoredSession() {
-        /*
-         * SESSION POLICY
-         * --------------
-         * Refresh/reload inside the same tab, WebView instance or desktop
-         * window keeps the session because sessionStorage survives reloads.
-         * Closing the tab/window/app destroys the page session, so the next
-         * launch starts at the login screen.
-         *
-         * IMPORTANT: never recover authentication from the server cookie here.
-         * Older builds used a persistent HttpOnly cookie, which caused a closed
-         * app/browser to silently log back in. The client session token is now
-         * sessionStorage-only and is always supplied explicitly to the server.
-         */
-        var token = getStoredToken();
-        if (!token) {
-          clearStoredSession();
-          updateResumeSessionButton_();
-          lock('', '');
-          return;
-        }
-
-        var cachedUser = getStoredPublicUser_();
-        if (cachedUser) {
-          applyUser(cachedUser);
-          unlock(cachedUser, { freshLogin:false, restoredSession:true });
-          updateResumeSessionButton_();
-          verifyStoredSessionInBackground_(token);
-          return;
-        }
-
-        lock('', '');
+        /* The HttpOnly cookie is intentionally invisible to JavaScript.
+         * Always ask the server whether the browser session is valid. */
         updateResumeSessionButton_();
-        verifyStoredSessionInBackground_(token);
+        hoagApiRequest('loginState', {})
+          .then(function (envelope) {
+            if (!envelope || envelope.ok === false || !envelope.authenticated) {
+              clearStoredSession();
+              lock('', '');
+              return;
+            }
+            storePublicAuthUser_(envelope);
+            var restoredUser = envelope.user || getStoredPublicUser_() || {};
+            applyUser(restoredUser);
+            unlock(restoredUser, { freshLogin:false, restoredSession:true });
+          })
+          .catch(function (error) {
+            console.warn('Initial session verification failed:', error);
+            clearStoredSession();
+            lock('', '');
+          });
       }
 
       /* +----------------------------------+
        * + verifyStoredSessionInBackground_ +
        * +----------------------------------+ */
       function verifyStoredSessionInBackground_(token) {
-        if (!token) return;
-
-        hoagApiRequest('loginState', { token: token })
+        if (!state.authUserId) return;
+        hoagApiRequest('loginState', {})
           .then(function (envelope) {
-            if (token !== getStoredToken()) return;
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
               return;
             }
-
             storePublicAuthUser_(envelope);
             var restoredUser = envelope.user || getStoredPublicUser_() || {};
             applyUser(restoredUser);
-            unlock(restoredUser, { freshLogin: false, restoredSession: true });
-            if (typeof ActivityTracker !== 'undefined' && ActivityTracker.track) {
-              ActivityTracker.track('SESSION_RESUME', 'Verified saved login session.', { page: 'session' }, { dedupeMs: 60000 });
-            }
+            unlock(restoredUser, { freshLogin:false, restoredSession:true });
           })
           .catch(function (error) {
-            if (token !== getStoredToken()) return;
-            /* Keep the cached session during a transient network/API failure.
-             * A later watchdog check will re-verify it; only an explicit
-             * server-side rejection expires the session immediately. */
             console.warn('Saved session verification temporarily unavailable:', error);
-            var cachedUser = getStoredPublicUser_();
-            if (cachedUser) {
-              applyUser(cachedUser);
-              unlock(cachedUser, { freshLogin: false, restoredSession: true });
-              setSystemToast('Connection Notice', 'Could not verify the session right now. Your login is being kept and will be checked again automatically.', 5000);
-            }
           });
       }
 
@@ -2662,7 +2631,7 @@
             [nodes.changeCurrentPassword, nodes.changeNewPassword, nodes.changeConfirmPassword].forEach(function (node) {
               if (node) node.value = '';
             });
-            if (envelope.authenticated && envelope.token) {
+            if (envelope.authenticated) {
               setChangeMessage(envelope.message || 'Password updated successfully.', 'ok');
               handleEnvelope(envelope, { freshLogin: true });
               return;
@@ -2811,7 +2780,7 @@ if (token) {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
-        // One-time migration: remove auth credentials left by older builds.
+        // Remove any credentials left by pre-HttpOnly builds.
         safeStorageRemove(TOKEN_KEY);
         safeStorageRemove(USER_KEY);
         Theme.suspendForLogin();
