@@ -23,7 +23,7 @@
       --danger: #ef4444;
       --ok: #16a34a;
       --warning: #f59e0b;
-      --line: rgba(118, 134, 160, 0.16);
+      --line: rgba(92, 108, 132, 0.26);
       --glass: rgba(255, 255, 255, 0.28);
       --shadow: inset 4px 4px 12px rgba(126, 140, 166, .16), inset -4px -4px 12px rgba(255, 255, 255, .24), inset 0 0 0 1px rgba(118, 134, 160, .08);
       --shadow-soft: inset 3px 3px 8px rgba(126, 140, 166, .12), inset -3px -3px 8px rgba(255, 255, 255, .20), inset 0 0 0 1px rgba(118, 134, 160, .06);
@@ -42,7 +42,7 @@
       --neo-shadow-flat-sm: var(--year-page-card-shadow);
       --viewport-safe-hover-shadow: var(--year-page-card-hover-shadow);
       --calendar-date-card-bg: linear-gradient(145deg, #f4f6fa 0%, #e2e7f1 100%);
-      --calendar-edge-border: rgba(118, 134, 160, 0.08);
+      --calendar-edge-border: rgba(92, 108, 132, 0.20);
       --calendar-edge-shadow: var(--year-page-card-shadow);
       --calendar-edge-shadow-sm: var(--shadow-soft);
       --calendar-edge-subcard-hover-shadow: var(--year-page-card-hover-shadow);
@@ -51,7 +51,7 @@
       --utility-card-shadow: var(--year-page-card-shadow);
       --utility-card-hover-shadow: var(--year-page-card-hover-shadow);
       --year-page-card-bg: linear-gradient(145deg, #f4f6fb, #e0e6f0);
-      --year-page-card-border: rgba(118, 134, 160, .10);
+      --year-page-card-border: rgba(92, 108, 132, .24);
       --year-page-card-shadow: inset 5px 5px 14px rgba(126, 140, 166, .16), inset -5px -5px 14px rgba(255, 255, 255, .22), inset 0 0 0 1px rgba(118, 134, 160, .06);
       --year-page-card-hover-shadow: inset 6px 6px 16px rgba(126, 140, 166, .18), inset -6px -6px 16px rgba(255, 255, 255, .24), inset 0 0 0 1px rgba(95, 126, 255, .10), inset 0 0 30px rgba(35, 103, 242, .07);
       --year-card-min-height: clamp(180px, 24vh, 280px);
@@ -11464,4 +11464,17 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
 #moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td.outsource-result,
 #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result:hover{
   background:var(--os-page,var(--neo-surface,#e7ebf2))!important;
+}
+
+/* DARK MODE CARD EDGE VISIBILITY: make outer card/subcard lines easier to see without changing layout. */
+body.dark-mode [class*="card"],
+html.dark-mode-preload [class*="card"] {
+  border-color: rgba(176, 190, 211, .28) !important;
+}
+
+body.dark-mode [class*="panel"],
+html.dark-mode-preload [class*="panel"],
+body.dark-mode [class*="box"],
+html.dark-mode-preload [class*="box"] {
+  border-color: rgba(176, 190, 211, .24) !important;
 }
