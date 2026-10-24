@@ -11136,3 +11136,10 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
   color: #000 !important;
   opacity: 1 !important;
 }
+
+/* ===== LOGIN FOCUS CLEANUP ===== */
+.auth-screen .auth-input:focus,
+.auth-screen .auth-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
