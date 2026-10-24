@@ -908,7 +908,7 @@
     .panel {
       height: 100%;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
       border-radius: var(--radius-xl);
       padding: clamp(16px, 1.25vw, 26px);
     }
@@ -928,7 +928,11 @@
       overflow-wrap: anywhere;
     }
 
-    .profile-info-grid,
+    .profile-info-grid {
+      min-height: 0;
+      overflow: visible;
+    }
+
     .content-inner {
       min-height: 0;
       overflow: auto;
@@ -1016,8 +1020,7 @@
       grid-auto-rows: clamp(92px, 8.2vh, 104px);
       align-content: start;
       align-items: stretch;
-      overflow-x: hidden;
-      overflow-y: auto;
+      overflow: visible;
     }
 
 
@@ -2112,7 +2115,7 @@
     .calendar-month-panel,
     .daily-roster-panel {
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
       border-radius: var(--radius-xl);
       padding: clamp(12px, 1vw, 18px);
     }
@@ -2391,7 +2394,7 @@
     .leave-course-year-card {
       height: 100%;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
       border-radius: var(--radius-xl);
       padding: clamp(16px, 1.25vw, 26px);
       display: grid;
@@ -2807,8 +2810,6 @@
 
     .sidebar,
     .display-board,
-    .panel,
-    .profile-card,
     .stat-card,
     .bottom-card,
     .setting-box,
@@ -2818,10 +2819,7 @@
     .theme-toggle,
     .display-date,
     .display-clock-wrap,
-    .calendar-month-panel,
-    .daily-roster-panel,
     .daily-roster-card,
-    .leave-course-year-card,
     .year-card,
     .leave-course-mini-year,
     .calendar-toolbar-btn,
@@ -3932,7 +3930,7 @@
       -webkit-background-clip: padding-box;
       transform: translateZ(0);
       position: relative;
-      overflow: hidden;
+      overflow: visible;
     }
 
     :is(#profile, #access) .profile-info-grid,
@@ -4538,8 +4536,6 @@
       .theme-toggle,
       .display-date,
       .display-clock-wrap,
-      .calendar-month-panel,
-      .daily-roster-panel,
       .big-card-icon,
       .year-card-icon-shell,
       .leave-course-mini-icon-shell,
@@ -5203,8 +5199,7 @@
         gap: clamp(10px, 1.8vw, 15px);
         margin-top: 24px;
         padding: 4px;
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: visible;
       }
 
       #quickLinks .quick-links-card {
@@ -5502,11 +5497,7 @@
       .access-three-cards,
       .leave-course-years-wrap,
       .notes-two-cards,
-      .single-panel,
-      .single-panel .panel,
-      .profile-card,
-      .panel,
-      .calendar-panel {
+      .single-panel {
         height: 100%;
         min-height: 0;
         max-height: 100%;
@@ -5541,7 +5532,6 @@
       .module-years-inner {
         min-height: 0;
         max-height: 100%;
-        overflow: hidden;
       }
 
       #profile .profile-link-grid,
@@ -5549,7 +5539,7 @@
         grid-auto-rows: clamp(74px, 7.2vh, 88px);
         align-content: start;
         align-items: stretch;
-        overflow-y: auto;
+        overflow: visible;
       }
 
       #profile .profile-link-card,
@@ -7929,10 +7919,8 @@ html, body {
 .clickable-card:hover,
 .stat-card:hover,
 .bottom-card:hover,
-.profile-card:hover,
 .profile-info-box:hover,
 .setting-box:hover,
-.panel:hover,
 .calendar-toolbar-btn:hover,
 .calendar-roster-nav-btn:hover,
 .calendar-roster-month-btn:hover,
@@ -8555,7 +8543,7 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
       display: grid;
       grid-template-rows: auto auto minmax(0, 1fr);
       gap: clamp(8px, .8vh, 14px);
-      overflow: hidden;
+      overflow: visible;
     }
 
     #profile .profile-link-grid {
@@ -8565,7 +8553,7 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-auto-rows: minmax(0, 1fr);
       align-content: stretch;
-      overflow: hidden;
+      overflow: visible;
       padding: 0;
       gap: clamp(8px, .8vw, 14px);
     }
@@ -8594,7 +8582,7 @@ body.dark-mode #settings .settings-card-icon, body.dark-mode #settings .settings
         height: auto;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         grid-auto-rows: minmax(76px, 1fr);
-        overflow: hidden;
+        overflow: visible;
       }
     }
 
@@ -10024,13 +10012,10 @@ body.dark-mode .notes-list-shell{
 
 .stat-card:hover,
 .bottom-card:hover,
-.profile-card:hover,
-.panel:hover,
 .setting-box:hover,
 .profile-info-box:hover,
 .settings-extra-card:hover,
 .year-card:hover,
-.leave-course-year-card:hover,
 .leave-course-mini-year:hover{
   transform:translateY(-3px);
   border-color:rgba(95,126,255,.22)!important;
@@ -10818,19 +10803,16 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
   .clickable-card:hover,
   .stat-card:hover,
   .bottom-card:hover,
-  .profile-card:hover,
-  .profile-info-box:hover,
+   .profile-info-box:hover,
   .setting-box:hover,
   .settings-extra-card:hover,
-  .panel:hover,
-  .calendar-toolbar-btn:hover,
+   .calendar-toolbar-btn:hover,
   .calendar-roster-nav-btn:hover,
   .calendar-roster-month-btn:hover,
   .calendar-roster-today-btn:hover,
   .page-back-dashboard-btn:hover,
   .year-card:hover,
-  .leave-course-year-card:hover,
-  .leave-course-mini-year:hover,
+   .leave-course-mini-year:hover,
   #calendar .calendar-mini-day:hover,
   button:hover {
     transition: transform .14s ease-out !important;
