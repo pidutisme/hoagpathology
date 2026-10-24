@@ -115,7 +115,7 @@
       --year-page-card-border: rgba(176, 190, 211, .10);
       --year-page-card-shadow: inset 5px 5px 14px rgba(0, 0, 0, .35), inset -5px -5px 14px rgba(255, 255, 255, .025), inset 0 0 0 1px rgba(176, 190, 211, .035);
       --year-page-card-hover-shadow: inset 6px 6px 16px rgba(0, 0, 0, .38), inset -6px -6px 16px rgba(255, 255, 255, .030), inset 0 0 0 1px rgba(143, 176, 255, .10), inset 0 0 30px rgba(143, 176, 255, .07);
-      background-color: #0b1220;
+      background-color: #05080d;
       background-image: radial-gradient(circle at 18% 10%, rgba(255, 255, 255, .040) 0px, transparent 32%), radial-gradient(circle at 92% 92%, rgba(35, 103, 242, .10) 0px, transparent 36%);
     }
 
