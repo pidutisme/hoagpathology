@@ -11595,3 +11595,35 @@ html.dark-mode-preload .outsource-filter-neo-menu button.is-selected{
   box-shadow:inset 2px 2px 5px rgba(0,0,0,.24),inset -2px -2px 5px rgba(255,255,255,.025)!important;
 }
 
+
+/* ===== FINAL REGISTERED SAMPLES RESULT-COLUMN CONSISTENCY =====
+   RESULT must use exactly the same cell surface as every other data column.
+   The older result-specific rules used --os-page, which made this column
+   visibly different from the surrounding cells. Keep status text/pills,
+   but remove the special cell background and let it follow the table cells. */
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-done,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-reject,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-pending{
+  background:var(--neo-surface,#e7ebf2)!important;
+}
+#moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td.outsource-result,
+#moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result:hover{
+  background:#eef2f8!important;
+}
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result,
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-done,
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-reject,
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-pending,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-done,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-reject,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result.status-pending{
+  background:var(--neo-surface,#202630)!important;
+}
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td.outsource-result,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody tr:hover > td.outsource-result,
+body.dark-mode #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result:hover,
+html.dark-mode-preload #moduleYearGrid.outsource-active-grid .outsource-table tbody td.outsource-result:hover{
+  background:#243244!important;
+}
