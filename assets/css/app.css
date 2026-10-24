@@ -11141,5 +11141,15 @@ body.dark-mode .calendar-popover,body.dark-mode .tooltip-panel{box-shadow:16px 1
 .auth-screen .auth-input:focus,
 .auth-screen .auth-input:focus-visible {
   outline: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.auth-screen .auth-input-wrap:focus-within {
+  border-color: var(--year-page-card-border) !important;
+  box-shadow: var(--shadow-inset) !important;
+}
+.auth-screen .auth-password-toggle:focus,
+.auth-screen .auth-password-toggle:focus-visible {
+  outline: none !important;
   box-shadow: none !important;
 }
