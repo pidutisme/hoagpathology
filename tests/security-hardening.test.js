@@ -31,3 +31,15 @@ test('Frontend contains no code path that stores the raw session token', () => {
   assert.doesNotMatch(app, /safeSessionSet\(TOKEN_KEY,\s*token\)/);
   assert.match(app, /HTTPONLY_SESSION_SENTINEL/);
 });
+
+test('Dashboard cards use CSP-compatible data actions instead of inline onclick handlers', () => {
+  const html = read('index.html');
+  const expected = ['OUTSOURCE','INVENTORY','TRANSFUSION','POCT','Chemical Pathology','Hematology','Microbiology','Urine/Stool Analysis'];
+  for (const moduleName of expected) {
+    assert.match(html, new RegExp('data-dashboard-module="' + moduleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"'));
+  }
+  assert.doesNotMatch(html, /class="(?:stat-card|bottom-card) clickable-card" onclick=/);
+  const js = read('assets/js/app.js');
+  assert.match(js, /bindDashboardCards/);
+  assert.match(js, /data-dashboard-module/);
+});

@@ -1534,10 +1534,38 @@
       }
   
       /* +----------------------------------+
+       * + bindDashboardCards               +
+       * +----------------------------------+ */
+      function bindDashboardCards() {
+        var cards = document.querySelectorAll('[data-dashboard-module]');
+        forEachNode(cards, function (card) {
+          if (card.dataset.dashboardCardBound === '1') return;
+          card.dataset.dashboardCardBound = '1';
+          var moduleName = card.getAttribute('data-dashboard-module');
+          if (!moduleName) return;
+          card.setAttribute('aria-label', 'Open ' + moduleName);
+          var openCard = function (event) {
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            if (window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.open === 'function') {
+              window.LabApp.Modules.open(moduleName);
+            }
+          };
+          card.addEventListener('click', openCard);
+          card.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') openCard(event);
+          });
+        });
+      }
+
+      /* +----------------------------------+
        * + init                             +
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
+        bindDashboardCards();
         loadDashboard();
         updateDisplayClock();
         bindVisibility();
