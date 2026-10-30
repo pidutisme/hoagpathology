@@ -45,8 +45,8 @@ function userRowFromLegacy(user) {
     last_seen_device: clean(user.lastSeenDevice, 120) || null,
     last_seen_page: clean(user.lastSeenPage, 300) || null,
     password_hash: p.passwordHash,
-    password_iterations: p.passwordIterations,
-    salt: p.salt,
+    password_iterations: p.passwordCost.N,
+    salt: p.passwordSalt,
     sessions_revoked_at: user.sessionsRevokedAt || null,
     created_at: user.createdAt || iso(),
     updated_at: iso()
@@ -692,12 +692,26 @@ async function dispatch(db, method, a, req) {
       const s = await requireAdmin(db, tokenAt(0));
       const id = normalizeUserId(a[1]), name = clean(a[2], 80), role = normalizeUserId(a[3]) === 'ADMIN' ? 'ADMIN' : 'USER', pass = normalizePassword(a[4]);
       if (!id || pass.length<4 || pass.length > 200) fail('Username and password (4 to 200 characters) are required.');
-      const { data: existing, error } = await supabase.from('app_users').select('user_id').eq('user_id', id).maybeSingle();
+      const { data: existing, error } = await supabase.from('app_users').select('user_id, deleted, created_at').eq('user_id', id).maybeSingle();
       if (error) throw error;
-      if (existing) fail('User already exists.');
+      if (existing && existing.deleted !== true) fail('User already exists.');
       const p = buildPasswordRecord(pass);
       const now = iso();
-      const { error: insertError } = await supabase.from('app_users').insert({ user_id: id, display_name: name || id, role, active: true, deleted: false, is_super_admin: role === 'ADMIN', password_hash: p.passwordHash, password_iterations: p.passwordIterations, salt: p.salt, created_at: now, updated_at: now });
+      const userRow = {
+        user_id: id,
+        display_name: name || id,
+        role,
+        active: true,
+        deleted: false,
+        is_super_admin: role === 'ADMIN',
+        password_hash: p.passwordHash,
+        password_iterations: p.passwordCost.N,
+        salt: p.passwordSalt,
+        sessions_revoked_at: now,
+        created_at: existing?.created_at || now,
+        updated_at: now
+      };
+      const { error: insertError } = await supabase.from('app_users').upsert(userRow, { onConflict: 'user_id' });
       if (insertError) throw insertError;
       await log(db, s.userId, 'ADMIN_ADD_USER', `Added user ${id}.`, a[5]);
       return { ok: true, version: VERSION };
@@ -708,7 +722,7 @@ async function dispatch(db, method, a, req) {
       const id = normalizeUserId(a[1]), pass = normalizePassword(a[2]);
       if (pass.length<4 || pass.length > 200) fail('Password must be between 4 and 200 characters.');
       const p = buildPasswordRecord(pass), now = iso();
-      const { data, error } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordIterations, salt: p.salt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id).select('user_id').maybeSingle();
+      const { data, error } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordCost.N, salt: p.passwordSalt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id).select('user_id').maybeSingle();
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
       await log(db, s.userId, 'ADMIN_RESET_PASSWORD', `Reset password for ${id}.`, a[3]);
@@ -730,6 +744,8 @@ async function dispatch(db, method, a, req) {
     case 'adminDeleteAuthUser': {
       const s = await requireAdmin(db, tokenAt(0));
       const id = normalizeUserId(a[1]);
+      if (!id) fail('User ID is required.');
+      if (id === normalizeUserId(s.userId)) fail('You cannot delete your own administrator account.', 403);
       const now = iso();
       const { data, error } = await supabase.from('app_users').update({ deleted: true, active: false, sessions_revoked_at: now, updated_at: now }).eq('user_id', id).select('user_id').maybeSingle();
       if (error) throw error;
@@ -888,7 +904,7 @@ async function dispatch(db, method, a, req) {
       const legacyUser = { userId: u.user_id, displayName: u.display_name, role: u.role, active: u.active, deleted: u.deleted, passwordHash: u.password_hash, passwordIterations: u.password_iterations, salt: u.salt };
       if (!verifyPassword(legacyUser, current)) fail('Invalid current password.', 401);
       const p = buildPasswordRecord(nextPass), now = iso();
-      const { error: updateError } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordIterations, salt: p.salt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id);
+      const { error: updateError } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordCost.N, salt: p.passwordSalt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id);
       if (updateError) throw updateError;
       await supabase.from('app_sessions').delete().eq('user_id', id);
       await log(db, s.userId, 'PASSWORD_CHANGED', 'Updated own password.', a[3]);

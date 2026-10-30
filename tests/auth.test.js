@@ -24,3 +24,14 @@ test('scrypt record uses a fresh salt', () => {
   assert.notEqual(a.passwordSalt, b.passwordSalt);
   assert.notEqual(a.passwordHash, b.passwordHash);
 });
+
+test('scrypt password records verify after Supabase column mapping', () => {
+  const record = buildPasswordRecord('SupabasePass123');
+  const databaseRow = {
+    password_hash: record.passwordHash,
+    password_iterations: record.passwordCost.N,
+    salt: record.passwordSalt
+  };
+  assert.equal(verifyPassword(databaseRow, 'SupabasePass123'), true);
+  assert.equal(verifyPassword(databaseRow, 'incorrect'), false);
+});
