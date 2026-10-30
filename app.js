@@ -2145,8 +2145,80 @@
         if (!document.getElementById('visitorModeStyle')) {
           var style = document.createElement('style');
           style.id = 'visitorModeStyle';
-          style.textContent = '.visitor-mode #inventoryStockInBtn,.visitor-mode #inventoryStockOutBtn,.visitor-mode #inventoryAdminItemsBtn,.visitor-mode #outsourceForm,.visitor-mode #transfusionForm{display:none!important}.visitor-mode #dailyRosterList{pointer-events:none!important}.visitor-mode .outsource-mini,.visitor-mode .inventory-history-edit-btn,.visitor-mode .inventory-history-delete-btn{display:none!important}.visitor-mode .outsource-actions{pointer-events:none!important}';
+          style.textContent = [
+            '.visitor-mode #inventoryStockInBtn,.visitor-mode #inventoryStockOutBtn,.visitor-mode #inventoryAdminItemsBtn,.visitor-mode #outsourceForm,.visitor-mode #transfusionForm,.visitor-mode .calendar-toolbar-btn{display:none!important}',
+            '.visitor-mode .outsource-mini,.visitor-mode .inventory-history-edit-btn,.visitor-mode .inventory-history-delete-btn,.visitor-mode .outsource-actions{display:none!important}',
+            '.visitor-mode #dailyRosterList [data-field],.visitor-mode #dailyRosterList [data-roster-action]{pointer-events:none!important}',
+            '.visitor-mode #dailyRosterList input,.visitor-mode #dailyRosterList select,.visitor-mode #dailyRosterList textarea{user-select:none!important}',
+            '.visitor-mode .daily-roster-assign-btn,.visitor-mode .roster-delete-btn{visibility:hidden!important}'
+          ].join('');
           document.head.appendChild(style);
+        }
+
+        // Hard-lock every known data-entry control in the UI.  Search/filter controls
+        // remain usable, but anything that can create/edit/delete application data is
+        // disabled for VISITOR even if a section was rendered dynamically after login.
+        var writeSelectors = [
+          '#dailyRosterList [data-field]',
+          '#dailyRosterList [data-roster-action]',
+          '#inventoryMovementForm input:not([type="hidden"]),#inventoryMovementForm select,#inventoryMovementForm textarea,#inventoryMovementForm button[type="submit"]',
+          '#inventoryAdminItemForm input:not([type="hidden"]),#inventoryAdminItemForm select,#inventoryAdminItemForm textarea,#inventoryAdminItemForm button[type="submit"]',
+          '#outsourceForm input,#outsourceForm select,#outsourceForm textarea,#outsourceForm button[type="submit"]',
+          '#transfusionForm input,#transfusionForm select,#transfusionForm textarea,#transfusionForm button[type="submit"]',
+          '#transfusionRemarksModal input,#transfusionRemarksModal select,#transfusionRemarksModal textarea,#transfusionRemarksModal button[id$="Save"]'
+        ].join(',');
+        document.querySelectorAll(writeSelectors).forEach(function (el) {
+          if (visitor) {
+            el.disabled = true;
+            el.readOnly = true;
+            el.setAttribute('aria-disabled', 'true');
+            el.tabIndex = -1;
+          } else {
+            // Do not forcibly re-enable controls whose own logic intentionally disabled them.
+            if (el.getAttribute('aria-disabled') === 'true') {
+              el.removeAttribute('aria-disabled');
+              el.removeAttribute('readonly');
+            }
+          }
+        });
+
+        if (visitor && !document.documentElement.dataset.visitorWriteGuard) {
+          document.documentElement.dataset.visitorWriteGuard = '1';
+          document.addEventListener('input', function (event) {
+            if (!isVisitorRole()) return;
+            if (event.target && event.target.closest(writeSelectors)) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              if (event.target.matches('input,textarea')) event.target.blur();
+              alert('Visitor access is read-only.');
+            }
+          }, true);
+          document.addEventListener('change', function (event) {
+            if (!isVisitorRole()) return;
+            if (event.target && event.target.closest(writeSelectors)) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              alert('Visitor access is read-only.');
+            }
+          }, true);
+          document.addEventListener('submit', function (event) {
+            if (!isVisitorRole()) return;
+            var form = event.target;
+            if (form && /^(inventoryMovementForm|inventoryAdminItemForm|outsourceForm|transfusionForm)$/.test(form.id || '')) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              alert('Visitor access is read-only.');
+            }
+          }, true);
+          document.addEventListener('click', function (event) {
+            if (!isVisitorRole()) return;
+            var target = event.target && event.target.closest('[data-roster-action],#inventorySubmitBtn,#inventoryAdminItemSaveBtn,#outsourceSaveBtn,#outsourceResultSave,#trSave,#transfusionRemarksSave,[data-inventory-edit-id],[data-inventory-delete-id],[data-outsource-action]');
+            if (target) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              alert('Visitor access is read-only.');
+            }
+          }, true);
         }
       }
 
