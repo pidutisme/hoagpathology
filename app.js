@@ -2149,8 +2149,12 @@
             '.visitor-mode #inventoryStockInBtn,.visitor-mode #inventoryStockOutBtn,.visitor-mode #inventoryAdminItemsBtn,.visitor-mode #outsourceForm,.visitor-mode #transfusionForm,.visitor-mode .calendar-toolbar-btn{display:none!important}',
             '.visitor-mode .outsource-mini,.visitor-mode .inventory-history-edit-btn,.visitor-mode .inventory-history-delete-btn,.visitor-mode .outsource-actions{display:none!important}',
             '.visitor-mode #dailyRosterList [data-field],.visitor-mode #dailyRosterList [data-roster-action]{pointer-events:none!important}',
-            '.visitor-mode #dailyRosterList input,.visitor-mode #dailyRosterList select,.visitor-mode #dailyRosterList textarea{user-select:none!important}',
-            '.visitor-mode .daily-roster-assign-btn,.visitor-mode .roster-delete-btn{visibility:hidden!important}'
+            '.visitor-mode #dailyRosterList input,.visitor-mode #dailyRosterList select,.visitor-mode #dailyRosterList textarea{user-select:none!important;background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;opacity:.78!important;pointer-events:none!important}',
+            '.visitor-mode #dailyRosterList button[data-roster-action],.visitor-mode #dailyRosterList .daily-roster-assign-btn,.visitor-mode #dailyRosterList .roster-delete-btn{visibility:hidden!important;pointer-events:none!important}',
+            '.visitor-mode #outsourceForm input,.visitor-mode #outsourceForm select,.visitor-mode #outsourceForm textarea,.visitor-mode #transfusionForm input,.visitor-mode #transfusionForm select,.visitor-mode #transfusionForm textarea,.visitor-mode #inventoryMovementForm input,.visitor-mode #inventoryMovementForm select,.visitor-mode #inventoryMovementForm textarea,.visitor-mode #inventoryAdminItemForm input,.visitor-mode #inventoryAdminItemForm select,.visitor-mode #inventoryAdminItemForm textarea{background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;opacity:.78!important}',
+            '.visitor-mode #outsourceForm,.visitor-mode #transfusionForm,.visitor-mode #inventoryMovementForm,.visitor-mode #inventoryAdminItemForm{opacity:.92!important}',
+            '.visitor-mode form[data-write-form] input,.visitor-mode form[data-write-form] select,.visitor-mode form[data-write-form] textarea,.visitor-mode form[data-write-form] button[type="submit"]{background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;opacity:.78!important}',
+            '.visitor-mode [contenteditable="true"]{background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;pointer-events:none!important;opacity:.78!important}'
           ].join('');
           document.head.appendChild(style);
         }
@@ -2167,20 +2171,41 @@
           '#transfusionForm input,#transfusionForm select,#transfusionForm textarea,#transfusionForm button[type="submit"]',
           '#transfusionRemarksModal input,#transfusionRemarksModal select,#transfusionRemarksModal textarea,#transfusionRemarksModal button[id$="Save"]'
         ].join(',');
-        document.querySelectorAll(writeSelectors).forEach(function (el) {
-          if (visitor) {
+        function lockVisitorControls(root) {
+          if (!visitor || !root) return;
+          var scope = root.querySelectorAll ? root : document;
+          var selectors = [
+            writeSelectors,
+            '#outsourceForm input,#outsourceForm select,#outsourceForm textarea,#outsourceForm button[type="submit"]',
+            '#transfusionForm input,#transfusionForm select,#transfusionForm textarea,#transfusionForm button[type="submit"]',
+            '#inventoryMovementForm input:not([type="hidden"]),#inventoryMovementForm select,#inventoryMovementForm textarea,#inventoryMovementForm button[type="submit"]',
+            '#inventoryAdminItemForm input:not([type="hidden"]),#inventoryAdminItemForm select,#inventoryAdminItemForm textarea,#inventoryAdminItemForm button[type="submit"]',
+            '#transfusionRemarksModal input,#transfusionRemarksModal select,#transfusionRemarksModal textarea,#transfusionRemarksModal button[id$="Save"]',
+            '[contenteditable="true"]'
+          ].join(',');
+          scope.querySelectorAll(selectors).forEach(function (el) {
+            if (el.closest && el.closest('#loginForm')) return;
             el.disabled = true;
             el.readOnly = true;
             el.setAttribute('aria-disabled', 'true');
+            el.setAttribute('data-visitor-locked', '1');
             el.tabIndex = -1;
-          } else {
-            // Do not forcibly re-enable controls whose own logic intentionally disabled them.
-            if (el.getAttribute('aria-disabled') === 'true') {
-              el.removeAttribute('aria-disabled');
-              el.removeAttribute('readonly');
-            }
-          }
-        });
+          });
+        }
+
+        lockVisitorControls(document);
+
+        if (visitor && !document.documentElement.dataset.visitorObserver) {
+          document.documentElement.dataset.visitorObserver = '1';
+          var visitorObserver = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+              Array.prototype.forEach.call(mutation.addedNodes || [], function (node) {
+                if (node && node.nodeType === 1) lockVisitorControls(node);
+              });
+            });
+          });
+          visitorObserver.observe(document.body, { childList: true, subtree: true });
+        }
 
         if (visitor && !document.documentElement.dataset.visitorWriteGuard) {
           document.documentElement.dataset.visitorWriteGuard = '1';
