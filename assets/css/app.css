@@ -12039,3 +12039,34 @@ body.auth-ready #dashboard [data-dashboard-module] * {
 body.auth-ready .app {
   pointer-events: auto !important;
 }
+
+
+/* V4 Visitor final rule: modification affordances are hidden, not merely disabled. */
+body.visitor-read-only [data-outsource-action="edit"],
+body.visitor-read-only [data-outsource-action="delete"],
+body.visitor-read-only [data-inventory-edit-id],
+body.visitor-read-only [data-inventory-delete-id],
+body.visitor-read-only [data-admin-item-edit],
+body.visitor-read-only [data-admin-item-delete],
+body.visitor-read-only [data-action="edit"],
+body.visitor-read-only [data-action="delete"],
+body.visitor-read-only [data-roster-action="edit-row"],
+body.visitor-read-only [data-roster-action="delete-row"],
+body.visitor-read-only .roster-delete-btn,
+body.visitor-read-only .roster-cancel-edit-btn,
+body.visitor-read-only .tr-edit,
+body.visitor-read-only .tr-delete,
+body.visitor-read-only .inventory-history-edit-head,
+body.visitor-read-only .inventory-history-edit-cell,
+body.visitor-read-only .inventory-actions,
+body.visitor-read-only .outsource-actions,
+body.visitor-read-only .transfusion-actions {
+  display: none !important;
+}
+
+/* Dynamic action cells must not leave an empty clickable area for Visitors. */
+body.visitor-read-only [data-outsource-action="edit"],
+body.visitor-read-only [data-outsource-action="delete"] {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

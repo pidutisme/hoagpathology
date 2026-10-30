@@ -2235,6 +2235,19 @@
         document.body.classList.add('visitor-read-only');
 
         /* Main data-entry forms across Outsource, Inventory, Transfusion and roster. */
+        /* Hide all explicit EDIT/DELETE affordances for Visitor. Visitors are read-only,
+         * so modification controls should not merely be disabled; they must not be rendered
+         * as available actions. CSS also covers dynamically generated rows. */
+        document.querySelectorAll(
+          '[data-outsource-action="edit"],[data-outsource-action="delete"],' +
+          '[data-inventory-edit-id],[data-inventory-delete-id],' +
+          '[data-admin-item-edit],[data-admin-item-delete],' +
+          '[data-action="edit"],[data-action="delete"],' +
+          '[data-roster-action="edit-row"],[data-roster-action="delete-row"],' +
+          '.roster-delete-btn,.roster-cancel-edit-btn,' +
+          '.tr-edit,.tr-delete'
+        ).forEach(function(el){ el.hidden = true; el.setAttribute('aria-hidden','true'); });
+
         document.querySelectorAll(
           '.outsource-form input:not([type=hidden]),' +
           '.outsource-form select,' +
@@ -2326,6 +2339,12 @@
        * was resolved. The capture handler also covers dynamically-created controls. */
       document.addEventListener('click', function(e) {
         if (!isVisitorRole_()) return;
+        var forbiddenAction = e.target && e.target.closest ? e.target.closest('[data-outsource-action="edit"],[data-outsource-action="delete"],[data-inventory-edit-id],[data-inventory-delete-id],[data-admin-item-edit],[data-admin-item-delete],[data-roster-action="edit-row"],[data-roster-action="delete-row"],[data-action="edit"],[data-action="delete"],.tr-edit,.tr-delete') : null;
+        if (forbiddenAction && !forbiddenAction.matches('[data-visitor-allow]')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
         var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, [data-write-action], [data-action="edit"], [data-action="delete"], [data-action="save"], #inventoryStockInBtn, #inventoryStockOutBtn, #inventoryAdminItemsBtn, #inventoryItemTrigger') : null;
         if (target && !target.matches('[data-visitor-allow]')) {
           e.preventDefault();
