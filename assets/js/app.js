@@ -141,7 +141,7 @@
       rosterKey: 'labDailyRosterV26',
       rosterPartitionPrefix: 'labDailyRosterV26_',
       rosterTeamPartitionPrefix: 'labDailyRosterV26_team_',
-  	    rosterPollMs: 120000,
+  	    rosterPollMs: 10000,
   	    timeZone: 'Asia/Kuala_Lumpur',
   	    moduleYearStart: Math.max(2026, currentYear - 1),
   	    moduleYearEnd: currentYear + 4,
@@ -2942,8 +2942,8 @@ hoagApiRequest('logout', {
     /* +----------------------------------+
      * + CLIENT MODULE                    +
      * +----------------------------------+ */
-    /* Firebase client connection disabled: all application data flows through the
-     * Vercel bridge. Keeping this compatibility shim avoids changing unrelated callers. */
+    /* All application data flows through the Vercel bridge. This compatibility
+     * shim keeps activity tracking independent from the data transport. */
     var ActivityTracker = (function () {
       var lastEvents = {};
       var defaultDedupeMs = 5000;
@@ -4079,16 +4079,15 @@ hoagApiRequest('logout', {
           return baseRows;
         }
 
-        /* IMPORTANT: Firebase team roster is authoritative for confirmed
+        /* IMPORTANT: Supabase team roster is authoritative for confirmed
            assignments. Older builds could leave a stale local roster-change
            snapshot in front of the cloud data, which made the calendar show
-           the original rotation and suppressed the expected struck-through
-           original name + replacement name. */
+           the original rotation instead of the confirmed replacement. */
         var cloudStore = state.rosterCloudStore && typeof state.rosterCloudStore === 'object' ? state.rosterCloudStore : {};
         var cloudRows = Array.isArray(cloudStore[key]) ? cloudStore[key] : [];
 
-        /* Preserve an unsaved local assignment only while Firebase has not yet
-           confirmed an assignment for this date. Once Firebase contains an
+        /* Preserve an unsaved local assignment only while Supabase has not yet
+           confirmed an assignment for this date. Once Supabase contains an
            assigned row, it wins so the calendar always reflects the shared
            roster-change record. */
         var changeStore = safeParse(safeStorageGet('labDailyRosterChangesV1_' + getRosterStorageUserId()));
@@ -8000,7 +7999,7 @@ function exportMonthlySchedulePdfs() {
      * +----------------------------------+ */
     /* +----------------------------------+
      * + INDEPENDENT OUTSOURCE MODULE     +
-     * + Own cache + own Firebase path    +
+     * + Own cache + own Supabase path    +
      * +----------------------------------+ */
     var OutSource = (function () {
       var STORAGE_KEY = 'labAppOutsourceV1';
@@ -9162,7 +9161,6 @@ if ("serviceWorker" in navigator) {
         app: !!window.LabApp,
         storage: (function(){ try { var k='__labapp_check__'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; } catch(e){ return false; } })(),
         connection: navigator.onLine !== false,
-        firebase: false
       };
       window.setTimeout(function(){
         var ok = checks.app && checks.storage && checks.connection;

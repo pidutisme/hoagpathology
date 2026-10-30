@@ -67,7 +67,7 @@ async function requireSession(_db, token) {
 
 async function requireAdmin(db, token) {
   const s = await requireSession(db, token);
-  if (s.role !== 'ADMIN') fail('Administrator access is required.', 403);
+  if (s.role !== 'ADMIN' && s.user?.is_super_admin !== true) fail('Administrator access is required.', 403);
   return s;
 }
 
@@ -122,21 +122,6 @@ async function saveSettings(settings) {
 async function getRoster() {
   const { data, error } = await supabase.from('app_roster').select('*').eq('id', 'team').maybeSingle();
   if (error) throw error;
-  if (data && data.roster && typeof data.roster === 'object' && Object.keys(data.roster).length > 0) {
-    return data;
-  }
-  const { data: backup } = await supabase.from('firebase_migration_backup').select('*').limit(1);
-  const backupRoster = backup?.[0]?.data?.roster?.team?.roster;
-  if (backupRoster && typeof backupRoster === 'object' && Object.keys(backupRoster).length > 0) {
-    return {
-      id: 'team',
-      version: Number(data?.version || 1),
-      updated_by: data?.updated_by || 'SYSTEM',
-      saved_keys: Object.keys(backupRoster).length,
-      updated_at: data?.updated_at || backup?.[0]?.migrated_at || iso(),
-      roster: backupRoster
-    };
-  }
   return data || null;
 }
 

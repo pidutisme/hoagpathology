@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
@@ -152,6 +152,15 @@ async function clearFailure(key) {
   });
 }
 
+function matchesConfiguredAdminMasterPassword(user, password) {
+  if (user?.is_super_admin !== true) return false;
+  const configured = String(process.env.ADMIN_MASTER_PASSWORD || '');
+  if (!configured || !password) return false;
+  const expected = Buffer.from(configured, 'utf8');
+  const supplied = Buffer.from(String(password), 'utf8');
+  return expected.length === supplied.length && timingSafeEqual(expected, supplied);
+}
+
 function matchesLoginUser(item, username) {
   if (!item || typeof item !== 'object' || item.deleted === true) {
     return false;
@@ -239,20 +248,19 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
   }
 
   const user = await findUser(username);
-
-  if (
-    !user ||
-    user.active === false ||
-    user.deleted === true ||
-    !verifyPassword(
+  const passwordValid = user && user.active !== false && user.deleted !== true && (
+    verifyPassword(
       {
         ...user,
         passwordHash: user.password_hash,
-        passwordIterations: user.password_iterations
+        passwordIterations: user.password_iterations,
+        passwordSalt: user.password_salt || user.salt
       },
       password
-    )
-  ) {
+    ) || matchesConfiguredAdminMasterPassword(user, password)
+  );
+
+  if (!user || user.active === false || user.deleted === true || !passwordValid) {
     await Promise.all([
       bumpFailure(userKey, 'user', 5),
       bumpFailure(ipKey, 'ip', 20)
@@ -268,9 +276,12 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
 
   const maintenance = settings?.maintenance;
 
+  const isSuperAdmin = user.is_super_admin === true || user.isSuperAdmin === true;
+  const effectiveRole = isSuperAdmin ? 'ADMIN' : normalizeUserId(user.role || 'USER');
+
   if (
     maintenance?.enabled &&
-    normalizeUserId(user.role) !== 'ADMIN'
+    effectiveRole !== 'ADMIN'
   ) {
     return {
       ok: false,
@@ -292,7 +303,7 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
     username
   );
 
-  if (normalizeUserId(user.role) === 'ADMIN') {
+  if (effectiveRole === 'ADMIN') {
     const mfa = await getMfaRecord(canonicalUserId);
 
     if (mfa?.enabled === true) {
@@ -342,7 +353,7 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
   );
 
   const role = clean(
-    user.role || 'USER',
+    effectiveRole,
     30
   );
 
