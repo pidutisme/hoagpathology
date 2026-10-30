@@ -11866,3 +11866,72 @@ html.dark-mode-preload {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* VISITOR — hard read-only presentation. Search/filter controls are intentionally
+   unaffected; only data-entry/mutation controls are grey and disabled. */
+body.visitor-read-only .visitor-disabled-control,
+body.visitor-read-only .visitor-read-only-form input:not([type="hidden"]),
+body.visitor-read-only .visitor-read-only-form select,
+body.visitor-read-only .visitor-read-only-form textarea,
+body.visitor-read-only .visitor-read-only-form button {
+  background: #d9dee7 !important;
+  color: #7b8492 !important;
+  border-color: #c4cad4 !important;
+  box-shadow: inset 1px 1px 3px rgba(90,100,115,.10), inset -1px -1px 3px rgba(255,255,255,.45) !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #7b8492 !important;
+}
+body.visitor-read-only .visitor-read-only-form input::placeholder,
+body.visitor-read-only .visitor-read-only-form textarea::placeholder {
+  color: #8992a0 !important;
+  opacity: 1 !important;
+}
+body.visitor-read-only .visitor-read-only-form select:disabled {
+  color: #7b8492 !important;
+  opacity: 1 !important;
+}
+
+/* VISITOR — hard read-only presentation. Search/filter controls are intentionally
+   unaffected; data-entry/mutation controls are visibly grey and disabled. */
+body.visitor-read-only .visitor-disabled-control,
+body.visitor-read-only .visitor-read-only-form input:not([type="hidden"]),
+body.visitor-read-only .visitor-read-only-form select,
+body.visitor-read-only .visitor-read-only-form textarea,
+body.visitor-read-only .visitor-read-only-form button {
+  background: #d9dee7 !important;
+  color: #7b8492 !important;
+  border-color: #c4cad4 !important;
+  box-shadow: inset 1px 1px 3px rgba(90,100,115,.10), inset -1px -1px 3px rgba(255,255,255,.45) !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #7b8492 !important;
+}
+body.visitor-read-only .visitor-read-only-form input::placeholder,
+body.visitor-read-only .visitor-read-only-form textarea::placeholder {
+  color: #8992a0 !important;
+  opacity: 1 !important;
+}
+body.visitor-read-only .visitor-read-only-form select:disabled {
+  color: #7b8492 !important;
+  opacity: 1 !important;
+}
+
+/* While the existing HttpOnly session cookie is being verified after a refresh,
+   prevent a stale role/user from being interactive. */
+body.auth-verifying #moduleYearGrid,
+body.auth-verifying #dailyRosterList {
+  pointer-events: none !important;
+}
+body.auth-verifying #moduleYearGrid input,
+body.auth-verifying #moduleYearGrid select,
+body.auth-verifying #moduleYearGrid textarea,
+body.auth-verifying #moduleYearGrid button,
+body.auth-verifying #dailyRosterList input,
+body.auth-verifying #dailyRosterList select,
+body.auth-verifying #dailyRosterList textarea,
+body.auth-verifying #dailyRosterList button {
+  background: #d9dee7 !important;
+  color: #7b8492 !important;
+  cursor: wait !important;
+}

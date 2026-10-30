@@ -2144,6 +2144,87 @@
         state.authRole = cleanText(user.role || 'USER') || 'USER';
   
       }
+
+      /* VISITOR is a hard read-only UI role. Modules rebuild their forms dynamically,
+       * so this enforcement is global, idempotent and backed by MutationObserver.
+       * Search/filter controls remain usable; data-entry and mutation controls do not. */
+      var visitorReadOnlyObserver_ = null;
+      var visitorReadOnlyQueued_ = false;
+      function isVisitorRole_() {
+        return String(state.authRole || '').trim().toUpperCase() === 'VISITOR';
+      }
+      function applyVisitorReadOnly_() {
+        if (!isVisitorRole_()) {
+          document.body.classList.remove('visitor-read-only');
+          return;
+        }
+        document.body.classList.add('visitor-read-only');
+        var roots = document.querySelectorAll(
+          '#moduleYearGrid .outsource-form,' +
+          '#moduleYearGrid .outsource-form-actions,' +
+          '#moduleYearGrid .outsource-register .outsource-card:first-child,' +
+          '#moduleYearGrid .outsource-result-modal .outsource-result-dialog,' +
+          '#moduleYearGrid .inventory-form,' +
+          '#moduleYearGrid .inventory-entry-form,' +
+          '#moduleYearGrid #inventoryMovementForm,' +
+          '#moduleYearGrid #inventoryAdminItemForm,' +
+          '#moduleYearGrid .transfusion-card form,' +
+          '#dailyRosterList,' +
+          '#moduleYearGrid form[data-write-form],' +
+          '#moduleYearGrid [data-write-form]'
+        );
+        roots.forEach(function(root) {
+          root.querySelectorAll('input:not([type=hidden]), select, textarea, button').forEach(function(el) {
+            if (el.matches('[data-visitor-allow]')) return;
+            el.disabled = true;
+            el.setAttribute('aria-disabled', 'true');
+            el.classList.add('visitor-disabled-control');
+          });
+          root.classList.add('visitor-read-only-form');
+        });
+        document.querySelectorAll(
+          '#moduleYearGrid .outsource-data-row button,'+
+          '#moduleYearGrid .outsource-action-btn,'+
+          '#moduleYearGrid [data-action="edit"],'+
+          '#moduleYearGrid [data-action="delete"],'+
+          '#moduleYearGrid [data-action="save"],'+
+          '#moduleYearGrid [data-write-action]'
+        ).forEach(function(el) {
+
+        document.querySelectorAll(
+          '#dailyRosterList [data-field],'+
+          '#dailyRosterList [data-roster-action],'+
+          '.calendar-toolbar-btn,'+
+          '[data-roster-clear],'+
+          '#inventoryStockInBtn,'+
+          '#inventoryStockOutBtn,'+
+          '#inventoryAdminItemsBtn,'+
+          '#inventoryAdminItemForm button,'+
+          '#inventoryAdminItemList [data-admin-item-edit],'+
+          '#inventoryAdminItemList [data-admin-item-delete]'
+        ).forEach(function(el) {
+          el.disabled = true;
+          el.setAttribute('aria-disabled', 'true');
+          el.classList.add('visitor-disabled-control');
+        });
+          el.disabled = true;
+          el.setAttribute('aria-disabled', 'true');
+          el.classList.add('visitor-disabled-control');
+        });
+      }
+      function queueVisitorReadOnly_() {
+        if (!isVisitorRole_() || visitorReadOnlyQueued_) return;
+        visitorReadOnlyQueued_ = true;
+        window.setTimeout(function() {
+          visitorReadOnlyQueued_ = false;
+          applyVisitorReadOnly_();
+        }, 0);
+      }
+      function startVisitorReadOnlyObserver_() {
+        if (visitorReadOnlyObserver_ || !window.MutationObserver || !document.body) return;
+        visitorReadOnlyObserver_ = new MutationObserver(function() { queueVisitorReadOnly_(); });
+        visitorReadOnlyObserver_.observe(document.body, { childList: true, subtree: true });
+      }
   
       /* +----------------------------------+
        * + setSystemToast                   +
@@ -2461,6 +2542,7 @@
         state.authUserId = '';
         state.authUserDisplayName = '';
         state.authRole = '';
+        document.body.classList.remove('visitor-read-only');
   
         if (!preserveActiveLogin) resetAuthForms();
         showLoginPanel(message || '', type || (message ? 'error' : ''));
@@ -2476,6 +2558,8 @@
         Theme.activateForApp();
         document.body.classList.remove('auth-locked');
         document.body.classList.add('auth-ready');
+        startVisitorReadOnlyObserver_();
+        applyVisitorReadOnly_();
   
         if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
         if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
@@ -2484,6 +2568,7 @@
         setLoginMessage('', '');
         updateResumeSessionButton_();
   
+        setSessionVerifying_(false);
         startSessionControls();
         afterAuthPaint_(function () {
           runPostUnlockWork_(options);
@@ -2526,6 +2611,14 @@
       /* +----------------------------------+
        * + checkStoredSession               +
        * +----------------------------------+ */
+      function setSessionVerifying_(verifying) {
+        document.body.classList.toggle('auth-verifying', !!verifying);
+        if (nodes.app) {
+          if (verifying) nodes.app.setAttribute('aria-busy', 'true');
+          else nodes.app.removeAttribute('aria-busy');
+        }
+      }
+
       function checkStoredSession() {
         /* Do not let the asynchronous startup session check wipe credentials
          * that the user has already started typing. A previous implementation
@@ -2556,8 +2649,10 @@
         // A verified page-session marker means this is a refresh/reload of the
         // same page session. Keep the current page visible while the HttpOnly
         // cookie is re-verified so the login screen never flashes on refresh.
+        setSessionVerifying_(true);
         document.body.classList.remove('auth-locked');
         document.body.classList.add('auth-ready');
+        if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
         if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
 
@@ -2568,6 +2663,7 @@
               // finished late. Let submitLogin own the login form lifecycle.
               if (credentialsTouched()) return;
               clearStoredSession();
+              setSessionVerifying_(false);
               lock('', '');
               return;
             }
@@ -2583,6 +2679,7 @@
             // submitLogin to report the real authentication result.
             if (credentialsTouched()) return;
             clearStoredSession();
+            setSessionVerifying_(false);
             lock('', '');
           });
       }
@@ -2846,6 +2943,7 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
+        if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         // Remove any credentials left by pre-HttpOnly builds.
         safeStorageRemove(TOKEN_KEY);
         safeStorageRemove(USER_KEY);
@@ -2935,6 +3033,9 @@ hoagApiRequest('logout', {
         },
         getUserName: function () {
           return state.authUserDisplayName || '';
+        },
+        isVisitor: function () {
+          return isVisitorRole_();
         }
       };
     })();
