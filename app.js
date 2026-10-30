@@ -1567,18 +1567,22 @@
        * + bindDashboardCards               +
        * +----------------------------------+ */
       function bindDashboardCards() {
-        var cards = document.querySelectorAll('[data-dashboard-module]');
+        var cards = document.querySelectorAll('#dashboard [data-dashboard-module]');
         forEachNode(cards, function (card) {
           if (card.dataset.dashboardCardBound === '1') return;
           card.dataset.dashboardCardBound = '1';
           var moduleName = card.getAttribute('data-dashboard-module');
           if (!moduleName) return;
           card.setAttribute('aria-label', 'Open ' + moduleName);
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.classList.add('dashboard-card-interactive');
           var openCard = function (event) {
             if (event) {
               event.preventDefault();
               event.stopPropagation();
             }
+            if (document.body.classList.contains('auth-locked') || document.body.classList.contains('auth-verifying')) return;
             if (window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.open === 'function') {
               window.LabApp.Modules.open(moduleName);
             }
@@ -2695,6 +2699,17 @@
         updateResumeSessionButton_();
   
         setSessionVerifying_(false);
+        /* Unlock is authoritative: never leave the startup verification shield
+         * behind after authentication succeeds. This is especially important
+         * for dashboard cards because auth-verifying intentionally disables the
+         * entire application surface while login-state is pending. */
+        document.body.classList.remove('auth-verifying');
+        if (nodes.app) {
+          nodes.app.style.pointerEvents = 'auto';
+          nodes.app.style.opacity = '1';
+          nodes.app.style.transform = 'none';
+          nodes.app.style.filter = 'none';
+        }
         startSessionControls();
         afterAuthPaint_(function () {
           runPostUnlockWork_(options);

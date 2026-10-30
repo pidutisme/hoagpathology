@@ -12064,3 +12064,31 @@ body.visitor-read-only #inventoryItemMenu,
 body.visitor-read-only .inventory-custom-menu {
   pointer-events: none !important;
 }
+
+
+/* V4 FIX v3 — dashboard cards must remain interactive for every authenticated role.
+   Visitor read-only applies to data-entry/mutation controls only; navigation cards
+   are read access and must never inherit a disabled/pointer-events state. */
+body.auth-ready #dashboard .dashboard-card-interactive,
+body.auth-ready #dashboard .clickable-card,
+body.auth-ready #dashboard [data-dashboard-module] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+body.auth-ready #dashboard .dashboard-card-interactive *,
+body.auth-ready #dashboard .clickable-card * {
+  pointer-events: none;
+}
+body.auth-ready #dashboard .dashboard-card-interactive,
+body.auth-ready #dashboard .clickable-card {
+  position: relative;
+  z-index: 2;
+}
+/* The verification shield is only allowed before authentication. */
+body.auth-ready.auth-verifying .app {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
