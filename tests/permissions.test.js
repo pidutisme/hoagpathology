@@ -4,6 +4,21 @@ import { hasPermission, permissionsForRole, requirePermission } from '../lib/per
 
 const user = { userId: 'USER-1', role: 'USER' };
 const admin = { userId: 'ADMIN-1', role: 'ADMIN' };
+const visitor = { userId: 'VISITOR-1', role: 'VISITOR' };
+
+test('visitor is strictly read-only', () => {
+  assert.equal(hasPermission(visitor, 'roster.read'), true);
+  assert.equal(hasPermission(visitor, 'inventory.read'), true);
+  assert.equal(hasPermission(visitor, 'outsource.read'), true);
+  assert.equal(hasPermission(visitor, 'transfusion.read.all'), true);
+  assert.equal(hasPermission(visitor, 'roster.write'), false);
+  assert.equal(hasPermission(visitor, 'inventory.movement.create'), false);
+  assert.equal(hasPermission(visitor, 'outsource.create'), false);
+  assert.equal(hasPermission(visitor, 'outsource.delete.own'), false);
+  assert.equal(hasPermission(visitor, 'transfusion.create'), false);
+  assert.equal(hasPermission(visitor, 'transfusion.update.own'), false);
+  assert.equal(hasPermission(visitor, 'transfusion.delete.own'), false);
+});
 
 test('inventory and outsource permissions follow the documented role matrix', () => {
   assert.equal(hasPermission(user, 'inventory.read'), true);

@@ -35,7 +35,7 @@ function userRowFromLegacy(user) {
   return {
     user_id: normalizeUserId(user.userId || user.id),
     display_name: clean(user.displayName || user.name || user.userId || user.id, 80),
-    role: normalizeUserId(user.role) === 'ADMIN' ? 'ADMIN' : 'USER',
+    role: ['ADMIN', 'VISITOR', 'USER'].includes(normalizeUserId(user.role)) ? normalizeUserId(user.role) : 'USER',
     active: user.active !== false,
     deleted: user.deleted === true,
     is_super_admin: user.isSuperAdmin === true || user.is_super_admin === true,
@@ -422,6 +422,7 @@ async function dispatch(db, method, a, req) {
 
     case 'saveUserRoster': {
       const s = await requireSession(db, tokenAt(1));
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       const roster = a[0] && typeof a[0] === 'object' ? a[0] : {};
       const result = await saveRoster(roster, s.userId, a[2]);
       if (!result.committed) return { ok: false, conflict: true, roster: result.current?.roster || {}, updatedAt: result.current?.updated_at || '', error: 'Roster was changed by another user. The latest roster has been reloaded; please review and save again.', version: VERSION };
@@ -469,6 +470,7 @@ async function dispatch(db, method, a, req) {
       const { data: existingRow, error: existingError } = await supabase.from('outsource_records').select('*').eq('id', record.id).maybeSingle();
       if (existingError) throw existingError;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       if (existing?.deletedAt && s.role !== 'ADMIN') fail('Administrator access is required to update an outsource record.', 403);
       if (existing && expectedUpdatedAt && String(existing.updatedAt || '') !== expectedUpdatedAt) return { ok: false, conflict: true, error: 'Outsource record changed. Reload before saving.', version: VERSION };
       const payloadToSave = existing
@@ -529,6 +531,7 @@ async function dispatch(db, method, a, req) {
       const { data: existingRow, error: existingErr } = await supabase.from('transfusion_records').select('*').eq('id', rid).maybeSingle();
       if (existingErr) throw existingErr;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       const now = iso();
       const createdAt = existing?.createdAt || now;
       const nextVersion = Number(existing?.version || 0) + 1 || 1;
@@ -574,6 +577,7 @@ async function dispatch(db, method, a, req) {
       const { data: existingRow, error: existingErr } = await supabase.from('transfusion_records').select('*').eq('id', rid).maybeSingle();
       if (existingErr) throw existingErr;
       if (!existingRow) return { ok: true, deleted: true, recordId: rid, version: VERSION };
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       const { error: delErr } = await supabase.from('transfusion_records').delete().eq('id', rid);
       if (delErr) throw delErr;
       await log(db, s.userId, 'TRANSFUSION_RECORD_DELETED', `Deleted transfusion record ${rid}.`);
@@ -588,6 +592,7 @@ async function dispatch(db, method, a, req) {
 
     case 'saveSharedInventory': {
       const s = await requireSession(db, tokenAt(1));
+      if (!hasPermission(s, 'inventory.movement.create')) fail('You are not authorized to modify inventory.', 403);
       const requestedInventory = a[0] && typeof a[0] === 'object' && !Array.isArray(a[0]) ? { ...a[0] } : {};
       delete requestedInventory.transfusionRecords;
       delete requestedInventory.deletedTransfusionRecordIds;
@@ -675,7 +680,7 @@ async function dispatch(db, method, a, req) {
 
     case 'adminAddAuthUser': {
       const s = await requireAdmin(db, tokenAt(0));
-      const id = normalizeUserId(a[1]), name = clean(a[2], 80), role = normalizeUserId(a[3]) === 'ADMIN' ? 'ADMIN' : 'USER', pass = normalizePassword(a[4]);
+      const id = normalizeUserId(a[1]), name = clean(a[2], 80), requestedRole = normalizeUserId(a[3]), role = requestedRole === 'ADMIN' ? 'ADMIN' : requestedRole === 'VISITOR' ? 'VISITOR' : 'USER', pass = normalizePassword(a[4]);
       if (!id || pass.length<4 || pass.length > 200) fail('Username and password (4 to 200 characters) are required.');
       const { data: existing, error } = await supabase.from('app_users').select('user_id, deleted, created_at').eq('user_id', id).maybeSingle();
       if (error) throw error;
