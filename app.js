@@ -1582,7 +1582,10 @@
               event.preventDefault();
               event.stopPropagation();
             }
-            if (document.body.classList.contains('auth-locked') || document.body.classList.contains('auth-verifying')) return;
+            /* Dashboard cards are authenticated read/navigation controls.
+             * A stale auth-verifying class must never block an already-authenticated
+             * user; only auth-ready is authoritative for click eligibility. */
+            if (!document.body.classList.contains('auth-ready') || document.body.classList.contains('auth-locked')) return;
             if (window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.open === 'function') {
               window.LabApp.Modules.open(moduleName);
             }

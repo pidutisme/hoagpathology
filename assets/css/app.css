@@ -12092,3 +12092,25 @@ body.auth-ready.auth-verifying .app {
   transform: none !important;
   filter: none !important;
 }
+
+/* V4 FIX v4 — authenticated dashboard navigation is never blocked by the
+   session-verification visual shield. Data-entry restrictions remain scoped to
+   Visitor write controls only. */
+body.auth-ready #dashboard,
+body.auth-ready #dashboard .page-scroll,
+body.auth-ready #dashboard .dashboard-layout,
+body.auth-ready #dashboard .stats-row,
+body.auth-ready #dashboard .bottom-cards-row {
+  pointer-events: auto !important;
+}
+body.auth-ready #dashboard [data-dashboard-module].clickable-card,
+body.auth-ready #dashboard [data-dashboard-module].stat-card,
+body.auth-ready #dashboard [data-dashboard-module].bottom-card {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: 20 !important;
+}
+body.auth-ready #dashboard [data-dashboard-module] > * {
+  pointer-events: none !important;
+}
