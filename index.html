@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+
+<!-- +----------------------------------+
+     + LABAPP FRONTEND / INDEX.HTML     +
+     +----------------------------------+ -->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<link href="/manifest.json" rel="manifest"/>
+<!-- +----------------------------------+
+       + HEAD AND PRE-AUTH BOOTSTRAP      +
+       +----------------------------------+ -->
+<link href="/favicon.ico?v=3" rel="icon" type="image/x-icon"/>
+<title>HOAG Pathology</title>
+<base target="_top"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link crossorigin="" href="https://www.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com" rel="dns-prefetch">
+<link href="https://fonts.gstatic.com" rel="dns-prefetch"/>
+<link href="https://www.gstatic.com" rel="dns-prefetch"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<meta content="#e6edf6" name="theme-color"/>
+<meta content="light dark" name="color-scheme"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="WEB PatologiHOAG" name="application-name"/>
+<meta content="WEB PatologiHOAG" name="apple-mobile-web-app-title"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="no-referrer-when-downgrade" name="referrer"/>
+<meta content="telephone=no,email=no,address=no" name="format-detection"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800;900&family=Poppins:wght@700;800;900&display=swap"/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+</head>
+<!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
+<body class="auth-locked">
+<!-- +----------------------------------+
+       + HTML BODY / PAGE MARKUP          +
+       +----------------------------------+ -->
+<!-- +----------------------------------+
+     + PAGE STRUCTURE                   +
+     +----------------------------------+ -->
+<noscript>
+<div class="noscript-warning">
+<strong>LabApp requires JavaScript.</strong><br/>
+    Please enable JavaScript to use routing, calendar, roster auto-save, and theme.<br/>
+<span>LabLink App needs JavaScript enabled to load the dashboard, calendar, and roster modules.</span>
+</div>
+</noscript>
+<div aria-label="LabApp login" aria-modal="true" class="auth-screen" id="authScreen" role="dialog">
+<div aria-hidden="true" class="auth-orb auth-orb-one"></div>
+<div aria-hidden="true" class="auth-orb auth-orb-two"></div>
+<div class="auth-card">
+<div class="auth-card-inner" id="authLoginPanel">
+<div class="auth-badge">🔐 Secure Access</div>
+<div class="auth-title-block">
+<h1 class="auth-title">HOAG<br/>PATHOLOGY</h1>
+</div>
+<form autocomplete="off" class="auth-form" id="loginForm">
+<label class="auth-field" for="loginUsername">
+<span class="auth-input-wrap">
+<input autocapitalize="characters" autocomplete="off" class="auth-input" data-1p-ignore="true" data-lpignore="true" id="loginUsername" inputmode="text" maxlength="60" name="labapp_login_username" placeholder="USERNAME" spellcheck="false" type="text"/>
+</span>
+</label>
+<label class="auth-field" for="loginPassword">
+<span class="auth-input-wrap">
+<input autocomplete="off" class="auth-input" data-1p-ignore="true" data-lpignore="true" id="loginPassword" maxlength="200" name="labapp_login_password" placeholder="PASSWORD" type="password"/>
+<button aria-label="Show password" class="auth-password-toggle" id="loginPasswordToggle" type="button"><svg aria-hidden="true" class="eye-on" viewbox="0 0 24 24"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg aria-hidden="true" class="eye-off" viewbox="0 0 24 24"><path d="M3 3l18 18"></path><path d="M10.6 10.6A2 2 0 0012 14a2 2 0 001.4-.6"></path><path d="M7.5 7.8C4.4 9.5 2.5 12 2.5 12s3.5 6.5 9.5 6.5c1.6 0 3-.4 4.2-1"></path><path d="M14.1 5.8c4.7.9 7.4 6.2 7.4 6.2s-.9 1.6-2.5 3.1"></path></svg></button>
+</span>
+</label>
+<label class="auth-field" for="loginMfaCode" hidden="">
+<span class="auth-input-wrap"><input autocomplete="one-time-code" class="auth-input" id="loginMfaCode" inputmode="text" maxlength="32" name="mfaCode" placeholder="AUTHENTICATOR CODE OR RECOVERY CODE" type="text"/></span>
+</label>
+<button class="auth-submit" id="loginSubmit" type="submit"><span class="auth-submit-label">Sign In</span><span aria-hidden="true" class="auth-spinner"></span></button>
+<div aria-live="polite" class="auth-message" id="loginMessage"></div>
+</form>
+<div class="auth-actions">
+<button class="auth-secondary-btn" id="showChangePassword" type="button">Change Password</button>
+</div>
+</div>
+<div class="auth-card-inner" hidden="" id="authChangePanel">
+<button class="auth-back-btn" id="backToLogin" type="button">← Back</button>
+<div class="auth-badge">🔑 Password</div>
+<div class="auth-title-block">
+<h1 class="auth-title">CHANGE<br/>PASSWORD</h1>
+</div>
+<form autocomplete="off" class="auth-form" id="changePasswordForm">
+<label class="auth-field" for="changeUsername">
+<span class="auth-input-wrap">
+<input autocapitalize="characters" autocomplete="username" class="auth-input" id="changeUsername" inputmode="text" maxlength="60" name="username" placeholder="USERNAME" spellcheck="false" type="text"/>
+</span>
+</label>
+<label class="auth-field" for="changeCurrentPassword">
+<span class="auth-input-wrap">
+<input autocomplete="current-password" class="auth-input" id="changeCurrentPassword" maxlength="200" name="currentPassword" placeholder="CURRENT PASSWORD" type="password"/>
+</span>
+</label>
+<label class="auth-field" for="changeNewPassword">
+<span class="auth-input-wrap">
+<input autocomplete="new-password" class="auth-input" id="changeNewPassword" maxlength="200" name="newPassword" placeholder="NEW PASSWORD" type="password"/>
+</span>
+</label>
+<label class="auth-field" for="changeConfirmPassword">
+<span class="auth-input-wrap">
+<input autocomplete="new-password" class="auth-input" id="changeConfirmPassword" maxlength="200" name="confirmPassword" placeholder="CONFIRM PASSWORD" type="password"/>
+</span>
+</label>
+<button class="auth-submit" id="changePasswordSubmit" type="submit"><span class="auth-submit-label">Update Password</span><span aria-hidden="true" class="auth-spinner"></span></button>
+<div aria-live="polite" class="auth-message" id="changePasswordMessage"></div>
+</form>
+</div>
+</div>
+</div>
+<div aria-hidden="true" class="app">
+<aside class="sidebar">
+<div class="brand">
+<h1>LabPortal</h1>
+<p>Laboratory Management System</p>
+</div>
+<nav class="nav">
+<button class="nav-btn active" data-page="dashboard" type="button">DASHBOARD</button>
+<button class="nav-btn" data-page="profile" type="button">PROFILE</button>
+<button class="nav-btn" data-page="access" type="button">ACCESS</button>
+<button class="nav-btn" data-page="calendar" type="button">CALENDAR</button>
+<button class="nav-btn" data-page="notification" type="button">NOTIFICATION</button>
+<button class="nav-btn" data-page="leavesCourses" type="button">LEAVE &amp; COURSES</button>
+<button class="nav-btn" data-page="quickLinks" type="button">QUICK LINKS</button>
+<button class="nav-btn" data-page="settings" type="button">SETTING</button>
+</nav>
+<div class="sidebar-footer">
+<div class="display-mode-block">
+<span class="display-mode-title">DISPLAY MODE</span>
+<span class="display-mode-current" id="themeText">Light Mode</span>
+</div>
+<button aria-label="Toggle dark mode" class="theme-toggle" id="themeToggleBtn" type="button">
+<span class="theme-toggle-knob" id="themeIcon">☀️</span>
+</button>
+<button class="logout-btn" id="logoutBtn" type="button">LOG OUT</button>
+</div>
+</aside>
+<main class="main">
+<div class="pages">
+<section class="page active" id="dashboard">
+<div class="page-scroll dashboard-scroll">
+<div class="dashboard-layout">
+<div class="display-board">
+<div class="display-board-left">
+<div class="display-time-block" >
+<div class="display-title display-title-clock" id="displayBoardTitle">02:38:38 AM</div>
+</div>
+<div aria-hidden="true" class="display-accent-line"></div>
+<div class="display-date" id="liveDate">2 JUN 2026 | TUESDAY</div>
+<div class="display-greeting" id="displayGreeting">Good Afternoon, Japidi 🌞</div>
+</div>
+<div class="display-daily-quote" hidden="" id="displayDailyQuote">
+<div class="display-daily-quote-text" id="displayDailyQuoteText"></div>
+<div class="display-daily-quote-author" id="displayDailyQuoteAuthor"></div>
+</div>
+<div class="display-clock-wrap">
+<div class="display-clock display-hero-title" id="liveClock">HOAG PATHOLOGY</div>
+</div>
+</div>
+<div class="stats-row">
+<div class="stat-card clickable-card" data-dashboard-module="OUTSOURCE" role="button" tabindex="0">
+<div class="dashboard-icon-wrap">
+<span class="dashboard-card-icon">🚗</span>
+<div class="dashboard-card-title">OUTSOURCE</div>
+</div>
+</div>
+<div class="stat-card clickable-card" data-dashboard-module="INVENTORY" role="button" tabindex="0">
+<div class="dashboard-icon-wrap">
+<span class="dashboard-card-icon">📦</span>
+<div class="dashboard-card-title">INVENTORY</div>
+</div>
+</div>
+<div class="stat-card clickable-card" data-dashboard-module="TRANSFUSION" role="button" tabindex="0">
+<div class="dashboard-icon-wrap">
+<span class="dashboard-card-icon">💉</span>
+<div class="dashboard-card-title">TRANSFUSION</div>
+</div>
+</div>
+<div class="stat-card clickable-card" data-dashboard-module="POCT" role="button" tabindex="0">
+<div class="dashboard-icon-wrap">
+<span class="dashboard-card-icon">📍</span>
+<div class="dashboard-card-title">POCT</div>
+</div>
+</div>
+</div>
+<div class="bottom-cards-row">
+<div class="bottom-card clickable-card" data-dashboard-module="Chemical Pathology" role="button" tabindex="0">
+<div class="big-card-icon-wrap">
+<div class="big-card-icon">🧪</div>
+</div>
+<div class="bottom-card-title">Chemical Pathology</div>
+<div class="bottom-card-desc">
+                    The study and analysis of body fluids to detect and monitor diseases such as diabetes, kidney
+                    failure, and liver disorders using biochemical testing.
+                  </div>
+</div>
+<div class="bottom-card clickable-card" data-dashboard-module="Hematology" role="button" tabindex="0">
+<div class="big-card-icon-wrap">
+<div class="big-card-icon">🩸</div>
+</div>
+<div class="bottom-card-title">Hematology</div>
+<div class="bottom-card-desc">
+                    The study of blood, blood-forming organs and blood disorders, including conditions such as anemia,
+                    leukemia, clotting disorders and infections.
+                  </div>
+</div>
+<div class="bottom-card clickable-card" data-dashboard-module="Microbiology" role="button" tabindex="0">
+<div class="big-card-icon-wrap">
+<div class="big-card-icon">🦠</div>
+</div>
+<div class="bottom-card-title">Microbiology</div>
+<div class="bottom-card-desc">
+                    The study of microscopic organisms such as bacteria, viruses, fungi, and parasites and how they
+                    cause infections and diseases.
+                  </div>
+</div>
+<div class="bottom-card clickable-card" data-dashboard-module="Urine/Stool Analysis" role="button" tabindex="0">
+<div class="big-card-icon-wrap">
+<div class="big-card-icon">🔬</div>
+</div>
+<div class="bottom-card-title">Urine/Stool Analysis</div>
+<div class="bottom-card-desc">
+                    Examination of urine and feces to detect infections, digestive disorders, kidney problems and other
+                    health conditions.
+                  </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="profile">
+<div class="page-scroll">
+<div class="profile-two-cards">
+<div class="profile-card">
+<h3>HOSPITAL PROFILE</h3>
+<p>Official profile and background information of Hospital Orang Asli Gombak.</p>
+<div class="profile-info-grid profile-link-grid">
+<a class="profile-info-box profile-link-card" data-icon="📜" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/mengenai/latar-belakang" rel="noopener noreferrer" target="_blank"><strong>HISTORY</strong><span>Open the official HOAG link.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="🎯" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/mengenai/visi-misi" rel="noopener noreferrer" target="_blank"><strong>VISION &amp; MISSION</strong><span>Open the official HOAG link.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="✅" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/mengenai/dasar-dan-objektif" rel="noopener noreferrer" target="_blank"><strong>OBJECTIVES</strong><span>Open the official HOAG link.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="🤝" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/mengenai/piagam-pelanggan" rel="noopener noreferrer" target="_blank"><strong>CLIENT CHARTER</strong><span>Open the official HOAG link.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="🗂️" href="https://jknselangor.moh.gov.my/hoag/images/carta-organisasi/2026%20CARTA%20ORGANISASI%20HOAG%2029.1.2026.pdf" rel="noopener noreferrer" target="_blank"><strong>ORGANIZATION CHART</strong><span>Open the official HOAG link.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="🏥" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/mengenai/logo" rel="noopener noreferrer" target="_blank"><strong>LOGO</strong><span>Open the official HOAG link.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="💬" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/mengenai/moto" rel="noopener noreferrer" target="_blank"><strong>MOTTO</strong><span>Open the official HOAG link.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="🌱" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/mengenai/budaya-korporat" rel="noopener noreferrer" target="_blank"><strong>CORPORATE CULTURE</strong><span>Open the official HOAG link.</span></a>
+</div>
+</div>
+<div class="profile-card">
+<h3>LABORATORY PROFILE</h3>
+<p>Core HOAG pathology laboratory documents that serve as the primary reference for operational
+                  procedures and quality assurance.</p>
+<div class="profile-info-grid profile-link-grid">
+<a class="profile-info-box profile-link-card" data-icon="📋" href="https://drive.google.com/file/d/1mx2Ri07_wStsncNupGcgXBOzcf1vCZht/view?usp=sharing" rel="noopener noreferrer" target="_blank"><strong>LABORATORY POLICY</strong><span>Open the Google Drive document.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="📘" href="https://drive.google.com/file/d/1HuW_QHHJWLIA2oqsp0du6rYE-cS4Z-6I/view?usp=sharing" rel="noopener noreferrer" target="_blank"><strong>WORK PROCEDURE MANUAL</strong><span>Open the Google Drive document.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="🧪" href="https://drive.google.com/file/d/1oCiXYiMwF0bBc3bKlaGVMVuUi2mqG438/view?usp=sharing" rel="noopener noreferrer" target="_blank"><strong>QC SOP</strong><span>Open the Google Drive document.</span></a>
+<a class="profile-info-box profile-link-card" data-icon="🧬" href="https://drive.google.com/file/d/1S_oktQPwceIy5qP2rI_PkDH2VkU9KMuG/view?usp=sharing" rel="noopener noreferrer" target="_blank"><strong>ORGANIZATION CHART</strong><span>Open the Google Drive document.</span></a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="access">
+<div class="page-scroll">
+<div class="access-three-cards">
+<div class="profile-card">
+<h3>FORMS</h3>
+<p>Laboratory forms center for references, requests, and daily operational use.</p>
+<div class="profile-info-grid access-link-grid">
+<a class="profile-info-box access-link-card" data-icon="📝" href="https://drive.google.com/drive/folders/1duqnuFbl9i_jAKV2Q4qBiC08imBvWDa0" rel="noopener noreferrer" target="_blank"><strong>FORMS</strong><span>Open the Google Drive folder.</span></a>
+</div>
+</div>
+<div class="profile-card">
+<h3>MSDS</h3>
+<p>Material Safety Data Sheet references for laboratory chemicals and safety.</p>
+<div class="profile-info-grid access-link-grid">
+<a class="profile-info-box access-link-card" data-icon="⚠️" href="https://drive.google.com/drive/folders/1A-GtItBa8O2CfmQ0nbrHyln_yNyAvgGM" rel="noopener noreferrer" target="_blank"><strong>MSDS</strong><span>Open the Google Drive folder.</span></a>
+</div>
+</div>
+<div class="profile-card">
+<h3>e-BOOK</h3>
+<p>Digital reading materials, guidelines, and laboratory training references.</p>
+<div class="profile-info-grid access-link-grid">
+<a class="profile-info-box access-link-card" data-icon="📚" href="https://drive.google.com/drive/folders/1AZj1XRY3cGefkhq4cbS-wgHJKZ8MIBe8" rel="noopener noreferrer" target="_blank"><strong>e-BOOK</strong><span>Open the Google Drive folder.</span></a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="calendar">
+<div class="page-scroll">
+<div class="single-panel calendar-single-panel">
+<div class="panel calendar-panel">
+<div class="content-inner calendar-content-inner">
+<div class="calendar-roster-shell">
+<div class="calendar-roster-head">
+<div>
+<h3>CALENDAR</h3>
+<p>Daily roster calendar for planning and reviewing monthly laboratory duty schedules.</p>
+</div>
+</div>
+<div class="calendar-roster-board">
+<aside class="calendar-month-panel">
+<div class="calendar-month-topline">
+<div>
+<div class="calendar-mini-label" id="calendarCurrentMonthLabel">JUNE 2026</div>
+</div>
+<div class="calendar-month-actions">
+<div aria-label="Calendar month navigation" class="calendar-roster-nav">
+<button aria-label="Previous month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<button aria-label="Back to current date" class="calendar-roster-month-btn" id="calendarCurrentMonthBtn"  title="Back to current date" type="button">JUNE 2026</button>
+<button aria-label="Next month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg></button>
+<button aria-label="Download monthly on-call schedule PDFs" class="calendar-roster-month-btn calendar-roster-export-btn"  title="Download before and after assign PDFs" type="button">EXPORT</button>
+</div>
+</div>
+</div>
+<div aria-hidden="true" class="calendar-full-weekdays">
+<div>MON</div>
+<div>TUE</div>
+<div>WED</div>
+<div>THU</div>
+<div>FRI</div>
+<div>SAT</div>
+<div>SUN</div>
+</div>
+<div aria-live="polite" class="calendar-full-grid" id="calendarMiniGrid"></div>
+</aside>
+<main class="daily-roster-panel">
+<div class="daily-roster-toolbar">
+<div class="calendar-selected-hero">
+<div class="calendar-selected-label" id="calendarSelectedDateLabel">WED, 04 JUNE 2026</div>
+<div class="calendar-selected-sub" id="calendarSelectedDateSub">Daily roster editor</div>
+</div>
+<div class="daily-roster-actions">
+<button aria-label="Add roster row" class="calendar-toolbar-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
+</div>
+</div>
+<div class="daily-roster-card">
+<div class="daily-roster-header">
+<div>DATE</div>
+<div>STAFF</div>
+<div>TASK / DUTY</div>
+<div>ASSIGN</div>
+<div></div>
+</div>
+<div class="daily-roster-list" id="dailyRosterList"></div>
+</div>
+</main>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="leavesCourses">
+<div class="page-scroll">
+<div class="leave-course-years-wrap">
+<div class="leave-course-year-card" data-module="LEAVE">
+<div class="leave-course-card-head">
+<h3>LEAVE</h3>
+<p>Documentation and monitoring of staff leave records specifically detailing instances of Medical
+                    Leave (MC), Unrecorded Leave (CTR), and Annual Leave (CR) for all laboratory staff.</p>
+</div>
+<div aria-live="polite" class="leave-course-year-grid" id="leaveYearGrid"></div>
+</div>
+<div class="leave-course-year-card" data-module="COURSES">
+<div class="leave-course-card-head">
+<h3>COURSES</h3>
+<p>Documentation and monitoring of annual training programs, skill competency courses and courses
+                    attendance records for all laboratory staff.</p>
+</div>
+<div aria-live="polite" class="leave-course-year-grid" id="coursesYearGrid"></div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="quickLinks">
+<div class="page-scroll">
+<div class="single-panel">
+<div class="panel">
+<div class="content-inner">
+<div>
+<h3>QUICK LINKS</h3>
+<p>Important staff portals and online services for daily administrative and laboratory work.</p>
+</div>
+<div class="profile-info-grid quick-links-grid">
+<a class="profile-info-box quick-links-card" data-icon="👥" href="https://hrmis2.eghrmis.gov.my/HRMISNET/Common/Main/Login.aspx" rel="noopener noreferrer" target="_blank">
+<strong>HRMIS</strong><span>Open the HRMIS staff portal.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="📋" href="https://jknselangor.moh.gov.my/hoag/index.php/ms/warga/muat-turun-boranggg" rel="noopener noreferrer" target="_blank">
+<strong>BORANG HOAG</strong><span>Open HOAG forms and downloads.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="💰" href="https://epenyatagaji-laporan.anm.gov.my/Layouts/Login/Login.aspx" rel="noopener noreferrer" target="_blank">
+<strong>PENYATA GAJI</strong><span>Open the official salary statement portal.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="🎓" href="https://www.mycpd2.moh.gov.my/default.aspx" rel="noopener noreferrer" target="_blank">
+<strong>MYCPD</strong><span>Open the MOH CPD online system.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="🧪" href="http://smis.imr.gov.my/html/smpl/login.php" rel="noopener noreferrer" target="_blank">
+<strong>SMIS</strong><span>Open the SMIS laboratory system.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="🪪" href="https://mhps.moh.gov.my/mhps/index.php/auth/main_login" rel="noopener noreferrer" target="_blank">
+<strong>MHPS</strong><span>Open the MHPS online portal.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="🔬" href="https://simka2.moh.gov.my/result/" rel="noopener noreferrer" target="_blank">
+<strong>SIMKA RESULT</strong><span>Open the SIMKA result portal.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="📚" href="https://www.epsa.gov.my/" rel="noopener noreferrer" target="_blank">
+<strong>EPSA</strong><span>Open the EPSA online learning portal.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="💰" href="https://mytax.hasil.gov.my/" rel="noopener noreferrer" target="_blank">
+<strong>MYTAX LHDN</strong><span>Open the MyTax LHDN online portal.</span>
+</a>
+<a class="profile-info-box quick-links-card" data-icon="☣️" href="https://nationaloutbreak.com.my/outbreak-portal-public/index" rel="noopener noreferrer" target="_blank">
+<strong>NATIONAL OUTBREAK</strong><span>Open the National Outbreak public portal.</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="moduleYears">
+<div class="page-scroll">
+<div class="single-panel module-years-page">
+<div class="panel module-years-panel">
+<div class="content-inner module-years-inner">
+<button class="page-back-dashboard-btn" type="button">← BACK TO DASHBOARD</button>
+<div class="module-years-header">
+<h3 id="moduleYearsTitle">MODULE</h3>
+<p id="moduleYearsDesc">Select a year to open the module records. Future years are locked
+                      automatically and will unlock when the new year begins.</p>
+</div>
+<div aria-live="polite" class="module-year-grid" id="moduleYearGrid"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page" id="inventory">
+<div class="page-scroll inventory-scroll">
+<div class="inventory-shell">
+<div class="inventory-head">
+<div>
+<button class="page-back-dashboard-btn inventory-back-btn" type="button">← BACK TO DASHBOARD</button>
+<div class="inventory-title-row">
+
+<div>
+<h3>INVENTORY</h3>
+<p>Live reagent and consumables stock control with lot-level traceability.</p>
+</div>
+</div>
+</div>
+<div class="inventory-head-actions">
+<button class="inventory-action-btn primary" id="inventoryStockInBtn" type="button">＋ STOCK IN</button>
+<button class="inventory-action-btn danger" id="inventoryStockOutBtn" type="button">− STOCK OUT</button>
+<button class="inventory-action-btn" hidden="" id="inventoryAdminItemsBtn" type="button">⚙ INVENTORY CONTROL</button>
+</div>
+</div>
+<div class="inventory-kpis" id="inventoryKpis"></div>
+<div class="inventory-toolbar">
+<div class="inventory-search-wrap">
+<span>⌕</span><input autocomplete="off" id="inventorySearch" placeholder="Search item, lot no., category..." type="search"/>
+</div>
+<select class="inventory-select" id="inventoryCategoryFilter">
+<option value="ALL">ALL CATEGORIES</option>
+<option value="BIOCHEMISTRY">BIOCHEMISTRY</option>
+<option value="HAEMATOLOGY">HAEMATOLOGY</option>
+<option value="MICROBIOLOGY">MICROBIOLOGY</option>
+<option value="URINE/STOOL ANALYSIS">URINE / STOOL ANALYSIS</option>
+<option value="ETC">ETC</option>
+<option value="CONSUMABLES">CONSUMABLES</option>
+<option value="OUTSOURCE INDENT">OUTSOURCE INDENT</option>
+</select>
+<select class="inventory-select" id="inventoryStatusFilter">
+<option value="ALL">ALL STATUS</option>
+<option value="LOW">LOW STOCK</option>
+<option value="OUT">OUT OF STOCK</option>
+<option value="EXPIRING">EXPIRING ≤ 60 DAYS</option>
+<option value="EXPIRED">EXPIRED</option>
+</select>
+<select class="inventory-select" id="inventoryViewFilter">
+<option value="ITEMS">ITEM SUMMARY</option>
+<option value="LOTS">LOT STOCK</option>
+<option value="HISTORY">MOVEMENT HISTORY</option>
+<option value="MONTHLY">MONTHLY STOCK IN / OUT</option>
+</select>
+</div>
+<div class="inventory-table-wrap" id="inventoryTableWrap"></div>
+</div>
+</div>
+</section>
+<div class="inventory-modal" hidden="" id="inventoryAdminItemsModal">
+<div class="inventory-modal-backdrop" data-inventory-admin-close=""></div>
+<div aria-labelledby="inventoryAdminItemsTitle" aria-modal="true" class="inventory-modal-card" role="dialog">
+<div class="inventory-modal-head">
+<div><span class="inventory-modal-kicker">ADMIN ONLY</span><h3 id="inventoryAdminItemsTitle">INVENTORY CONTROL</h3></div>
+<button aria-label="Close" class="inventory-modal-close" data-inventory-admin-close="" type="button">×</button>
+</div>
+<form autocomplete="off" class="inventory-form" id="inventoryAdminItemForm">
+<input id="inventoryAdminEditingId" type="hidden" value=""/>
+<div class="inventory-form-grid">
+<label>ITEM NAME<input id="inventoryAdminName" maxlength="160" placeholder="e.g. New Reagent" required="" type="text"/></label>
+<label>CATEGORY<select id="inventoryAdminCategory" required=""><option value="BIOCHEMISTRY">BIOCHEMISTRY</option><option value="HAEMATOLOGY">HAEMATOLOGY</option><option value="MICROBIOLOGY">MICROBIOLOGY</option><option value="URINE/STOOL ANALYSIS">URINE / STOOL ANALYSIS</option><option value="ETC">ETC</option><option value="CONSUMABLES">CONSUMABLES</option><option value="OUTSOURCE INDENT">OUTSOURCE INDENT</option></select></label>
+</div>
+<div class="inventory-form-grid">
+<label>TYPE<input id="inventoryAdminType" maxlength="80" placeholder="REAGENT / CONSUMABLE" type="text"/></label>
+<label>PRICE / UNIT<input id="inventoryAdminPrice" min="0" placeholder="0.00" required="" step="0.01" type="number"/></label>
+</div>
+<div class="inventory-form-grid">
+<label>OPENING STOCK<input id="inventoryAdminOpening" min="0" placeholder="0" required="" step="1" type="number" value="0"/></label>
+<label>MINIMUM STOCK<input id="inventoryAdminMin" min="0" placeholder="1" required="" step="1" type="number" value="1"/></label>
+</div>
+<div class="inventory-form-message" id="inventoryAdminItemMessage"></div>
+<div class="inventory-form-actions"><button class="inventory-action-btn" id="inventoryAdminItemClearBtn" type="button">CLEAR</button><button class="inventory-action-btn primary" id="inventoryAdminItemSaveBtn" type="submit">ADD ITEM</button></div>
+</form>
+<div style="margin-top:16px;border-top:1px solid rgba(120,135,160,.14);padding-top:14px">
+<div class="inventory-modal-kicker" style="margin-bottom:8px">ITEM MASTER</div>
+<div id="inventoryAdminItemList"></div>
+</div>
+</div>
+</div>
+<div class="inventory-modal" hidden="" id="inventoryModal">
+<div class="inventory-modal-backdrop" data-inventory-close=""></div>
+<div aria-labelledby="inventoryModalTitle" aria-modal="true" class="inventory-modal-card" role="dialog">
+<div class="inventory-modal-head">
+<div><span class="inventory-modal-kicker">INVENTORY MOVEMENT</span><h3 id="inventoryModalTitle">STOCK IN</h3></div>
+<button aria-label="Close" class="inventory-modal-close" data-inventory-close="" type="button">×</button>
+</div>
+<form autocomplete="off" class="inventory-form" id="inventoryMovementForm">
+<input id="inventoryMovementType" type="hidden" value="IN"/>
+<input id="inventoryEditingId" type="hidden" value=""/>
+<label>ITEM<div class="inventory-custom-select" id="inventoryItemCustomWrap">
+<select aria-hidden="true" id="inventoryItemInput" tabindex="-1"></select>
+<button aria-expanded="false" aria-haspopup="listbox" class="inventory-custom-trigger" id="inventoryItemTrigger" type="button"><span id="inventoryItemTriggerText">Select item...</span><span class="inventory-custom-chevron">⌄</span></button>
+<div class="inventory-custom-menu" id="inventoryItemMenu" role="listbox" tabindex="-1"></div>
+</div></label>
+<div class="inventory-form-grid">
+<label>QUANTITY<input id="inventoryQtyInput" min="1" placeholder="e.g. 10" required="" step="1" type="number"/></label>
+<label>LOT NO.<input id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/></label>
+</div>
+<div class="inventory-form-grid">
+<label class="inventory-date-field">MOVEMENT DATE<input id="inventoryMovementDateInput" type="hidden"/><input aria-label="Movement date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryMovementDateVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" required="" type="text"/></label>
+<label class="inventory-date-field">EXPIRY<input id="inventoryExpiryInput" type="hidden"/><input aria-label="Expiry date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryExpiryVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" type="text"/></label>
+</div>
+<div class="inventory-form-grid">
+<label>STAFF<select id="inventoryStaffInput"></select></label>
+</div>
+<label hidden="" id="inventoryLotSelectWrap">STOCK OUT LOT<select id="inventoryLotSelect"></select></label>
+<label class="inventory-check" id="inventoryFefoWrap"><input aria-label="Auto FEFO (First Expired, First Out)" checked="" id="inventoryFefoInput" type="checkbox"/> AUTO FEFO — use earliest-expiry lot first</label>
+<label>NOTES<textarea id="inventoryNotesInput" maxlength="500" placeholder="Optional movement note..." rows="3"></textarea></label>
+<div aria-live="polite" class="inventory-form-message" id="inventoryFormMessage"></div>
+<div class="inventory-form-actions"><button class="inventory-action-btn" data-inventory-close="" type="button">CANCEL</button><button class="inventory-action-btn primary" id="inventorySubmitBtn" type="submit">SAVE STOCK IN</button></div>
+</form>
+</div>
+</div>
+<div class="inventory-record-modal" hidden="" id="inventoryRecordModal">
+<div class="inventory-modal-backdrop" data-inventory-record-close=""></div>
+<div aria-labelledby="inventoryRecordTitle" aria-modal="true" class="inventory-record-card" role="dialog">
+<div class="inventory-record-head">
+<div><span class="inventory-record-kicker">ITEM MOVEMENT RECORD</span><h3 id="inventoryRecordTitle">ITEM</h3><div class="inventory-record-sub" id="inventoryRecordSub">Inventory in / out history</div></div>
+<button aria-label="Close" class="inventory-record-close" data-inventory-record-close="" type="button">×</button>
+</div>
+<div class="inventory-record-summary" id="inventoryRecordSummary"></div>
+<div class="inventory-record-section-title">STOCK IN / STOCK OUT HISTORY</div>
+<div class="inventory-record-table-wrap" id="inventoryRecordTableWrap"></div>
+</div>
+</div>
+<section class="page" id="settings">
+<div class="page-scroll">
+<div class="single-panel">
+<div class="panel">
+<div class="content-inner">
+<div class="settings-standard-panel" id="settingsStandardPanel">
+<h3>SETTINGS</h3>
+<p>System information and configuration center for reviewing LabApp details, application settings,
+                      and operational controls.</p>
+<div class="settings-content-grid">
+<div class="setting-grid">
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"></path><path d="M16 9h3a2 2 0 0 1 2 2v10"></path><path d="M9 7h2M9 11h2M9 15h2M18 13h1M18 17h1"></path></svg></div><div><strong>App Name</strong><span>HOAG Pathology</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 8h8v8H8z"></path></svg></div><div><strong>App Type</strong><span>Laboratory Management System</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="10" cy="18" r="1"></circle></svg></div><div><strong>Department</strong><span>HOAG Pathology</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="14" rx="2" width="18" x="3" y="5"></rect><path d="M8 21h8M12 19v2"></path></svg></div><div><strong>Platform</strong><span>Android + Web + Windows</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v5l3 2"></path></svg></div><div><strong>Time Zone</strong><span>Asia/Kuala_Lumpur (GMT+8)</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">2.1.87</span></div></div>
+</div>
+<div class="settings-extra-grid">
+<button aria-label="Run system check" class="settings-extra-card settings-check-card" id="settingsSystemCheckButton" type="button"><div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="m8.5 12 2.2 2.2 4.8-5"></path></svg></div><div class="settings-extra-copy"><strong>System Check</strong><span>Check app, storage &amp; connection</span></div></button>
+<div class="settings-extra-card">
+<div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"></path></svg></div>
+<div class="settings-extra-copy"><strong>Data &amp; Sync</strong><span>Supabase + Vercel</span></div>
+</div>
+<div class="settings-extra-card">
+<div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path></svg></div>
+<div class="settings-extra-copy"><strong>About</strong><span>HOAG Pathology Application</span></div>
+</div>
+</div>
+<div class="settings-last-updated">Last Updated: <strong>21 October 2026</strong></div>
+</div>
+</div>
+<div class="settings-admin-panel" hidden="" id="settingsAdminPanel">
+<div class="admin-control-head">
+<div>
+<h3>ADMIN CONTROL</h3>
+<p>Password reset, broadcast announcement, user management, maintenance mode, and system logs.
+                        </p>
+</div>
+<div aria-live="polite" class="admin-control-status" id="adminControlStatus">Loading admin
+                        control...</div>
+</div>
+<div class="admin-control-grid">
+<div class="admin-control-column is-tools">
+<div class="admin-card-title">
+<strong>Admin Tools</strong><span>Users, notices, maintenance, and chat</span>
+</div>
+<div class="admin-control-tools">
+<form autocomplete="off" class="admin-control-card" id="adminResetForm">
+<div class="admin-card-title"><strong>Password Reset</strong><span>For any user</span></div>
+<div class="admin-form-grid">
+<select aria-label="Select user to reset" class="admin-select is-full" id="adminResetUser"></select>
+<input autocomplete="new-password" class="admin-input is-full" id="adminResetPassword" maxlength="200" placeholder="NEW PASSWORD" type="password">
+</div>
+<button class="admin-action-btn" type="submit">Reset Password</button>
+</form>
+<form autocomplete="off" class="admin-control-card" id="adminAddUserForm">
+<div class="admin-card-title"><strong>Add User</strong><span>Local auth store</span></div>
+<div class="admin-form-grid">
+<input autocapitalize="characters" class="admin-input" id="adminAddUsername" maxlength="60" placeholder="USERNAME" spellcheck="false" type="text">
+<input class="admin-input" id="adminAddDisplayName" maxlength="80" placeholder="DISPLAY NAME" type="text">
+<select class="admin-select" id="adminAddRole"><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select>
+<input autocomplete="new-password" class="admin-input" id="adminAddPassword" maxlength="200" placeholder="PASSWORD" type="password">
+</div>
+<button class="admin-action-btn" type="submit">Add User</button>
+</form>
+<form autocomplete="off" class="admin-control-card" id="adminBroadcastForm">
+<div class="admin-card-title">
+<strong>Broadcast Announcement</strong><span>Shown to team</span>
+</div>
+<textarea class="admin-textarea" id="adminBroadcastMessage" maxlength="600" placeholder="Type announcement. Leave blank to clear broadcast."></textarea>
+<button class="admin-action-btn" type="submit">Save Broadcast</button>
+</form>
+<form autocomplete="off" class="admin-control-card" id="adminMaintenanceForm">
+<div class="admin-card-title">
+<strong>Maintenance Mode</strong><span>Blocks non-admin login</span>
+</div>
+<label class="admin-toggle-row"><input aria-label="Enable maintenance mode" id="adminMaintenanceEnabled" type="checkbox"> Enable maintenance mode</label>
+<textarea class="admin-textarea" id="adminMaintenanceMessage" maxlength="300" placeholder="Maintenance message for users"></textarea>
+<button class="admin-action-btn" type="submit">Save Maintenance</button>
+</form>
+<div class="admin-control-card">
+<div class="admin-card-title">
+<strong>User Management</strong><span>Delete / active state</span>
+</div>
+<div aria-live="polite" class="admin-user-list" id="adminUserList">
+<div class="admin-log-row"><strong>Loading users...</strong></div>
+</div>
+</div>
+</div>
+</div>
+<div class="admin-control-column is-log">
+<div class="admin-card-title">
+<strong>Activity / System Log</strong><span id="adminSystemLogRetentionLabel">Detailed activity, device type, browser, and 14-day retention</span>
+</div>
+<div aria-live="polite" class="admin-log-list" id="adminSystemLog">
+<div class="admin-log-row"><strong>Loading logs...</strong></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+<div aria-live="polite" class="system-notice-toast is-hidden" id="systemNoticeToast" role="status">
+<strong id="systemNoticeTitle">Announcement</strong><span id="systemNoticeText"></span>
+</div>
+<div aria-describedby="idleWarningText" aria-labelledby="idleWarningTitle" aria-modal="true" class="app-modal-overlay is-hidden" id="idleWarningModal" role="alertdialog">
+<div class="app-modal">
+<strong id="idleWarningTitle">Session Timeout Warning</strong>
+<span id="idleWarningText">No activity detected. Touch or click anywhere to stay signed in. You will be signed out in about 1 minute.</span>
+</div>
+</div>
+<div aria-describedby="appConfirmText" aria-labelledby="appConfirmTitle" aria-modal="true" class="app-modal-overlay is-hidden" id="appConfirmModal" role="alertdialog">
+<div class="app-modal">
+<strong id="appConfirmTitle">Confirm Action</strong>
+<span id="appConfirmText">Are you sure?</span>
+<div class="app-modal-actions">
+<button class="app-modal-action is-danger" id="appConfirmYes" type="button">YES</button>
+<button class="app-modal-action" id="appConfirmCancel" type="button">CANCEL</button>
+</div>
+</div>
+</div>
+<div class="live-chat-message-menu" hidden="" id="liveChatMessageMenu">
+<div aria-label="React to message" class="live-chat-menu-reactions">
+<button data-chat-reaction="❤️" type="button">❤️</button>
+<button data-chat-reaction="👍" type="button">👍</button>
+<button data-chat-reaction="👎" type="button">👎</button>
+<button data-chat-reaction="🔥" type="button">🔥</button>
+<button data-chat-reaction="🥰" type="button">🥰</button>
+<button data-chat-reaction="👏" type="button">👏</button>
+<button data-chat-reaction="😁" type="button">😁</button>
+</div>
+<div class="live-chat-menu-action-group">
+<button class="live-chat-menu-action" id="liveChatReplyMessageBtn" type="button">Reply message</button>
+<button class="live-chat-menu-action" id="liveChatCopyMessageBtn" type="button">Copy message</button>
+<button class="live-chat-menu-action is-danger" id="liveChatDeleteMessageBtn" type="button">Delete message</button>
+</div>
+</div>
+<!-- +----------------------------------+
+       + CLIENT JAVASCRIPT RUNTIME        +
+       +----------------------------------+ -->
+<!-- +----------------------------------+
+     + CLIENT SCRIPT - ASSET LOADING    +
+     +----------------------------------+ -->
+<script src="/assets/js/app.js?v=login-v5"></script>
+
+</body>
+</html>
