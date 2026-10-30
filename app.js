@@ -1595,6 +1595,7 @@
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
+        bindPageLifecycle_();
         bindDashboardCards();
         loadDashboard();
         updateDisplayClock();
@@ -1868,7 +1869,14 @@
       var loginTimeoutTimer = null;
       var loginHardTimeoutTimer = null;
       var loginRequestId = 0;
+      /* Monotonic auth generation. Any login/logout invalidates older
+       * asynchronous session checks so a late response can never overwrite
+       * the identity that was established by the newest auth action. */
+      var authCheckGeneration_ = 0;
       var loginMfaRequired = false;
+      var TAB_AUTH_KEY = 'labAppTabAuthenticatedV1';
+      var pageLifecycleBound = false;
+      var pageLifecycleLogoutSent = false;
   
       /* +----------------------------------+
        * + cacheDomNodes                    +
@@ -2116,12 +2124,69 @@
       /* +----------------------------------+
        * + storeSession                     +
        * +----------------------------------+ */
+      /* +----------------------------------+
+       * + tab/session lifecycle             +
+       * +----------------------------------+ */
+      function hasTabAuthenticated_() {
+        return safeSessionGet(TAB_AUTH_KEY) === '1';
+      }
+
+      function markTabAuthenticated_() {
+        safeSessionSet(TAB_AUTH_KEY, '1');
+      }
+
+      function clearTabAuthenticated_() {
+        safeSessionRemove(TAB_AUTH_KEY);
+      }
+
+      function getNavigationType_() {
+        try {
+          var entry = window.performance && typeof window.performance.getEntriesByType === 'function'
+            ? window.performance.getEntriesByType('navigation')[0]
+            : null;
+          if (entry && entry.type) return String(entry.type);
+        } catch (error) {}
+        try {
+          if (window.performance && window.performance.navigation && Number(window.performance.navigation.type) === 1) return 'reload';
+        } catch (error) {}
+        return 'navigate';
+      }
+
+      function sendPageCloseLogout_() {
+        if (pageLifecycleLogoutSent || !hasTabAuthenticated_()) return;
+        if (getNavigationType_() === 'reload') return;
+        pageLifecycleLogoutSent = true;
+        clearTabAuthenticated_();
+        var clientInfo = typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo
+          ? ActivityTracker.getClientInfo({ page: 'page-close', reason: 'pagehide' })
+          : { page: 'page-close', reason: 'pagehide' };
+        try {
+          fetch('/api/logout', {
+            method: 'POST', credentials: 'include', cache: 'no-store', keepalive: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientInfo: clientInfo })
+          }).catch(function () {});
+        } catch (error) {}
+      }
+
+      function bindPageLifecycle_() {
+        if (pageLifecycleBound) return;
+        pageLifecycleBound = true;
+        window.addEventListener('pagehide', function (event) {
+          if (event && event.persisted) return;
+          sendPageCloseLogout_();
+        });
+        window.addEventListener('beforeunload', function () { sendPageCloseLogout_(); });
+      }
+
       function storeSession(envelope) {
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
         // Never persist or inspect the server session credential in JavaScript.
         safeSessionRemove(TOKEN_KEY);
         safeStorageRemove(TOKEN_KEY);
         storePublicAuthUser_(envelope);
+        markTabAuthenticated_();
+        pageLifecycleLogoutSent = false;
       }
   
       /* +----------------------------------+
@@ -2132,6 +2197,7 @@
         safeSessionRemove(USER_KEY);
         safeStorageRemove(TOKEN_KEY);
         safeStorageRemove(USER_KEY);
+        clearTabAuthenticated_();
       }
   
       /* +----------------------------------+
@@ -2171,36 +2237,35 @@
         }
         document.body.classList.add('visitor-read-only');
 
-        /* Main data-entry forms across Outsource, Inventory, Transfusion and roster. */
+        /* Main data-entry controls across every module. Do not scope these
+         * selectors to #moduleYearGrid because the Inventory forms live in
+         * dedicated modals outside that container. This was the reason some
+         * Visitor fields still looked editable and kept the default cursor. */
         document.querySelectorAll(
           '#moduleYearGrid .outsource-form input:not([type=hidden]),' +
           '#moduleYearGrid .outsource-form select,' +
           '#moduleYearGrid .outsource-form textarea,' +
           '#moduleYearGrid .outsource-form button,' +
-          '#moduleYearGrid .inventory-form input,' +
-          '#moduleYearGrid .inventory-form select,' +
-          '#moduleYearGrid .inventory-form textarea,' +
-          '#moduleYearGrid .inventory-form button,' +
-          '#moduleYearGrid .inventory-entry-form input,' +
-          '#moduleYearGrid .inventory-entry-form select,' +
-          '#moduleYearGrid .inventory-entry-form textarea,' +
-          '#moduleYearGrid .inventory-entry-form button,' +
-          '#moduleYearGrid #inventoryMovementForm input,' +
-          '#moduleYearGrid #inventoryMovementForm select,' +
-          '#moduleYearGrid #inventoryMovementForm textarea,' +
-          '#moduleYearGrid #inventoryMovementForm button,' +
-          '#moduleYearGrid #inventoryAdminItemForm input,' +
-          '#moduleYearGrid #inventoryAdminItemForm select,' +
-          '#moduleYearGrid #inventoryAdminItemForm textarea,' +
-          '#moduleYearGrid #inventoryAdminItemForm button,' +
-          '#moduleYearGrid .transfusion-card form input:not([type=hidden]),' +
-          '#moduleYearGrid .transfusion-card form select,' +
-          '#moduleYearGrid .transfusion-card form textarea,' +
-          '#moduleYearGrid .transfusion-card form button,' +
-          '#moduleYearGrid .outsource-result-modal input:not([type=hidden]),' +
-          '#moduleYearGrid .outsource-result-modal select,' +
-          '#moduleYearGrid .outsource-result-modal textarea,' +
-          '#moduleYearGrid .outsource-result-modal button,' +
+          '.outsource-form input:not([type=hidden]),' +
+          '.outsource-form select,' +
+          '.outsource-form textarea,' +
+          '.outsource-form button,' +
+          '.inventory-form input:not([type=hidden]),' +
+          '.inventory-form select,' +
+          '.inventory-form textarea,' +
+          '.inventory-form button,' +
+          '.inventory-entry-form input:not([type=hidden]),' +
+          '.inventory-entry-form select,' +
+          '.inventory-entry-form textarea,' +
+          '.inventory-entry-form button,' +
+          '#inventoryMovementForm input:not([type=hidden]),' +
+          '#inventoryMovementForm select,' +
+          '#inventoryMovementForm textarea,' +
+          '#inventoryMovementForm button,' +
+          '#inventoryAdminItemForm input:not([type=hidden]),' +
+          '#inventoryAdminItemForm select,' +
+          '#inventoryAdminItemForm textarea,' +
+          '#inventoryAdminItemForm button,' +
           '#dailyRosterList input,' +
           '#dailyRosterList select,' +
           '#dailyRosterList textarea,' +
@@ -2212,6 +2277,14 @@
           '#inventoryAdminItemsBtn,' +
           '#inventoryAdminItemList [data-admin-item-edit],' +
           '#inventoryAdminItemList [data-admin-item-delete],' +
+          '#inventoryItemTrigger,' +
+          '#inventoryStockInBtn,' +
+          '#inventoryStockOutBtn,' +
+          '#inventoryAdminItemsBtn,' +
+          '#inventoryAdminItemClearBtn,' +
+          '#inventoryAdminItemSaveBtn,' +
+          '#inventorySubmitBtn,' +
+          '#inventoryItemMenu button,' +
           '#moduleYearGrid [data-write-action],' +
           '#moduleYearGrid [data-action="edit"],' +
           '#moduleYearGrid [data-action="delete"],' +
@@ -2222,15 +2295,18 @@
          * native selects and otherwise can keep their click handler after the select
          * itself becomes disabled. */
         document.querySelectorAll(
-          '#moduleYearGrid .outsource-form .outsource-select-trigger,' +
-          '#moduleYearGrid .outsource-result-modal .outsource-select-trigger,' +
-          '#moduleYearGrid .inventory-form .inventory-filter-trigger,' +
-          '#moduleYearGrid .inventory-entry-form .inventory-filter-trigger'
+          '.outsource-form .outsource-select-trigger,' +
+          '.outsource-result-modal .outsource-select-trigger,' +
+          '#inventoryItemTrigger'
         ).forEach(markVisitorDisabled_);
 
         document.querySelectorAll(
           '#moduleYearGrid .outsource-form,' +
           '#moduleYearGrid .inventory-form,' +
+          '.inventory-form,' +
+          '.inventory-entry-form,' +
+          '#inventoryMovementForm,' +
+          '#inventoryAdminItemForm,' +
           '#moduleYearGrid .inventory-entry-form,' +
           '#moduleYearGrid #inventoryMovementForm,' +
           '#moduleYearGrid #inventoryAdminItemForm,' +
@@ -2267,8 +2343,8 @@
         }
       }, true);
       document.addEventListener('keydown', function(e) {
-        if (!isVisitorRole_) return;
-        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control') : null;
+        if (!isVisitorRole_()) return;
+        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, #inventoryItemTrigger') : null;
         if (target && !target.matches('[data-visitor-allow]')) {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -2395,9 +2471,11 @@
         var token = getStoredToken();
         if (document.hidden) return;
         if (!token || !state.authUserId || sessionCheckBusy) return;
+        var verificationGeneration = authCheckGeneration_;
         sessionCheckBusy = true;
         try {
           var envelope = await hoagApiRequest('loginState', {});
+          if (verificationGeneration !== authCheckGeneration_) return;
           if (!envelope || envelope.ok === false || !envelope.authenticated) {
             forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
             return;
@@ -2680,41 +2758,34 @@
       }
 
       function checkStoredSession() {
-        /* IMPORTANT: sessionStorage contains only a display cache. It must never
-         * decide who is logged in. On every page load/refresh, verify the
-         * HttpOnly session cookie with /api/login-state first, then render the
-         * returned user/role. This prevents a previous user's name/role from
-         * flashing or being used when another account owns the current cookie. */
+        /* New page/tab/app = login required. Refresh = current tab session may
+         * be restored after authoritative server verification. */
         updateResumeSessionButton_();
-
         var credentialsTouched = function () {
           return !!(
             (nodes.username && String(nodes.username.value || '').length) ||
             (nodes.password && String(nodes.password.value || '').length) ||
             (nodes.mfaCode && String(nodes.mfaCode.value || '').length) ||
-            busy ||
-            state.authUserId
+            busy || state.authUserId
           );
         };
-
+        if (!hasTabAuthenticated_()) {
+          setSessionVerifying_(false);
+          clearStoredSession();
+          showLoginPanel('', '');
+          return;
+        }
         setSessionVerifying_(true);
-
         hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
-              /* If the user has already started a fresh login, do not interrupt
-               * that login attempt with the startup check's unauthenticated
-               * result. */
               setSessionVerifying_(false);
               if (credentialsTouched()) return;
               clearStoredSession();
               showLoginPanel('', '');
               return;
             }
-
-            /* The server identity is authoritative. Replace any stale cached
-             * display identity before unlocking the application. */
-            storePublicAuthUser_(envelope);
+            storeSession(envelope);
             var restoredUser = envelope.user || {};
             applyUser(restoredUser);
             unlock(restoredUser, { freshLogin:false, restoredSession:true });
@@ -2722,11 +2793,9 @@
           .catch(function (error) {
             console.warn('Initial session verification failed:', error);
             setSessionVerifying_(false);
-            /* A temporary network failure must not erase credentials that the
-             * user has already entered. */
             if (credentialsTouched()) return;
             clearStoredSession();
-            showLoginPanel('', '');
+            showLoginPanel('Unable to verify the current session. Please sign in again.', 'error');
           });
       }
 
@@ -2742,6 +2811,9 @@
         if (event && typeof event.preventDefault === 'function') event.preventDefault();
         if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         if (busy) return;
+
+        /* A manual login supersedes any in-flight startup/session verification. */
+        authCheckGeneration_ += 1;
 
         var username = nodes.username ? nodes.username.value : '';
         var password = nodes.password ? nodes.password.value : '';
@@ -2940,6 +3012,8 @@
        * + logout                           +
        * +----------------------------------+ */
       function logout(message, type, reason) {
+        /* Invalidate all in-flight auth checks before changing the session. */
+        authCheckGeneration_ += 1;
         // The real credential lives in the HttpOnly cookie and is intentionally
         // not readable from JavaScript. Always call the logout endpoint so the
         // server can revoke the cookie-backed session.

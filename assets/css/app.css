@@ -11983,3 +11983,84 @@ body.visitor-read-only .visitor-disabled-control *,
 body.visitor-read-only .visitor-disabled-control svg {
   cursor: not-allowed !important;
 }
+
+
+/* V4 FIX — final compact year-card override. */
+:root {
+  --year-card-min-height: 96px !important;
+  --year-card-radius: 16px !important;
+  --year-card-padding: 8px !important;
+  --year-card-gap: 3px !important;
+  --year-card-icon-size: 26px !important;
+  --year-card-icon-font: 14px !important;
+  --year-card-title-size: 19px !important;
+}
+.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid),
+.leave-course-year-grid {
+  grid-template-rows: none !important;
+  grid-auto-rows: 96px !important;
+  align-content: start !important;
+  align-items: start !important;
+}
+.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid) .year-card,
+.leave-course-year-grid .leave-course-mini-year {
+  height: 96px !important;
+  min-height: 96px !important;
+  max-height: 96px !important;
+  padding: 8px !important;
+  border-radius: 16px !important;
+  gap: 3px !important;
+}
+
+/* V4 FIX — global Visitor cursor/grey treatment for inventory and other
+   data-entry controls that are outside #moduleYearGrid. */
+body.visitor-read-only .inventory-form input:not([type="hidden"]),
+body.visitor-read-only .inventory-form select,
+body.visitor-read-only .inventory-form textarea,
+body.visitor-read-only .inventory-form button,
+body.visitor-read-only .inventory-entry-form input:not([type="hidden"]),
+body.visitor-read-only .inventory-entry-form select,
+body.visitor-read-only .inventory-entry-form textarea,
+body.visitor-read-only .inventory-entry-form button,
+body.visitor-read-only #inventoryMovementForm input:not([type="hidden"]),
+body.visitor-read-only #inventoryMovementForm select,
+body.visitor-read-only #inventoryMovementForm textarea,
+body.visitor-read-only #inventoryMovementForm button,
+body.visitor-read-only #inventoryAdminItemForm input:not([type="hidden"]),
+body.visitor-read-only #inventoryAdminItemForm select,
+body.visitor-read-only #inventoryAdminItemForm textarea,
+body.visitor-read-only #inventoryAdminItemForm button,
+body.visitor-read-only #inventoryItemTrigger,
+body.visitor-read-only #inventoryStockInBtn,
+body.visitor-read-only #inventoryStockOutBtn,
+body.visitor-read-only #inventoryAdminItemsBtn,
+body.visitor-read-only #inventoryAdminItemClearBtn,
+body.visitor-read-only #inventoryAdminItemSaveBtn,
+body.visitor-read-only #inventorySubmitBtn {
+  background: #d9dee7 !important;
+  color: #7b8492 !important;
+  border-color: #c4cad4 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #7b8492 !important;
+}
+body.visitor-read-only input:disabled,
+body.visitor-read-only select:disabled,
+body.visitor-read-only textarea:disabled,
+body.visitor-read-only button:disabled,
+body.visitor-read-only .visitor-disabled-control,
+body.visitor-read-only .visitor-disabled-control *,
+body.visitor-read-only .visitor-disabled-control svg,
+body.visitor-read-only #inventoryItemTrigger,
+body.visitor-read-only #inventoryStockInBtn,
+body.visitor-read-only #inventoryStockOutBtn,
+body.visitor-read-only #inventoryAdminItemsBtn,
+body.visitor-read-only #inventoryAdminItemClearBtn,
+body.visitor-read-only #inventoryAdminItemSaveBtn,
+body.visitor-read-only #inventorySubmitBtn {
+  cursor: not-allowed !important;
+}
+body.visitor-read-only #inventoryItemMenu,
+body.visitor-read-only .inventory-custom-menu {
+  pointer-events: none !important;
+}

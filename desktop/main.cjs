@@ -76,6 +76,38 @@ function createWindow() {
     console.warn('Hoag Pathology desktop load failed:', errorCode, errorDescription);
   });
 
+  /* Desktop safety: revoke the server session before the Electron window closes.
+   * Renderer pagehide/beforeunload handles normal web-tab closure; this main-process
+   * fallback covers the native app X/close path as well. */
+  let closeLogoutInProgress = false;
+  win.on('close', (event) => {
+    if (closeLogoutInProgress) return;
+    closeLogoutInProgress = true;
+    event.preventDefault();
+
+    (async () => {
+      try {
+        const cookies = await session.defaultSession.cookies.get({ url });
+        const cookieHeader = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+        if (cookieHeader) {
+          await fetch(new URL('/api/logout', url), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Origin': allowedOrigin,
+              'Cookie': cookieHeader
+            },
+            body: JSON.stringify({ clientInfo: { page: 'desktop-close', reason: 'window-close' } })
+          });
+        }
+      } catch (error) {
+        console.warn('Desktop session logout failed during close:', error?.message || error);
+      } finally {
+        win.destroy();
+      }
+    })();
+  });
+
   win.loadURL(url);
 }
 
