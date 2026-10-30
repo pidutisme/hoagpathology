@@ -11947,28 +11947,6 @@ body.auth-verifying #dailyRosterList button {
   cursor: wait !important;
 }
 
-/* VISITOR — global fallback for every control that has actually been disabled.
-   This catches dynamically-generated or modal write controls that are outside the
-   main module container. */
-body.visitor-read-only input:disabled,
-body.visitor-read-only select:disabled,
-body.visitor-read-only textarea:disabled,
-body.visitor-read-only button:disabled,
-body.visitor-read-only input:disabled *,
-body.visitor-read-only select:disabled *,
-body.visitor-read-only textarea:disabled *,
-body.visitor-read-only button:disabled *,
-body.visitor-read-only input:disabled::before,
-body.visitor-read-only input:disabled::after,
-body.visitor-read-only select:disabled::before,
-body.visitor-read-only select:disabled::after,
-body.visitor-read-only textarea:disabled::before,
-body.visitor-read-only textarea:disabled::after,
-body.visitor-read-only button:disabled::before,
-body.visitor-read-only button:disabled::after {
-  cursor: not-allowed !important;
-}
-
 /* VISITOR — forbidden cursor on every disabled write control, including custom dropdown triggers. */
 body.visitor-read-only .visitor-disabled-control,
 body.visitor-read-only .visitor-read-only-form input:not([type="hidden"]),
@@ -11985,7 +11963,7 @@ body.visitor-read-only .visitor-disabled-control svg {
 }
 
 
-/* V4 FIX — final compact year-card override. */
+/* V4 FIXED V5 — compact year cards. */
 :root {
   --year-card-min-height: 96px !important;
   --year-card-radius: 16px !important;
@@ -11995,15 +11973,12 @@ body.visitor-read-only .visitor-disabled-control svg {
   --year-card-icon-font: 14px !important;
   --year-card-title-size: 19px !important;
 }
-.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid),
-.leave-course-year-grid {
-  grid-template-rows: none !important;
+.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid) {
   grid-auto-rows: 96px !important;
   align-content: start !important;
   align-items: start !important;
 }
-.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid) .year-card,
-.leave-course-year-grid .leave-course-mini-year {
+.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid) .year-card {
   height: 96px !important;
   min-height: 96px !important;
   max-height: 96px !important;
@@ -12012,8 +11987,7 @@ body.visitor-read-only .visitor-disabled-control svg {
   gap: 3px !important;
 }
 
-/* V4 FIX — global Visitor cursor/grey treatment for inventory and other
-   data-entry controls that are outside #moduleYearGrid. */
+/* Visitor: all write/data-entry controls are visibly disabled with a forbidden cursor. */
 body.visitor-read-only .inventory-form input:not([type="hidden"]),
 body.visitor-read-only .inventory-form select,
 body.visitor-read-only .inventory-form textarea,
@@ -12030,13 +12004,13 @@ body.visitor-read-only #inventoryAdminItemForm input:not([type="hidden"]),
 body.visitor-read-only #inventoryAdminItemForm select,
 body.visitor-read-only #inventoryAdminItemForm textarea,
 body.visitor-read-only #inventoryAdminItemForm button,
-body.visitor-read-only #inventoryItemTrigger,
 body.visitor-read-only #inventoryStockInBtn,
 body.visitor-read-only #inventoryStockOutBtn,
 body.visitor-read-only #inventoryAdminItemsBtn,
 body.visitor-read-only #inventoryAdminItemClearBtn,
 body.visitor-read-only #inventoryAdminItemSaveBtn,
-body.visitor-read-only #inventorySubmitBtn {
+body.visitor-read-only #inventorySubmitBtn,
+body.visitor-read-only #inventoryItemTrigger {
   background: #d9dee7 !important;
   color: #7b8492 !important;
   border-color: #c4cad4 !important;
@@ -12044,73 +12018,24 @@ body.visitor-read-only #inventorySubmitBtn {
   opacity: 1 !important;
   -webkit-text-fill-color: #7b8492 !important;
 }
-body.visitor-read-only input:disabled,
-body.visitor-read-only select:disabled,
-body.visitor-read-only textarea:disabled,
-body.visitor-read-only button:disabled,
 body.visitor-read-only .visitor-disabled-control,
 body.visitor-read-only .visitor-disabled-control *,
 body.visitor-read-only .visitor-disabled-control svg,
-body.visitor-read-only #inventoryItemTrigger,
-body.visitor-read-only #inventoryStockInBtn,
-body.visitor-read-only #inventoryStockOutBtn,
-body.visitor-read-only #inventoryAdminItemsBtn,
-body.visitor-read-only #inventoryAdminItemClearBtn,
-body.visitor-read-only #inventoryAdminItemSaveBtn,
-body.visitor-read-only #inventorySubmitBtn {
+body.visitor-read-only #inventoryStockInBtn *,
+body.visitor-read-only #inventoryStockOutBtn *,
+body.visitor-read-only #inventoryAdminItemsBtn *,
+body.visitor-read-only #inventoryItemTrigger * {
   cursor: not-allowed !important;
 }
-body.visitor-read-only #inventoryItemMenu,
-body.visitor-read-only .inventory-custom-menu {
-  pointer-events: none !important;
-}
 
-
-/* V4 FIX v3 — dashboard cards must remain interactive for every authenticated role.
-   Visitor read-only applies to data-entry/mutation controls only; navigation cards
-   are read access and must never inherit a disabled/pointer-events state. */
-body.auth-ready #dashboard .dashboard-card-interactive,
-body.auth-ready #dashboard .clickable-card,
+/* Navigation cards are always navigation/read controls, never Visitor write controls. */
 body.auth-ready #dashboard [data-dashboard-module] {
   pointer-events: auto !important;
   cursor: pointer !important;
-  opacity: 1 !important;
 }
-body.auth-ready #dashboard .dashboard-card-interactive *,
-body.auth-ready #dashboard .clickable-card * {
+body.auth-ready #dashboard [data-dashboard-module] * {
   pointer-events: none;
 }
-body.auth-ready #dashboard .dashboard-card-interactive,
-body.auth-ready #dashboard .clickable-card {
-  position: relative;
-  z-index: 2;
-}
-/* The verification shield is only allowed before authentication. */
-body.auth-ready.auth-verifying .app {
+body.auth-ready .app {
   pointer-events: auto !important;
-  opacity: 1 !important;
-  transform: none !important;
-  filter: none !important;
-}
-
-/* V4 FIX v4 — authenticated dashboard navigation is never blocked by the
-   session-verification visual shield. Data-entry restrictions remain scoped to
-   Visitor write controls only. */
-body.auth-ready #dashboard,
-body.auth-ready #dashboard .page-scroll,
-body.auth-ready #dashboard .dashboard-layout,
-body.auth-ready #dashboard .stats-row,
-body.auth-ready #dashboard .bottom-cards-row {
-  pointer-events: auto !important;
-}
-body.auth-ready #dashboard [data-dashboard-module].clickable-card,
-body.auth-ready #dashboard [data-dashboard-module].stat-card,
-body.auth-ready #dashboard [data-dashboard-module].bottom-card {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-  position: relative !important;
-  z-index: 20 !important;
-}
-body.auth-ready #dashboard [data-dashboard-module] > * {
-  pointer-events: none !important;
 }

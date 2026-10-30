@@ -1595,7 +1595,6 @@
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
-        bindPageLifecycle_();
         bindDashboardCards();
         loadDashboard();
         updateDisplayClock();
@@ -1869,10 +1868,6 @@
       var loginTimeoutTimer = null;
       var loginHardTimeoutTimer = null;
       var loginRequestId = 0;
-      /* Monotonic auth generation. Any login/logout invalidates older
-       * asynchronous session checks so a late response can never overwrite
-       * the identity that was established by the newest auth action. */
-      var authCheckGeneration_ = 0;
       var loginMfaRequired = false;
       var TAB_AUTH_KEY = 'labAppTabAuthenticatedV1';
       var pageLifecycleBound = false;
@@ -2154,17 +2149,19 @@
 
       function sendPageCloseLogout_() {
         if (pageLifecycleLogoutSent || !hasTabAuthenticated_()) return;
+        /* Refresh/reload must retain the current session. A genuine tab/app close
+         * is a non-reload unload and revokes the server session. */
         if (getNavigationType_() === 'reload') return;
         pageLifecycleLogoutSent = true;
         clearTabAuthenticated_();
-        var clientInfo = typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo
-          ? ActivityTracker.getClientInfo({ page: 'page-close', reason: 'pagehide' })
-          : { page: 'page-close', reason: 'pagehide' };
         try {
           fetch('/api/logout', {
-            method: 'POST', credentials: 'include', cache: 'no-store', keepalive: true,
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+            keepalive: true,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientInfo: clientInfo })
+            body: JSON.stringify({ clientInfo: { page: 'page-close', reason: 'pagehide' } })
           }).catch(function () {});
         } catch (error) {}
       }
@@ -2237,15 +2234,8 @@
         }
         document.body.classList.add('visitor-read-only');
 
-        /* Main data-entry controls across every module. Do not scope these
-         * selectors to #moduleYearGrid because the Inventory forms live in
-         * dedicated modals outside that container. This was the reason some
-         * Visitor fields still looked editable and kept the default cursor. */
+        /* Main data-entry forms across Outsource, Inventory, Transfusion and roster. */
         document.querySelectorAll(
-          '#moduleYearGrid .outsource-form input:not([type=hidden]),' +
-          '#moduleYearGrid .outsource-form select,' +
-          '#moduleYearGrid .outsource-form textarea,' +
-          '#moduleYearGrid .outsource-form button,' +
           '.outsource-form input:not([type=hidden]),' +
           '.outsource-form select,' +
           '.outsource-form textarea,' +
@@ -2266,6 +2256,14 @@
           '#inventoryAdminItemForm select,' +
           '#inventoryAdminItemForm textarea,' +
           '#inventoryAdminItemForm button,' +
+          '.transfusion-card form input:not([type=hidden]),' +
+          '.transfusion-card form select,' +
+          '.transfusion-card form textarea,' +
+          '.transfusion-card form button,' +
+          '.outsource-result-modal input:not([type=hidden]),' +
+          '.outsource-result-modal select,' +
+          '.outsource-result-modal textarea,' +
+          '.outsource-result-modal button,' +
           '#dailyRosterList input,' +
           '#dailyRosterList select,' +
           '#dailyRosterList textarea,' +
@@ -2275,16 +2273,11 @@
           '#inventoryStockInBtn,' +
           '#inventoryStockOutBtn,' +
           '#inventoryAdminItemsBtn,' +
-          '#inventoryAdminItemList [data-admin-item-edit],' +
-          '#inventoryAdminItemList [data-admin-item-delete],' +
-          '#inventoryItemTrigger,' +
-          '#inventoryStockInBtn,' +
-          '#inventoryStockOutBtn,' +
-          '#inventoryAdminItemsBtn,' +
           '#inventoryAdminItemClearBtn,' +
           '#inventoryAdminItemSaveBtn,' +
           '#inventorySubmitBtn,' +
-          '#inventoryItemMenu button,' +
+          '#inventoryAdminItemList [data-admin-item-edit],' +
+          '#inventoryAdminItemList [data-admin-item-delete],' +
           '#moduleYearGrid [data-write-action],' +
           '#moduleYearGrid [data-action="edit"],' +
           '#moduleYearGrid [data-action="delete"],' +
@@ -2297,21 +2290,18 @@
         document.querySelectorAll(
           '.outsource-form .outsource-select-trigger,' +
           '.outsource-result-modal .outsource-select-trigger,' +
-          '#inventoryItemTrigger'
+          '.inventory-form .inventory-filter-trigger,' +
+          '.inventory-entry-form .inventory-filter-trigger'
         ).forEach(markVisitorDisabled_);
 
         document.querySelectorAll(
-          '#moduleYearGrid .outsource-form,' +
-          '#moduleYearGrid .inventory-form,' +
+          '.outsource-form,' +
           '.inventory-form,' +
           '.inventory-entry-form,' +
           '#inventoryMovementForm,' +
           '#inventoryAdminItemForm,' +
-          '#moduleYearGrid .inventory-entry-form,' +
-          '#moduleYearGrid #inventoryMovementForm,' +
-          '#moduleYearGrid #inventoryAdminItemForm,' +
-          '#moduleYearGrid .transfusion-card form,' +
-          '#moduleYearGrid .outsource-result-modal .outsource-result-dialog,' +
+          '.transfusion-card form,' +
+          '.outsource-result-modal .outsource-result-dialog,' +
           '#dailyRosterList'
         ).forEach(function(root) {
           root.classList.add('visitor-read-only-form');
@@ -2336,7 +2326,7 @@
        * was resolved. The capture handler also covers dynamically-created controls. */
       document.addEventListener('click', function(e) {
         if (!isVisitorRole_()) return;
-        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, [data-write-action], [data-action="edit"], [data-action="delete"], [data-action="save"], #inventoryStockInBtn, #inventoryStockOutBtn, #inventoryAdminItemsBtn') : null;
+        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, [data-write-action], [data-action="edit"], [data-action="delete"], [data-action="save"], #inventoryStockInBtn, #inventoryStockOutBtn, #inventoryAdminItemsBtn, #inventoryItemTrigger') : null;
         if (target && !target.matches('[data-visitor-allow]')) {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -2344,7 +2334,7 @@
       }, true);
       document.addEventListener('keydown', function(e) {
         if (!isVisitorRole_()) return;
-        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, #inventoryItemTrigger') : null;
+        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control') : null;
         if (target && !target.matches('[data-visitor-allow]')) {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -2471,11 +2461,9 @@
         var token = getStoredToken();
         if (document.hidden) return;
         if (!token || !state.authUserId || sessionCheckBusy) return;
-        var verificationGeneration = authCheckGeneration_;
         sessionCheckBusy = true;
         try {
           var envelope = await hoagApiRequest('loginState', {});
-          if (verificationGeneration !== authCheckGeneration_) return;
           if (!envelope || envelope.ok === false || !envelope.authenticated) {
             forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
             return;
@@ -2758,8 +2746,8 @@
       }
 
       function checkStoredSession() {
-        /* New page/tab/app = login required. Refresh = current tab session may
-         * be restored after authoritative server verification. */
+        /* New page/tab/app instance = login required. Refresh = current tab
+         * session may be restored after authoritative server verification. */
         updateResumeSessionButton_();
         var credentialsTouched = function () {
           return !!(
@@ -2811,9 +2799,6 @@
         if (event && typeof event.preventDefault === 'function') event.preventDefault();
         if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         if (busy) return;
-
-        /* A manual login supersedes any in-flight startup/session verification. */
-        authCheckGeneration_ += 1;
 
         var username = nodes.username ? nodes.username.value : '';
         var password = nodes.password ? nodes.password.value : '';
@@ -3012,8 +2997,6 @@
        * + logout                           +
        * +----------------------------------+ */
       function logout(message, type, reason) {
-        /* Invalidate all in-flight auth checks before changing the session. */
-        authCheckGeneration_ += 1;
         // The real credential lives in the HttpOnly cookie and is intentionally
         // not readable from JavaScript. Always call the logout endpoint so the
         // server can revoke the cookie-backed session.
@@ -3042,6 +3025,7 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
+        bindPageLifecycle_();
         if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         // Remove any credentials left by pre-HttpOnly builds.
         safeStorageRemove(TOKEN_KEY);
