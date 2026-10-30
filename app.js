@@ -1847,7 +1847,7 @@
     var Auth = (function () {
       var HTTPONLY_SESSION_SENTINEL = '__HTTPONLY_SESSION__';
       var TOKEN_KEY = 'labAppAuthTokenV1';
-      var USER_KEY = 'labAppAuthUserV1';
+      var USER_KEY = 'labAppAuthUserV2';
       var UPDATE_BYPASS_KEY = 'labAppUpdateInProgressV1';
       var UPDATE_BYPASS_USER_KEY = 'labAppUpdateUserV1';
       var IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -2137,123 +2137,93 @@
       /* +----------------------------------+
        * + applyUser                        +
        * +----------------------------------+ */
-      function isVisitorRole() { return String(state.authRole || '').toUpperCase() === 'VISITOR'; }
-      function canModifyData() { return !isVisitorRole(); }
-      function applyVisitorUi() {
-        var visitor = isVisitorRole();
-        document.documentElement.classList.toggle('visitor-mode', visitor);
-        if (!document.getElementById('visitorModeStyle')) {
-          var style = document.createElement('style');
-          style.id = 'visitorModeStyle';
-          style.textContent = [
-            '.visitor-mode #inventoryStockInBtn,.visitor-mode #inventoryStockOutBtn,.visitor-mode #inventoryAdminItemsBtn,.visitor-mode #outsourceForm,.visitor-mode #transfusionForm,.visitor-mode .calendar-toolbar-btn{display:none!important}',
-            '.visitor-mode .outsource-mini,.visitor-mode .inventory-history-edit-btn,.visitor-mode .inventory-history-delete-btn,.visitor-mode .outsource-actions{display:none!important}',
-            '.visitor-mode #dailyRosterList [data-field],.visitor-mode #dailyRosterList [data-roster-action]{pointer-events:none!important}',
-            '.visitor-mode #dailyRosterList input,.visitor-mode #dailyRosterList select,.visitor-mode #dailyRosterList textarea{user-select:none!important;background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;opacity:.78!important;pointer-events:none!important}',
-            '.visitor-mode #dailyRosterList button[data-roster-action],.visitor-mode #dailyRosterList .daily-roster-assign-btn,.visitor-mode #dailyRosterList .roster-delete-btn{visibility:hidden!important;pointer-events:none!important}',
-            '.visitor-mode #outsourceForm input,.visitor-mode #outsourceForm select,.visitor-mode #outsourceForm textarea,.visitor-mode #transfusionForm input,.visitor-mode #transfusionForm select,.visitor-mode #transfusionForm textarea,.visitor-mode #inventoryMovementForm input,.visitor-mode #inventoryMovementForm select,.visitor-mode #inventoryMovementForm textarea,.visitor-mode #inventoryAdminItemForm input,.visitor-mode #inventoryAdminItemForm select,.visitor-mode #inventoryAdminItemForm textarea{background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;opacity:.78!important}',
-            '.visitor-mode #outsourceForm,.visitor-mode #transfusionForm,.visitor-mode #inventoryMovementForm,.visitor-mode #inventoryAdminItemForm{opacity:.92!important}',
-            '.visitor-mode form[data-write-form] input,.visitor-mode form[data-write-form] select,.visitor-mode form[data-write-form] textarea,.visitor-mode form[data-write-form] button[type="submit"]{background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;opacity:.78!important}',
-            '.visitor-mode [contenteditable="true"]{background:#e5e7eb!important;color:#6b7280!important;border-color:#d1d5db!important;cursor:not-allowed!important;pointer-events:none!important;opacity:.78!important}'
-          ].join('');
-          document.head.appendChild(style);
-        }
-
-        // Hard-lock every known data-entry control in the UI.  Search/filter controls
-        // remain usable, but anything that can create/edit/delete application data is
-        // disabled for VISITOR even if a section was rendered dynamically after login.
-        var writeSelectors = [
-          '#dailyRosterList [data-field]',
-          '#dailyRosterList [data-roster-action]',
-          '#inventoryMovementForm input:not([type="hidden"]),#inventoryMovementForm select,#inventoryMovementForm textarea,#inventoryMovementForm button[type="submit"]',
-          '#inventoryAdminItemForm input:not([type="hidden"]),#inventoryAdminItemForm select,#inventoryAdminItemForm textarea,#inventoryAdminItemForm button[type="submit"]',
-          '#outsourceForm input,#outsourceForm select,#outsourceForm textarea,#outsourceForm button[type="submit"]',
-          '#transfusionForm input,#transfusionForm select,#transfusionForm textarea,#transfusionForm button[type="submit"]',
-          '#transfusionRemarksModal input,#transfusionRemarksModal select,#transfusionRemarksModal textarea,#transfusionRemarksModal button[id$="Save"]'
-        ].join(',');
-        function lockVisitorControls(root) {
-          if (!visitor || !root) return;
-          var scope = root.querySelectorAll ? root : document;
-          var selectors = [
-            writeSelectors,
-            '#outsourceForm input,#outsourceForm select,#outsourceForm textarea,#outsourceForm button[type="submit"]',
-            '#transfusionForm input,#transfusionForm select,#transfusionForm textarea,#transfusionForm button[type="submit"]',
-            '#inventoryMovementForm input:not([type="hidden"]),#inventoryMovementForm select,#inventoryMovementForm textarea,#inventoryMovementForm button[type="submit"]',
-            '#inventoryAdminItemForm input:not([type="hidden"]),#inventoryAdminItemForm select,#inventoryAdminItemForm textarea,#inventoryAdminItemForm button[type="submit"]',
-            '#transfusionRemarksModal input,#transfusionRemarksModal select,#transfusionRemarksModal textarea,#transfusionRemarksModal button[id$="Save"]',
-            '[contenteditable="true"]'
-          ].join(',');
-          scope.querySelectorAll(selectors).forEach(function (el) {
-            if (el.closest && el.closest('#loginForm')) return;
-            el.disabled = true;
-            el.readOnly = true;
-            el.setAttribute('aria-disabled', 'true');
-            el.setAttribute('data-visitor-locked', '1');
-            el.tabIndex = -1;
-          });
-        }
-
-        lockVisitorControls(document);
-
-        if (visitor && !document.documentElement.dataset.visitorObserver) {
-          document.documentElement.dataset.visitorObserver = '1';
-          var visitorObserver = new MutationObserver(function (mutations) {
-            mutations.forEach(function (mutation) {
-              Array.prototype.forEach.call(mutation.addedNodes || [], function (node) {
-                if (node && node.nodeType === 1) lockVisitorControls(node);
-              });
-            });
-          });
-          visitorObserver.observe(document.body, { childList: true, subtree: true });
-        }
-
-        if (visitor && !document.documentElement.dataset.visitorWriteGuard) {
-          document.documentElement.dataset.visitorWriteGuard = '1';
-          document.addEventListener('input', function (event) {
-            if (!isVisitorRole()) return;
-            if (event.target && event.target.closest(writeSelectors)) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-              if (event.target.matches('input,textarea')) event.target.blur();
-              alert('Visitor access is read-only.');
-            }
-          }, true);
-          document.addEventListener('change', function (event) {
-            if (!isVisitorRole()) return;
-            if (event.target && event.target.closest(writeSelectors)) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-              alert('Visitor access is read-only.');
-            }
-          }, true);
-          document.addEventListener('submit', function (event) {
-            if (!isVisitorRole()) return;
-            var form = event.target;
-            if (form && /^(inventoryMovementForm|inventoryAdminItemForm|outsourceForm|transfusionForm)$/.test(form.id || '')) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-              alert('Visitor access is read-only.');
-            }
-          }, true);
-          document.addEventListener('click', function (event) {
-            if (!isVisitorRole()) return;
-            var target = event.target && event.target.closest('[data-roster-action],#inventorySubmitBtn,#inventoryAdminItemSaveBtn,#outsourceSaveBtn,#outsourceResultSave,#trSave,#transfusionRemarksSave,[data-inventory-edit-id],[data-inventory-delete-id],[data-outsource-action]');
-            if (target) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-              alert('Visitor access is read-only.');
-            }
-          }, true);
-        }
-      }
-
       function applyUser(user) {
         user = normalizePublicAuthUser_(user) || {};
         state.authUserId = cleanText(user.id);
         state.authUserDisplayName = cleanText(user.name || user.id || 'Team Member') || 'Team Member';
         state.authRole = cleanText(user.role || 'USER') || 'USER';
-        applyVisitorUi();
   
+      }
+
+      /* VISITOR is a hard read-only UI role. Modules rebuild their forms dynamically,
+       * so this enforcement is global, idempotent and backed by MutationObserver.
+       * Search/filter controls remain usable; data-entry and mutation controls do not. */
+      var visitorReadOnlyObserver_ = null;
+      var visitorReadOnlyQueued_ = false;
+      function isVisitorRole_() {
+        return String(state.authRole || '').trim().toUpperCase() === 'VISITOR';
+      }
+      function applyVisitorReadOnly_() {
+        if (!isVisitorRole_()) {
+          document.body.classList.remove('visitor-read-only');
+          return;
+        }
+        document.body.classList.add('visitor-read-only');
+        var roots = document.querySelectorAll(
+          '#moduleYearGrid .outsource-form,' +
+          '#moduleYearGrid .outsource-form-actions,' +
+          '#moduleYearGrid .outsource-register .outsource-card:first-child,' +
+          '#moduleYearGrid .outsource-result-modal .outsource-result-dialog,' +
+          '#moduleYearGrid .inventory-form,' +
+          '#moduleYearGrid .inventory-entry-form,' +
+          '#moduleYearGrid #inventoryMovementForm,' +
+          '#moduleYearGrid #inventoryAdminItemForm,' +
+          '#moduleYearGrid .transfusion-card form,' +
+          '#dailyRosterList,' +
+          '#moduleYearGrid form[data-write-form],' +
+          '#moduleYearGrid [data-write-form]'
+        );
+        roots.forEach(function(root) {
+          root.querySelectorAll('input:not([type=hidden]), select, textarea, button').forEach(function(el) {
+            if (el.matches('[data-visitor-allow]')) return;
+            el.disabled = true;
+            el.setAttribute('aria-disabled', 'true');
+            el.classList.add('visitor-disabled-control');
+          });
+          root.classList.add('visitor-read-only-form');
+        });
+        document.querySelectorAll(
+          '#moduleYearGrid .outsource-data-row button,'+
+          '#moduleYearGrid .outsource-action-btn,'+
+          '#moduleYearGrid [data-action="edit"],'+
+          '#moduleYearGrid [data-action="delete"],'+
+          '#moduleYearGrid [data-action="save"],'+
+          '#moduleYearGrid [data-write-action]'
+        ).forEach(function(el) {
+
+        document.querySelectorAll(
+          '#dailyRosterList [data-field],'+
+          '#dailyRosterList [data-roster-action],'+
+          '.calendar-toolbar-btn,'+
+          '[data-roster-clear],'+
+          '#inventoryStockInBtn,'+
+          '#inventoryStockOutBtn,'+
+          '#inventoryAdminItemsBtn,'+
+          '#inventoryAdminItemForm button,'+
+          '#inventoryAdminItemList [data-admin-item-edit],'+
+          '#inventoryAdminItemList [data-admin-item-delete]'
+        ).forEach(function(el) {
+          el.disabled = true;
+          el.setAttribute('aria-disabled', 'true');
+          el.classList.add('visitor-disabled-control');
+        });
+          el.disabled = true;
+          el.setAttribute('aria-disabled', 'true');
+          el.classList.add('visitor-disabled-control');
+        });
+      }
+      function queueVisitorReadOnly_() {
+        if (!isVisitorRole_() || visitorReadOnlyQueued_) return;
+        visitorReadOnlyQueued_ = true;
+        window.setTimeout(function() {
+          visitorReadOnlyQueued_ = false;
+          applyVisitorReadOnly_();
+        }, 0);
+      }
+      function startVisitorReadOnlyObserver_() {
+        if (visitorReadOnlyObserver_ || !window.MutationObserver || !document.body) return;
+        visitorReadOnlyObserver_ = new MutationObserver(function() { queueVisitorReadOnly_(); });
+        visitorReadOnlyObserver_.observe(document.body, { childList: true, subtree: true });
       }
   
       /* +----------------------------------+
@@ -2572,6 +2542,7 @@
         state.authUserId = '';
         state.authUserDisplayName = '';
         state.authRole = '';
+        document.body.classList.remove('visitor-read-only');
   
         if (!preserveActiveLogin) resetAuthForms();
         showLoginPanel(message || '', type || (message ? 'error' : ''));
@@ -2587,6 +2558,8 @@
         Theme.activateForApp();
         document.body.classList.remove('auth-locked');
         document.body.classList.add('auth-ready');
+        startVisitorReadOnlyObserver_();
+        applyVisitorReadOnly_();
   
         if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
         if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
@@ -2595,6 +2568,7 @@
         setLoginMessage('', '');
         updateResumeSessionButton_();
   
+        setSessionVerifying_(false);
         startSessionControls();
         afterAuthPaint_(function () {
           runPostUnlockWork_(options);
@@ -2637,14 +2611,34 @@
       /* +----------------------------------+
        * + checkStoredSession               +
        * +----------------------------------+ */
+      function setSessionVerifying_(verifying) {
+        var active = !!verifying;
+        document.body.classList.toggle('auth-verifying', active);
+        if (nodes.app) {
+          if (active) nodes.app.setAttribute('aria-busy', 'true');
+          else nodes.app.removeAttribute('aria-busy');
+        }
+
+        /* A refresh must NEVER expose the last page/session identity while the
+         * HttpOnly cookie is being checked. The server response is the only
+         * authoritative source for the current user and role. */
+        if (active) {
+          document.body.classList.add('auth-locked');
+          document.body.classList.remove('auth-ready');
+          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'true');
+          if (nodes.screen) nodes.screen.removeAttribute('hidden');
+          if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
+        }
+      }
+
       function checkStoredSession() {
-        /* Do not let the asynchronous startup session check wipe credentials
-         * that the user has already started typing. A previous implementation
-         * called lock() when the initial /api/login-state request completed;
-         * lock() resets the login form, so a slow network response could erase
-         * the username/password while the user was signing in. */
+        /* IMPORTANT: sessionStorage contains only a display cache. It must never
+         * decide who is logged in. On every page load/refresh, verify the
+         * HttpOnly session cookie with /api/login-state first, then render the
+         * returned user/role. This prevents a previous user's name/role from
+         * flashing or being used when another account owns the current cookie. */
         updateResumeSessionButton_();
-        var hasPageSession = !!getStoredPublicUser_();
+
         var credentialsTouched = function () {
           return !!(
             (nodes.username && String(nodes.username.value || '').length) ||
@@ -2655,67 +2649,36 @@
           );
         };
 
-        if (!hasPageSession) {
-          // A brand-new page starts in the login state. Do not make a network
-          // request here: there is no page-session identity to restore, and an
-          // asynchronous session check can race the user's first keystroke and
-          // reset the form. The login endpoint is authoritative when the user
-          // submits credentials.
-          return;
-        }
+        setSessionVerifying_(true);
 
-        // A verified page-session marker means this is a refresh/reload of the
-        // same page session. Keep the current page visible while the HttpOnly
-        // cookie is re-verified so the login screen never flashes on refresh.
-        document.body.classList.remove('auth-locked');
-        document.body.classList.add('auth-ready');
-        if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
-        if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
-
-        hoagApiRequest('loginState', { freshSession: !hasPageSession })
+        hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
-              // Never reset an active login attempt because the startup check
-              // finished late. Let submitLogin own the login form lifecycle.
+              /* If the user has already started a fresh login, do not interrupt
+               * that login attempt with the startup check's unauthenticated
+               * result. */
+              setSessionVerifying_(false);
               if (credentialsTouched()) return;
               clearStoredSession();
-              lock('', '');
+              showLoginPanel('', '');
               return;
             }
+
+            /* The server identity is authoritative. Replace any stale cached
+             * display identity before unlocking the application. */
             storePublicAuthUser_(envelope);
-            var restoredUser = envelope.user || getStoredPublicUser_() || {};
+            var restoredUser = envelope.user || {};
             applyUser(restoredUser);
             unlock(restoredUser, { freshLogin:false, restoredSession:true });
           })
           .catch(function (error) {
             console.warn('Initial session verification failed:', error);
-            // A temporary startup/network failure must not clear credentials the
-            // user has already entered. Keep the login panel intact and allow
-            // submitLogin to report the real authentication result.
+            setSessionVerifying_(false);
+            /* A temporary network failure must not erase credentials that the
+             * user has already entered. */
             if (credentialsTouched()) return;
             clearStoredSession();
-            lock('', '');
-          });
-      }
-
-      /* +----------------------------------+
-       * + verifyStoredSessionInBackground_ +
-       * +----------------------------------+ */
-      function verifyStoredSessionInBackground_(token) {
-        if (!state.authUserId) return;
-        hoagApiRequest('loginState', {})
-          .then(function (envelope) {
-            if (!envelope || envelope.ok === false || !envelope.authenticated) {
-              forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
-              return;
-            }
-            storePublicAuthUser_(envelope);
-            var restoredUser = envelope.user || getStoredPublicUser_() || {};
-            applyUser(restoredUser);
-            unlock(restoredUser, { freshLogin:false, restoredSession:true });
-          })
-          .catch(function (error) {
-            console.warn('Saved session verification temporarily unavailable:', error);
+            showLoginPanel('', '');
           });
       }
 
@@ -2957,6 +2920,7 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
+        if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         // Remove any credentials left by pre-HttpOnly builds.
         safeStorageRemove(TOKEN_KEY);
         safeStorageRemove(USER_KEY);
@@ -3046,6 +3010,9 @@ hoagApiRequest('logout', {
         },
         getUserName: function () {
           return state.authUserDisplayName || '';
+        },
+        isVisitor: function () {
+          return isVisitorRole_();
         }
       };
     })();
@@ -3317,8 +3284,6 @@ hoagApiRequest('logout', {
         if(selected)sel.value=selected;
       }
       function outsourceAdminAllowed(){ return String(state.authRole||'').toUpperCase()==='ADMIN'; }
-      function isVisitor(){ return String(state.authRole||'').toUpperCase()==='VISITOR'; }
-      function canModifyData(){ return !isVisitor(); }
       function outsourceAdminToken(){ return (typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():''; }
       function mergeOutsourceCatalog(remote){
         remote=remote&&typeof remote==='object'?remote:{};
@@ -3608,7 +3573,7 @@ hoagApiRequest('logout', {
         }
         var rowNum = typeof index === 'number' ? (index + 1) : '';
         return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'" title="Double-click Notes to edit notes">'+
-          '<td>'+rowNum+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(displaySex)+'</td><td>'+outsourceEsc(displayAge)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td class="outsource-notes-cell" data-notes-id="'+outsourceEsc(r.id)+'" title="Double-click to edit notes">'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions">'+(canModifyData()?'<button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button>':'<span class="inventory-muted">VIEW ONLY</span>')+'</div></td></tr>';
+          '<td>'+rowNum+'</td><td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(displaySex)+'</td><td>'+outsourceEsc(displayAge)+'</td><td>'+outsourceEsc(r.unit)+'</td><td>'+outsourceEsc(r.dispatchDate)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td>'+outsourceEsc(r.resultDate)+'</td><td>'+outsourceEsc(r.referenceNo)+'</td><td>'+outsourceEsc(r.rejectReason)+'</td><td class="outsource-notes-cell" data-notes-id="'+outsourceEsc(r.id)+'" title="Double-click to edit notes">'+outsourceEsc(r.notes)+'</td><td><div class="outsource-actions"><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
@@ -3934,7 +3899,6 @@ hoagApiRequest('logout', {
         }
       }
       function editOutsourceSample(id){
-        if(!canModifyData()){return;}
         var r=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
         $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';populateOutsourceTests(r.test||'');$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
         var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
@@ -3953,13 +3917,11 @@ hoagApiRequest('logout', {
       }
       function closeOutsourceResultModal(){var m=$('outsourceResultModal');if(m)m.hidden=true;window.__outsourceResultEditId='';}
       function saveOutsourceResult(){
-        if(!canModifyData()){alert('Visitor access is read-only.');return;}
         var id=String(window.__outsourceResultEditId||'');if(!id)return;var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
         r.result=String($('outsourceModalResult').value||'PENDING');r.resultDate=String($('outsourceModalResultDate').value||'');r.referenceNo=String($('outsourceModalReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String($('outsourceModalRejectReason').value||'').trim():'';r.notes=String($('outsourceModalNotes').value||'').trim();r.updatedAt=new Date().toISOString();
         if(typeof OutSource!=='undefined'&&OutSource.upsertSample)OutSource.upsertSample(r); invalidateOutsourceRowsCache(); closeOutsourceResultModal(); renderOutsourceRows();
       }
       function deleteOutsourceSample(id){
-        if(!canModifyData()){alert('Visitor access is read-only.');return;}
         var r=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});
         if(!r)return;
         if(typeof OutSource==='undefined'||typeof OutSource.deleteSample!=='function'){alert('Delete function is unavailable.');return;}
@@ -5558,7 +5520,6 @@ hoagApiRequest('logout', {
        * + saveRosterRows                   +
        * +----------------------------------+ */
       function saveRosterRows(rows, options) {
-        if(isVisitorRole()){alert('Visitor access is read-only.');return Promise.resolve(false);}
         var store = readAllLocalRoster();
         var selectedKey = dateKey(state.selectedDate);
         var grouped = {};
@@ -9038,7 +8999,7 @@ function exportMonthlySchedulePdfs() {
         if(stReject)stReject.textContent=String(rejectCount);
         var q=String(search&&search.value||'').trim().toLowerCase(), y=String(yf&&yf.value||'ALL'), m=String(mf&&mf.value||'ALL'), statusFilter=String(sf&&sf.value||'ALL').toUpperCase();
         var rows=all.filter(function(r){var date=String(r.date||'');var st=String(r.remarks||'PENDING').trim().toUpperCase()||'PENDING';return (!q||[r.name,r.idIc,r.packNo,r.staff,r.bloodGroup,r.remarks,r.notes].join(' ').toLowerCase().indexOf(q)>=0) && (y==='ALL'||date.slice(0,4)===y) && (m==='ALL'||date.slice(5,7)===m) && (statusFilter==='ALL'||st===statusFilter);}).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))||String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});
-        body.innerHTML=rows.map(function(r,i){var drive=String(r.googleDriveLink||r.fileLink||'').trim();return '<tr class="outsource-data-row transfusion-data-row" data-transfusion-row-id="'+esc(r.id)+'" title="Click any part of this row to view status, remarks and notes"><td>'+String(i+1)+'</td><td>'+esc(displayDate(r.date))+'</td><td><strong>'+esc(r.name)+'</strong></td><td>'+esc(r.idIc)+'</td><td>'+esc(r.sex)+'</td><td>'+esc(r.age)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.bloodGroup)+'</td><td>'+esc(r.packNo)+'</td><td>'+esc(r.staff)+'</td><td class="outsource-result transfusion-remarks-cell" data-transfusion-remarks-id="'+esc(r.id)+'" title="Click to view/edit remarks and notes">'+(function(){var st=String(r.remarks||'PENDING').trim().toUpperCase()||'PENDING';if(st==='COMPLETED')return '<span class="outsource-result-pill done transfusion-status-pill status-done">COMPLETED</span>';if(st==='REJECT')return '<span class="outsource-result-pill reject transfusion-status-pill status-reject">REJECT</span>';if(st==='PENDING')return '<span class="outsource-result-pill pending transfusion-status-pill status-pending">PENDING</span>';return '<span class="outsource-result-pill pending transfusion-status-pill">'+esc(st)+'</span>';})()+'</td><td>'+ (drive?'<a href="'+esc(drive)+'" target="_blank" rel="noopener noreferrer">DRIVE</a>':'') +'</td><td class="outsource-notes-cell transfusion-notes-cell" data-transfusion-notes-id="'+esc(r.id)+'" title="Click to view/edit notes">'+(esc(r.notes)||'<span class="transfusion-no-note">ADD NOTE</span>')+'</td><td><div class="outsource-actions">'+(canModifyData()?'<button type="button" class="outsource-mini tr-edit" data-id="'+esc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete tr-delete" data-id="'+esc(r.id)+'">DELETE</button>':'<span class="inventory-muted">VIEW ONLY</span>')+'</div></td></tr>';}).join('');
+        body.innerHTML=rows.map(function(r,i){var drive=String(r.googleDriveLink||r.fileLink||'').trim();return '<tr class="outsource-data-row transfusion-data-row" data-transfusion-row-id="'+esc(r.id)+'" title="Click any part of this row to view status, remarks and notes"><td>'+String(i+1)+'</td><td>'+esc(displayDate(r.date))+'</td><td><strong>'+esc(r.name)+'</strong></td><td>'+esc(r.idIc)+'</td><td>'+esc(r.sex)+'</td><td>'+esc(r.age)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.bloodGroup)+'</td><td>'+esc(r.packNo)+'</td><td>'+esc(r.staff)+'</td><td class="outsource-result transfusion-remarks-cell" data-transfusion-remarks-id="'+esc(r.id)+'" title="Click to view/edit remarks and notes">'+(function(){var st=String(r.remarks||'PENDING').trim().toUpperCase()||'PENDING';if(st==='COMPLETED')return '<span class="outsource-result-pill done transfusion-status-pill status-done">COMPLETED</span>';if(st==='REJECT')return '<span class="outsource-result-pill reject transfusion-status-pill status-reject">REJECT</span>';if(st==='PENDING')return '<span class="outsource-result-pill pending transfusion-status-pill status-pending">PENDING</span>';return '<span class="outsource-result-pill pending transfusion-status-pill">'+esc(st)+'</span>';})()+'</td><td>'+ (drive?'<a href="'+esc(drive)+'" target="_blank" rel="noopener noreferrer">DRIVE</a>':'') +'</td><td class="outsource-notes-cell transfusion-notes-cell" data-transfusion-notes-id="'+esc(r.id)+'" title="Click to view/edit notes">'+(esc(r.notes)||'<span class="transfusion-no-note">ADD NOTE</span>')+'</td><td><div class="outsource-actions"><button type="button" class="outsource-mini tr-edit" data-id="'+esc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete tr-delete" data-id="'+esc(r.id)+'">DELETE</button></div></td></tr>';}).join('');
         if(empty)empty.hidden=rows.length>0;
         var n=document.getElementById('trTotal');if(n)n.textContent=totalCount+' TOTAL';
         var pager=document.getElementById('trPager');if(pager)pager.textContent=rows.length?('Showing 1–'+rows.length+' of '+rows.length):'Showing 0–0 of 0';
@@ -9049,7 +9010,7 @@ function exportMonthlySchedulePdfs() {
       }
       function syncTransfusionSelect(id){var el=document.getElementById(id);if(el){el.dispatchEvent(new Event('change',{bubbles:true}));}}
       function clearForm(){currentEditId='';var ids=['trDate','trName','trIdIc','trSex','trAge','trUnit','trBloodGroup','trPackNo','trStaff','trGoogleDriveLink'];ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var d=document.getElementById('trDate');if(d)d.value=today();var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='REGISTER TRANSFUSION';bindIc();}
-      function edit(rid){if(!canModifyData())return;var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;currentEditId=r.id;var values={trDate:r.date,trName:r.name,trIdIc:r.idIc,trSex:r.sex,trAge:r.age,trUnit:r.unit,trBloodGroup:r.bloodGroup,trPackNo:r.packNo,trStaff:r.staff,trGoogleDriveLink:r.googleDriveLink||r.fileLink||''};Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id]||'';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='SAVE CHANGES';document.getElementById('trName')?.focus();}
+      function edit(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;currentEditId=r.id;var values={trDate:r.date,trName:r.name,trIdIc:r.idIc,trSex:r.sex,trAge:r.age,trUnit:r.unit,trBloodGroup:r.bloodGroup,trPackNo:r.packNo,trStaff:r.staff,trGoogleDriveLink:r.googleDriveLink||r.fileLink||''};Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id]||'';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='SAVE CHANGES';document.getElementById('trName')?.focus();}
       function openRemarksModal(rid){
         var r=records().find(function(x){return String(x.id)===String(rid);});
         var modal=document.getElementById('transfusionRemarksModal');
@@ -9070,7 +9031,6 @@ function exportMonthlySchedulePdfs() {
       }
       function closeRemarksModal(){var modal=document.getElementById('transfusionRemarksModal');if(modal)modal.hidden=true;}
       async function saveRemarksModal(){
-        if(!canModifyData()){alert('Visitor access is read-only.');return;}
         var modal=document.getElementById('transfusionRemarksModal');if(!modal)return;
         var rid=String(modal.dataset.recordId||'');
         var r=records().find(function(x){return String(x.id)===rid;});
@@ -9086,7 +9046,6 @@ function exportMonthlySchedulePdfs() {
         }catch(error){window.alert(error&&error.message?error.message:'Unable to update transfusion record.');}
       }
       async function save(e){
-        if(!canModifyData()){if(e)e.preventDefault();alert('Visitor access is read-only.');return;}
         if(e)e.preventDefault();
         var name=String(document.getElementById('trName')?.value||'').trim();
         var date=String(document.getElementById('trDate')?.value||'').trim();
@@ -9112,7 +9071,6 @@ function exportMonthlySchedulePdfs() {
       }
       function render(year){selectedYear=Number(year)||currentYear;var grid=document.getElementById('moduleYearGrid');if(!grid)return;grid.className='module-year-grid transfusion-active-grid';var title=document.getElementById('moduleYearsTitle'),desc=document.getElementById('moduleYearsDesc');if(title)title.textContent='TRANSFUSION';if(desc)desc.textContent='Register, track and maintain transfusion service records in one live workspace.';var rows=records();var total=rows.length,pending=rows.filter(function(r){var st=String(r.remarks||'PENDING').trim().toUpperCase();return !st||st==='PENDING';}).length,done=rows.filter(function(r){return String(r.remarks||'').trim().toUpperCase()==='COMPLETED';}).length,rejected=rows.filter(function(r){return String(r.remarks||'').trim().toUpperCase()==='REJECT';}).length;grid.innerHTML='<div class="outsource-register"><div class="outsource-grid"><section class="outsource-card transfusion-card"><div class="outsource-card-head"><h3>REGISTER TRANSFUSION</h3><span id="trEditHint">LIVE RECORD</span></div><form class="outsource-form" id="transfusionForm" autocomplete="off"><div class="outsource-field outsource-date-field"><label>Date *</label><input type="hidden" id="trDate" value="'+esc(today())+'"><input type="text" id="trDateVisible" class="outsource-neumorphic-date" required readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-field"><label>Name *</label><input id="trName" required placeholder="Patient name"></div><div class="outsource-field"><label>ID / IC</label><input id="trIdIc" placeholder="NRIC / Passport"></div><div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><input id="trSex" readonly placeholder="Auto from IC"></div><div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input id="trAge" readonly placeholder="Auto from IC"></div><div class="outsource-field"><label>Unit</label><select id="trUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div><div class="outsource-field"><label>Blood Group</label><select id="trBloodGroup"><option value="">Select blood group</option><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option></select></div><div class="outsource-field"><label>Pack No.</label><input id="trPackNo" placeholder="Pack number(s) — e.g. 114557133391/1, 114557133392/1" title="For multiple blood packs, enter the pack numbers separated by comma"></div><div class="outsource-field"><label>Staff</label><select id="trStaff"><option value="">Select staff</option><option>NUR LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div><div class="outsource-field"><label>Google Drive Link</label><input id="trGoogleDriveLink" type="url" placeholder="Paste Google Drive link"></div><div class="outsource-form-actions"><button class="outsource-btn secondary" type="button" id="trClear">CLEAR</button><button class="outsource-btn primary" type="submit" id="trSave">REGISTER TRANSFUSION</button></div></form></section><section class="outsource-card transfusion-card"><div class="outsource-card-head"><h3>REGISTERED TRANSFUSIONS</h3><span id="trTotal">'+total+' TOTAL</span></div><div class="outsource-summary"><div class="outsource-stat"><div class="num" id="trStatTotal">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num" id="trStatPending">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num" id="trStatDone">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num" id="trStatReject">'+rejected+'</div><div class="lbl">Rejected</div></div></div><div class="outsource-search"><input id="trSearch" placeholder="Search name, ID/IC, pack no. or staff..." aria-label="Search transfusion records"><select id="trYearFilter"><option value="ALL">All years</option></select><select id="trMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><select id="trStatusFilter"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select></div><div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>#</th><th>Date</th><th>Name</th><th>ID/IC</th><th>Sex</th><th>Age</th><th>Unit</th><th>Blood Group</th><th>Pack No.</th><th>Staff</th><th>Remarks</th><th>Google Drive</th><th>Notes</th><th>Action</th></tr></thead><tbody id="trTableBody"></tbody></table><div class="outsource-empty" id="trEmpty" hidden>No transfusion record registered yet.</div></div><div class="outsource-pager" id="trPager">Showing 0–0 of 0</div></section></div></div><div class="outsource-result-modal transfusion-remarks-modal" id="transfusionRemarksModal" hidden><div class="outsource-result-dialog"><button type="button" class="outsource-result-close" id="transfusionRemarksClose">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2 id="transfusionRemarksTitle">REMARKS &amp; NOTES</h2><div class="outsource-modal-sub" id="transfusionRemarksSub"></div><div class="outsource-modal-field"><label>REMARKS</label><select id="transfusionRemarksStatus"><option value="">Select status</option><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECT</option></select></div><div class="outsource-modal-field"><label>NOTES</label><textarea id="transfusionNotesText" placeholder="Enter additional notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="transfusionRemarksCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="transfusionRemarksSave">SAVE</button></div></div></div>';
         renderYears(rows);
-        if(isVisitorRole()){ var trForm=document.getElementById('transfusionForm'); if(trForm){trForm.querySelectorAll('input,select,textarea,button').forEach(function(el){el.disabled=true;});} }
         var yf=document.getElementById('trYearFilter');if(yf)yf.value='ALL';
         var form=document.getElementById('transfusionForm');if(form)form.addEventListener('submit',save);
         document.getElementById('trClear')?.addEventListener('click',clearForm);document.getElementById('transfusionRemarksClose')?.addEventListener('click',closeRemarksModal);document.getElementById('transfusionRemarksCancel')?.addEventListener('click',closeRemarksModal);document.getElementById('transfusionRemarksSave')?.addEventListener('click',saveRemarksModal);document.getElementById('transfusionRemarksModal')?.addEventListener('click',function(e){if(e.target===this)closeRemarksModal();});

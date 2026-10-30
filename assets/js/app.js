@@ -1847,7 +1847,7 @@
     var Auth = (function () {
       var HTTPONLY_SESSION_SENTINEL = '__HTTPONLY_SESSION__';
       var TOKEN_KEY = 'labAppAuthTokenV1';
-      var USER_KEY = 'labAppAuthUserV1';
+      var USER_KEY = 'labAppAuthUserV2';
       var UPDATE_BYPASS_KEY = 'labAppUpdateInProgressV1';
       var UPDATE_BYPASS_USER_KEY = 'labAppUpdateUserV1';
       var IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -2612,21 +2612,33 @@
        * + checkStoredSession               +
        * +----------------------------------+ */
       function setSessionVerifying_(verifying) {
-        document.body.classList.toggle('auth-verifying', !!verifying);
+        var active = !!verifying;
+        document.body.classList.toggle('auth-verifying', active);
         if (nodes.app) {
-          if (verifying) nodes.app.setAttribute('aria-busy', 'true');
+          if (active) nodes.app.setAttribute('aria-busy', 'true');
           else nodes.app.removeAttribute('aria-busy');
+        }
+
+        /* A refresh must NEVER expose the last page/session identity while the
+         * HttpOnly cookie is being checked. The server response is the only
+         * authoritative source for the current user and role. */
+        if (active) {
+          document.body.classList.add('auth-locked');
+          document.body.classList.remove('auth-ready');
+          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'true');
+          if (nodes.screen) nodes.screen.removeAttribute('hidden');
+          if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         }
       }
 
       function checkStoredSession() {
-        /* Do not let the asynchronous startup session check wipe credentials
-         * that the user has already started typing. A previous implementation
-         * called lock() when the initial /api/login-state request completed;
-         * lock() resets the login form, so a slow network response could erase
-         * the username/password while the user was signing in. */
+        /* IMPORTANT: sessionStorage contains only a display cache. It must never
+         * decide who is logged in. On every page load/refresh, verify the
+         * HttpOnly session cookie with /api/login-state first, then render the
+         * returned user/role. This prevents a previous user's name/role from
+         * flashing or being used when another account owns the current cookie. */
         updateResumeSessionButton_();
-        var hasPageSession = !!getStoredPublicUser_();
+
         var credentialsTouched = function () {
           return !!(
             (nodes.username && String(nodes.username.value || '').length) ||
@@ -2637,71 +2649,36 @@
           );
         };
 
-        if (!hasPageSession) {
-          // A brand-new page starts in the login state. Do not make a network
-          // request here: there is no page-session identity to restore, and an
-          // asynchronous session check can race the user's first keystroke and
-          // reset the form. The login endpoint is authoritative when the user
-          // submits credentials.
-          return;
-        }
-
-        // A verified page-session marker means this is a refresh/reload of the
-        // same page session. Keep the current page visible while the HttpOnly
-        // cookie is re-verified so the login screen never flashes on refresh.
         setSessionVerifying_(true);
-        document.body.classList.remove('auth-locked');
-        document.body.classList.add('auth-ready');
-        if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
-        if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
-        if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
 
-        hoagApiRequest('loginState', { freshSession: !hasPageSession })
+        hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
-              // Never reset an active login attempt because the startup check
-              // finished late. Let submitLogin own the login form lifecycle.
+              /* If the user has already started a fresh login, do not interrupt
+               * that login attempt with the startup check's unauthenticated
+               * result. */
+              setSessionVerifying_(false);
               if (credentialsTouched()) return;
               clearStoredSession();
-              setSessionVerifying_(false);
-              lock('', '');
+              showLoginPanel('', '');
               return;
             }
+
+            /* The server identity is authoritative. Replace any stale cached
+             * display identity before unlocking the application. */
             storePublicAuthUser_(envelope);
-            var restoredUser = envelope.user || getStoredPublicUser_() || {};
+            var restoredUser = envelope.user || {};
             applyUser(restoredUser);
             unlock(restoredUser, { freshLogin:false, restoredSession:true });
           })
           .catch(function (error) {
             console.warn('Initial session verification failed:', error);
-            // A temporary startup/network failure must not clear credentials the
-            // user has already entered. Keep the login panel intact and allow
-            // submitLogin to report the real authentication result.
+            setSessionVerifying_(false);
+            /* A temporary network failure must not erase credentials that the
+             * user has already entered. */
             if (credentialsTouched()) return;
             clearStoredSession();
-            setSessionVerifying_(false);
-            lock('', '');
-          });
-      }
-
-      /* +----------------------------------+
-       * + verifyStoredSessionInBackground_ +
-       * +----------------------------------+ */
-      function verifyStoredSessionInBackground_(token) {
-        if (!state.authUserId) return;
-        hoagApiRequest('loginState', {})
-          .then(function (envelope) {
-            if (!envelope || envelope.ok === false || !envelope.authenticated) {
-              forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
-              return;
-            }
-            storePublicAuthUser_(envelope);
-            var restoredUser = envelope.user || getStoredPublicUser_() || {};
-            applyUser(restoredUser);
-            unlock(restoredUser, { freshLogin:false, restoredSession:true });
-          })
-          .catch(function (error) {
-            console.warn('Saved session verification temporarily unavailable:', error);
+            showLoginPanel('', '');
           });
       }
 

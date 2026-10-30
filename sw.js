@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hoagpathology-v2.2.2-login-diagnostic-v5';
+const CACHE_NAME = 'hoagpathology-v2.2.2-login-diagnostic-v6';
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

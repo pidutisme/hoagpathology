@@ -11919,6 +11919,17 @@ body.visitor-read-only .visitor-read-only-form select:disabled {
 
 /* While the existing HttpOnly session cookie is being verified after a refresh,
    prevent a stale role/user from being interactive. */
+body.auth-verifying .app {
+  opacity: .10 !important;
+  pointer-events: none !important;
+  transform: scale(.985);
+  filter: blur(8px) saturate(.86);
+}
+body.auth-verifying .auth-screen {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
 body.auth-verifying #moduleYearGrid,
 body.auth-verifying #dailyRosterList {
   pointer-events: none !important;
