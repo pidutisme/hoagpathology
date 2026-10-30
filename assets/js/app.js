@@ -1868,6 +1868,10 @@
       var loginTimeoutTimer = null;
       var loginHardTimeoutTimer = null;
       var loginRequestId = 0;
+      /* Monotonic auth generation. Any login/logout invalidates older
+       * asynchronous session checks so a late response can never overwrite
+       * the identity that was established by the newest auth action. */
+      var authCheckGeneration_ = 0;
       var loginMfaRequired = false;
   
       /* +----------------------------------+
@@ -2171,36 +2175,27 @@
         }
         document.body.classList.add('visitor-read-only');
 
-        /* Main data-entry forms across Outsource, Inventory, Transfusion and roster. */
+        /* Main data-entry controls across every module. Do not scope these
+         * selectors to #moduleYearGrid because the Inventory forms live in
+         * dedicated modals outside that container. This was the reason some
+         * Visitor fields still looked editable and kept the default cursor. */
         document.querySelectorAll(
           '#moduleYearGrid .outsource-form input:not([type=hidden]),' +
           '#moduleYearGrid .outsource-form select,' +
           '#moduleYearGrid .outsource-form textarea,' +
           '#moduleYearGrid .outsource-form button,' +
-          '#moduleYearGrid .inventory-form input,' +
-          '#moduleYearGrid .inventory-form select,' +
-          '#moduleYearGrid .inventory-form textarea,' +
-          '#moduleYearGrid .inventory-form button,' +
-          '#moduleYearGrid .inventory-entry-form input,' +
-          '#moduleYearGrid .inventory-entry-form select,' +
-          '#moduleYearGrid .inventory-entry-form textarea,' +
-          '#moduleYearGrid .inventory-entry-form button,' +
-          '#moduleYearGrid #inventoryMovementForm input,' +
-          '#moduleYearGrid #inventoryMovementForm select,' +
-          '#moduleYearGrid #inventoryMovementForm textarea,' +
-          '#moduleYearGrid #inventoryMovementForm button,' +
-          '#moduleYearGrid #inventoryAdminItemForm input,' +
-          '#moduleYearGrid #inventoryAdminItemForm select,' +
-          '#moduleYearGrid #inventoryAdminItemForm textarea,' +
-          '#moduleYearGrid #inventoryAdminItemForm button,' +
-          '#moduleYearGrid .transfusion-card form input:not([type=hidden]),' +
-          '#moduleYearGrid .transfusion-card form select,' +
-          '#moduleYearGrid .transfusion-card form textarea,' +
-          '#moduleYearGrid .transfusion-card form button,' +
-          '#moduleYearGrid .outsource-result-modal input:not([type=hidden]),' +
-          '#moduleYearGrid .outsource-result-modal select,' +
-          '#moduleYearGrid .outsource-result-modal textarea,' +
-          '#moduleYearGrid .outsource-result-modal button,' +
+          '.outsource-form input:not([type=hidden]),' +
+          '.outsource-form select,' +
+          '.outsource-form textarea,' +
+          '.outsource-form button,' +
+          '#inventoryMovementForm input:not([type=hidden]),' +
+          '#inventoryMovementForm select,' +
+          '#inventoryMovementForm textarea,' +
+          '#inventoryMovementForm button,' +
+          '#inventoryAdminItemForm input:not([type=hidden]),' +
+          '#inventoryAdminItemForm select,' +
+          '#inventoryAdminItemForm textarea,' +
+          '#inventoryAdminItemForm button,' +
           '#dailyRosterList input,' +
           '#dailyRosterList select,' +
           '#dailyRosterList textarea,' +
@@ -2212,6 +2207,8 @@
           '#inventoryAdminItemsBtn,' +
           '#inventoryAdminItemList [data-admin-item-edit],' +
           '#inventoryAdminItemList [data-admin-item-delete],' +
+          '#inventoryItemTrigger,' +
+          '#inventoryItemMenu button,' +
           '#moduleYearGrid [data-write-action],' +
           '#moduleYearGrid [data-action="edit"],' +
           '#moduleYearGrid [data-action="delete"],' +
@@ -2222,10 +2219,9 @@
          * native selects and otherwise can keep their click handler after the select
          * itself becomes disabled. */
         document.querySelectorAll(
-          '#moduleYearGrid .outsource-form .outsource-select-trigger,' +
-          '#moduleYearGrid .outsource-result-modal .outsource-select-trigger,' +
-          '#moduleYearGrid .inventory-form .inventory-filter-trigger,' +
-          '#moduleYearGrid .inventory-entry-form .inventory-filter-trigger'
+          '.outsource-form .outsource-select-trigger,' +
+          '.outsource-result-modal .outsource-select-trigger,' +
+          '#inventoryItemTrigger'
         ).forEach(markVisitorDisabled_);
 
         document.querySelectorAll(
@@ -2267,8 +2263,8 @@
         }
       }, true);
       document.addEventListener('keydown', function(e) {
-        if (!isVisitorRole_) return;
-        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control') : null;
+        if (!isVisitorRole_()) return;
+        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, #inventoryItemTrigger') : null;
         if (target && !target.matches('[data-visitor-allow]')) {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -2395,9 +2391,11 @@
         var token = getStoredToken();
         if (document.hidden) return;
         if (!token || !state.authUserId || sessionCheckBusy) return;
+        var verificationGeneration = authCheckGeneration_;
         sessionCheckBusy = true;
         try {
           var envelope = await hoagApiRequest('loginState', {});
+          if (verificationGeneration !== authCheckGeneration_) return;
           if (!envelope || envelope.ok === false || !envelope.authenticated) {
             forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
             return;
@@ -2698,9 +2696,13 @@
         };
 
         setSessionVerifying_(true);
+        var verificationGeneration = ++authCheckGeneration_;
 
         hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
+            /* Ignore a late startup response if a newer login/logout already
+             * changed the authentication generation. */
+            if (verificationGeneration !== authCheckGeneration_) return;
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               /* If the user has already started a fresh login, do not interrupt
                * that login attempt with the startup check's unauthenticated
@@ -2720,6 +2722,7 @@
             unlock(restoredUser, { freshLogin:false, restoredSession:true });
           })
           .catch(function (error) {
+            if (verificationGeneration !== authCheckGeneration_) return;
             console.warn('Initial session verification failed:', error);
             setSessionVerifying_(false);
             /* A temporary network failure must not erase credentials that the
@@ -2742,6 +2745,9 @@
         if (event && typeof event.preventDefault === 'function') event.preventDefault();
         if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         if (busy) return;
+
+        /* A manual login supersedes any in-flight startup/session verification. */
+        authCheckGeneration_ += 1;
 
         var username = nodes.username ? nodes.username.value : '';
         var password = nodes.password ? nodes.password.value : '';
@@ -2940,6 +2946,8 @@
        * + logout                           +
        * +----------------------------------+ */
       function logout(message, type, reason) {
+        /* Invalidate all in-flight auth checks before changing the session. */
+        authCheckGeneration_ += 1;
         // The real credential lives in the HttpOnly cookie and is intentionally
         // not readable from JavaScript. Always call the logout endpoint so the
         // server can revoke the cookie-backed session.

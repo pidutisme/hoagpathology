@@ -11947,6 +11947,28 @@ body.auth-verifying #dailyRosterList button {
   cursor: wait !important;
 }
 
+/* VISITOR — global fallback for every control that has actually been disabled.
+   This catches dynamically-generated or modal write controls that are outside the
+   main module container. */
+body.visitor-read-only input:disabled,
+body.visitor-read-only select:disabled,
+body.visitor-read-only textarea:disabled,
+body.visitor-read-only button:disabled,
+body.visitor-read-only input:disabled *,
+body.visitor-read-only select:disabled *,
+body.visitor-read-only textarea:disabled *,
+body.visitor-read-only button:disabled *,
+body.visitor-read-only input:disabled::before,
+body.visitor-read-only input:disabled::after,
+body.visitor-read-only select:disabled::before,
+body.visitor-read-only select:disabled::after,
+body.visitor-read-only textarea:disabled::before,
+body.visitor-read-only textarea:disabled::after,
+body.visitor-read-only button:disabled::before,
+body.visitor-read-only button:disabled::after {
+  cursor: not-allowed !important;
+}
+
 /* VISITOR — forbidden cursor on every disabled write control, including custom dropdown triggers. */
 body.visitor-read-only .visitor-disabled-control,
 body.visitor-read-only .visitor-read-only-form input:not([type="hidden"]),
