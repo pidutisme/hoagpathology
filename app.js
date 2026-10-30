@@ -2145,71 +2145,100 @@
   
       }
 
-      /* VISITOR is a hard read-only UI role. Modules rebuild their forms dynamically,
-       * so this enforcement is global, idempotent and backed by MutationObserver.
-       * Search/filter controls remain usable; data-entry and mutation controls do not. */
+      /* VISITOR is a hard read-only UI role. Every data-entry control is disabled
+       * and rendered with a forbidden cursor. This is deliberately enforced globally
+       * because several modules build/rebuild forms dynamically. Search/filter controls
+       * are left usable; write controls are never interactive. */
       var visitorReadOnlyObserver_ = null;
       var visitorReadOnlyQueued_ = false;
       function isVisitorRole_() {
         return String(state.authRole || '').trim().toUpperCase() === 'VISITOR';
       }
+      function markVisitorDisabled_(el) {
+        if (!el || el.matches('[data-visitor-allow]')) return;
+        el.disabled = true;
+        el.readOnly = false;
+        el.setAttribute('aria-disabled', 'true');
+        el.classList.add('visitor-disabled-control');
+      }
       function applyVisitorReadOnly_() {
         if (!isVisitorRole_()) {
           document.body.classList.remove('visitor-read-only');
+          document.querySelectorAll('.visitor-disabled-control').forEach(function(el) {
+            el.classList.remove('visitor-disabled-control');
+          });
           return;
         }
         document.body.classList.add('visitor-read-only');
-        var roots = document.querySelectorAll(
+
+        /* Main data-entry forms across Outsource, Inventory, Transfusion and roster. */
+        document.querySelectorAll(
+          '#moduleYearGrid .outsource-form input:not([type=hidden]),' +
+          '#moduleYearGrid .outsource-form select,' +
+          '#moduleYearGrid .outsource-form textarea,' +
+          '#moduleYearGrid .outsource-form button,' +
+          '#moduleYearGrid .inventory-form input,' +
+          '#moduleYearGrid .inventory-form select,' +
+          '#moduleYearGrid .inventory-form textarea,' +
+          '#moduleYearGrid .inventory-form button,' +
+          '#moduleYearGrid .inventory-entry-form input,' +
+          '#moduleYearGrid .inventory-entry-form select,' +
+          '#moduleYearGrid .inventory-entry-form textarea,' +
+          '#moduleYearGrid .inventory-entry-form button,' +
+          '#moduleYearGrid #inventoryMovementForm input,' +
+          '#moduleYearGrid #inventoryMovementForm select,' +
+          '#moduleYearGrid #inventoryMovementForm textarea,' +
+          '#moduleYearGrid #inventoryMovementForm button,' +
+          '#moduleYearGrid #inventoryAdminItemForm input,' +
+          '#moduleYearGrid #inventoryAdminItemForm select,' +
+          '#moduleYearGrid #inventoryAdminItemForm textarea,' +
+          '#moduleYearGrid #inventoryAdminItemForm button,' +
+          '#moduleYearGrid .transfusion-card form input:not([type=hidden]),' +
+          '#moduleYearGrid .transfusion-card form select,' +
+          '#moduleYearGrid .transfusion-card form textarea,' +
+          '#moduleYearGrid .transfusion-card form button,' +
+          '#moduleYearGrid .outsource-result-modal input:not([type=hidden]),' +
+          '#moduleYearGrid .outsource-result-modal select,' +
+          '#moduleYearGrid .outsource-result-modal textarea,' +
+          '#moduleYearGrid .outsource-result-modal button,' +
+          '#dailyRosterList input,' +
+          '#dailyRosterList select,' +
+          '#dailyRosterList textarea,' +
+          '#dailyRosterList button[data-field],' +
+          '#dailyRosterList button[data-roster-action],' +
+          '[data-roster-clear],' +
+          '#inventoryStockInBtn,' +
+          '#inventoryStockOutBtn,' +
+          '#inventoryAdminItemsBtn,' +
+          '#inventoryAdminItemList [data-admin-item-edit],' +
+          '#inventoryAdminItemList [data-admin-item-delete],' +
+          '#moduleYearGrid [data-write-action],' +
+          '#moduleYearGrid [data-action="edit"],' +
+          '#moduleYearGrid [data-action="delete"],' +
+          '#moduleYearGrid [data-action="save"]'
+        ).forEach(markVisitorDisabled_);
+
+        /* Disable custom dropdown triggers as well. They are buttons generated from
+         * native selects and otherwise can keep their click handler after the select
+         * itself becomes disabled. */
+        document.querySelectorAll(
+          '#moduleYearGrid .outsource-form .outsource-select-trigger,' +
+          '#moduleYearGrid .outsource-result-modal .outsource-select-trigger,' +
+          '#moduleYearGrid .inventory-form .inventory-filter-trigger,' +
+          '#moduleYearGrid .inventory-entry-form .inventory-filter-trigger'
+        ).forEach(markVisitorDisabled_);
+
+        document.querySelectorAll(
           '#moduleYearGrid .outsource-form,' +
-          '#moduleYearGrid .outsource-form-actions,' +
-          '#moduleYearGrid .outsource-register .outsource-card:first-child,' +
-          '#moduleYearGrid .outsource-result-modal .outsource-result-dialog,' +
           '#moduleYearGrid .inventory-form,' +
           '#moduleYearGrid .inventory-entry-form,' +
           '#moduleYearGrid #inventoryMovementForm,' +
           '#moduleYearGrid #inventoryAdminItemForm,' +
           '#moduleYearGrid .transfusion-card form,' +
-          '#dailyRosterList,' +
-          '#moduleYearGrid form[data-write-form],' +
-          '#moduleYearGrid [data-write-form]'
-        );
-        roots.forEach(function(root) {
-          root.querySelectorAll('input:not([type=hidden]), select, textarea, button').forEach(function(el) {
-            if (el.matches('[data-visitor-allow]')) return;
-            el.disabled = true;
-            el.setAttribute('aria-disabled', 'true');
-            el.classList.add('visitor-disabled-control');
-          });
+          '#moduleYearGrid .outsource-result-modal .outsource-result-dialog,' +
+          '#dailyRosterList'
+        ).forEach(function(root) {
           root.classList.add('visitor-read-only-form');
-        });
-        document.querySelectorAll(
-          '#moduleYearGrid .outsource-data-row button,'+
-          '#moduleYearGrid .outsource-action-btn,'+
-          '#moduleYearGrid [data-action="edit"],'+
-          '#moduleYearGrid [data-action="delete"],'+
-          '#moduleYearGrid [data-action="save"],'+
-          '#moduleYearGrid [data-write-action]'
-        ).forEach(function(el) {
-
-        document.querySelectorAll(
-          '#dailyRosterList [data-field],'+
-          '#dailyRosterList [data-roster-action],'+
-          '.calendar-toolbar-btn,'+
-          '[data-roster-clear],'+
-          '#inventoryStockInBtn,'+
-          '#inventoryStockOutBtn,'+
-          '#inventoryAdminItemsBtn,'+
-          '#inventoryAdminItemForm button,'+
-          '#inventoryAdminItemList [data-admin-item-edit],'+
-          '#inventoryAdminItemList [data-admin-item-delete]'
-        ).forEach(function(el) {
-          el.disabled = true;
-          el.setAttribute('aria-disabled', 'true');
-          el.classList.add('visitor-disabled-control');
-        });
-          el.disabled = true;
-          el.setAttribute('aria-disabled', 'true');
-          el.classList.add('visitor-disabled-control');
         });
       }
       function queueVisitorReadOnly_() {
@@ -2225,7 +2254,26 @@
         visitorReadOnlyObserver_ = new MutationObserver(function() { queueVisitorReadOnly_(); });
         visitorReadOnlyObserver_.observe(document.body, { childList: true, subtree: true });
       }
-  
+
+      /* Never allow a Visitor to activate a write control, including custom dropdown
+       * triggers whose original event listener may have been attached before the role
+       * was resolved. The capture handler also covers dynamically-created controls. */
+      document.addEventListener('click', function(e) {
+        if (!isVisitorRole_()) return;
+        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, [data-write-action], [data-action="edit"], [data-action="delete"], [data-action="save"], #inventoryStockInBtn, #inventoryStockOutBtn, #inventoryAdminItemsBtn') : null;
+        if (target && !target.matches('[data-visitor-allow]')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      }, true);
+      document.addEventListener('keydown', function(e) {
+        if (!isVisitorRole_) return;
+        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control') : null;
+        if (target && !target.matches('[data-visitor-allow]')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      }, true);
       /* +----------------------------------+
        * + setSystemToast                   +
        * +----------------------------------+ */

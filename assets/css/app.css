@@ -11946,3 +11946,18 @@ body.auth-verifying #dailyRosterList button {
   color: #7b8492 !important;
   cursor: wait !important;
 }
+
+/* VISITOR — forbidden cursor on every disabled write control, including custom dropdown triggers. */
+body.visitor-read-only .visitor-disabled-control,
+body.visitor-read-only .visitor-read-only-form input:not([type="hidden"]),
+body.visitor-read-only .visitor-read-only-form select,
+body.visitor-read-only .visitor-read-only-form textarea,
+body.visitor-read-only .visitor-read-only-form button,
+body.visitor-read-only .outsource-select-trigger.visitor-disabled-control,
+body.visitor-read-only .inventory-filter-trigger.visitor-disabled-control {
+  cursor: not-allowed !important;
+}
+body.visitor-read-only .visitor-disabled-control *,
+body.visitor-read-only .visitor-disabled-control svg {
+  cursor: not-allowed !important;
+}
