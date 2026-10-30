@@ -12070,3 +12070,38 @@ body.visitor-read-only [data-outsource-action="delete"] {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* FINAL YEAR CARD NORMALIZATION — prevent any individual year card from stretching */
+.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid),
+.leave-course-year-grid,
+#leavesCourses .leave-course-year-grid {
+  align-content: start !important;
+  align-items: start !important;
+  grid-auto-rows: 96px !important;
+}
+
+.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid) .year-card,
+.leave-course-year-grid .leave-course-mini-year,
+#leavesCourses .leave-course-mini-year {
+  box-sizing: border-box !important;
+  height: 96px !important;
+  min-height: 96px !important;
+  max-height: 96px !important;
+  align-self: start !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 640px) {
+  .module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid),
+  .leave-course-year-grid,
+  #leavesCourses .leave-course-year-grid {
+    grid-auto-rows: 96px !important;
+  }
+  .module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid) .year-card,
+  .leave-course-year-grid .leave-course-mini-year,
+  #leavesCourses .leave-course-mini-year {
+    height: 96px !important;
+    min-height: 96px !important;
+    max-height: 96px !important;
+  }
+}
