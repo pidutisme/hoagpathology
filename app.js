@@ -6354,8 +6354,14 @@ function exportMonthlySchedulePdfs() {
           renderedCells += 1;
         }
   
-        grid.textContent = '';
-        grid.appendChild(fragment);
+        /* Swap the completed calendar fragment in one DOM operation.
+           Clearing first creates a visible empty frame during roster saves. */
+        if (typeof grid.replaceChildren === 'function') {
+          grid.replaceChildren(fragment);
+        } else {
+          grid.textContent = '';
+          grid.appendChild(fragment);
+        }
         renderTodayFloatingCards();
       }
   
