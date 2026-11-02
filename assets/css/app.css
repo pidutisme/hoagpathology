@@ -12296,3 +12296,33 @@ body.visitor-read-only [data-outsource-action="delete"] {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* V17: match modal typography to the compact Outsource/Transfusion data tables. */
+.outsource-detail-dialog,
+.outsource-detail-dialog * {
+  font-family: inherit !important;
+}
+.outsource-detail-dialog .outsource-detail-item > div,
+.outsource-detail-dialog .outsource-modal-field input,
+.outsource-detail-dialog .outsource-modal-field select,
+.outsource-detail-dialog .outsource-modal-field textarea,
+.outsource-detail-dialog .transfusion-detail-control {
+  font-family: inherit !important;
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+}
+.outsource-detail-dialog .outsource-detail-item label,
+.outsource-detail-dialog .outsource-modal-field label {
+  font-family: inherit !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  letter-spacing: .04em !important;
+}
+.outsource-detail-dialog .outsource-modal-actions button {
+  font-family: inherit !important;
+  font-size: 10px !important;
+}
+.outsource-result-modal[hidden] { display: none !important; }
