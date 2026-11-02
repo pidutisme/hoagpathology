@@ -12213,3 +12213,14 @@ body.visitor-read-only [data-outsource-action="delete"] {
   }
   :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-table-wrap{max-height:60vh !important;}
 }
+
+/* V11 DETAIL MODAL + EYE ACTION FIX */
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-mini.tr-view,
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) [data-outsource-action="view"]{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:34px!important;min-width:34px!important;height:30px!important;min-height:30px!important;
+  padding:0!important;font-size:18px!important;line-height:1!important;color:#075aa6!important;
+  cursor:pointer!important;position:relative!important;z-index:2!important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-data-row{cursor:default!important;}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-detail-dialog{margin:auto!important;}
