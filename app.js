@@ -6681,7 +6681,8 @@ function exportMonthlySchedulePdfs() {
         clearSelectedDate: clearSelectedDate,
         flushPendingInputSave: flushPendingInputSave,
         handleDateRollover: handleDateRollover,
-        renderTodayFloatingCards: renderTodayFloatingCards
+        renderTodayFloatingCards: renderTodayFloatingCards,
+        refreshRosterCells: refreshCalendarRosterCells
       };
     })();
   
@@ -6750,7 +6751,14 @@ function exportMonthlySchedulePdfs() {
           Calendar.renderTodayFloatingCards();
         }
         if ($('calendar') && $('calendar').classList.contains('active')) {
-          Calendar.render();
+          /* Roster sync must never call Calendar.render(): that rebuilds the
+             entire month grid and makes every changed roster label disappear
+             for a frame. Update existing day cells in place instead. */
+          if (typeof Calendar.refreshRosterCells === 'function') {
+            Calendar.refreshRosterCells();
+          } else {
+            state.calendarNeedsRefresh = true;
+          }
         } else {
           state.calendarNeedsRefresh = true;
         }
