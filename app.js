@@ -3523,7 +3523,13 @@ hoagApiRequest('logout', {
               '<div class="outsource-summary"><div class="outsource-stat"><div class="num">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num">'+rejected+'</div><div class="lbl">Rejected</div></div></div>'+
               '<div class="outsource-search">'+
                 '<input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search outsource samples">'+
-                '<select id="outsourceYearFilter"><option value="ALL">All years</option></select>'+                '<select id="outsourceMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>'+                '<select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select>'+              '</div>'+
+                '<select id="outsourceYearFilter"><option value="ALL">All years</option></select>'+
+                '<select id="outsourceMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>'+
+                '<select id="outsourceStatusFilter"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select>'+
+                '<select id="outsourceReferralFilter"><option value="ALL">All referral</option></select>'+
+                '<select id="outsourceLabFilter"><option value="ALL">All lab</option></select>'+
+                '<select id="outsourceTestFilter"><option value="ALL">All test</option></select>'+
+                '<select id="outsourceUnitFilter"><option value="ALL">All unit</option></select>'+              '</div>'+
               '<div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>Date</th><th>Barcode</th><th>Name</th><th>IC / ID</th><th>Referral</th><th>Lab</th><th>Test</th><th>Status</th><th>Action</th></tr></thead><tbody id="outsourceTableBody"></tbody></table><div class="outsource-empty" id="outsourceEmpty" hidden>No outsource sample registered yet.</div></div><div class="outsource-pager" id="outsourceVirtualInfo">Showing 0–0 of 0</div>'+
             '</section>'+
           '</div></div>';
@@ -3586,6 +3592,7 @@ hoagApiRequest('logout', {
         var yearFilter=$('outsourceYearFilter'); if(yearFilter)yearFilter.addEventListener('change',queueOutsourceRowsRender);
         var monthFilter=$('outsourceMonthFilter'); if(monthFilter)monthFilter.addEventListener('change',queueOutsourceRowsRender);
         var filter=$('outsourceStatusFilter'); if(filter)filter.addEventListener('change',queueOutsourceRowsRender);
+        ['outsourceReferralFilter','outsourceLabFilter','outsourceTestFilter','outsourceUnitFilter'].forEach(function(id){var el=$(id);if(el)el.addEventListener('change',queueOutsourceRowsRender);});
         bindOutsourceVirtualScroll();
         initOutsourceFilterDropdowns();
         var body=$('outsourceTableBody'); if(body&&!body._outsourceActionsBound){body._outsourceActionsBound=true;body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(!btn)return;e.preventDefault();e.stopPropagation();var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='view')openOutsourceDetailModal(id);else if(action==='edit')editOutsourceSample(id);else if(action==='delete')deleteOutsourceSample(id);});}
@@ -3596,7 +3603,7 @@ hoagApiRequest('logout', {
         /* OUTSOURCE FILTER FIX v2: use the native select controls.
            The previous custom body-level menus caused delayed opening,
            duplicate initializers and selected-label desynchronisation. */
-        var ids=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter'];
+        var ids=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter','outsourceReferralFilter','outsourceLabFilter','outsourceTestFilter','outsourceUnitFilter'];
         ids.forEach(function(id){
           var select=$(id);
           if(!select)return;
@@ -3617,16 +3624,41 @@ hoagApiRequest('logout', {
         var opt=select.options[select.selectedIndex];
         if(label)label.textContent=opt?opt.textContent:'Select...';
       }
-      function renderOutsourceFilterYears(sourceRows){
-        var select=$('outsourceYearFilter'); if(!select)return;
-        var previous=String(select.value||'ALL');
-        var rows=Array.isArray(sourceRows)?sourceRows:((typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[]);
-        var years={};
-        rows.forEach(function(r){var d=String(r.sampleDate||'');var y=d.slice(0,4);if(/^\d{4}$/.test(y))years[y]=true;});
-        var list=Object.keys(years).sort(function(a,b){return Number(b)-Number(a);});
-        select.innerHTML='<option value="ALL">All years</option>'+list.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
-        if(list.indexOf(previous)>=0)select.value=previous; else select.value='ALL';
+      function getOutsourceDateParts(value){
+        var d=String(value||'').trim();
+        var iso=d.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+        if(iso)return {year:iso[1],month:String(iso[2]).padStart(2,'0')};
+        var local=d.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+        if(local)return {year:local[3],month:String(local[2]).padStart(2,'0')};
+        var parsed=new Date(d);
+        if(!isNaN(parsed.getTime()))return {year:String(parsed.getFullYear()),month:String(parsed.getMonth()+1).padStart(2,'0')};
+        return {year:'',month:''};
+      }
+      function populateOutsourceFilter(selectId, label, values, previous){
+        var select=$(selectId);if(!select)return;
+        var chosen=String(previous!==undefined?previous:select.value||'ALL');
+        var list=Object.keys(values).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});});
+        select.innerHTML='<option value="ALL">'+label+'</option>'+list.map(function(v){return '<option value="'+outsourceEsc(v)+'">'+outsourceEsc(v)+'</option>';}).join('');
+        select.value=list.some(function(v){return v.toLowerCase()===chosen.toLowerCase();})?list.find(function(v){return v.toLowerCase()===chosen.toLowerCase();}):'ALL';
         syncOutsourceFilterTrigger(select);
+      }
+      function renderOutsourceFilterYears(sourceRows){
+        var rows=Array.isArray(sourceRows)?sourceRows:((typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[]);
+        var previous=String(($('outsourceYearFilter')||{}).value||'ALL'), years={};
+        rows.forEach(function(r){var p=getOutsourceDateParts(r.sampleDate);if(p.year)years[p.year]=true;});
+        var yearList=Object.keys(years).sort(function(a,b){return Number(b)-Number(a);});
+        populateOutsourceFilter('outsourceYearFilter','All years',years,previous);
+        var dimensions=[
+          ['outsourceReferralFilter','All referral','referral'],
+          ['outsourceLabFilter','All lab','lab'],
+          ['outsourceTestFilter','All test','test'],
+          ['outsourceUnitFilter','All unit','unit']
+        ];
+        dimensions.forEach(function(item){
+          var values={},sel=$(item[0]),prev=String(sel&&sel.value||'ALL');
+          rows.forEach(function(r){var v=String(r[item[2]]||'').trim();if(v)values[v]=true;});
+          populateOutsourceFilter(item[0],item[1],values,prev);
+        });
       }
       var outsourceRowsRenderTimer=null;
       var outsourceRowsCache=null;
@@ -3721,6 +3753,7 @@ hoagApiRequest('logout', {
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
         var allRows=getOutsourceRowsCached();
+        renderOutsourceFilterYears(allRows);
         var signature=getOutsourceRowSignature(allRows);
         if(signature!==outsourceRowsDomSignature || !Array.isArray(outsourceRowsSorted)){
           outsourceRowsDomSignature=signature;
@@ -3733,10 +3766,18 @@ hoagApiRequest('logout', {
         var filtered=[];
         outsourceRowsSorted.forEach(function(r){
           var result=String(r.result||'PENDING').toUpperCase(); if(result==='ADA')result='COMPLETED';
-          var sampleDate=String(r.sampleDate||''); var match=true;
+          var dateParts=getOutsourceDateParts(r.sampleDate); var match=true;
           if(status!=='ALL'&&result!==status)match=false;
-          if(match&&year!=='ALL'&&sampleDate.slice(0,4)!==year)match=false;
-          if(match&&month!=='ALL'&&sampleDate.slice(5,7)!==month)match=false;
+          if(match&&year!=='ALL'&&dateParts.year!==year)match=false;
+          if(match&&month!=='ALL'&&dateParts.month!==month)match=false;
+          var referral=String(($('outsourceReferralFilter')||{}).value||'ALL');
+          var lab=String(($('outsourceLabFilter')||{}).value||'ALL');
+          var test=String(($('outsourceTestFilter')||{}).value||'ALL');
+          var unit=String(($('outsourceUnitFilter')||{}).value||'ALL');
+          if(match&&referral!=='ALL'&&String(r.referral||'').toLowerCase()!==referral.toLowerCase())match=false;
+          if(match&&lab!=='ALL'&&String(r.lab||'').toLowerCase()!==lab.toLowerCase())match=false;
+          if(match&&test!=='ALL'&&String(r.test||'').toLowerCase()!==test.toLowerCase())match=false;
+          if(match&&unit!=='ALL'&&String(r.unit||'').toLowerCase()!==unit.toLowerCase())match=false;
           if(match&&q){
             var hay=r._haystack;
             if(!hay){

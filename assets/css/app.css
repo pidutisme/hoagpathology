@@ -12326,3 +12326,35 @@ body.visitor-read-only [data-outsource-action="delete"] {
   font-size: 10px !important;
 }
 .outsource-result-modal[hidden] { display: none !important; }
+
+
+/* V20: Outsource multi-dimension filters. Keep the toolbar compact on desktop. */
+.outsource-search {
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px !important;
+  align-items:center;
+}
+.outsource-search #outsourceSearch { grid-column:span 2; min-width:0; width:100%; box-sizing:border-box; }
+.outsource-search select {
+  min-width:0;
+  width:100%;
+  min-height:40px;
+  box-sizing:border-box;
+  border:1px solid rgba(120,135,160,.14) !important;
+  border-radius:12px !important;
+  background:var(--neo-surface,#eef2f8) !important;
+  color:var(--text,#243047) !important;
+  padding:9px 11px !important;
+  font:inherit;
+  font-size:11px !important;
+  box-shadow:3px 3px 7px rgba(145,155,175,.12),-3px -3px 7px rgba(255,255,255,.75);
+}
+@media(max-width:1050px){
+  .outsource-search { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .outsource-search #outsourceSearch { grid-column:1/-1; }
+}
+@media(max-width:560px){
+  .outsource-search { grid-template-columns:minmax(0,1fr); }
+  .outsource-search #outsourceSearch { grid-column:auto; }
+}
