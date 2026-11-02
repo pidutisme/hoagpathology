@@ -4400,7 +4400,13 @@ hoagApiRequest('logout', {
        * + isAssignedRow                    +
        * +----------------------------------+ */
       function isAssignedRow(row) {
-        return !!(row && isTruthy(row.assigned));
+        if (!row || typeof row !== 'object') return false;
+        if (isTruthy(row.assigned)) return true;
+        /* Older Supabase rows may omit `assigned`; a changed staff name is
+           itself proof of a roster reassignment. */
+        var original = cleanText(row.originalStaff).toUpperCase();
+        var current = cleanText(row.staff).toUpperCase();
+        return !!(original && current && original !== current);
       }
   
       /* +----------------------------------+
@@ -5555,12 +5561,49 @@ hoagApiRequest('logout', {
       /* +----------------------------------+
        * + scheduleMonthCalendarBuild       +
        * +----------------------------------+ */
+      function refreshCalendarRosterCells() {
+        var grid = $('calendarMiniGrid');
+        if (!grid) return;
+        var cells = grid.querySelectorAll('.calendar-mini-day[data-date]');
+        for (var i = 0; i < cells.length; i += 1) {
+          var cell = cells[i];
+          var key = cell.dataset.date;
+          var dateObj = dateFromKey(key, state.selectedDate);
+          var staffState = getCalendarStaffStateForDate(dateObj);
+          var staffName = cell.querySelector('.calendar-mini-day-staff');
+          if (!staffName) continue;
+          staffName.textContent = '';
+          staffName.classList.toggle('has-assigned-staff', !!staffState.isChanged);
+          cell.classList.toggle('has-assigned-staff', !!staffState.isChanged);
+          if (staffState.isChanged) {
+            var originalLine = document.createElement('span');
+            var assignedLine = document.createElement('span');
+            originalLine.className = 'calendar-mini-day-staff-original';
+            originalLine.textContent = staffState.originalStaff;
+            assignedLine.className = 'calendar-mini-day-staff-assigned';
+            assignedLine.textContent = staffState.assignedStaff;
+            staffName.appendChild(originalLine);
+            staffName.appendChild(assignedLine);
+          } else {
+            var currentLine = document.createElement('span');
+            currentLine.className = 'calendar-mini-day-staff-current';
+            currentLine.textContent = staffState.assignedStaff || staffState.originalStaff || '';
+            staffName.appendChild(currentLine);
+          }
+          var holidayLabel = cell.dataset.holidayLabel || '';
+          cell.setAttribute('aria-label', dateObj.getDate() + ' ' + config.fullMonthNames[dateObj.getMonth()] + ' ' + dateObj.getFullYear() + ((staffState.assignedStaff || staffState.originalStaff) ? ' ' + (staffState.isChanged ? staffState.originalStaff + ' changed to ' + staffState.assignedStaff : (staffState.assignedStaff || staffState.originalStaff)) : '') + (holidayLabel ? ' cuti ' + holidayLabel : ''));
+        }
+        renderTodayFloatingCards();
+      }
+
       function scheduleMonthCalendarBuild() {
         if (state.rosterCalendarRenderQueued) return;
         state.rosterCalendarRenderQueued = true;
         (window.requestAnimationFrame || function (callback) { return window.setTimeout(callback, 1000 / 60); })(function () {
           state.rosterCalendarRenderQueued = false;
-          buildMonthCalendar();
+          /* Update only roster labels; keep all 42 calendar cells mounted so
+             unrelated dates never disappear/reappear during a roster save. */
+          refreshCalendarRosterCells();
         });
       }
   
@@ -6354,14 +6397,8 @@ function exportMonthlySchedulePdfs() {
           renderedCells += 1;
         }
   
-        /* Swap the completed calendar fragment in one DOM operation.
-           Clearing first creates a visible empty frame during roster saves. */
-        if (typeof grid.replaceChildren === 'function') {
-          grid.replaceChildren(fragment);
-        } else {
-          grid.textContent = '';
-          grid.appendChild(fragment);
-        }
+        grid.textContent = '';
+        grid.appendChild(fragment);
         renderTodayFloatingCards();
       }
   
