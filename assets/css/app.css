@@ -12123,3 +12123,93 @@ body.visitor-read-only [data-outsource-action="delete"] {
 .outsource-detail-item div{font-size:12px;color:#18354a;overflow-wrap:anywhere;}
 @media(max-width:1050px){:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid{grid-template-columns:1fr!important;} :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-table-wrap{max-height:55vh!important;}}
 @media(max-width:600px){.outsource-detail-grid{grid-template-columns:1fr;}}
+
+
+/* V9 — user-approved side-by-side workspace for Outsource + Transfusion.
+   Keep the registration form in a narrow left rail and the records workspace
+   on the right. This intentionally overrides the earlier one-column rule. */
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-register{
+  width:100% !important; max-width:none !important; box-sizing:border-box !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid{
+  display:grid !important;
+  grid-template-columns:minmax(280px, 24%) minmax(0, 1fr) !important;
+  align-items:stretch !important;
+  gap:14px !important;
+  width:100% !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card{
+  min-width:0 !important; width:100% !important; max-width:none !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:first-child .outsource-form{
+  display:grid !important; grid-template-columns:minmax(0,1fr) !important;
+  gap:10px !important; padding:14px !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:first-child .outsource-form .outsource-field,
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:first-child .outsource-form .outsource-field.full,
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:first-child .outsource-form .outsource-field.outsource-test-field{
+  grid-column:1 / -1 !important; min-width:0 !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:nth-child(2){
+  display:flex !important; flex-direction:column !important; min-height:0 !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:nth-child(2) .outsource-summary{
+  display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:8px !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:nth-child(2) .outsource-search{
+  display:grid !important; grid-template-columns:minmax(150px,1.5fr) repeat(3,minmax(90px,1fr)) !important;
+  gap:8px !important; min-width:0 !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-table-wrap{
+  width:100% !important; min-width:0 !important; max-width:100% !important;
+  overflow:auto !important; max-height:calc(100vh - 330px) !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-table{
+  width:100% !important; min-width:850px !important; table-layout:fixed !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-table th,
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-table td{
+  padding:8px 6px !important; overflow:hidden !important; text-overflow:ellipsis !important;
+  white-space:nowrap !important; vertical-align:middle !important;
+}
+/* Outsource has exactly the nine requested visible columns. */
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(1),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(1){width:9%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(2),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(2){width:10%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(3),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(3){width:15%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(4),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(4){width:12%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(5),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(5){width:9%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(6),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(6){width:10%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(7),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(7){width:17%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(8),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(8){width:9%;}
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(9),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(9){width:9%;}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-actions{
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  flex-wrap:nowrap !important; gap:3px !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-mini{
+  min-width:28px !important; min-height:26px !important; padding:3px 5px !important;
+}
+@media(max-width:1050px){
+  :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid{
+    grid-template-columns:minmax(245px, 30%) minmax(0,1fr) !important; gap:10px !important;
+  }
+  :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-search{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-search > input:first-child{grid-column:1/-1 !important;}
+}
+@media(max-width:760px){
+  :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-grid{
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-table-wrap{max-height:60vh !important;}
+}
