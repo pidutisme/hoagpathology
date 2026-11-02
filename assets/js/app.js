@@ -5638,18 +5638,27 @@ hoagApiRequest('logout', {
       /* +----------------------------------+
        * + scheduleMonthCalendarBuild       +
        * +----------------------------------+ */
-      function refreshCalendarRosterCells() {
+      function refreshCalendarRosterCells(dateKeys) {
         var grid = $('calendarMiniGrid');
         if (!grid) return;
+        var onlyKeys = null;
+        if (Array.isArray(dateKeys) && dateKeys.length) {
+          onlyKeys = {};
+          dateKeys.forEach(function (key) { onlyKeys[String(key)] = true; });
+        }
         var cells = grid.querySelectorAll('.calendar-mini-day[data-date]');
         for (var i = 0; i < cells.length; i += 1) {
           var cell = cells[i];
           var key = cell.dataset.date;
+          /* Critical: do not touch labels for unaffected dates. Previously all
+             staff labels were cleared and rebuilt on every edit, which caused
+             unrelated names to blink/disappear during the frame. */
+          if (onlyKeys && !onlyKeys[key]) continue;
           var dateObj = dateFromKey(key, state.selectedDate);
           var staffState = getCalendarStaffStateForDate(dateObj);
           var staffName = cell.querySelector('.calendar-mini-day-staff');
           if (!staffName) continue;
-          staffName.textContent = '';
+          var nextContent = document.createDocumentFragment();
           staffName.classList.toggle('has-assigned-staff', !!staffState.isChanged);
           cell.classList.toggle('has-assigned-staff', !!staffState.isChanged);
           if (staffState.isChanged) {
@@ -5659,28 +5668,33 @@ hoagApiRequest('logout', {
             originalLine.textContent = staffState.originalStaff;
             assignedLine.className = 'calendar-mini-day-staff-assigned';
             assignedLine.textContent = staffState.assignedStaff;
-            staffName.appendChild(originalLine);
-            staffName.appendChild(assignedLine);
+            nextContent.appendChild(originalLine);
+            nextContent.appendChild(assignedLine);
           } else {
             var currentLine = document.createElement('span');
             currentLine.className = 'calendar-mini-day-staff-current';
             currentLine.textContent = staffState.assignedStaff || staffState.originalStaff || '';
-            staffName.appendChild(currentLine);
+            nextContent.appendChild(currentLine);
           }
+          staffName.replaceChildren(nextContent);
           var holidayLabel = cell.dataset.holidayLabel || '';
           cell.setAttribute('aria-label', dateObj.getDate() + ' ' + config.fullMonthNames[dateObj.getMonth()] + ' ' + dateObj.getFullYear() + ((staffState.assignedStaff || staffState.originalStaff) ? ' ' + (staffState.isChanged ? staffState.originalStaff + ' changed to ' + staffState.assignedStaff : (staffState.assignedStaff || staffState.originalStaff)) : '') + (holidayLabel ? ' cuti ' + holidayLabel : ''));
         }
         renderTodayFloatingCards();
       }
 
-      function scheduleMonthCalendarBuild() {
+      var pendingRosterCalendarDateKeys = {};
+      function scheduleMonthCalendarBuild(dateKeys) {
+        (Array.isArray(dateKeys) ? dateKeys : []).forEach(function (key) {
+          pendingRosterCalendarDateKeys[String(key)] = true;
+        });
         if (state.rosterCalendarRenderQueued) return;
         state.rosterCalendarRenderQueued = true;
         (window.requestAnimationFrame || function (callback) { return window.setTimeout(callback, 1000 / 60); })(function () {
           state.rosterCalendarRenderQueued = false;
-          /* Update only roster labels; keep all 42 calendar cells mounted so
-             unrelated dates never disappear/reappear during a roster save. */
-          refreshCalendarRosterCells();
+          var keys = Object.keys(pendingRosterCalendarDateKeys);
+          pendingRosterCalendarDateKeys = {};
+          refreshCalendarRosterCells(keys);
         });
       }
   
@@ -5724,7 +5738,7 @@ hoagApiRequest('logout', {
         /* Keep the editable roster/change layer independent from the default
            rotation. The PDF 'after' view reads this layer only. */
         try { safeStorageSet('labDailyRosterChangesV1_' + getRosterStorageUserId(), JSON.stringify(store)); } catch (e) {}
-        scheduleMonthCalendarBuild();
+        scheduleMonthCalendarBuild(Object.keys(grouped).length ? Object.keys(grouped) : [selectedKey]);
       }
   
       /* +----------------------------------+
