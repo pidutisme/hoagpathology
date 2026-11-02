@@ -5573,39 +5573,68 @@ hoagApiRequest('logout', {
         for (var i = 0; i < cells.length; i += 1) {
           var cell = cells[i];
           var key = cell.dataset.date;
-          /* Critical: do not touch labels for unaffected dates. Previously all
-             staff labels were cleared and rebuilt on every edit, which caused
-             unrelated names to blink/disappear during the frame. */
           if (onlyKeys && !onlyKeys[key]) continue;
           var dateObj = dateFromKey(key, state.selectedDate);
           var staffState = getCalendarStaffStateForDate(dateObj);
           var staffName = cell.querySelector('.calendar-mini-day-staff');
           if (!staffName) continue;
-          var nextContent = document.createDocumentFragment();
-          staffName.classList.toggle('has-assigned-staff', !!staffState.isChanged);
-          cell.classList.toggle('has-assigned-staff', !!staffState.isChanged);
-          if (staffState.isChanged) {
-            var originalLine = document.createElement('span');
-            var assignedLine = document.createElement('span');
-            originalLine.className = 'calendar-mini-day-staff-original';
-            originalLine.textContent = staffState.originalStaff;
-            assignedLine.className = 'calendar-mini-day-staff-assigned';
-            assignedLine.textContent = staffState.assignedStaff;
-            nextContent.appendChild(originalLine);
-            nextContent.appendChild(assignedLine);
-          } else {
-            var currentLine = document.createElement('span');
-            currentLine.className = 'calendar-mini-day-staff-current';
-            currentLine.textContent = staffState.assignedStaff || staffState.originalStaff || '';
-            nextContent.appendChild(currentLine);
+
+          /* Build the expected label signature first. If the visible roster is
+             already correct, leave its DOM nodes untouched. Cloud polling and
+             save acknowledgements often refresh the whole month; replacing
+             every changed label on each acknowledgement caused all edited
+             names to blink together. */
+          var expected = staffState.isChanged
+            ? [
+                ['calendar-mini-day-staff-original', staffState.originalStaff || ''],
+                ['calendar-mini-day-staff-assigned', staffState.assignedStaff || '']
+              ]
+            : [[
+                'calendar-mini-day-staff-current',
+                staffState.assignedStaff || staffState.originalStaff || ''
+              ]];
+          var current = staffName.children;
+          var sameContent = current.length === expected.length;
+          if (sameContent) {
+            for (var j = 0; j < expected.length; j += 1) {
+              if (current[j].className !== expected[j][0] ||
+                  current[j].textContent !== expected[j][1]) {
+                sameContent = false;
+                break;
+              }
+            }
           }
-          staffName.replaceChildren(nextContent);
+          var isChanged = !!staffState.isChanged;
+          var classStateMatches =
+            staffName.classList.contains('has-assigned-staff') === isChanged &&
+            cell.classList.contains('has-assigned-staff') === isChanged;
+
+          if (!sameContent || !classStateMatches) {
+            var nextContent = document.createDocumentFragment();
+            for (var k = 0; k < expected.length; k += 1) {
+              var line = document.createElement('span');
+              line.className = expected[k][0];
+              line.textContent = expected[k][1];
+              nextContent.appendChild(line);
+            }
+            staffName.replaceChildren(nextContent);
+            staffName.classList.toggle('has-assigned-staff', isChanged);
+            cell.classList.toggle('has-assigned-staff', isChanged);
+          }
+
           var holidayLabel = cell.dataset.holidayLabel || '';
-          cell.setAttribute('aria-label', dateObj.getDate() + ' ' + config.fullMonthNames[dateObj.getMonth()] + ' ' + dateObj.getFullYear() + ((staffState.assignedStaff || staffState.originalStaff) ? ' ' + (staffState.isChanged ? staffState.originalStaff + ' changed to ' + staffState.assignedStaff : (staffState.assignedStaff || staffState.originalStaff)) : '') + (holidayLabel ? ' cuti ' + holidayLabel : ''));
+          var ariaLabel = dateObj.getDate() + ' ' + config.fullMonthNames[dateObj.getMonth()] + ' ' + dateObj.getFullYear() +
+            ((staffState.assignedStaff || staffState.originalStaff)
+              ? ' ' + (isChanged
+                ? staffState.originalStaff + ' changed to ' + staffState.assignedStaff
+                : (staffState.assignedStaff || staffState.originalStaff))
+              : '') + (holidayLabel ? ' cuti ' + holidayLabel : '');
+          if (cell.getAttribute('aria-label') !== ariaLabel) {
+            cell.setAttribute('aria-label', ariaLabel);
+          }
         }
         renderTodayFloatingCards();
       }
-
       var pendingRosterCalendarDateKeys = {};
       function scheduleMonthCalendarBuild(dateKeys) {
         (Array.isArray(dateKeys) ? dateKeys : []).forEach(function (key) {
