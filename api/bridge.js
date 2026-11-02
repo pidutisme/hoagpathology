@@ -484,7 +484,10 @@ async function dispatch(db, method, a, req) {
       if (!row) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId, storageSource: 'supabase' };
       const current = { ...(row.data && typeof row.data === 'object' ? row.data : {}), id: row.id, createdAt: row.data?.createdAt || row.created_at, updatedAt: row.data?.updatedAt || row.updated_at };
       requireOutsourceDeletePermission(s, current);
-      if (expectedUpdatedAt && String(current.updatedAt || '') !== expectedUpdatedAt) return { ok: false, conflict: true, error: 'Outsource record changed. Reload before deleting.', version: VERSION };
+      // Deletion is an explicit, separately confirmed action. Use the freshly
+      // fetched server row above for authorization; do not reject it merely
+      // because the list's cached updatedAt differs from the database row.
+      // This avoids blocking legitimate deletes after another user edits a record.
       await deleteOutsourceRow(rid);
       const deletedAt = iso();
       await log(db, s.userId, 'OUTSOURCE_RECORD_DELETED', `Permanently removed outsource record ${rid}.`);

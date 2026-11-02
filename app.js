@@ -9275,7 +9275,9 @@ function exportMonthlySchedulePdfs() {
           ['Notes','<textarea id="transfusionDetailNotes" class="transfusion-detail-control" rows="2" maxlength="3000" placeholder="Notes"></textarea>']
         ];
         modal.querySelector('.outsource-detail-grid').innerHTML=items.map(function(f){var raw=String(f[1]||'').trim();var html=(f[0]==='Remarks / Status'||f[0]==='Notes'||f[0]==='Google Drive')?raw:esc(raw||'—');return '<div class="outsource-detail-item"><label>'+esc(f[0])+'</label><div>'+html+'</div></div>';}).join('');
-        modal.querySelector('#transfusionDetailStatus').value=String(r.remarks||'PENDING').toUpperCase();
+        var transfusionStatusSelect=modal.querySelector('#transfusionDetailStatus');
+        transfusionStatusSelect.value=String(r.remarks||'PENDING').toUpperCase();
+        transfusionStatusSelect.style.cssText='display:block;width:100%;box-sizing:border-box;min-height:40px;padding:9px 34px 9px 12px;border:1px solid rgba(148,163,184,.25);border-radius:14px;background-color:#eef2f8;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364788f%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.82),0 3px 9px rgba(76,94,122,.06);color:#172033;font:inherit;font-size:10px;appearance:none;-webkit-appearance:none;cursor:pointer;';
         modal.querySelector('#transfusionDetailNotes').value=String(r.notes||'');
         modal.hidden=false;modal.style.display='flex';modal.style.visibility='visible';modal.style.opacity='1';modal.style.zIndex='2147483640';
       }
