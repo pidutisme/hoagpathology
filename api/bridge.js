@@ -125,45 +125,39 @@ async function getRoster() {
   return data || null;
 }
 
-async function saveRoster(roster, userId, expectedUpdatedAt) {
-  const current = await getRoster();
+async function saveRoster(roster, userId, expectedUpdatedAt, dirtyDates = []) {
+  const incomingRoster = roster && typeof roster === 'object' && !Array.isArray(roster) ? roster : {};
+  const dates = Array.isArray(dirtyDates)
+    ? [...new Set(dirtyDates.map(x => String(x || '').trim()).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)))]
+    : [];
 
-  if (
-    expectedUpdatedAt &&
-    current &&
-    String(current.updated_at || '') !== String(expectedUpdatedAt)
-  ) {
-    return { committed: false, conflict: true, current };
+  // The client must identify exactly which calendar dates it edited. The
+  // database function locks the single team row and merges only those dates,
+  // so two users editing different dates cannot overwrite one another.
+  if (!dates.length) {
+    const current = await getRoster();
+    return { committed: true, current: current || { roster: {}, updated_at: '', version: 0 } };
   }
 
-  const now = iso();
-  const existingRoster = current?.roster && typeof current.roster === 'object' && !Array.isArray(current.roster) ? current.roster : {};
-  const incomingRoster = roster && typeof roster === 'object' && !Array.isArray(roster) ? roster : {};
-  const existingCount = Object.keys(existingRoster).length;
-  const incomingCount = Object.keys(incomingRoster).length;
-
-  // Prevent accidental partial-save overwrites (e.g., when a client saves 1 date before initial cloud sync completes)
-  const shouldMergeWithExisting = !expectedUpdatedAt || (existingCount > 3 && incomingCount > 0 && incomingCount < existingCount - 2);
-  const finalRoster = shouldMergeWithExisting
-    ? { ...existingRoster, ...incomingRoster }
-    : incomingRoster;
-
-  const next = {
+  const { data, error } = await supabase.rpc('merge_team_roster_dates', {
+    p_roster: incomingRoster,
+    p_dates: dates,
+    p_user_id: clean(userId, 60)
+  });
+  if (error) {
+    // Deliberately do not fall back to the old read-then-upsert strategy:
+    // that strategy is vulnerable to concurrent writers and can lose edits.
+    throw new Error(`Atomic roster save unavailable: ${error.message || error}. Apply the SQL migration 2026-11-03_atomic_roster_merge.sql.`);
+  }
+  const current = data && typeof data === 'object' ? {
     id: 'team',
-    version: Number(current?.version || 0) + 1 || 1,
-    updated_by: clean(userId, 60),
-    saved_keys: Object.keys(finalRoster).length,
-    updated_at: now,
-    roster: finalRoster
-  };
-
-  const { error } = await supabase
-    .from('app_roster')
-    .upsert(next, { onConflict: 'id' });
-
-  if (error) throw error;
-
-  return { committed: true, current: next };
+    roster: data.roster || {},
+    updated_at: data.updated_at || '',
+    version: Number(data.version || 0),
+    saved_keys: Number(data.saved_keys || Object.keys(data.roster || {}).length),
+    updated_by: clean(userId, 60)
+  } : { id: 'team', roster: {}, updated_at: '', version: 0 };
+  return { committed: true, current };
 }
 
 async function getInventoryRoot() {
@@ -424,7 +418,7 @@ async function dispatch(db, method, a, req) {
       const s = await requireSession(db, tokenAt(1));
       if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       const roster = a[0] && typeof a[0] === 'object' ? a[0] : {};
-      const result = await saveRoster(roster, s.userId, a[2]);
+      const result = await saveRoster(roster, s.userId, a[2], a[3]);
       if (!result.committed) return { ok: false, conflict: true, roster: result.current?.roster || {}, updatedAt: result.current?.updated_at || '', error: 'Roster was changed by another user. The latest roster has been reloaded; please review and save again.', version: VERSION };
       return { ok: true, roster: result.current.roster, userId: s.userId, scope: 'team', savedKeys: Object.keys(result.current.roster || {}).length, updatedAt: result.current.updated_at, storageSource: 'supabase', version: VERSION, rosterVersion: result.current.version };
     }

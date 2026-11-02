@@ -6962,6 +6962,7 @@ function exportMonthlySchedulePdfs() {
         var normalized = normalizeRoster(roster);
         var json = stableJson(normalized);
         var requestRevision = state.rosterLocalRevision;
+        var requestDirtyDates = Object.keys(state.rosterDirtyDates || {});
         if (!hasVercelBackend()) {
           setSyncStatus('Local only', 'offline');
           return;
@@ -7035,7 +7036,7 @@ function exportMonthlySchedulePdfs() {
             console.warn('Roster cloud save failed:', error && error.message ? error.message : error);
             scheduleCloudPoll();
           })
-          .saveUserRoster(normalized, typeof Auth !== 'undefined' && Auth.getToken ? Auth.getToken() : '', state.rosterCloudUpdatedAt);
+          .saveUserRoster(normalized, typeof Auth !== 'undefined' && Auth.getToken ? Auth.getToken() : '', state.rosterCloudUpdatedAt, requestDirtyDates);
       }
   
       /* +----------------------------------+
