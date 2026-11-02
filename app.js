@@ -1869,6 +1869,9 @@
       var loginHardTimeoutTimer = null;
       var loginRequestId = 0;
       var loginMfaRequired = false;
+      var TAB_AUTH_KEY = 'labAppTabAuthenticatedV1';
+      var pageLifecycleBound = false;
+      var pageLifecycleLogoutSent = false;
   
       /* +----------------------------------+
        * + cacheDomNodes                    +
@@ -2116,12 +2119,71 @@
       /* +----------------------------------+
        * + storeSession                     +
        * +----------------------------------+ */
+      /* +----------------------------------+
+       * + tab/session lifecycle             +
+       * +----------------------------------+ */
+      function hasTabAuthenticated_() {
+        return safeSessionGet(TAB_AUTH_KEY) === '1';
+      }
+
+      function markTabAuthenticated_() {
+        safeSessionSet(TAB_AUTH_KEY, '1');
+      }
+
+      function clearTabAuthenticated_() {
+        safeSessionRemove(TAB_AUTH_KEY);
+      }
+
+      function getNavigationType_() {
+        try {
+          var entry = window.performance && typeof window.performance.getEntriesByType === 'function'
+            ? window.performance.getEntriesByType('navigation')[0]
+            : null;
+          if (entry && entry.type) return String(entry.type);
+        } catch (error) {}
+        try {
+          if (window.performance && window.performance.navigation && Number(window.performance.navigation.type) === 1) return 'reload';
+        } catch (error) {}
+        return 'navigate';
+      }
+
+      function sendPageCloseLogout_() {
+        if (pageLifecycleLogoutSent || !hasTabAuthenticated_()) return;
+        /* Refresh/reload must retain the current session. A genuine tab/app close
+         * is a non-reload unload and revokes the server session. */
+        if (getNavigationType_() === 'reload') return;
+        pageLifecycleLogoutSent = true;
+        clearTabAuthenticated_();
+        try {
+          fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientInfo: { page: 'page-close', reason: 'pagehide' } })
+          }).catch(function () {});
+        } catch (error) {}
+      }
+
+      function bindPageLifecycle_() {
+        if (pageLifecycleBound) return;
+        pageLifecycleBound = true;
+        window.addEventListener('pagehide', function (event) {
+          if (event && event.persisted) return;
+          sendPageCloseLogout_();
+        });
+        window.addEventListener('beforeunload', function () { sendPageCloseLogout_(); });
+      }
+
       function storeSession(envelope) {
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
         // Never persist or inspect the server session credential in JavaScript.
         safeSessionRemove(TOKEN_KEY);
         safeStorageRemove(TOKEN_KEY);
         storePublicAuthUser_(envelope);
+        markTabAuthenticated_();
+        pageLifecycleLogoutSent = false;
       }
   
       /* +----------------------------------+
@@ -2132,6 +2194,7 @@
         safeSessionRemove(USER_KEY);
         safeStorageRemove(TOKEN_KEY);
         safeStorageRemove(USER_KEY);
+        clearTabAuthenticated_();
       }
   
       /* +----------------------------------+
@@ -2172,35 +2235,48 @@
         document.body.classList.add('visitor-read-only');
 
         /* Main data-entry forms across Outsource, Inventory, Transfusion and roster. */
+        /* Hide all explicit EDIT/DELETE affordances for Visitor. Visitors are read-only,
+         * so modification controls should not merely be disabled; they must not be rendered
+         * as available actions. CSS also covers dynamically generated rows. */
         document.querySelectorAll(
-          '#moduleYearGrid .outsource-form input:not([type=hidden]),' +
-          '#moduleYearGrid .outsource-form select,' +
-          '#moduleYearGrid .outsource-form textarea,' +
-          '#moduleYearGrid .outsource-form button,' +
-          '#moduleYearGrid .inventory-form input,' +
-          '#moduleYearGrid .inventory-form select,' +
-          '#moduleYearGrid .inventory-form textarea,' +
-          '#moduleYearGrid .inventory-form button,' +
-          '#moduleYearGrid .inventory-entry-form input,' +
-          '#moduleYearGrid .inventory-entry-form select,' +
-          '#moduleYearGrid .inventory-entry-form textarea,' +
-          '#moduleYearGrid .inventory-entry-form button,' +
-          '#moduleYearGrid #inventoryMovementForm input,' +
-          '#moduleYearGrid #inventoryMovementForm select,' +
-          '#moduleYearGrid #inventoryMovementForm textarea,' +
-          '#moduleYearGrid #inventoryMovementForm button,' +
-          '#moduleYearGrid #inventoryAdminItemForm input,' +
-          '#moduleYearGrid #inventoryAdminItemForm select,' +
-          '#moduleYearGrid #inventoryAdminItemForm textarea,' +
-          '#moduleYearGrid #inventoryAdminItemForm button,' +
-          '#moduleYearGrid .transfusion-card form input:not([type=hidden]),' +
-          '#moduleYearGrid .transfusion-card form select,' +
-          '#moduleYearGrid .transfusion-card form textarea,' +
-          '#moduleYearGrid .transfusion-card form button,' +
-          '#moduleYearGrid .outsource-result-modal input:not([type=hidden]),' +
-          '#moduleYearGrid .outsource-result-modal select,' +
-          '#moduleYearGrid .outsource-result-modal textarea,' +
-          '#moduleYearGrid .outsource-result-modal button,' +
+          '[data-outsource-action="edit"],[data-outsource-action="delete"],' +
+          '[data-inventory-edit-id],[data-inventory-delete-id],' +
+          '[data-admin-item-edit],[data-admin-item-delete],' +
+          '[data-action="edit"],[data-action="delete"],' +
+          '[data-roster-action="edit-row"],[data-roster-action="delete-row"],' +
+          '.roster-delete-btn,.roster-cancel-edit-btn,' +
+          '.tr-edit,.tr-delete'
+        ).forEach(function(el){ el.hidden = true; el.setAttribute('aria-hidden','true'); });
+
+        document.querySelectorAll(
+          '.outsource-form input:not([type=hidden]),' +
+          '.outsource-form select,' +
+          '.outsource-form textarea,' +
+          '.outsource-form button,' +
+          '.inventory-form input:not([type=hidden]),' +
+          '.inventory-form select,' +
+          '.inventory-form textarea,' +
+          '.inventory-form button,' +
+          '.inventory-entry-form input:not([type=hidden]),' +
+          '.inventory-entry-form select,' +
+          '.inventory-entry-form textarea,' +
+          '.inventory-entry-form button,' +
+          '#inventoryMovementForm input:not([type=hidden]),' +
+          '#inventoryMovementForm select,' +
+          '#inventoryMovementForm textarea,' +
+          '#inventoryMovementForm button,' +
+          '#inventoryAdminItemForm input:not([type=hidden]),' +
+          '#inventoryAdminItemForm select,' +
+          '#inventoryAdminItemForm textarea,' +
+          '#inventoryAdminItemForm button,' +
+          '.transfusion-card form input:not([type=hidden]),' +
+          '.transfusion-card form select,' +
+          '.transfusion-card form textarea,' +
+          '.transfusion-card form button,' +
+          '.outsource-result-modal input:not([type=hidden]),' +
+          '.outsource-result-modal select,' +
+          '.outsource-result-modal textarea,' +
+          '.outsource-result-modal button,' +
           '#dailyRosterList input,' +
           '#dailyRosterList select,' +
           '#dailyRosterList textarea,' +
@@ -2210,6 +2286,9 @@
           '#inventoryStockInBtn,' +
           '#inventoryStockOutBtn,' +
           '#inventoryAdminItemsBtn,' +
+          '#inventoryAdminItemClearBtn,' +
+          '#inventoryAdminItemSaveBtn,' +
+          '#inventorySubmitBtn,' +
           '#inventoryAdminItemList [data-admin-item-edit],' +
           '#inventoryAdminItemList [data-admin-item-delete],' +
           '#moduleYearGrid [data-write-action],' +
@@ -2222,20 +2301,20 @@
          * native selects and otherwise can keep their click handler after the select
          * itself becomes disabled. */
         document.querySelectorAll(
-          '#moduleYearGrid .outsource-form .outsource-select-trigger,' +
-          '#moduleYearGrid .outsource-result-modal .outsource-select-trigger,' +
-          '#moduleYearGrid .inventory-form .inventory-filter-trigger,' +
-          '#moduleYearGrid .inventory-entry-form .inventory-filter-trigger'
+          '.outsource-form .outsource-select-trigger,' +
+          '.outsource-result-modal .outsource-select-trigger,' +
+          '.inventory-form .inventory-filter-trigger,' +
+          '.inventory-entry-form .inventory-filter-trigger'
         ).forEach(markVisitorDisabled_);
 
         document.querySelectorAll(
-          '#moduleYearGrid .outsource-form,' +
-          '#moduleYearGrid .inventory-form,' +
-          '#moduleYearGrid .inventory-entry-form,' +
-          '#moduleYearGrid #inventoryMovementForm,' +
-          '#moduleYearGrid #inventoryAdminItemForm,' +
-          '#moduleYearGrid .transfusion-card form,' +
-          '#moduleYearGrid .outsource-result-modal .outsource-result-dialog,' +
+          '.outsource-form,' +
+          '.inventory-form,' +
+          '.inventory-entry-form,' +
+          '#inventoryMovementForm,' +
+          '#inventoryAdminItemForm,' +
+          '.transfusion-card form,' +
+          '.outsource-result-modal .outsource-result-dialog,' +
           '#dailyRosterList'
         ).forEach(function(root) {
           root.classList.add('visitor-read-only-form');
@@ -2260,14 +2339,20 @@
        * was resolved. The capture handler also covers dynamically-created controls. */
       document.addEventListener('click', function(e) {
         if (!isVisitorRole_()) return;
-        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, [data-write-action], [data-action="edit"], [data-action="delete"], [data-action="save"], #inventoryStockInBtn, #inventoryStockOutBtn, #inventoryAdminItemsBtn') : null;
+        var forbiddenAction = e.target && e.target.closest ? e.target.closest('[data-outsource-action="edit"],[data-outsource-action="delete"],[data-inventory-edit-id],[data-inventory-delete-id],[data-admin-item-edit],[data-admin-item-delete],[data-roster-action="edit-row"],[data-roster-action="delete-row"],[data-action="edit"],[data-action="delete"],.tr-edit,.tr-delete') : null;
+        if (forbiddenAction && !forbiddenAction.matches('[data-visitor-allow]')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
+        var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control, [data-write-action], [data-action="edit"], [data-action="delete"], [data-action="save"], #inventoryStockInBtn, #inventoryStockOutBtn, #inventoryAdminItemsBtn, #inventoryItemTrigger') : null;
         if (target && !target.matches('[data-visitor-allow]')) {
           e.preventDefault();
           e.stopImmediatePropagation();
         }
       }, true);
       document.addEventListener('keydown', function(e) {
-        if (!isVisitorRole_) return;
+        if (!isVisitorRole_()) return;
         var target = e.target && e.target.closest ? e.target.closest('.visitor-disabled-control') : null;
         if (target && !target.matches('[data-visitor-allow]')) {
           e.preventDefault();
@@ -2680,41 +2765,34 @@
       }
 
       function checkStoredSession() {
-        /* IMPORTANT: sessionStorage contains only a display cache. It must never
-         * decide who is logged in. On every page load/refresh, verify the
-         * HttpOnly session cookie with /api/login-state first, then render the
-         * returned user/role. This prevents a previous user's name/role from
-         * flashing or being used when another account owns the current cookie. */
+        /* New page/tab/app instance = login required. Refresh = current tab
+         * session may be restored after authoritative server verification. */
         updateResumeSessionButton_();
-
         var credentialsTouched = function () {
           return !!(
             (nodes.username && String(nodes.username.value || '').length) ||
             (nodes.password && String(nodes.password.value || '').length) ||
             (nodes.mfaCode && String(nodes.mfaCode.value || '').length) ||
-            busy ||
-            state.authUserId
+            busy || state.authUserId
           );
         };
-
+        if (!hasTabAuthenticated_()) {
+          setSessionVerifying_(false);
+          clearStoredSession();
+          showLoginPanel('', '');
+          return;
+        }
         setSessionVerifying_(true);
-
         hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
-              /* If the user has already started a fresh login, do not interrupt
-               * that login attempt with the startup check's unauthenticated
-               * result. */
               setSessionVerifying_(false);
               if (credentialsTouched()) return;
               clearStoredSession();
               showLoginPanel('', '');
               return;
             }
-
-            /* The server identity is authoritative. Replace any stale cached
-             * display identity before unlocking the application. */
-            storePublicAuthUser_(envelope);
+            storeSession(envelope);
             var restoredUser = envelope.user || {};
             applyUser(restoredUser);
             unlock(restoredUser, { freshLogin:false, restoredSession:true });
@@ -2722,11 +2800,9 @@
           .catch(function (error) {
             console.warn('Initial session verification failed:', error);
             setSessionVerifying_(false);
-            /* A temporary network failure must not erase credentials that the
-             * user has already entered. */
             if (credentialsTouched()) return;
             clearStoredSession();
-            showLoginPanel('', '');
+            showLoginPanel('Unable to verify the current session. Please sign in again.', 'error');
           });
       }
 
@@ -2968,6 +3044,7 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
+        bindPageLifecycle_();
         if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         // Remove any credentials left by pre-HttpOnly builds.
         safeStorageRemove(TOKEN_KEY);
@@ -3626,11 +3703,11 @@ hoagApiRequest('logout', {
       function openOutsourceDetailModal(id){
         var r=getOutsourceRowsCached().find(function(x){return String(x.id)===String(id);});if(!r)return;
         var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',r.referral],['Outsource Lab',r.lab],['Test / Investigation',r.test]];
-        var modal=document.getElementById('outsourceDetailModal');if(!modal){modal=document.createElement('div');modal.id='outsourceDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE SAMPLE</div><h2>FULL SAMPLE DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-detail-editor"><div class="outsource-modal-field"><label for="outsourceDetailStatus">STATUS</label><select id="outsourceDetailStatus"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECTED</option></select></div><div class="outsource-modal-field outsource-date-field"><label for="outsourceDetailResultDateVisible">RESULT DATE</label><input type="hidden" id="outsourceDetailResultDate"><input type="text" id="outsourceDetailResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label for="outsourceDetailReferenceNo">REFERENCE NO.</label><input id="outsourceDetailReferenceNo" type="text" maxlength="120" placeholder="External report / accession no."></div><div class="outsource-modal-field"><label for="outsourceDetailRejectReason">REJECT REASON</label><select id="outsourceDetailRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field"><label for="outsourceDetailNotes">NOTES</label><textarea id="outsourceDetailNotes" rows="3" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceDetailCancel">CLOSE</button><button type="button" class="outsource-btn primary" id="outsourceDetailSave">SAVE CHANGES</button></div></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#outsourceDetailCancel'))modal.hidden=true;});modal.querySelector('#outsourceDetailSave').addEventListener('click',saveOutsourceDetailFields);modal.querySelector('#outsourceDetailStatus').addEventListener('change',function(){var reject=modal.querySelector('#outsourceDetailRejectReason');reject.disabled=this.value!=='REJECT';});}
+        var modal=document.getElementById('outsourceDetailModal');if(!modal){modal=document.createElement('div');modal.id='outsourceDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE SAMPLE</div><h2>FULL SAMPLE DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-detail-editor"><div class="outsource-modal-field"><label for="outsourceDetailStatus">STATUS</label><select id="outsourceDetailStatus"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECTED</option></select></div><div class="outsource-modal-field outsource-date-field"><label for="outsourceDetailResultDateVisible">RESULT DATE</label><input type="hidden" id="outsourceDetailResultDate"><input type="text" id="outsourceDetailResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label for="outsourceDetailReferenceNo">REFERENCE NO.</label><input id="outsourceDetailReferenceNo" type="text" maxlength="120" placeholder="External report / accession no."></div><div class="outsource-modal-field"><label for="outsourceDetailRejectReason">REJECT REASON</label><select id="outsourceDetailRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field outsource-detail-notes-field"><label for="outsourceDetailNotes">NOTES</label><textarea id="outsourceDetailNotes" rows="3" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceDetailCancel">CLOSE</button><button type="button" class="outsource-btn primary" id="outsourceDetailSave">SAVE CHANGES</button></div></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#outsourceDetailCancel'))modal.hidden=true;});modal.querySelector('#outsourceDetailSave').addEventListener('click',saveOutsourceDetailFields);modal.querySelector('#outsourceDetailStatus').addEventListener('change',function(){var reject=modal.querySelector('#outsourceDetailRejectReason');reject.disabled=this.value!=='REJECT';var trigger=reject.parentElement&&reject.parentElement.querySelector('.outsource-select-trigger');if(trigger){trigger.setAttribute('aria-disabled',reject.disabled?'true':'false');trigger.classList.toggle('is-disabled',reject.disabled);}});}
         modal.dataset.recordId=String(r.id);modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){return '<div class="outsource-detail-item"><label>'+outsourceEsc(f[0])+'</label><div>'+outsourceEsc(f[1]||'—')+'</div></div>';}).join('');
         var status=String(r.result||'PENDING').toUpperCase();if(status==='ADA')status='COMPLETED';modal.querySelector('#outsourceDetailStatus').value=status==='REJECT'?'REJECT':status==='COMPLETED'?'COMPLETED':'PENDING';
         modal.querySelector('#outsourceDetailResultDate').value=r.resultDate||'';modal.querySelector('#outsourceDetailResultDateVisible').value='';modal.querySelector('#outsourceDetailReferenceNo').value=r.referenceNo||'';modal.querySelector('#outsourceDetailRejectReason').innerHTML='<option value="">Select reject reason</option>'+getOutsourceRejectReasons().map(function(v){return '<option value="'+outsourceEsc(v)+'">'+outsourceEsc(v)+'</option>';}).join('');modal.querySelector('#outsourceDetailRejectReason').value=r.rejectReason||'';modal.querySelector('#outsourceDetailRejectReason').disabled=status!=='REJECT';modal.querySelector('#outsourceDetailNotes').value=r.notes||'';
-        if(window.initOutsourceNeumorphicDates)window.initOutsourceNeumorphicDates();var dateVisible=modal.querySelector('#outsourceDetailResultDateVisible');if(dateVisible&&dateVisible._syncDate)dateVisible._syncDate();modal.hidden=false;
+        if(window.outsourceInitNeumorphicDropdowns)window.outsourceInitNeumorphicDropdowns();if(window.initOutsourceNeumorphicDates)window.initOutsourceNeumorphicDates();var dateVisible=modal.querySelector('#outsourceDetailResultDateVisible');if(dateVisible&&dateVisible._syncDate)dateVisible._syncDate();modal.hidden=false;
       }
       function saveOutsourceDetailFields(){
         var modal=document.getElementById('outsourceDetailModal');if(!modal)return;var id=String(modal.dataset.recordId||''),rows=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
@@ -9166,13 +9243,14 @@ function exportMonthlySchedulePdfs() {
         if(empty)empty.hidden=rows.length>0;
         var n=document.getElementById('trTotal');if(n)n.textContent=totalCount+' TOTAL';
         var pager=document.getElementById('trPager');if(pager)pager.textContent=rows.length?('Showing 1–'+rows.length+' of '+rows.length):'Showing 0–0 of 0';
-        body.querySelectorAll('.tr-view').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openTransfusionDetailModal(b.dataset.id);});});
+        if(!body._trViewDelegated){body._trViewDelegated=true;body.addEventListener('click',function(e){var view=e.target.closest('.tr-view');if(!view||!body.contains(view))return;e.preventDefault();e.stopPropagation();openTransfusionDetailModal(view.getAttribute('data-id'));});}
+        body.querySelectorAll('.tr-view').forEach(function(b){b.onclick=function(e){e.preventDefault();e.stopPropagation();openTransfusionDetailModal(b.dataset.id);};});
         body.querySelectorAll('.tr-edit').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();edit(b.dataset.id);});});
         body.querySelectorAll('.tr-delete').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();if(!window.confirm('Delete this transfusion record?'))return;var row=records().find(function(item){return String(item.id)===String(b.dataset.id);});if(!row)return;requestTransfusion('DELETE',{recordId:row.id,expectedVersion:Number(row.version||1)}).then(function(){transfusionRows=transfusionRows.filter(function(item){return String(item.id)!==String(row.id);});saveTransfusionCache();renderRows();}).catch(function(error){window.alert(error&&error.message?error.message:'Unable to delete transfusion record.');});});});
         /* Row clicks intentionally do nothing; full details open only from the Eye action. */
         body.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(e){e.stopPropagation();});});
       }
-      function openTransfusionDetailModal(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;var fields=[['Date',displayDate(r.date)],['Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Blood Group',r.bloodGroup],['Pack No.',r.packNo],['Staff',r.staff],['Remarks / Status',r.remarks||'PENDING'],['Google Drive',r.googleDriveLink||r.fileLink],['Notes',r.notes]];var modal=document.getElementById('transfusionDetailModal');if(!modal){modal=document.createElement('div');modal.id='transfusionDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2>FULL RECORD DETAILS</h2><div class="outsource-detail-grid"></div></div>';document.body.appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close'))modal.hidden=true;});}modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){var v=String(f[1]||'').trim();return '<div class="outsource-detail-item"><label>'+esc(f[0])+'</label><div>'+(f[0]==='Google Drive'&&v?'<a href="'+esc(v)+'" target="_blank" rel="noopener noreferrer">OPEN DRIVE</a>':esc(v||'—'))+'</div></div>';}).join('');modal.hidden=false;}
+      function openTransfusionDetailModal(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;var fields=[['Date',displayDate(r.date)],['Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Blood Group',r.bloodGroup],['Pack No.',r.packNo],['Staff',r.staff],['Remarks / Status',r.remarks||'PENDING'],['Google Drive',r.googleDriveLink||r.fileLink],['Notes',r.notes]];var modal=document.getElementById('transfusionDetailModal');if(!modal){modal=document.createElement('div');modal.id='transfusionDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2>FULL RECORD DETAILS</h2><div class="outsource-detail-grid"></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close'))modal.hidden=true;});}modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){var v=String(f[1]||'').trim();return '<div class="outsource-detail-item"><label>'+esc(f[0])+'</label><div>'+(f[0]==='Google Drive'&&v?'<a href="'+esc(v)+'" target="_blank" rel="noopener noreferrer">OPEN DRIVE</a>':esc(v||'—'))+'</div></div>';}).join('');modal.hidden=false;}
       function syncTransfusionSelect(id){var el=document.getElementById(id);if(el){el.dispatchEvent(new Event('change',{bubbles:true}));}}
       function clearForm(){currentEditId='';var ids=['trDate','trName','trIdIc','trSex','trAge','trUnit','trBloodGroup','trPackNo','trStaff','trGoogleDriveLink'];ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var d=document.getElementById('trDate');if(d)d.value=today();var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='REGISTER TRANSFUSION';bindIc();}
       function edit(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;currentEditId=r.id;var values={trDate:r.date,trName:r.name,trIdIc:r.idIc,trSex:r.sex,trAge:r.age,trUnit:r.unit,trBloodGroup:r.bloodGroup,trPackNo:r.packNo,trStaff:r.staff,trGoogleDriveLink:r.googleDriveLink||r.fileLink||''};Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id]||'';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='SAVE CHANGES';document.getElementById('trName')?.focus();}
@@ -9652,10 +9730,10 @@ if ("serviceWorker" in navigator) {
     select.dataset.outsourceCustom='1';select.classList.add('outsource-native-select');
     var wrap=document.createElement('div');wrap.className='outsource-custom-select-wrap';select.parentNode.insertBefore(wrap,select);wrap.appendChild(select);
     var trigger=document.createElement('button');trigger.type='button';trigger.className='outsource-select-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');
-    if(select.disabled){trigger.setAttribute('aria-disabled','true');}
+    if(select.disabled){trigger.setAttribute('aria-disabled','true');trigger.classList.add('is-disabled');}
     trigger.innerHTML='<span data-outsource-select-label></span><span class="outsource-select-chevron">⌄</span>';wrap.insertBefore(trigger,select);sync(select);
-    if(!select.disabled)trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(openMenu&&openTrigger===trigger)close();else open(trigger,select);});
-    select.addEventListener('change',function(){sync(select);});
+    trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(select.disabled)return;if(openMenu&&openTrigger===trigger)close();else open(trigger,select);});
+    select.addEventListener('change',function(){sync(select);trigger.setAttribute('aria-disabled',select.disabled?'true':'false');trigger.classList.toggle('is-disabled',!!select.disabled);});
   }
   function init(){
     if(!document.body||!document.getElementById('moduleYearGrid'))return;
