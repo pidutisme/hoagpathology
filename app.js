@@ -8850,42 +8850,38 @@ function exportMonthlySchedulePdfs() {
         var d=new Date(Number(p[0]),(Number(p[1]||1)-1)+offset,1);
         return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
       }
+      function transactionUnitPrice(t, item){
+        if(t && t.unitPrice!==undefined && t.unitPrice!==null && t.unitPrice!=='' && Number.isFinite(Number(t.unitPrice))) return Number(t.unitPrice);
+        // Legacy transactions did not store their own price. Use the saved
+        // price for that transaction month as a one-time-compatible fallback.
+        return priceForMonth(item, transactionMonthKey(t));
+      }
       function monthlyMovementStats(monthKey, category){
-        var start=monthKey+'-01T00:00:00';
-        var next=monthKeyOffset(monthKey,1)+'-01T00:00:00';
         var prevKey=monthKeyOffset(monthKey,-1);
         var items=data.items.filter(function(i){return i.active!==false&&(category==='ALL'||i.category===category);});
         var lastBalance=0, stockIn=0, stockOut=0;
 
-        // The selected month's LAST MONTH BALANCE must be the immediately
-        // previous month's CLOSING BALANCE. This is the carry-forward rule.
-        var previousSnapshot=data.monthlySnapshots&&data.monthlySnapshots[prevKey];
-        if(previousSnapshot&&previousSnapshot.categories&&previousSnapshot.categories[category]){
-          lastBalance=Number(previousSnapshot.categories[category].closing||0);
-        }else{
-          // For the first month that has no saved predecessor, derive the
-          // opening value from the inventory history using the previous
-          // month's price. This is only the fallback; once a month exists,
-          // its saved Closing Balance is the source of truth for the next month.
-          items.forEach(function(item){
-            var previousPrice=priceForMonth(item,prevKey);
-            var before=data.transactions.filter(function(t){return t.itemId===item.id&&String(t.at||'')<start;}).reduce(function(sum,t){return sum+signedQty(t);},0);
-            var openingQty=Number(item.openingStock||0)+before;
-            lastBalance+=openingQty*previousPrice;
-          });
-        }
-
         items.forEach(function(item){
-          var currentPrice=priceForMonth(item,monthKey);
-          var ins=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='IN'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
-          var outs=data.transactions.filter(function(t){return t.itemId===item.id&&t.type==='OUT'&&String(t.at||'')>=start&&String(t.at||'')<next;}).reduce(function(sum,t){return sum+Number(t.qty||0);},0);
-          stockIn+=ins*currentPrice;
-          stockOut+=outs*currentPrice;
+          var itemTransactions=data.transactions.filter(function(t){return String(t.itemId)===String(item.id);});
+          // Rebuild the carry-forward value from the full ledger rather than
+          // trusting a potentially stale saved monthly snapshot.
+          var previousPrice=priceForMonth(item,prevKey);
+          lastBalance+=Number(item.openingStock||0)*previousPrice;
+          itemTransactions.forEach(function(t){
+            if(transactionMonthKey(t)>=monthKey) return;
+            var value=Number(t.qty||0)*transactionUnitPrice(t,item);
+            lastBalance+=(t.type==='OUT'?-value:value);
+          });
+
+          itemTransactions.forEach(function(t){
+            var txMonth=transactionMonthKey(t);
+            if(txMonth!==monthKey) return;
+            var value=Number(t.qty||0)*transactionUnitPrice(t,item);
+            if(t.type==='IN') stockIn+=value;
+            else if(t.type==='OUT') stockOut+=value;
+          });
         });
 
-        // Closing Balance always carries forward from Last Month Balance,
-        // then applies this month's Stock In / Stock Out movement. Therefore,
-        // with no movement, Closing Balance === Last Month Balance exactly.
         var closing=lastBalance+stockIn-stockOut;
         return {lastBalance:lastBalance,stockIn:stockIn,stockOut:stockOut,closing:closing};
       }
@@ -8905,7 +8901,9 @@ function exportMonthlySchedulePdfs() {
       }
       function saveMonthlySnapshot(monthKey){
         normalize();
-        if(data.monthlySnapshots[monthKey]) return data.monthlySnapshots[monthKey];
+        // Snapshots are a cache, never the accounting source of truth.
+        // Always rebuild after add/edit/delete so later ledger changes flow
+        // through every month's opening and closing balances.
         var snapshot=buildMonthlySnapshot(monthKey);
         data.monthlySnapshots[monthKey]=snapshot;
         return snapshot;
@@ -8922,11 +8920,11 @@ function exportMonthlySchedulePdfs() {
           if(!q)return true;
           return data.items.some(function(i){return i.active!==false&&i.category===c&&[i.name,i.category].join(' ').toLowerCase().indexOf(q)!==-1;});
         });
-        var snap=data.monthlySnapshots&&data.monthlySnapshots[month];
-        if(!snap){snap=buildMonthlySnapshot(month);}
-        var movementMonths=data.transactions.map(function(t){return String(t.at||'').slice(0,7);}).filter(Boolean);
+        var snap=buildMonthlySnapshot(month);
+        data.monthlySnapshots[month]=snap;
+        var movementMonths=data.transactions.map(function(t){return transactionMonthKey(t);}).filter(Boolean);
         var keys=Object.keys(data.monthlySnapshots||{}).concat(movementMonths,[currentMonthKey()]).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).sort().reverse();
-        var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category. Monthly movement is calculated from the stored inventory history.</span></div><div class="inventory-month-select-wrap"><select id="inventoryPriceMonth" aria-label="Movement month" class="inventory-month-native">';
+        var html='<div class="inventory-price-toolbar"><div><strong style="font-size:11px">MONTHLY STOCK MOVEMENT</strong><span style="display:block;margin-top:2px">Stock In / Stock Out value by category, using the unit price recorded for each movement.</span></div><div class="inventory-month-select-wrap"><select id="inventoryPriceMonth" aria-label="Movement month" class="inventory-month-native">';
         keys.forEach(function(key){html+='<option value="'+key+'"'+(key===month?' selected':'')+'>'+esc(monthLabel(key))+'</option>';});
         html+='</select><button type="button" class="inventory-month-trigger" id="inventoryPriceMonthTrigger" aria-haspopup="listbox" aria-expanded="false"><span>'+esc(monthLabel(month))+'</span><span class="inventory-custom-chevron">⌄</span></button></div></div>';
         html+='<table class="inventory-table monthly-movement-table"><thead><tr><th>ACTIVITY</th><th>LAST MONTH BALANCE</th><th>STOCK IN (RM)</th><th>STOCK OUT (RM)</th><th>CLOSING BALANCE</th></tr></thead><tbody>';
@@ -8988,7 +8986,7 @@ function exportMonthlySchedulePdfs() {
           data.transactions.splice(idx,1);
           data.deletedTransactionIds=data.deletedTransactionIds||{};
           data.deletedTransactionIds[String(txId)]=nowIso();
-          var oldMonth=removed&&removed.at?String(removed.at).slice(0,7):'';
+          var oldMonth=removed?transactionMonthKey(removed):'';
           if(oldMonth)saveMonthlySnapshot(oldMonth);
           saveMonthlySnapshot(currentMonthKey());
           saveLocal();
@@ -9087,7 +9085,7 @@ function exportMonthlySchedulePdfs() {
           var movementAt=isoForMovementDate(movementDate);
           var tx=[];
           if(type==='IN'){
-            tx=[{id:editingId||id(),itemId:itemId,type:'IN',qty:qty,lotNo:lot,expiry:expiry,staff:staff,notes:notes,at:movementAt}];
+            tx=[{id:editingId||id(),itemId:itemId,type:'IN',qty:qty,unitPrice:(existingTx&&String(existingTx.itemId)===String(itemId)&&existingTx.unitPrice!==undefined&&existingTx.unitPrice!==null&&existingTx.unitPrice!==''&&Number.isFinite(Number(existingTx.unitPrice)))?Number(existingTx.unitPrice):Number(item.price||0),lotNo:lot,expiry:expiry,staff:staff,notes:notes,at:movementAt}];
           } else {
             var preferred=(($('inventoryLotSelect')||{}).value)||'';
             if(editingId&&existingTx&&existingTx.type==='OUT'&&!preferred)preferred=existingTx.lotNo||'';
@@ -9096,17 +9094,17 @@ function exportMonthlySchedulePdfs() {
             if(!a){if(msg)msg.textContent='Insufficient stock for the selected item/lot. Check the LOT STOCK view.';return;}
             if(editingId){
               if(a.length!==1){if(msg)msg.textContent='Edited Stock Out must use one lot.';return;}
-              tx=[{id:editingId,itemId:itemId,type:'OUT',qty:a[0].qty,lotNo:a[0].lotNo==='OPENING / NO LOT'?'':a[0].lotNo,expiry:a[0].expiry||'',staff:staff,notes:notes,at:movementAt}];
+              tx=[{id:editingId,itemId:itemId,type:'OUT',qty:a[0].qty,unitPrice:(existingTx&&String(existingTx.itemId)===String(itemId)&&existingTx.unitPrice!==undefined&&existingTx.unitPrice!==null&&existingTx.unitPrice!==''&&Number.isFinite(Number(existingTx.unitPrice)))?Number(existingTx.unitPrice):Number(item.price||0),lotNo:a[0].lotNo==='OPENING / NO LOT'?'':a[0].lotNo,expiry:a[0].expiry||'',staff:staff,notes:notes,at:movementAt}];
             } else {
-              tx=a.map(function(x){return {id:id(),itemId:itemId,type:'OUT',qty:x.qty,lotNo:x.lotNo==='OPENING / NO LOT'?'':x.lotNo,expiry:x.expiry||'',staff:staff,notes:notes+(a.length>1?' [FEFO allocation]':''),at:movementAt};});
+              tx=a.map(function(x){return {id:id(),itemId:itemId,type:'OUT',qty:x.qty,unitPrice:Number(item.price||0),lotNo:x.lotNo==='OPENING / NO LOT'?'':x.lotNo,expiry:x.expiry||'',staff:staff,notes:notes+(a.length>1?' [FEFO allocation]':''),at:movementAt};});
             }
           }
-          var oldAt=existingTx&&existingTx.at?String(existingTx.at):'';
+          var oldMonth=existingTx?transactionMonthKey(existingTx):'';
           if(editingId&&existingTx){var idx=data.transactions.findIndex(function(t){return String(t.id)===String(editingId);});if(idx<0){if(msg)msg.textContent='This movement could not be found. Refresh and try again.';return;}data.transactions[idx]=tx[0];}
           else Array.prototype.push.apply(data.transactions,tx);
           normalize();
-          if(oldAt)saveMonthlySnapshot(oldAt.slice(0,7));
-          tx.forEach(function(t){saveMonthlySnapshot(String(t.at||'').slice(0,7));});
+          if(oldMonth)saveMonthlySnapshot(oldMonth);
+          tx.forEach(function(t){saveMonthlySnapshot(transactionMonthKey(t));});
           saveMonthlySnapshot(currentMonthKey());
           saveLocal();
           try { saveRemote(); } catch(remoteErr) { console.warn('Inventory remote save error:',remoteErr); }

@@ -617,7 +617,8 @@ async function dispatch(db, method, a, req) {
           } else if (
             String(prevTx.itemId || '') !== String(nextTx.itemId || '') ||
             String(prevTx.type || '') !== String(nextTx.type || '') ||
-            Number(prevTx.qty || 0) !== Number(nextTx.qty || 0)
+            Number(prevTx.qty || 0) !== Number(nextTx.qty || 0) ||
+            Number(prevTx.unitPrice ?? -1) !== Number(nextTx.unitPrice ?? -1)
           ) {
             fail('Existing inventory movements are immutable for non-admin users.', 403);
           }
