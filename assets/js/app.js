@@ -8963,6 +8963,7 @@ function exportMonthlySchedulePdfs() {
           var lotSelect=$('inventoryLotSelect');if(lotSelect){lotSelect.value=tx.lotNo||'';if(lotSelect.value!==String(tx.lotNo||'')){var opt=document.createElement('option');opt.value=tx.lotNo||'';opt.textContent=(tx.lotNo||'OPENING / NO LOT')+' · current record';lotSelect.appendChild(opt);lotSelect.value=tx.lotNo||'';}}
           var fefo=$('inventoryFefoInput');if(fefo)fefo.checked=false;
           var fefoWrap=$('inventoryFefoWrap');if(fefoWrap)fefoWrap.hidden=true;
+          syncStockOutLotFields();
         }
         var title=$('inventoryModalTitle');if(title)title.textContent='EDIT '+(tx.type==='IN'?'STOCK IN':'STOCK OUT');
         var submit=$('inventorySubmitBtn');if(submit)submit.textContent='UPDATE '+(tx.type==='IN'?'STOCK IN':'STOCK OUT');
@@ -9054,8 +9055,50 @@ function exportMonthlySchedulePdfs() {
       function closeItemCustom(){var menu=$('inventoryItemMenu'),trigger=$('inventoryItemTrigger');if(menu)menu.classList.remove('is-open');if(trigger){trigger.classList.remove('is-open');trigger.setAttribute('aria-expanded','false');}}
       function toggleItemCustom(){var menu=$('inventoryItemMenu'),trigger=$('inventoryItemTrigger');if(!menu||!trigger)return;var open=!menu.classList.contains('is-open');if(open){menu.classList.add('is-open');trigger.classList.add('is-open');trigger.setAttribute('aria-expanded','true');}else closeItemCustom();}
 
-      function updateLotSelect(excludeTxId){var item=getItem(($('inventoryItemInput')||{}).value);var wrap=$('inventoryLotSelectWrap');var sel=$('inventoryLotSelect');if(!item||!sel)return;var lots=lotsForItem(item.id);if(excludeTxId){var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id;});if(current&&current.lotNo&&!lots.some(function(l){return l.lotNo===current.lotNo;})){lots.push({lotNo:current.lotNo,qty:0,expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});}}sel.innerHTML='<option value="">AUTO FEFO</option>'+lots.map(function(l){var available=Number(l.qty||0);if(excludeTxId){var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id&&String(t.lotNo||'')===String(l.lotNo||'');});if(current)available+=Number(current.qty||0);}return '<option value="'+esc(l.lotNo)+'">'+esc(l.lotNo)+' · '+available+' available'+(l.expiry?' · exp '+esc(l.expiry):'')+'</option>';}).join('');if(wrap)wrap.hidden=(($('inventoryMovementType')||{}).value!=='OUT');}
-      function setMode(type){var m=$('inventoryMovementType');if(m)m.value=type;var title=$('inventoryModalTitle');if(title)title.textContent=type==='IN'?'STOCK IN':'STOCK OUT';var submit=$('inventorySubmitBtn');if(submit)submit.textContent=type==='IN'?'SAVE STOCK IN':'SAVE STOCK OUT';var lotInput=$('inventoryLotInput');if(lotInput)lotInput.required=type==='IN';var lotWrap=$('inventoryLotSelectWrap');if(lotWrap)lotWrap.hidden=type!=='OUT';var fefo=$('inventoryFefoWrap');if(fefo)fefo.hidden=type!=='OUT';var msg=$('inventoryFormMessage');if(msg)msg.textContent='';updateLotSelect(($('inventoryEditingId')||{}).value||'');}
+      function updateLotSelect(excludeTxId){
+        var item=getItem(($('inventoryItemInput')||{}).value);
+        var wrap=$('inventoryLotSelectWrap'),sel=$('inventoryLotSelect');
+        if(!item||!sel)return;
+        var lots=lotsForItem(item.id);
+        if(excludeTxId){
+          var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id;});
+          if(current&&current.lotNo&&!lots.some(function(l){return l.lotNo===current.lotNo;}))lots.push({lotNo:current.lotNo,qty:0,expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});
+        }
+        sel.innerHTML='<option value="">AUTO FEFO</option>'+lots.map(function(l){
+          var available=Number(l.qty||0);
+          if(excludeTxId){
+            var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id&&String(t.lotNo||'')===String(l.lotNo||'');});
+            if(current)available+=Number(current.qty||0);
+          }
+          return '<option value="'+esc(l.lotNo)+'">'+esc(l.lotNo==='OPENING / NO LOT'?'NO LOT':l.lotNo)+' · '+available+' available'+(l.expiry?' · exp '+esc(l.expiry):'')+'</option>';
+        }).join('');
+        if(wrap)wrap.hidden=(($('inventoryMovementType')||{}).value!=='OUT');
+        syncStockOutLotFields();
+      }
+      function syncStockOutLotFields(){
+        var type=($('inventoryMovementType')||{}).value||'IN';
+        var lotInput=$('inventoryLotInput'),expiryInput=$('inventoryExpiryInput');
+        var lotVisible=$('inventoryLotInput'),expiryVisible=$('inventoryExpiryVisible');
+        if(type!=='OUT')return;
+        var item=getItem(($('inventoryItemInput')||{}).value);
+        var lots=item?lotsForItem(item.id):[];
+        var select=$('inventoryLotSelect');
+        var chosen=select&&select.value?lots.find(function(l){return String(l.lotNo)===String(select.value);}):null;
+        if(chosen){
+          if(lotInput)lotInput.value=chosen.lotNo==='OPENING / NO LOT'?'NO LOT':chosen.lotNo;
+          if(expiryInput)expiryInput.value=chosen.expiry||'';
+        }else{
+          // AUTO FEFO: preview the earliest-expiry lot. Actual allocations still
+          // happen in allocations() when the movement is saved.
+          lots.sort(function(a,b){return (a.expiry||'9999').localeCompare(b.expiry||'9999');});
+          if(lotInput)lotInput.value=lots.length?(lots.length>1?'AUTO FEFO':(lots[0].lotNo==='OPENING / NO LOT'?'NO LOT':lots[0].lotNo)):'NO LOT';
+          if(expiryInput)expiryInput.value=lots.length?(lots[0].expiry||''):'';
+        }
+        if(lotInput){lotInput.readOnly=true;lotInput.placeholder='Auto from available stock lot';}
+        if(expiryInput)expiryInput.readOnly=true;
+        if(expiryVisible){expiryVisible.readOnly=true;expiryVisible.placeholder='From selected stock lot';if(expiryVisible._syncDate)expiryVisible._syncDate();}
+      }
+      function setMode(type){var m=$('inventoryMovementType');if(m)m.value=type;var title=$('inventoryModalTitle');if(title)title.textContent=type==='IN'?'STOCK IN':'STOCK OUT';var submit=$('inventorySubmitBtn');if(submit)submit.textContent=type==='IN'?'SAVE STOCK IN':'SAVE STOCK OUT';var lotInput=$('inventoryLotInput');if(lotInput){lotInput.required=type==='IN';lotInput.readOnly=type==='OUT';if(type==='IN')lotInput.placeholder='e.g. 2804';}var expiryInput=$('inventoryExpiryInput');if(expiryInput){expiryInput.readOnly=type==='OUT';}var expiryVisible=$('inventoryExpiryVisible');if(expiryVisible){expiryVisible.readOnly=type==='OUT';if(type==='OUT')expiryVisible.placeholder='From selected stock lot';}var lotWrap=$('inventoryLotSelectWrap');if(lotWrap)lotWrap.hidden=type!=='OUT';var fefo=$('inventoryFefoWrap');if(fefo)fefo.hidden=type!=='OUT';var msg=$('inventoryFormMessage');if(msg)msg.textContent='';updateLotSelect(($('inventoryEditingId')||{}).value||'');if(type==='OUT')syncStockOutLotFields();}
       function showModal(type){var modal=$('inventoryModal');if(!modal)return;modal.classList.remove('inventory-editing');var editing=$('inventoryEditingId');if(editing)editing.value='';modal.hidden=false;setMode(type);var dateInput=$('inventoryMovementDateInput');if(dateInput&&!dateInput.value)dateInput.value=localDateKey();syncItemCustom();var item=$('inventoryItemTrigger');if(item)item.focus();}
       function closeModal(){var modal=$('inventoryModal');if(modal){modal.hidden=true;modal.classList.remove('inventory-editing');}closeItemCustom();var form=$('inventoryMovementForm');if(form)form.reset();var editing=$('inventoryEditingId');if(editing)editing.value='';var dateInput=$('inventoryMovementDateInput');if(dateInput)dateInput.value=localDateKey();var dateVisible=$('inventoryMovementDateVisible');if(dateVisible&&dateVisible._syncDate)dateVisible._syncDate();var expiryVisible=$('inventoryExpiryVisible');if(expiryVisible&&expiryVisible._syncDate)expiryVisible._syncDate();syncItemCustom();setMode('IN');}
       function allocations(itemId,qty,preferredLot,fefo,excludeTxId){
@@ -9197,9 +9240,9 @@ function exportMonthlySchedulePdfs() {
         var search=$('inventorySearch');if(search)search.addEventListener('input',render);
         ['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'].forEach(function(id){var n=$(id);if(n)n.addEventListener('change',function(){if(id==='inventoryViewFilter')currentView=n.value;render();});});
         var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.addEventListener('click',openAdminItems);var adminForm=$('inventoryAdminItemForm');if(adminForm)adminForm.addEventListener('submit',saveAdminItem);var adminClear=$('inventoryAdminItemClearBtn');if(adminClear)adminClear.addEventListener('click',clearAdminItemForm);var adminList=$('inventoryAdminItemList');if(adminList)adminList.addEventListener('click',function(e){var edit=e.target.closest('[data-admin-item-edit]');if(edit){editAdminItem(edit.getAttribute('data-admin-item-edit'));return;}var del=e.target.closest('[data-admin-item-delete]');if(del){deleteAdminItem(del.getAttribute('data-admin-item-delete'));return;}});document.querySelectorAll('[data-inventory-admin-close]').forEach(function(n){n.addEventListener('click',closeAdminItems);});var inBtn=$('inventoryStockInBtn');if(inBtn)inBtn.addEventListener('click',function(){showModal('IN');});var outBtn=$('inventoryStockOutBtn');if(outBtn)outBtn.addEventListener('click',function(){showModal('OUT');});
-        var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();});
+        var form=$('inventoryMovementForm');if(form)form.addEventListener('submit',submitMovement);var lotSel=$('inventoryLotSelect');if(lotSel)lotSel.addEventListener('change',syncStockOutLotFields);var qtyInput=$('inventoryQtyInput');if(qtyInput)qtyInput.addEventListener('input',syncStockOutLotFields);var itemSel=$('inventoryItemInput');if(itemSel)itemSel.addEventListener('change',function(){syncItemCustom();updateLotSelect();syncStockOutLotFields();});
         var itemTrigger=$('inventoryItemTrigger');if(itemTrigger)itemTrigger.addEventListener('click',function(e){e.stopPropagation();toggleItemCustom();});
-        var itemMenu=$('inventoryItemMenu');if(itemMenu)itemMenu.addEventListener('click',function(e){var opt=e.target.closest('.inventory-custom-option');if(!opt)return;var sel=$('inventoryItemInput');if(sel){sel.value=opt.getAttribute('data-value')||'';syncItemCustom();updateLotSelect();}closeItemCustom();});
+        var itemMenu=$('inventoryItemMenu');if(itemMenu)itemMenu.addEventListener('click',function(e){var opt=e.target.closest('.inventory-custom-option');if(!opt)return;var sel=$('inventoryItemInput');if(sel){sel.value=opt.getAttribute('data-value')||'';syncItemCustom();updateLotSelect();syncStockOutLotFields();}closeItemCustom();});
         var tableWrap=$('inventoryTableWrap');if(tableWrap)tableWrap.addEventListener('change',function(e){if(e.target.id==='inventoryPriceMonth'){ensureInventoryMonthRollover(false);selectedPriceMonth=e.target.value;var target=selectedPriceMonth;renderMonthlyMovement();}});if(tableWrap)tableWrap.addEventListener('click',function(e){var edit=e.target.closest('[data-inventory-edit-id]');if(edit){e.preventDefault();e.stopPropagation();closeRecordModal();editMovement(edit.getAttribute('data-inventory-edit-id'));return;}var del=e.target.closest('[data-inventory-delete-id]');if(del){e.preventDefault();e.stopPropagation();deleteMovement(del.getAttribute('data-inventory-delete-id'));return;}var row=e.target.closest('.inventory-item-row');if(row)showItemRecords(row.getAttribute('data-inventory-item-id'));});if(tableWrap)tableWrap.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.closest('.inventory-item-row')){e.preventDefault();showItemRecords(e.target.closest('.inventory-item-row').getAttribute('data-inventory-item-id'));}});
         document.addEventListener('click',function(e){if(!e.target.closest('#inventoryItemCustomWrap'))closeItemCustom();});
         document.querySelectorAll('[data-inventory-close]').forEach(function(n){n.addEventListener('click',closeModal);});document.querySelectorAll('[data-inventory-record-close]').forEach(function(n){n.addEventListener('click',closeRecordModal);});
