@@ -4201,33 +4201,34 @@ hoagApiRequest('logout', {
         store = store || readLocalRoster();
         var key = dateKey(dateObj);
         var baseRows = Array.isArray(store[key]) ? store[key] : [];
-        if (state.rosterDirtyDates && state.rosterDirtyDates[key]) {
-          return baseRows;
-        }
-
-        /* IMPORTANT: Supabase team roster is authoritative for confirmed
-           assignments. Older builds could leave a stale local roster-change
-           snapshot in front of the cloud data, which made the calendar show
-           the original rotation instead of the confirmed replacement. */
         var cloudStore = state.rosterCloudStore && typeof state.rosterCloudStore === 'object' ? state.rosterCloudStore : {};
         var cloudRows = Array.isArray(cloudStore[key]) ? cloudStore[key] : [];
-
-        /* Preserve an unsaved local assignment only while Supabase has not yet
-           confirmed an assignment for this date. Once Supabase contains an
-           assigned row, it wins so the calendar always reflects the shared
-           roster-change record. */
         var changeStore = safeParse(safeStorageGet('labDailyRosterChangesV1_' + getRosterStorageUserId()));
         var changedRows = changeStore && Array.isArray(changeStore[key]) ? changeStore[key] : [];
         var cloudHasAssignment = cloudRows.some(function (row) { return isAssignedRow(row); });
         var localHasAssignment = changedRows.some(function (row) { return isAssignedRow(row); });
+        var baseHasAssignment = baseRows.some(function (row) { return isAssignedRow(row); });
 
+        /* A locally edited date is authoritative until its exact revision has
+           been acknowledged by the cloud. Never fall back to the default
+           rotation/base roster during this window: that creates the visible
+           flash where every edited assignment briefly reverts. */
+        if (state.rosterDirtyDates && state.rosterDirtyDates[key]) {
+          if (localHasAssignment) return changedRows;
+          if (baseHasAssignment) return baseRows;
+          if (changedRows.length) return changedRows;
+          return baseRows;
+        }
+
+        /* Outside an active local save, prefer the confirmed cloud assignment.
+           Retain the local change layer as a fallback during initial hydration. */
         if (cloudRows.length && cloudHasAssignment) return cloudRows;
         if (localHasAssignment) return changedRows;
+        if (baseHasAssignment) return baseRows;
         if (cloudRows.length) return cloudRows;
         if (changedRows.length) return changedRows;
         return baseRows;
       }
-  
       /* +----------------------------------+
        * + getRotationStartDate             +
        * +----------------------------------+ */
@@ -6934,6 +6935,11 @@ function exportMonthlySchedulePdfs() {
               return;
             }
             state.rosterCloudUpdatedAt = String(result && result.updatedAt || state.rosterCloudUpdatedAt || '');
+            /* The save acknowledgement confirms this exact payload. Promote it
+               into the in-memory cloud snapshot before clearing dirty dates, so
+               the next calendar refresh cannot momentarily read an older cloud
+               snapshot and revert all previously changed labels. */
+            state.rosterCloudStore = normalizeRoster(normalized);
             if (requestRevision !== state.rosterLocalRevision) {
               state.rosterLastSavedJson = json;
               setSyncStatus('Saving latest...', 'saving');
