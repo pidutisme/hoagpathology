@@ -12241,3 +12241,58 @@ body.visitor-read-only [data-outsource-action="delete"] {
 .outsource-detail-editor > .outsource-modal-actions{display:flex;justify-content:flex-end;gap:10px;}
 @media(max-width:600px){.outsource-detail-editor{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}}
 @media(max-width:420px){.outsource-detail-editor{grid-template-columns:1fr;}.outsource-detail-editor > .outsource-modal-field,.outsource-detail-editor > #outsourceDetailNotes,.outsource-detail-editor > .outsource-modal-actions{grid-column:1/-1;}}
+
+/* V16: consistent modal typography and editable Transfusion details */
+.outsource-detail-dialog,
+.outsource-detail-dialog * {
+  font-family: inherit;
+}
+.outsource-detail-dialog .outsource-detail-item,
+.outsource-detail-dialog .outsource-detail-item label,
+.outsource-detail-dialog .outsource-detail-item > div,
+.outsource-detail-dialog input,
+.outsource-detail-dialog select,
+.outsource-detail-dialog textarea,
+.outsource-detail-dialog button {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.outsource-detail-dialog .outsource-detail-item label {
+  font-weight: 600;
+}
+.outsource-detail-dialog h2 {
+  font-size: 22px;
+  font-weight: 700;
+}
+.transfusion-detail-dialog .outsource-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+.transfusion-detail-dialog .outsource-detail-item {
+  min-width: 0;
+}
+.transfusion-detail-dialog .transfusion-detail-control {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-color, #d4deea);
+  border-radius: 12px;
+  background: var(--input-bg, #f7f9fc);
+  color: inherit;
+  font: inherit;
+}
+.transfusion-detail-dialog textarea.transfusion-detail-control {
+  min-height: 58px;
+  resize: vertical;
+}
+@media (max-width: 640px) {
+  .transfusion-detail-dialog .outsource-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -196,7 +196,7 @@ async function getOutsourceRows() {
     const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
     if (!item.id) item.id = row.id;
     if (!item.createdAt) item.createdAt = row.created_at;
-    if (!item.updatedAt) item.updatedAt = row.updated_at;
+    item.updatedAt = row.updated_at || item.updatedAt || '';
     return item;
   });
 }

@@ -3709,10 +3709,14 @@ hoagApiRequest('logout', {
         modal.querySelector('#outsourceDetailResultDate').value=r.resultDate||'';modal.querySelector('#outsourceDetailResultDateVisible').value='';modal.querySelector('#outsourceDetailReferenceNo').value=r.referenceNo||'';modal.querySelector('#outsourceDetailRejectReason').innerHTML='<option value="">Select reject reason</option>'+getOutsourceRejectReasons().map(function(v){return '<option value="'+outsourceEsc(v)+'">'+outsourceEsc(v)+'</option>';}).join('');modal.querySelector('#outsourceDetailRejectReason').value=r.rejectReason||'';modal.querySelector('#outsourceDetailRejectReason').disabled=status!=='REJECT';modal.querySelector('#outsourceDetailNotes').value=r.notes||'';
         if(window.outsourceInitNeumorphicDropdowns)window.outsourceInitNeumorphicDropdowns();if(window.initOutsourceNeumorphicDates)window.initOutsourceNeumorphicDates();var dateVisible=modal.querySelector('#outsourceDetailResultDateVisible');if(dateVisible&&dateVisible._syncDate)dateVisible._syncDate();modal.hidden=false;
       }
-      function saveOutsourceDetailFields(){
+      async function saveOutsourceDetailFields(){
         var modal=document.getElementById('outsourceDetailModal');if(!modal)return;var id=String(modal.dataset.recordId||''),rows=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
-        r.result=String(modal.querySelector('#outsourceDetailStatus').value||'PENDING');r.resultDate=String(modal.querySelector('#outsourceDetailResultDate').value||'');r.referenceNo=String(modal.querySelector('#outsourceDetailReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String(modal.querySelector('#outsourceDetailRejectReason').value||'').trim():'';r.notes=String(modal.querySelector('#outsourceDetailNotes').value||'').trim();r.updatedAt=new Date().toISOString();
-        if(typeof OutSource==='undefined'||typeof OutSource.upsertSample!=='function'){alert('Outsource save function is unavailable.');return;}OutSource.upsertSample(r);invalidateOutsourceRowsCache();renderOutsourceRows();modal.hidden=true;
+        r.result=String(modal.querySelector('#outsourceDetailStatus').value||'PENDING');r.resultDate=String(modal.querySelector('#outsourceDetailResultDate').value||'');r.referenceNo=String(modal.querySelector('#outsourceDetailReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String(modal.querySelector('#outsourceDetailRejectReason').value||'').trim():'';r.notes=String(modal.querySelector('#outsourceDetailNotes').value||'').trim();
+        if(typeof OutSource==='undefined'||typeof OutSource.upsertSample!=='function'){alert('Outsource save function is unavailable.');return;}
+        var btn=modal.querySelector('#outsourceDetailSave');if(btn){btn.disabled=true;btn.textContent='SAVING...';}
+        try{await OutSource.upsertSample(r);invalidateOutsourceRowsCache();renderOutsourceRows();modal.hidden=true;}
+        catch(error){alert('Unable to save outsource result: '+(error&&error.message?error.message:'Please try again.'));}
+        finally{if(btn){btn.disabled=false;btn.textContent='SAVE CHANGES';}}
       }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
@@ -8390,12 +8394,13 @@ function exportMonthlySchedulePdfs() {
         if(idx>=0)rows[idx]=next;else rows.push(next);
         normalize(); revision+=1; saveLocal();
         var expected=previous?String(previous.updatedAt||''):'';
-        hoagApiRequest('action',{method:'upsertOutsourceSample',args:[clone(next),token(),expected]}).then(function(result){
-          if(result&&result.ok!==false&&result.record){
-            var i=rows.findIndex(function(r){return String(r.id)===id;}); if(i>=0)rows[i]=result.record;
-            lastUpdatedAt=String(result.updatedAt||lastUpdatedAt); revision+=1; saveLocal();
-          }
-        }).catch(function(error){console.warn('OUTSOURCE save failed:',error&&error.message?error.message:error);});
+        return hoagApiRequest('action',{method:'upsertOutsourceSample',args:[clone(next),token(),expected]}).then(function(result){
+          if(!result||result.ok===false||!result.record) throw new Error(result&&result.error?result.error:'Outsource save was not confirmed by the server.');
+          var i=rows.findIndex(function(r){return String(r.id)===id;}); if(i>=0)rows[i]=result.record;
+          lastUpdatedAt=String(result.updatedAt||lastUpdatedAt); revision+=1; saveLocal();
+          if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+          return result.record;
+        }).catch(function(error){console.error('OUTSOURCE save failed:',error&&error.message?error.message:error);throw error;});
       }
       function deleteSample(id){
         ensureReady(); var rid=String(id||''); if(!rid)return Promise.resolve(false);
@@ -9250,7 +9255,42 @@ function exportMonthlySchedulePdfs() {
         /* Row clicks intentionally do nothing; full details open only from the Eye action. */
         body.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(e){e.stopPropagation();});});
       }
-      function openTransfusionDetailModal(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;var fields=[['Date',displayDate(r.date)],['Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Blood Group',r.bloodGroup],['Pack No.',r.packNo],['Staff',r.staff],['Remarks / Status',r.remarks||'PENDING'],['Google Drive',r.googleDriveLink||r.fileLink],['Notes',r.notes]];var modal=document.getElementById('transfusionDetailModal');if(!modal){modal=document.createElement('div');modal.id='transfusionDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2>FULL RECORD DETAILS</h2><div class="outsource-detail-grid"></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close'))modal.hidden=true;});}modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){var v=String(f[1]||'').trim();return '<div class="outsource-detail-item"><label>'+esc(f[0])+'</label><div>'+(f[0]==='Google Drive'&&v?'<a href="'+esc(v)+'" target="_blank" rel="noopener noreferrer">OPEN DRIVE</a>':esc(v||'—'))+'</div></div>';}).join('');modal.hidden=false;}
+      function openTransfusionDetailModal(rid){
+        var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;
+        var modal=document.getElementById('transfusionDetailModal');
+        if(!modal){
+          modal=document.createElement('div');modal.id='transfusionDetailModal';modal.className='outsource-result-modal';
+          modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog transfusion-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2>FULL RECORD DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="transfusionDetailClose">CLOSE</button><button type="button" class="outsource-btn primary" id="transfusionDetailSave">SAVE CHANGES</button></div></div>';
+          document.body.appendChild(modal);
+          modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#transfusionDetailClose'))modal.hidden=true;});
+          modal.querySelector('#transfusionDetailSave').addEventListener('click',saveTransfusionDetailFields);
+        }
+        modal.dataset.recordId=String(r.id);modal.dataset.expectedVersion=String(Number(r.version||1));
+        var items=[
+          ['Date',displayDate(r.date)],['Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],
+          ['Age',r.age],['Unit',r.unit],['Blood Group',r.bloodGroup],['Pack No.',r.packNo],
+          ['Staff',r.staff],['Remarks / Status','<select id="transfusionDetailStatus" class="transfusion-detail-control"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECTED</option></select>'],
+          ['Google Drive',(r.googleDriveLink||r.fileLink)?'<a href="'+esc(r.googleDriveLink||r.fileLink)+'" target="_blank" rel="noopener noreferrer">OPEN DRIVE</a>':'—'],
+          ['Notes','<textarea id="transfusionDetailNotes" class="transfusion-detail-control" rows="2" maxlength="3000" placeholder="Notes"></textarea>']
+        ];
+        modal.querySelector('.outsource-detail-grid').innerHTML=items.map(function(f){var raw=String(f[1]||'').trim();var html=(f[0]==='Remarks / Status'||f[0]==='Notes'||f[0]==='Google Drive')?raw:esc(raw||'—');return '<div class="outsource-detail-item"><label>'+esc(f[0])+'</label><div>'+html+'</div></div>';}).join('');
+        modal.querySelector('#transfusionDetailStatus').value=String(r.remarks||'PENDING').toUpperCase();
+        modal.querySelector('#transfusionDetailNotes').value=String(r.notes||'');
+        modal.hidden=false;
+      }
+      async function saveTransfusionDetailFields(){
+        var modal=document.getElementById('transfusionDetailModal');if(!modal)return;
+        var r=records().find(function(x){return String(x.id)===String(modal.dataset.recordId||'');});if(!r)return;
+        var row=transfusionRecordPayload(r,{remarks:String(modal.querySelector('#transfusionDetailStatus').value||'PENDING'),notes:String(modal.querySelector('#transfusionDetailNotes').value||'').trim()});
+        var btn=modal.querySelector('#transfusionDetailSave');if(btn){btn.disabled=true;btn.textContent='SAVING...';}
+        try{
+          var result=await requestTransfusion('PATCH',{record:row,expectedVersion:Number(modal.dataset.expectedVersion||r.version||1)});
+          if(!result||!result.record)throw new Error('Transfusion update was not confirmed by the server.');
+          var idx=transfusionRows.findIndex(function(x){return String(x.id)===String(r.id);});if(idx>=0)transfusionRows[idx]=result.record;
+          saveTransfusionCache();renderRows();modal.hidden=true;
+        }catch(error){window.alert(error&&error.message?error.message:'Unable to save transfusion details.');}
+        finally{if(btn){btn.disabled=false;btn.textContent='SAVE CHANGES';}}
+      }
       function syncTransfusionSelect(id){var el=document.getElementById(id);if(el){el.dispatchEvent(new Event('change',{bubbles:true}));}}
       function clearForm(){currentEditId='';var ids=['trDate','trName','trIdIc','trSex','trAge','trUnit','trBloodGroup','trPackNo','trStaff','trGoogleDriveLink'];ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var d=document.getElementById('trDate');if(d)d.value=today();var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='REGISTER TRANSFUSION';bindIc();}
       function edit(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;currentEditId=r.id;var values={trDate:r.date,trName:r.name,trIdIc:r.idIc,trSex:r.sex,trAge:r.age,trUnit:r.unit,trBloodGroup:r.bloodGroup,trPackNo:r.packNo,trStaff:r.staff,trGoogleDriveLink:r.googleDriveLink||r.fileLink||''};Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id]||'';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='SAVE CHANGES';document.getElementById('trName')?.focus();}
