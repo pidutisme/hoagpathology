@@ -1,7 +1,7 @@
 /* ===== ORIGINAL SCRIPT BLOCK: outsource-filter-clean-final-js ===== */
 (function(){
   'use strict';
-  var IDS=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter'];
+  var IDS=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter','outsourceReferralFilter','outsourceLabFilter','outsourceTestFilter','outsourceUnitFilter'];
   var active={menu:null,trigger:null,select:null};
   function closeMenu(){
     if(active.menu) active.menu.remove();
@@ -42,7 +42,7 @@
     var search=select.closest('.outsource-search'); if(!search)return;
     var existing=select.closest('.outsource-filter-neo-wrap');
     if(existing){var t=existing.querySelector('.outsource-filter-neo-trigger');if(t)sync(t,select);return;}
-    /* Remove legacy wrappers/triggers only for these three filters. */
+    /* Remove legacy wrappers/triggers only for the seven Outsource filters. */
     var parent=select.parentElement;
     if(parent && parent!==search && /outsource-(custom-select-wrap|filter-custom-wrap|select-wrap)/.test(parent.className||'')){
       var old=parent.querySelector('.outsource-select-trigger,.inventory-filter-trigger,.outsource-filter-trigger');
