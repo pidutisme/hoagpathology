@@ -12225,11 +12225,15 @@ body.visitor-read-only [data-outsource-action="delete"] {
 :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-data-row{cursor:default!important;}
 :is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid) .outsource-detail-dialog{margin:auto!important;}
 
-/* V12: editable result fields inside the Eye detail modal */
-.outsource-detail-editor{margin-top:18px;padding-top:16px;border-top:1px solid rgba(95,125,160,.22);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-.outsource-detail-editor .outsource-modal-field{min-width:0;}
-.outsource-detail-editor .outsource-modal-field:nth-last-child(2),
-.outsource-detail-editor .outsource-modal-actions{grid-column:1/-1;}
-.outsource-detail-editor input,.outsource-detail-editor select,.outsource-detail-editor textarea{width:100%;box-sizing:border-box;}
-.outsource-detail-editor textarea{min-height:76px;resize:vertical;}
-@media(max-width:600px){.outsource-detail-editor{grid-template-columns:1fr;}.outsource-detail-editor .outsource-modal-field,.outsource-detail-editor .outsource-modal-actions{grid-column:1/-1;}}
+/* V13: align all four result controls in a consistent two-column grid */
+.outsource-detail-editor{margin-top:18px;padding-top:16px;border-top:1px solid rgba(95,125,160,.22);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;align-items:start;}
+.outsource-detail-editor > .outsource-modal-field{min-width:0;width:100%;grid-column:auto;margin:0;}
+.outsource-detail-editor > .outsource-modal-field input,
+.outsource-detail-editor > .outsource-modal-field select,
+.outsource-detail-editor > .outsource-modal-field textarea{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;}
+.outsource-detail-editor > .outsource-modal-field textarea{min-height:76px;resize:vertical;}
+.outsource-detail-editor > #outsourceDetailNotes,
+.outsource-detail-editor > .outsource-modal-actions{grid-column:1/-1;}
+.outsource-detail-editor > .outsource-modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+@media(max-width:600px){.outsource-detail-editor{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}}
+@media(max-width:420px){.outsource-detail-editor{grid-template-columns:1fr;}.outsource-detail-editor > .outsource-modal-field,.outsource-detail-editor > #outsourceDetailNotes,.outsource-detail-editor > .outsource-modal-actions{grid-column:1/-1;}}
