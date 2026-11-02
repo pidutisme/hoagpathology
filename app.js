@@ -3413,19 +3413,22 @@ hoagApiRequest('logout', {
       function mergeOutsourceCatalog(remote){
         remote=remote&&typeof remote==='object'?remote:{};
         (Array.isArray(remote.labs)?remote.labs:[]).forEach(function(lab){
-          lab=String(lab||'').trim().toUpperCase();
+          lab=canonicalOutsourceLabName(lab);
           if(lab&&!Object.keys(OUTSOURCE_TEST_CATALOG).some(function(k){return k.toUpperCase()===lab;}))OUTSOURCE_TEST_CATALOG[lab]=[];
         });
         var tests=remote.testsByLab&&typeof remote.testsByLab==='object'?remote.testsByLab:{};
+        var canonicalTests={};
         Object.keys(tests).forEach(function(lab){
-          var canonical=Object.keys(OUTSOURCE_TEST_CATALOG).find(function(k){return k.toUpperCase()===String(lab).toUpperCase();})||String(lab).trim().toUpperCase();
+          var canonical=canonicalOutsourceLabName(lab);
           if(!OUTSOURCE_TEST_CATALOG[canonical])OUTSOURCE_TEST_CATALOG[canonical]=[];
+          if(!canonicalTests[canonical])canonicalTests[canonical]=[];
           (Array.isArray(tests[lab])?tests[lab]:[]).forEach(function(test){
             test=String(test||'').trim();if(!test)return;
             if(!OUTSOURCE_TEST_CATALOG[canonical].some(function(x){return String(x).toUpperCase()===test.toUpperCase();}))OUTSOURCE_TEST_CATALOG[canonical].push(test);
+            if(!canonicalTests[canonical].some(function(x){return String(x).toUpperCase()===test.toUpperCase();}))canonicalTests[canonical].push(test);
           });
         });
-        outsourceCatalogRemote={labs:Array.isArray(remote.labs)?remote.labs.slice():[],testsByLab:tests,rejectionReasons:Array.isArray(remote.rejectionReasons)?remote.rejectionReasons.map(function(v){return String(v||'').trim();}).filter(Boolean):[],updatedAt:String(remote.updatedAt||'')};
+        outsourceCatalogRemote={labs:Array.from(new Set((Array.isArray(remote.labs)?remote.labs:[]).map(canonicalOutsourceLabName))),testsByLab:canonicalTests,rejectionReasons:Array.isArray(remote.rejectionReasons)?remote.rejectionReasons.map(function(v){return String(v||'').trim();}).filter(Boolean):[],updatedAt:String(remote.updatedAt||'')};
         renderOutsourceRejectReasonOptions();
       }
       function loadOutsourceCatalog(){
@@ -8364,6 +8367,24 @@ function exportMonthlySchedulePdfs() {
      * + INDEPENDENT OUTSOURCE MODULE     +
      * + Own cache + own Supabase path    +
      * +----------------------------------+ */
+    function canonicalOutsourceLabName(value){
+      var raw=String(value||'').replace(/\\s+/g,' ').trim().toUpperCase();
+      var aliases={
+        'PATOLOGI KIMIA':'BIOCHEMISTRY',
+        'PATHOLOGI KIMIA':'BIOCHEMISTRY',
+        'KIMIA':'BIOCHEMISTRY',
+        'MIKROBIOLOGI':'MICROBIOLOGY',
+        'SITOLOGI':'CYTOLOGY',
+        'HAEMATOLOGY':'HEMATOLOGY',
+        'HEMATOLOGY':'HEMATOLOGY',
+        'HISTOLOGY':'HISTOLOGY',
+        'BIOCHEMISTRY':'BIOCHEMISTRY',
+        'MICROBIOLOGY':'MICROBIOLOGY',
+        'CYTOLOGY':'CYTOLOGY'
+      };
+      return aliases[raw]||raw;
+    }
+
     var OutSource = (function () {
       var STORAGE_KEY = 'labAppOutsourceV1';
       var rows = [];
@@ -8374,7 +8395,15 @@ function exportMonthlySchedulePdfs() {
       var lastUpdatedAt = '';
       function clone(v){ try{return JSON.parse(JSON.stringify(v));}catch(e){return null;} }
       function token(){ return (typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():''; }
-      function normalize(){ rows=Array.isArray(rows)?rows.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[]; }
+      function normalize(){
+        rows=Array.isArray(rows)?rows.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+        var changed=[];
+        rows.forEach(function(r){
+          var canonical=canonicalOutsourceLabName(r.lab);
+          if(canonical&&canonical!==String(r.lab||'')){r.lab=canonical;changed.push(clone(r));}
+        });
+        return changed;
+      }
       function saveLocal(){ try{safeStorageSet(STORAGE_KEY,JSON.stringify({version:1,updatedAt:lastUpdatedAt,rows:rows}));}catch(e){} }
       function loadLocal(){
         var raw=safeStorageGet(STORAGE_KEY); if(!raw)return false;
@@ -8399,10 +8428,15 @@ function exportMonthlySchedulePdfs() {
             /* The API response is the authoritative OUTSOURCE snapshot. Do not merge it
                with browser cache: merging would resurrect rows that the server has deleted. */
             rows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+            var labNameMigrations=normalize();
             revision+=1;
             lastUpdatedAt=String(result.updatedAt||'');
             saveLocal();
-            if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+            if(labNameMigrations.length){
+              Promise.all(labNameMigrations.map(function(row){return upsertSample(row).catch(function(error){console.warn('Outsource lab-name standardisation skipped for record '+row.id+':',error&&error.message?error.message:error);return null;});})).then(function(){
+                if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+              });
+            }else if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
           }
           return true;
         }).catch(function(error){console.warn('Independent OUTSOURCE refresh failed:',error&&error.message?error.message:error);return false;}).finally(function(){loading=false;});
@@ -8430,7 +8464,7 @@ function exportMonthlySchedulePdfs() {
         var id=String(row.id), idx=rows.findIndex(function(r){return String(r.id)===id;});
         var previous=idx>=0?rows[idx]:null;
         var now=new Date().toISOString();
-        var next=Object.assign({},previous||{},clone(row)||{}, {updatedAt:now});
+        var next=Object.assign({},previous||{},clone(row)||{}, {updatedAt:now}); next.lab=canonicalOutsourceLabName(next.lab);
         if(!previous){next.createdAt=next.createdAt||now;next.createdBy=next.createdBy||String(state.authUserDisplayName||'UNKNOWN');}
         if(idx>=0)rows[idx]=next;else rows.push(next);
         normalize(); revision+=1; saveLocal();
