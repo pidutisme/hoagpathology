@@ -9068,12 +9068,10 @@ function exportMonthlySchedulePdfs() {
         // If there is no positive-balance lot, expose NO LOT as the only option.
         if(!lots.length)lots=[{lotNo:'OPENING / NO LOT',qty:0,expiry:'',lastMovement:'',hasIn:false}];
         sel.innerHTML=lots.map(function(l){
-          var available=Number(l.qty||0);
-          if(excludeTxId){
-            var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id&&String(t.lotNo||'')===String(l.lotNo||'');});
-            if(current)available+=Number(current.qty||0);
-          }
-          return '<option value="'+esc(l.lotNo)+'">'+esc(l.lotNo==='OPENING / NO LOT'?'NO LOT':l.lotNo)+' · '+available+' available'+(l.expiry?' · exp '+esc(l.expiry):'')+'</option>';
+          /* Stock Out must show the actual LOT NO. as the choice.
+             Do not replace the lot name with a quantity summary.
+             Expiry remains tied to the selected lot and is populated separately. */
+          return '<option value="'+esc(l.lotNo)+'">'+esc(l.lotNo==='OPENING / NO LOT'?'NO LOT':l.lotNo)+'</option>';
         }).join('');
         sel.hidden=(($('inventoryMovementType')||{}).value!=='OUT');
         if(input)input.hidden=(($('inventoryMovementType')||{}).value==='OUT');
