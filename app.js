@@ -9057,14 +9057,17 @@ function exportMonthlySchedulePdfs() {
 
       function updateLotSelect(excludeTxId){
         var item=getItem(($('inventoryItemInput')||{}).value);
-        var wrap=$('inventoryLotSelectWrap'),sel=$('inventoryLotSelect');
+        var sel=$('inventoryLotSelect'), input=$('inventoryLotInput');
         if(!item||!sel)return;
         var lots=lotsForItem(item.id);
         if(excludeTxId){
           var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id;});
           if(current&&current.lotNo&&!lots.some(function(l){return l.lotNo===current.lotNo;}))lots.push({lotNo:current.lotNo,qty:0,expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});
         }
-        sel.innerHTML='<option value="">AUTO FEFO</option>'+lots.map(function(l){
+        // Stock Out LOT NO is always an explicit lot selector. No AUTO FEFO option.
+        // If there is no positive-balance lot, expose NO LOT as the only option.
+        if(!lots.length)lots=[{lotNo:'OPENING / NO LOT',qty:0,expiry:'',lastMovement:'',hasIn:false}];
+        sel.innerHTML=lots.map(function(l){
           var available=Number(l.qty||0);
           if(excludeTxId){
             var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id&&String(t.lotNo||'')===String(l.lotNo||'');});
@@ -9072,33 +9075,34 @@ function exportMonthlySchedulePdfs() {
           }
           return '<option value="'+esc(l.lotNo)+'">'+esc(l.lotNo==='OPENING / NO LOT'?'NO LOT':l.lotNo)+' · '+available+' available'+(l.expiry?' · exp '+esc(l.expiry):'')+'</option>';
         }).join('');
-        if(wrap)wrap.hidden=(($('inventoryMovementType')||{}).value!=='OUT');
+        sel.hidden=(($('inventoryMovementType')||{}).value!=='OUT');
+        if(input)input.hidden=(($('inventoryMovementType')||{}).value==='OUT');
         syncStockOutLotFields();
       }
       function syncStockOutLotFields(){
         var type=($('inventoryMovementType')||{}).value||'IN';
         var lotInput=$('inventoryLotInput'),expiryInput=$('inventoryExpiryInput');
-        var lotVisible=$('inventoryLotInput'),expiryVisible=$('inventoryExpiryVisible');
-        if(type!=='OUT')return;
+        var expiryVisible=$('inventoryExpiryVisible'),select=$('inventoryLotSelect');
+        if(type!=='OUT'){
+          if(lotInput)lotInput.hidden=false;
+          if(select)select.hidden=true;
+          return;
+        }
         var item=getItem(($('inventoryItemInput')||{}).value);
         var lots=item?lotsForItem(item.id):[];
-        var select=$('inventoryLotSelect');
-        var chosen=select&&select.value?lots.find(function(l){return String(l.lotNo)===String(select.value);}):null;
-        if(chosen){
-          if(lotInput)lotInput.value=chosen.lotNo==='OPENING / NO LOT'?'NO LOT':chosen.lotNo;
-          if(expiryInput)expiryInput.value=chosen.expiry||'';
-        }else{
-          // AUTO FEFO: preview the earliest-expiry lot. Actual allocations still
-          // happen in allocations() when the movement is saved.
-          lots.sort(function(a,b){return (a.expiry||'9999').localeCompare(b.expiry||'9999');});
-          if(lotInput)lotInput.value=lots.length?(lots.length>1?'AUTO FEFO':(lots[0].lotNo==='OPENING / NO LOT'?'NO LOT':lots[0].lotNo)):'NO LOT';
-          if(expiryInput)expiryInput.value=lots.length?(lots[0].expiry||''):'';
+        if(!lots.length)lots=[{lotNo:'OPENING / NO LOT',qty:0,expiry:'',lastMovement:'',hasIn:false}];
+        var chosen=select&&select.value?lots.find(function(l){return String(l.lotNo)===String(select.value);}):lots[0];
+        if(!chosen)chosen=lots[0];
+        if(select&&chosen){select.value=chosen.lotNo;}
+        if(lotInput)lotInput.hidden=true;
+        if(expiryInput)expiryInput.value=(chosen&&chosen.lotNo!=='OPENING / NO LOT')?(chosen.expiry||''):'';
+        if(expiryVisible){
+          expiryVisible.readOnly=true;
+          expiryVisible.placeholder='From selected stock lot';
+          if(expiryVisible._syncDate)expiryVisible._syncDate();
         }
-        if(lotInput){lotInput.readOnly=true;lotInput.placeholder='Auto from available stock lot';}
-        if(expiryInput)expiryInput.readOnly=true;
-        if(expiryVisible){expiryVisible.readOnly=true;expiryVisible.placeholder='From selected stock lot';if(expiryVisible._syncDate)expiryVisible._syncDate();}
       }
-      function setMode(type){var m=$('inventoryMovementType');if(m)m.value=type;var title=$('inventoryModalTitle');if(title)title.textContent=type==='IN'?'STOCK IN':'STOCK OUT';var submit=$('inventorySubmitBtn');if(submit)submit.textContent=type==='IN'?'SAVE STOCK IN':'SAVE STOCK OUT';var lotInput=$('inventoryLotInput');if(lotInput){lotInput.required=type==='IN';lotInput.readOnly=type==='OUT';if(type==='IN')lotInput.placeholder='e.g. 2804';}var expiryInput=$('inventoryExpiryInput');if(expiryInput){expiryInput.readOnly=type==='OUT';}var expiryVisible=$('inventoryExpiryVisible');if(expiryVisible){expiryVisible.readOnly=type==='OUT';if(type==='OUT')expiryVisible.placeholder='From selected stock lot';}var lotWrap=$('inventoryLotSelectWrap');if(lotWrap)lotWrap.hidden=type!=='OUT';var fefo=$('inventoryFefoWrap');if(fefo)fefo.hidden=type!=='OUT';var msg=$('inventoryFormMessage');if(msg)msg.textContent='';updateLotSelect(($('inventoryEditingId')||{}).value||'');if(type==='OUT')syncStockOutLotFields();}
+      function setMode(type){var m=$('inventoryMovementType');if(m)m.value=type;var title=$('inventoryModalTitle');if(title)title.textContent=type==='IN'?'STOCK IN':'STOCK OUT';var submit=$('inventorySubmitBtn');if(submit)submit.textContent=type==='IN'?'SAVE STOCK IN':'SAVE STOCK OUT';var lotInput=$('inventoryLotInput');if(lotInput){lotInput.required=type==='IN';lotInput.readOnly=false;lotInput.hidden=type==='OUT';if(type==='IN')lotInput.placeholder='e.g. 2804';}var expiryInput=$('inventoryExpiryInput');if(expiryInput){expiryInput.readOnly=type==='OUT';}var expiryVisible=$('inventoryExpiryVisible');if(expiryVisible){expiryVisible.readOnly=type==='OUT';if(type==='OUT')expiryVisible.placeholder='From selected stock lot';}var lotSelect=$('inventoryLotSelect');if(lotSelect)lotSelect.hidden=type!=='OUT';var fefo=$('inventoryFefoWrap');if(fefo)fefo.hidden=true;var msg=$('inventoryFormMessage');if(msg)msg.textContent='';updateLotSelect(($('inventoryEditingId')||{}).value||'');if(type==='OUT')syncStockOutLotFields();}
       function showModal(type){var modal=$('inventoryModal');if(!modal)return;modal.classList.remove('inventory-editing');var editing=$('inventoryEditingId');if(editing)editing.value='';modal.hidden=false;setMode(type);var dateInput=$('inventoryMovementDateInput');if(dateInput&&!dateInput.value)dateInput.value=localDateKey();syncItemCustom();var item=$('inventoryItemTrigger');if(item)item.focus();}
       function closeModal(){var modal=$('inventoryModal');if(modal){modal.hidden=true;modal.classList.remove('inventory-editing');}closeItemCustom();var form=$('inventoryMovementForm');if(form)form.reset();var editing=$('inventoryEditingId');if(editing)editing.value='';var dateInput=$('inventoryMovementDateInput');if(dateInput)dateInput.value=localDateKey();var dateVisible=$('inventoryMovementDateVisible');if(dateVisible&&dateVisible._syncDate)dateVisible._syncDate();var expiryVisible=$('inventoryExpiryVisible');if(expiryVisible&&expiryVisible._syncDate)expiryVisible._syncDate();syncItemCustom();setMode('IN');}
       function allocations(itemId,qty,preferredLot,fefo,excludeTxId){
@@ -9132,8 +9136,7 @@ function exportMonthlySchedulePdfs() {
           } else {
             var preferred=(($('inventoryLotSelect')||{}).value)||'';
             if(editingId&&existingTx&&existingTx.type==='OUT'&&!preferred)preferred=existingTx.lotNo||'';
-            var useFefo=editingId?false:(($('inventoryFefoInput')||{}).checked)!==false;
-            var a=allocations(itemId,qty,preferred,useFefo,editingId||'');
+            var a=allocations(itemId,qty,preferred,false,editingId||'');
             if(!a){if(msg)msg.textContent='Insufficient stock for the selected item/lot. Check the LOT STOCK view.';return;}
             if(editingId){
               if(a.length!==1){if(msg)msg.textContent='Edited Stock Out must use one lot.';return;}

@@ -540,7 +540,7 @@
 </div></label>
 <div class="inventory-form-grid">
 <label>QUANTITY<input id="inventoryQtyInput" min="1" placeholder="e.g. 10" required="" step="1" type="number"/></label>
-<label>LOT NO.<input id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/></label>
+<label>LOT NO.<input id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/><select id="inventoryLotSelect" hidden aria-label="Stock Out lot number"></select></label>
 </div>
 <div class="inventory-form-grid">
 <label class="inventory-date-field">MOVEMENT DATE<input id="inventoryMovementDateInput" type="hidden"/><input aria-label="Movement date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryMovementDateVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" required="" type="text"/></label>
@@ -549,8 +549,7 @@
 <div class="inventory-form-grid">
 <label>STAFF<select id="inventoryStaffInput"></select></label>
 </div>
-<label hidden="" id="inventoryLotSelectWrap">STOCK OUT LOT<select id="inventoryLotSelect"></select></label>
-<label class="inventory-check" id="inventoryFefoWrap"><input aria-label="Auto FEFO (First Expired, First Out)" checked="" id="inventoryFefoInput" type="checkbox"/> AUTO FEFO — use earliest-expiry lot first</label>
+<label class="inventory-check" id="inventoryFefoWrap" hidden><input aria-label="Auto FEFO (First Expired, First Out)" id="inventoryFefoInput" type="checkbox"/> AUTO FEFO — use earliest-expiry lot first</label>
 <label>NOTES<textarea id="inventoryNotesInput" maxlength="500" placeholder="Optional movement note..." rows="3"></textarea></label>
 <div aria-live="polite" class="inventory-form-message" id="inventoryFormMessage"></div>
 <div class="inventory-form-actions"><button class="inventory-action-btn" data-inventory-close="" type="button">CANCEL</button><button class="inventory-action-btn primary" id="inventorySubmitBtn" type="submit">SAVE STOCK IN</button></div>
@@ -719,7 +718,7 @@
 <!-- +----------------------------------+
      + CLIENT SCRIPT - ASSET LOADING    +
      +----------------------------------+ -->
-<script src="/assets/js/app.js?v=visitor-v21"></script>
+<script src="/assets/js/app.js?v=visitor-v22"></script>
 
 </body>
 </html>
