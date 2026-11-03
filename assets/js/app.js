@@ -3522,7 +3522,7 @@ hoagApiRequest('logout', {
                 
                 '<div class="outsource-form-actions"><button class="outsource-btn admin" type="button" id="outsourceAdminCatalogBtn" hidden>⚙ ADMIN CONTROL</button><button class="outsource-btn secondary" type="button" id="outsourceClearBtn">CLEAR</button><button class="outsource-btn primary" type="submit" id="outsourceSaveBtn">REGISTER SAMPLE</button></div>'+
               '</form></section>'+
-            '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3><span>'+outsourceEsc(total)+' TOTAL</span></div>'+
+            '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3></div>'+
               '<div class="outsource-summary"><div class="outsource-stat"><div class="num">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num">'+rejected+'</div><div class="lbl">Rejected</div></div></div>'+
               '<div class="outsource-search">'+
                 '<input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search outsource samples">'+
@@ -4141,8 +4141,7 @@ hoagApiRequest('logout', {
         var liveSignature=getOutsourceRowSignature(rows);
         if(liveSignature!==outsourceDataSignature){outsourceDataSignature=liveSignature;invalidateOutsourceRowsCache();renderOutsourceRows();}
         var card=root.querySelector('.outsource-grid .outsource-card:nth-child(2)');
-        if(card){var head=card.querySelector('.outsource-card-head span');if(head)head.textContent=rows.length+' TOTAL';
-          var nums=card.querySelectorAll('.outsource-summary .num');
+        if(card){var nums=card.querySelectorAll('.outsource-summary .num');
           var pending=rows.filter(function(r){return !String(r.result||'').trim()||String(r.result).toUpperCase()==='PENDING';}).length;
           var done=rows.filter(function(r){return ['ADA','COMPLETED','POSITIVE','NEGATIVE'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
           var rejected=rows.filter(function(r){return String(r.result||'').toUpperCase()==='REJECT';}).length;
