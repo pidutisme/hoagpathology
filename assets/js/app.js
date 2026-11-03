@@ -3430,6 +3430,9 @@ hoagApiRequest('logout', {
         });
         outsourceCatalogRemote={labs:Array.from(new Set((Array.isArray(remote.labs)?remote.labs:[]).map(canonicalOutsourceLabName))),testsByLab:canonicalTests,rejectionReasons:Array.isArray(remote.rejectionReasons)?remote.rejectionReasons.map(function(v){return String(v||'').trim();}).filter(Boolean):[],updatedAt:String(remote.updatedAt||'')};
         renderOutsourceRejectReasonOptions();
+        var reportBtn=$('outsourceDownloadReportBtn');if(reportBtn)reportBtn.addEventListener('click',openOutsourceRetentionDownload);
+        var reportModal=$('outsourceReportDownloadModal');if(reportModal){var reportCancel=$('outsourceReportCancel');var reportGenerate=$('outsourceReportGenerate');var reportClose=reportModal.querySelector('.outsource-report-close');var reportBackdrop=reportModal.querySelector('.outsource-report-backdrop');if(reportCancel)reportCancel.addEventListener('click',function(){reportModal.hidden=true;});if(reportClose)reportClose.addEventListener('click',function(){reportModal.hidden=true;});if(reportBackdrop)reportBackdrop.addEventListener('click',function(){reportModal.hidden=true;});if(reportGenerate)reportGenerate.addEventListener('click',downloadOutsourceRetentionReport);}
+
       }
       function loadOutsourceCatalog(){
         if(!hasVercelBackend())return;
@@ -3484,6 +3487,91 @@ hoagApiRequest('logout', {
         setOutsourceAdminMessage('Adding rejection reason...');
         hoagApiRequest('action',{method:'adminAddOutsourceRejectReason',args:[outsourceAdminToken(),reason]}).then(function(result){if(!result||result.ok===false)throw new Error(result&&result.error||'Unable to add rejection reason.');mergeOutsourceCatalog(result);renderOutsourceAdminCatalog();renderOutsourceRejectReasonOptions();input.value='';setOutsourceAdminMessage('Rejection reason added successfully.');}).catch(function(error){setOutsourceAdminMessage(error&&error.message?error.message:'Unable to add rejection reason.',true);});
       }
+      function outsourceReportLabName(value){
+        var v=String(value||'').trim().toUpperCase();
+        var map={
+          'PATOLOGI KIMIA':'BIOCHEMISTRY','PATOLOGY KIMIA':'BIOCHEMISTRY','BIOCHEMISTRY':'BIOCHEMISTRY',
+          'HEMATOLOGI':'HAEMATOLOGY','HEMATOLOGY':'HAEMATOLOGY','HAEMATOLOGY':'HAEMATOLOGY',
+          'MIKROBIOLOGI':'MICROBIOLOGY','MICROBIOLOGY':'MICROBIOLOGY',
+          'SITOLOGI':'CYTOLOGY','CYTOLOGY':'CYTOLOGY',
+          'HISTOLOGI':'HISTOLOGY','HISTOLOGY':'HISTOLOGY'
+        };
+        return map[v] || String(value||'').trim().toUpperCase();
+      }
+      function outsourceReportUnitName(value){
+        var v=String(value||'').trim().toUpperCase();
+        var map={'WAD1':'WARD 1','WAD2':'WARD 2','WAD3':'WARD 3','WAD4':'WARD 4','ED':'EMERGENCY DEPARTMENT','OPD':'OUTPATIENT DEPARTMENT','UKIA':'UKIA','PRIMER':'PRIMARY HEALTHCARE'};
+        return map[v] || v;
+      }
+      function outsourceReportSafeText(value){
+        return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+      }
+      function outsourceReportRowsForPeriod(rows,year,month){
+        return (Array.isArray(rows)?rows:[]).filter(function(r){
+          var p=getOutsourceDateParts(r.sampleDate||r.createdAt); if(!p.year)return false;
+          if(year && year!=='ALL' && p.year!==year)return false;
+          if(month && month!=='ALL' && p.month!==month)return false;
+          return true;
+        });
+      }
+      function outsourceReportDownloadFilename(year,month){
+        var y=year==='ALL'?'ALL-YEARS':year;
+        var m=month==='ALL'?'ALL-MONTHS':month;
+        var names=['','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+        return 'RETEN_OUTSOURCE_'+y+'_'+(m==='ALL-MONTHS'?m:names[Number(m)]||m)+'.xls';
+      }
+      function buildOutsourceRetentionReport(rows,year,month){
+        var labs=['BIOCHEMISTRY','MICROBIOLOGY','HAEMATOLOGY','CYTOLOGY','HISTOLOGY'];
+        var units=[], unitSeen={};
+        rows.forEach(function(r){var u=outsourceReportUnitName(r.unit);if(u&&!unitSeen[u]){unitSeen[u]=true;units.push(u);}});
+        units.sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});});
+        var referrals={}, labTotals={}, unitLab={};
+        labs.forEach(function(l){labTotals[l]=0;});
+        rows.forEach(function(r){
+          var u=outsourceReportUnitName(r.unit)||'UNSPECIFIED';
+          var lab=outsourceReportLabName(r.lab)||'UNSPECIFIED';
+          var ref=String(r.referral||'UNSPECIFIED').trim().toUpperCase();
+          referrals[ref]=(referrals[ref]||0)+1;
+          labTotals[lab]=(labTotals[lab]||0)+1;
+          if(!unitLab[u])unitLab[u]={}; unitLab[u][lab]=(unitLab[u][lab]||0)+1;
+          if(units.indexOf(u)<0)units.push(u);
+        });
+        units.sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});});
+        var monthNames=['ALL MONTHS','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+        var period=(year==='ALL'?'ALL YEARS':year)+' / '+(month==='ALL'?monthNames[0]:monthNames[Number(month)]);
+        var completed=rows.filter(function(r){var x=String(r.result||'').toUpperCase();return x==='COMPLETED'||x==='ADA'||x==='POSITIVE'||x==='NEGATIVE';}).length;
+        var rejected=rows.filter(function(r){return ['REJECT','REJECTED'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
+        var html='<!doctype html><html><head><meta charset="utf-8"><title>Reten Outsource '+outsourceReportSafeText(period)+'</title><style>'+
+          'body{font-family:Arial,sans-serif;font-size:11px;color:#111;margin:24px}h1,h2{text-align:center;margin:0}h1{font-size:18px;color:#5b00ff}h2{font-size:15px;color:#5b00ff;margin-top:4px}h3{font-size:13px;text-align:center;margin:4px 0 16px}table{border-collapse:collapse;width:100%;margin-bottom:18px}th,td{border:1px solid #333;padding:4px 6px;text-align:center}th{font-weight:700;background:#d9e7f5}td.label{text-align:left} .title{background:#f4c62d;padding:8px}.section{background:#cde2f2;font-weight:700}.total{font-weight:700;background:#dce8f2}.left{text-align:left}.small{font-size:10px}'+
+          '</style></head><body><div class="title"><h1>RETEN OUTSOURCE UNIT MAKMAL PATOLOGI</h1><h2>HOSPITAL ORANG ASLI GOMBAK</h2><h3>TAHUN '+outsourceReportSafeText(year==='ALL'?'ALL':year)+' &nbsp;|&nbsp; '+outsourceReportSafeText(month==='ALL'?monthNames[0]:monthNames[Number(month)])+'</h3></div>'+
+          '<p><b>PERIOD:</b> '+outsourceReportSafeText(period)+' &nbsp;&nbsp; <b>TOTAL SAMPLES:</b> '+rows.length+'</p>'+
+          '<table><thead><tr><th>LAB / UNIT</th>'+units.map(function(u){return '<th>'+outsourceReportSafeText(u)+'</th>';}).join('')+'<th>JUMLAH</th></tr></thead><tbody>'+
+          labs.map(function(l){var sum=0;var cells=units.map(function(u){var n=(unitLab[u]&&unitLab[u][l])||0;sum+=n;return '<td>'+n+'</td>';}).join('');return '<tr><td class="label"><b>'+outsourceReportSafeText(l)+'</b></td>'+cells+'<td><b>'+sum+'</b></td></tr>';}).join('')+
+          '<tr class="total"><td>JUMLAH</td>'+units.map(function(u){return '<td><b>'+labs.reduce(function(a,l){return a+((unitLab[u]&&unitLab[u][l])||0);},0)+'</b></td>';}).join('')+'<td><b>'+rows.length+'</b></td></tr></tbody></table>'+
+          '<table><thead><tr><th class="section">JUMLAH MENGIKUT PUSAT RUJUKAN</th><th class="section">JUMLAH KESELURUHAN</th><th class="section">RETEN OUTSOURCE LAB</th></tr></thead><tbody><tr><td valign="top">'+Object.keys(referrals).sort().map(function(k){return '<div class="left">'+outsourceReportSafeText(k)+' : <b>'+referrals[k]+'</b></div>';}).join('')+'<div class="left"><b>JUMLAH : '+rows.length+'</b></div></td><td valign="top"><div>JUMLAH UJIAN DIHANTAR : <b>'+rows.length+'</b></div><div>JUMLAH KEPUTUSAN UJIAN DITERIMA : <b>'+completed+'</b></div><div>JUMLAH UJIAN REJECT : <b>'+rejected+'</b></div></td><td valign="top">'+Object.keys(labTotals).sort().map(function(k){return '<div class="left">'+outsourceReportSafeText(k)+' : <b>'+labTotals[k]+'</b></div>';}).join('')+'<div class="left"><b>JUMLAH : '+rows.length+'</b></div></td></tr></tbody></table>'+
+          '<h3>DETAILED OUTSOURCE RECORDS</h3><table><thead><tr><th>DATE</th><th>BARCODE</th><th>NAME</th><th>IC / ID</th><th>UNIT</th><th>REFERRAL</th><th>LAB</th><th>TEST / INVESTIGATION</th><th>STATUS</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+outsourceReportSafeText(r.sampleDate||'')+'</td><td>'+outsourceReportSafeText(r.barCode||r.barcode||'')+'</td><td class="left">'+outsourceReportSafeText(r.name||'')+'</td><td>'+outsourceReportSafeText(r.idIc||r.ic||r.icId||'')+'</td><td>'+outsourceReportSafeText(outsourceReportUnitName(r.unit))+'</td><td>'+outsourceReportSafeText(r.referral||'')+'</td><td>'+outsourceReportSafeText(outsourceReportLabName(r.lab))+'</td><td class="left">'+outsourceReportSafeText(r.test||r.testName||'')+'</td><td>'+outsourceReportSafeText(r.result||'PENDING')+'</td></tr>';}).join('')+'</tbody></table></body></html>';
+        return html;
+      }
+      function downloadOutsourceRetentionReport(){
+        var modal=document.getElementById('outsourceReportDownloadModal');if(!modal)return;
+        var year=String((modal.querySelector('#outsourceReportYear')||{}).value||'ALL');
+        var month=String((modal.querySelector('#outsourceReportMonth')||{}).value||'ALL');
+        var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[];
+        var filtered=outsourceReportRowsForPeriod(rows,year,month);
+        if(!filtered.length){requestAppConfirm('NO DATA','No outsource data was found for the selected period.',function(){});return;}
+        var html=buildOutsourceRetentionReport(filtered,year,month);
+        var blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+        a.href=url;a.download=outsourceReportDownloadFilename(year,month);document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+        modal.hidden=true;
+      }
+      function openOutsourceRetentionDownload(){
+        var modal=document.getElementById('outsourceReportDownloadModal');if(!modal)return;
+        var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[],years={};
+        rows.forEach(function(r){var p=getOutsourceDateParts(r.sampleDate||r.createdAt);if(p.year)years[p.year]=true;});
+        var y=modal.querySelector('#outsourceReportYear'),m=modal.querySelector('#outsourceReportMonth');
+        y.innerHTML='<option value="ALL">All years</option>'+Object.keys(years).sort(function(a,b){return Number(b)-Number(a);}).map(function(v){return '<option value="'+outsourceReportSafeText(v)+'">'+outsourceReportSafeText(v)+'</option>';}).join('');
+        m.value='ALL';modal.hidden=false;
+      }
       function renderOutsourcePage(options){
         options=options||{};
         var grid=$('moduleYearGrid'); if(!grid)return;
@@ -3522,7 +3610,7 @@ hoagApiRequest('logout', {
                 
                 '<div class="outsource-form-actions"><button class="outsource-btn admin" type="button" id="outsourceAdminCatalogBtn" hidden>⚙ ADMIN CONTROL</button><button class="outsource-btn secondary" type="button" id="outsourceClearBtn">CLEAR</button><button class="outsource-btn primary" type="submit" id="outsourceSaveBtn">REGISTER SAMPLE</button></div>'+
               '</form></section>'+
-            '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3></div>'+
+            '<section class="outsource-card"><div class="outsource-card-head"><h3>REGISTERED SAMPLES</h3><button type="button" class="outsource-btn secondary outsource-download-report-btn" id="outsourceDownloadReportBtn">DOWNLOAD RETEN</button></div>'+
               '<div class="outsource-summary"><div class="outsource-stat"><div class="num">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num">'+rejected+'</div><div class="lbl">Rejected</div></div></div>'+
               '<div class="outsource-search">'+
                 '<input id="outsourceSearch" placeholder="Search barcode, name or IC / ID..." aria-label="Search outsource samples">'+
@@ -3538,6 +3626,7 @@ hoagApiRequest('logout', {
           '</div></div>';
         grid.insertAdjacentHTML('beforeend','<div class="outsource-result-modal" id="outsourceResultModal" hidden><div class="outsource-result-dialog"><button type="button" class="outsource-result-close" id="outsourceResultClose">×</button><div class="outsource-modal-kicker">UPDATE RESULT</div><h2 id="outsourceResultTitle">RESULT</h2><div class="outsource-modal-sub" id="outsourceResultSub"></div><div class="outsource-modal-field"><label>RESULT</label><select id="outsourceModalResult"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECT</option></select></div><div class="outsource-modal-row"><div class="outsource-modal-field outsource-date-field"><label>RESULT DATE</label><input type="hidden" id="outsourceModalResultDate"><input type="text" id="outsourceModalResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label>REFERENCE NO.</label><input id="outsourceModalReferenceNo" placeholder="External report / accession no."></div></div><div class="outsource-modal-field"><label>REJECT REASON</label><select id="outsourceModalRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field"><label>NOTES</label><textarea id="outsourceModalNotes" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceResultCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceResultSave">UPDATE RESULT</button></div></div></div>');
         grid.insertAdjacentHTML('beforeend','<div class="outsource-admin-modal" id="outsourceAdminCatalogModal" hidden><div class="outsource-admin-backdrop" data-outsource-admin-close></div><div class="outsource-admin-dialog"><div class="outsource-admin-head"><div><div class="outsource-admin-kicker">ADMIN ONLY</div><h2>OUTSOURCE CONTROL</h2><p>Add outsource laboratories and tests.</p></div><button type="button" class="outsource-admin-close" data-outsource-admin-close>×</button></div><div class="outsource-admin-section"><label>ADD OUTSOURCE LAB</label><div class="outsource-admin-inline"><input id="outsourceAdminLabInput" placeholder="e.g. IMMUNOLOGY" maxlength="100"><button type="button" class="outsource-btn primary" id="outsourceAdminAddLabBtn">ADD LAB</button></div></div><div class="outsource-admin-section"><label>ADD TEST / INVESTIGATION</label><div class="outsource-admin-grid"><select id="outsourceAdminTestLab"></select><input id="outsourceAdminTestInput" placeholder="e.g. New external test" maxlength="200"></div><button type="button" class="outsource-btn primary outsource-admin-add-test" id="outsourceAdminAddTestBtn">ADD TEST</button></div><div class="outsource-admin-section"><label>ADD REJECTION REASON</label><div class="outsource-admin-inline"><input id="outsourceAdminRejectReasonInput" placeholder="e.g. Insufficient specimen" maxlength="200"><button type="button" class="outsource-btn primary" id="outsourceAdminAddRejectReasonBtn">ADD REASON</button></div></div><div class="outsource-admin-message" id="outsourceAdminCatalogMessage"></div><div class="outsource-admin-list" id="outsourceAdminCatalogList"></div></div></div>');
+        grid.insertAdjacentHTML('beforeend','<div class="outsource-report-download-modal" id="outsourceReportDownloadModal" hidden><div class="outsource-report-backdrop"></div><div class="outsource-report-dialog"><button type="button" class="outsource-result-close outsource-report-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE REPORT</div><h2>DOWNLOAD RETEN</h2><p class="outsource-report-help">Pilih tahun dan bulan untuk jana laporan seperti reten outsource.</p><div class="outsource-report-select-row"><div class="outsource-modal-field"><label>YEAR</label><select id="outsourceReportYear"><option value="ALL">All years</option></select></div><div class="outsource-modal-field"><label>MONTH</label><select id="outsourceReportMonth"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceReportCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceReportGenerate">DOWNLOAD EXCEL</button></div></div></div>');
         /* The post-register modal is managed as a persistent BODY-level element.
            Do not create it inside moduleYearGrid: this grid is rebuilt by module,
            inventory and realtime refresh paths, which can otherwise destroy the
