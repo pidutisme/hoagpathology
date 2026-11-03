@@ -12358,3 +12358,24 @@ body.visitor-read-only [data-outsource-action="delete"] {
   .outsource-search { grid-template-columns:minmax(0,1fr); }
   .outsource-search #outsourceSearch { grid-column:auto; }
 }
+
+
+/* V26 — hide the scrollbar while keeping the Outsource and Transfusion
+   registration panels vertically scrollable on short/low-resolution screens. */
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid)
+.outsource-grid > .outsource-card:first-child{
+  max-height:calc(100vh - 28px) !important;
+  max-height:calc(100dvh - 28px) !important;
+  min-height:0 !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior:contain;
+  scrollbar-width:none !important;
+  -ms-overflow-style:none !important;
+}
+:is(#moduleYearGrid.outsource-active-grid,#moduleYearGrid.transfusion-active-grid)
+.outsource-grid > .outsource-card:first-child::-webkit-scrollbar{
+  display:none !important;
+  width:0 !important;
+  height:0 !important;
+}
