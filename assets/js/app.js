@@ -3630,7 +3630,7 @@ hoagApiRequest('logout', {
           if(unitLab[unit]&&unitLab[unit][lab]!=null)unitLab[unit][lab]+=1;
           if(labTotals[lab]==null)labTotals[lab]=0;
           labTotals[lab]+=1;
-          var ref=referralLabel(r.referral); referrals[ref]=(referrals[ref]||0)+1;
+          var ref=referralLabel(r.referral); if(ref) referrals[ref]=(referrals[ref]||0)+1;
         });
         var monthNames=['ALL MONTHS','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
         var periodYear=year==='ALL'?'ALL':year, periodMonth=month==='ALL'?monthNames[0]:monthNames[Number(month)];
@@ -3679,15 +3679,12 @@ hoagApiRequest('logout', {
           appendPdfText(commands,String(n),leftX+leftW-18,ry+10,6.6,{align:'right',bold:true});
           ry+=14;
         });
-        var extraRefs=Object.keys(referrals).filter(function(k){return !OUTSOURCE_REFERRAL_DEFS.some(function(def){return def.code===k;});}).sort();
-        extraRefs.forEach(function(k){
-          appendPdfFillOnlyRect(commands,leftX,ry,leftW,14,[1,1,1]);
-          appendPdfText(commands,k+' :',leftX+leftW-48,ry+10,6.2,{align:'right'});
-          appendPdfText(commands,String(referrals[k]),leftX+leftW-18,ry+10,6.2,{align:'right',bold:true}); ry+=14;
-        });
+        /* RETEN referral section is intentionally limited to the approved 9 categories.
+           Records without a referral are not rendered as a blank/extra row. */
+        var referralTotal=OUTSOURCE_REFERRAL_DEFS.reduce(function(sum,def){return sum+(referrals[def.code]||0);},0);
         appendPdfFillOnlyRect(commands,leftX,ry,leftW,16,[0.88,0.94,0.96]);
         appendPdfText(commands,'JUMLAH :',leftX+leftW-48,ry+11,6.8,{align:'right',bold:true});
-        appendPdfText(commands,String(total),leftX+leftW-18,ry+11,6.8,{align:'right',bold:true});
+        appendPdfText(commands,String(referralTotal),leftX+leftW-18,ry+11,6.8,{align:'right',bold:true});
         var cy=lowerY+24;
         [['JUMLAH UJIAN DIHANTAR',total],['JUMLAH KEPUTUSAN UJIAN DITERIMA',completed],['JUMLAH UJIAN REJECT',rejected]].forEach(function(item,i){
           appendPdfFillOnlyRect(commands,midX,cy,midW,17,i%2?[0.86,0.95,0.97]:[1,1,1]);
@@ -8758,7 +8755,7 @@ function exportMonthlySchedulePdfs() {
     var OUTSOURCE_REFERRAL_DEFS=[
       {code:'HKL',label:'HOSPITAL KUALA LUMPUR'},
       {code:'IPR',label:'INSTITUT PERUBATAN RESPIRATORI'},
-      {code:'IMR/NIH',label:'INSTITUTE NATIONAL OF HEALTH / INSTITUTE OF MEDICAL RESEARCH'},
+      {code:'IMR/NIH',label:'INSTITUTE OF MEDICAL RESEARCH'},
       {code:'MKAK',label:'MAKMAL KESIHATAN AWAM KEBANGSAAN'},
       {code:'H AMPANG',label:'HOSPITAL AMPANG'},
       {code:'H SELAYANG',label:'HOSPITAL SELAYANG'},
