@@ -3673,7 +3673,11 @@ hoagApiRequest('logout', {
         var month=String((modal.querySelector('#outsourceReportMonth')||{}).value||'ALL');
         var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[];
         var filtered=outsourceReportRowsForPeriod(rows,year,month);
-        if(!filtered.length){requestAppConfirm('NO DATA','No outsource data was found for the selected period.',function(){});return;}
+        if(!filtered.length){
+          modal.hidden=true;
+          requestAppConfirm('NO DATA','No outsource data was found for the selected period.',function(){});
+          return;
+        }
 
         var generateButton=modal.querySelector('#outsourceReportGenerate');
         if(generateButton){generateButton.disabled=true;generateButton.textContent='GENERATING PDF…';}
@@ -3692,23 +3696,45 @@ hoagApiRequest('logout', {
             for(var i=0;i<pdf.length;i++)bytes[i]=pdf.charCodeAt(i)&255;
           }
           var blob=new Blob([bytes],{type:'application/pdf'});
-          var blobUrl=window.URL&&window.URL.createObjectURL?window.URL.createObjectURL(blob):'';
-          if(!blobUrl)throw new Error('Browser does not support PDF download URLs');
+          var filename=outsourceReportDownloadFilename(year,month);
+          var urlApi=window.URL||window.webkitURL;
+          var blobUrl=urlApi&&urlApi.createObjectURL?urlApi.createObjectURL(blob):'';
 
-          var link=document.createElement('a');
-          link.href=blobUrl;
-          link.download=outsourceReportDownloadFilename(year,month);
-          link.rel='noopener';
-          link.style.display='none';
-          document.body.appendChild(link);
-          link.click();
-          setTimeout(function(){
-            try{if(window.URL&&window.URL.revokeObjectURL)window.URL.revokeObjectURL(blobUrl);}catch(e){}
-            if(link.parentNode)link.parentNode.removeChild(link);
-          },2000);
+          if(window.navigator&&typeof window.navigator.msSaveOrOpenBlob==='function'){
+            window.navigator.msSaveOrOpenBlob(blob,filename);
+          }else if(blobUrl){
+            var link=document.createElement('a');
+            link.href=blobUrl;
+            link.download=filename;
+            link.rel='noopener';
+            link.style.display='none';
+            document.body.appendChild(link);
+            try{
+              link.click();
+            }catch(clickError){
+              /* Some embedded browsers reject HTMLElement.click(); use a real mouse event. */
+              link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+            }
+            setTimeout(function(){
+              try{if(urlApi&&urlApi.revokeObjectURL)urlApi.revokeObjectURL(blobUrl);}catch(e){}
+              if(link.parentNode)link.parentNode.removeChild(link);
+            },5000);
+          }else{
+            /* Last-resort fallback for browsers without Blob URLs. */
+            var dataUrl='data:application/pdf;base64,'+btoa(unescape(encodeURIComponent(pdf)));
+            var fallbackLink=document.createElement('a');
+            fallbackLink.href=dataUrl;
+            fallbackLink.download=filename;
+            fallbackLink.style.display='none';
+            document.body.appendChild(fallbackLink);
+            fallbackLink.click();
+            setTimeout(function(){if(fallbackLink.parentNode)fallbackLink.parentNode.removeChild(fallbackLink);},1000);
+          }
           modal.hidden=true;
         } catch(error) {
           console.error('Outsource Reten PDF generation/download failed:',error);
+          /* Always close the report selector before showing the error dialog. */
+          modal.hidden=true;
           requestAppConfirm('DOWNLOAD FAILED','PDF could not be generated. Please try again.',function(){});
         } finally {
           if(generateButton){generateButton.disabled=false;generateButton.textContent='DOWNLOAD PDF';}
