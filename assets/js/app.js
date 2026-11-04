@@ -3747,26 +3747,67 @@ hoagApiRequest('logout', {
 
         var tableY=66,columnCount=3,columnGap=10,columnW=(contentW-(columnGap*(columnCount-1)))/columnCount;
         var rowH2=10,labHeadH=14,maxRows=Math.floor((H-58-tableY-30)/rowH2);
+        /* Flow tests continuously through the three columns. A laboratory may
+           continue into the next column when its list is longer than the
+           remaining space. The laboratory header is repeated at the top of
+           each continuation column so the split remains clear when printed. */
         var columns=[[],[],[]],columnRows=[0,0,0],currentCol=0;
-        labGroups.forEach(function(group){
-          var needed=group.rowCount+1;
-          /* Keep a laboratory together where possible. If it is too large,
-             continue within the same column rather than splitting the heading. */
-          if(columnRows[currentCol]>0 && columnRows[currentCol]+needed>maxRows && currentCol<columnCount-1){
-            currentCol+=1;
+        function addLabHeader(group,ci){
+          columns[ci].push({type:'lab',group:group});
+          columnRows[ci]+=Math.ceil(labHeadH/rowH2);
+        }
+        function ensureSpaceForHeader(ci){
+          if(columnRows[ci]>0 && columnRows[ci]+Math.ceil(labHeadH/rowH2)>maxRows && ci<columnCount-1){
+            currentCol=ci+1;
+            ci=currentCol;
           }
-          columns[currentCol].push(group);
-          columnRows[currentCol]+=needed;
+          return ci;
+        }
+        labGroups.forEach(function(group){
+          var testIndex=0, firstChunk=true;
+          while(testIndex<group.tests.length){
+            currentCol=ensureSpaceForHeader(currentCol);
+            /* Show the laboratory header only once. If this lab continues
+               into another column, its test rows continue directly under the
+               previous rows; do not repeat the same lab header. */
+            if(firstChunk){
+              addLabHeader(group,currentCol);
+              firstChunk=false;
+            }
+            var available=maxRows-columnRows[currentCol];
+            if(available<=0 && currentCol<columnCount-1){
+              currentCol+=1;
+              addLabHeader(group,currentCol);
+              available=maxRows-columnRows[currentCol];
+            }
+            var take=Math.max(0,Math.min(group.tests.length-testIndex,available));
+            if(take===0){
+              if(currentCol<columnCount-1){currentCol+=1;continue;}
+              break;
+            }
+            columns[currentCol].push({type:'tests',group:group,tests:group.tests.slice(testIndex,testIndex+take)});
+            columnRows[currentCol]+=take;
+            testIndex+=take;
+            if(testIndex<group.tests.length && currentCol<columnCount-1)currentCol+=1;
+          }
+          /* Leave a small visual gap before the next laboratory when space
+             remains; the next header will still move to a fresh column when
+             necessary. */
+          if(columnRows[currentCol]<maxRows)columnRows[currentCol]+=1;
         });
 
-        columns.forEach(function(groups,ci){
+        columns.forEach(function(items,ci){
           var x=M+ci*(columnW+columnGap),cy2=tableY;
-          groups.forEach(function(group){
-            appendPdfFilledRect(page2,x,cy2,columnW,labHeadH,[0.74,0.88,0.68],.5);
-            appendPdfText(page2,group.name,x+6,cy2+9.5,6.2,{bold:true});
-            appendPdfText(page2,'TOTAL',x+columnW-6,cy2+9.5,6.2,{align:'right',bold:true});
-            cy2+=labHeadH;
-            group.tests.forEach(function(item,ri){
+          items.forEach(function(itemBlock){
+            var group=itemBlock.group;
+            if(itemBlock.type==='lab'){
+              appendPdfFilledRect(page2,x,cy2,columnW,labHeadH,[0.74,0.88,0.68],.5);
+              appendPdfText(page2,group.name,x+6,cy2+9.5,6.2,{bold:true});
+              appendPdfText(page2,'TOTAL',x+columnW-6,cy2+9.5,6.2,{align:'right',bold:true});
+              cy2+=labHeadH;
+              return;
+            }
+            itemBlock.tests.forEach(function(item,ri){
               appendPdfFillOnlyRect(page2,x,cy2,columnW,rowH2,ri%2?[0.86,0.95,0.97]:[1,1,1]);
               var testName=pdfExportEscapeText(item.name),maxNameW=columnW-38;
               while(testName.length>3 && estimatePdfTextWidth(testName,5.2,false)>maxNameW)testName=testName.slice(0,-2).replace(/\s+$/,'')+'…';
@@ -3774,7 +3815,6 @@ hoagApiRequest('logout', {
               appendPdfText(page2,String(item.count),x+columnW-6,cy2+7.2,5.4,{align:'right',bold:true});
               cy2+=rowH2;
             });
-            cy2+=3;
           });
         });
 
