@@ -3573,16 +3573,28 @@ hoagApiRequest('logout', {
       /* Self-contained PDF document serializer for Reten Outsource.
          Do not call the calendar/roster PDF serializer here: that serializer
          lives inside the Calendar module closure and is intentionally private. */
-      function buildOutsourcePdfDocument(commands){
-        var stream=commands.join('\n');
+      function buildOutsourcePdfDocument(pageCommands){
+        pageCommands=Array.isArray(pageCommands)&&pageCommands.length&&Array.isArray(pageCommands[0])?pageCommands:[pageCommands];
         var objects=[
           '<< /Type /Catalog /Pages 2 0 R >>',
-          '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-          '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 841.89 595.28] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
-          '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-          '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
-          '<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'
+          '<< /Type /Pages /Kids ['+pageCommands.map(function(_,i){return (3+(i*2))+' 0 R';}).join(' ')+'] /Count '+pageCommands.length+' >>'
         ];
+        pageCommands.forEach(function(commands,i){
+          var pageObj=3+(i*2),contentObj=pageObj+1;
+          var stream=commands.join('\n');
+          objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 841.89 595.28] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents '+contentObj+' 0 R >>');
+          objects.push('<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream');
+        });
+        /* Font objects must come after the page/content objects so references
+           remain deterministic regardless of whether this Reten has 1 or 2 pages. */
+        var font1Obj=3+(pageCommands.length*2),font2Obj=font1Obj+1;
+        objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+        objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+        /* Re-point every page resource dictionary to the final font objects. */
+        for(var pi=0;pi<pageCommands.length;pi++){
+          var pageIndex=2+(pi*2);
+          objects[pageIndex]=objects[pageIndex].replace('/F1 4 0 R /F2 5 0 R','/F1 '+font1Obj+' 0 R /F2 '+font2Obj+' 0 R');
+        }
         var pdf='%PDF-1.4\n';
         var offsets=[0];
         objects.forEach(function(body,index){
@@ -3703,7 +3715,55 @@ hoagApiRequest('logout', {
         appendPdfText(commands,'BULAN :',rightX+rightW-88,555,7.4,{align:'right'});
         appendPdfLine(commands,rightX+rightW-80,556,rightX+rightW,556,.55);
         if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,552,6.8,{align:'center'});
-        return buildOutsourcePdfDocument(commands);
+
+        /* PAGE 2: test / investigation totals for the same selected period. */
+        var testMap={};
+        rows.forEach(function(r){
+          var test=String(r.test||'').trim();
+          if(!test)return;
+          var key=test.toUpperCase();
+          if(!testMap[key])testMap[key]={name:test,count:0,lab:outsourceReportLabName(r.lab)||''};
+          testMap[key].count+=1;
+        });
+        var tests=Object.keys(testMap).map(function(k){return testMap[k];}).sort(function(a,b){
+          return b.count-a.count || a.name.localeCompare(b.name);
+        });
+        var page2=[];
+        appendPdfFilledRect(page2,M,14,contentW,42,[0.96,0.78,0.12],.8);
+        appendPdfColorText(page2,'RETEN OUTSOURCE - TEST / INVESTIGATION',W/2,28,12,[0.37,0.00,1.00],{align:'center',bold:true});
+        appendPdfColorText(page2,'TAHUN '+periodYear+(month!=='ALL'?'  •  '+periodMonth:''),W/2,42,8.5,[0.37,0.00,1.00],{align:'center',bold:true});
+
+        var tableY=66,tableW=contentW,cols=[0,tableW*0.68,tableW*0.83,tableW],rowH2=10;
+        var columnCount=3,columnGap=10,columnW=(contentW-(columnGap*(columnCount-1)))/columnCount;
+        var maxRows=Math.floor((548-(tableY+18))/rowH2),chunks=[];
+        for(var ti=0;ti<tests.length;ti+=maxRows)chunks.push(tests.slice(ti,ti+maxRows));
+        if(!chunks.length)chunks=[[]];
+        chunks=chunks.slice(0,3);
+        chunks.forEach(function(chunk,ci){
+          var x=M+ci*(columnW+columnGap);
+          appendPdfFilledRect(page2,x,tableY,columnW,18,[0.74,0.88,0.68],.5);
+          appendPdfText(page2,'TEST / INVESTIGATION',x+6,tableY+12,6.2,{bold:true});
+          appendPdfText(page2,'TOTAL',x+columnW-6,tableY+12,6.2,{align:'right',bold:true});
+          var cy2=tableY+18;
+          chunk.forEach(function(item,ri){
+            appendPdfFillOnlyRect(page2,x,cy2,columnW,rowH2,ri%2?[0.86,0.95,0.97]:[1,1,1]);
+            var testName=pdfExportEscapeText(item.name),maxNameW=columnW-38;
+            while(testName.length>3 && estimatePdfTextWidth(testName,5.2,false)>maxNameW)testName=testName.slice(0,-2).replace(/\s+$/,'')+'…';
+            appendPdfText(page2,testName,x+5,cy2+7.2,5.2);
+            appendPdfText(page2,String(item.count),x+columnW-6,cy2+7.2,5.4,{align:'right',bold:true});
+            cy2+=rowH2;
+          });
+        });
+        var shownTests=chunks.reduce(function(n,c){return n+c.length;},0);
+        if(tests.length>shownTests){
+          appendPdfText(page2,'* '+String(tests.length-shownTests)+' ujian tambahan tidak dipaparkan kerana had ruang halaman.',M,560,5.8);
+        }
+        var grandY=566;
+        appendPdfFillOnlyRect(page2,M,grandY,contentW,18,[0.88,0.94,0.96]);
+        appendPdfText(page2,'JUMLAH SEMUA UJIAN',M+contentW-90,grandY+12,7,{align:'right',bold:true});
+        appendPdfText(page2,String(total),M+contentW-8,grandY+12,7,{align:'right',bold:true});
+        if(!tests.length) appendPdfText(page2,'TIADA UJIAN / INVESTIGATION DIREKOD',W/2,100,8,{align:'center'});
+        return buildOutsourcePdfDocument([commands,page2]);
       }
       function bindOutsourceRetentionDownloadControls(){
         var reportBtn=$('outsourceDownloadReportBtn');
