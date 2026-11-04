@@ -3520,8 +3520,22 @@ hoagApiRequest('logout', {
         commands.push(x.toFixed(2)+' '+(595.28-y-height).toFixed(2)+' '+width.toFixed(2)+' '+height.toFixed(2)+' re f');
         commands.push('0 0 0 rg');
       }
+      /* Local PDF text escaper: keep the PDF export helpers self-contained.
+         Some deployment bundles place the legacy escapePdfText helper in a
+         different closure, which can otherwise produce `escapePdfText is not
+         defined` only when the Reten Outsource PDF is generated. */
+      function pdfExportEscapeText(value){
+        return String(value==null?'':value)
+          .replace(/[^\x20-\x7E]/g,' ')
+          .replace(/\\/g,'\\\\')
+          .replace(/\(/g,'\\(')
+          .replace(/\)/g,'\\)')
+          .replace(/\s+/g,' ')
+          .trim();
+      }
+
       function appendPdfColorText(commands,text,x,y,size,color,options){
-        options=options||{}; color=color||[0,0,0]; text=escapePdfText(text); if(!text)return;
+        options=options||{}; color=color||[0,0,0]; text=pdfExportEscapeText(text); if(!text)return;
         if(options.align==='center')x-=estimatePdfTextWidth(text,size,options.bold)/2;
         if(options.align==='right')x-=estimatePdfTextWidth(text,size,options.bold);
         commands.push(color[0].toFixed(3)+' '+color[1].toFixed(3)+' '+color[2].toFixed(3)+' rg');
@@ -6302,7 +6316,7 @@ hoagApiRequest('logout', {
        * + estimatePdfTextWidth             +
        * +----------------------------------+ */
       function estimatePdfTextWidth(text, size, bold) {
-        text = escapePdfText(text);
+        text = pdfExportEscapeText(text);
         try {
           if (document && document.createElement) {
             estimatePdfTextWidth._canvas = estimatePdfTextWidth._canvas || document.createElement('canvas');
@@ -6327,7 +6341,7 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function appendPdfText(commands, text, x, y, size, options) {
         options = options || {};
-        text = escapePdfText(text);
+        text = pdfExportEscapeText(text);
         if (!text) return;
         if (options.align === 'center') x -= estimatePdfTextWidth(text, size, options.bold) / 2;
         if (options.align === 'right') x -= estimatePdfTextWidth(text, size, options.bold);
@@ -6362,7 +6376,7 @@ hoagApiRequest('logout', {
        * + wrapPdfText                      +
        * +----------------------------------+ */
       function wrapPdfText(text, maxChars, maxLines) {
-        var words = escapePdfText(text).split(/\s+/).filter(Boolean);
+        var words = pdfExportEscapeText(text).split(/\s+/).filter(Boolean);
         var lines = [];
         var current = '';
         words.forEach(function (word) {
