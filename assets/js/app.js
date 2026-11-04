@@ -3619,19 +3619,8 @@ hoagApiRequest('logout', {
         var unitLab={},labTotals={},referrals={},total=rows.length;
         labs.forEach(function(l){labTotals[l.key]=0;});
         unitDefs.forEach(function(u){unitLab[u.key]={};labs.forEach(function(l){unitLab[u.key][l.key]=0;});});
-        var referralDefs=[
-          ['HKL','HOSPITAL KUALA LUMPUR'],['IPR','INSTITUT PERUBATAN RESPIRATORI'],
-          ['MAKMAL KESIHATAN AWAM KEBANGSAAN','MAKMAL KESIHATAN AWAM KEBANGSAAN'],
-          ['IMR','INSTITUTE OF MEDICAL RESEARCH'],['HOSPITAL AMPANG','HOSPITAL AMPANG'],
-          ['NATIONAL INSTITUTE OF HEALTH','NATIONAL INSTITUTE OF HEALTH'],
-          ['MAKMAL VEKTOR NEGERI BANDAR BOTANIK','MAKMAL VEKTOR NEGERI BANDAR BOTANIK'],
-          ['HOSPITAL TUNKU AZIZAH','HOSPITAL TUNKU AZIZAH'],['HOSPITAL SELAYANG','HOSPITAL SELAYANG']
-        ];
-        function referralLabel(v){
-          var k=String(v||'').trim().toUpperCase();
-          var aliases={HKL:'HOSPITAL KUALA LUMPUR',IPR:'INSTITUT PERUBATAN RESPIRATORI',IMR:'INSTITUTE OF MEDICAL RESEARCH'};
-          return aliases[k]||k||'LAIN-LAIN';
-        }
+        var referralDefs=OUTSOURCE_REFERRAL_DEFS.map(function(item){return [item.code,item.label];});
+        function referralLabel(v){ return canonicalOutsourceReferralName(v); }
         rows.forEach(function(r){
           /* Use the exact same canonical lab/unit functions as the table. */
           var canonicalUnit=canonicalOutsourceUnitName(r.unit);
@@ -3686,11 +3675,11 @@ hoagApiRequest('logout', {
         referralDefs.forEach(function(pair,i){
           var n=referrals[pair[1]]||referrals[pair[0]]||0;
           appendPdfFillOnlyRect(commands,leftX,ry,leftW,14,i%2?[0.86,0.95,0.97]:[1,1,1]);
-          appendPdfText(commands,pair[1]+' :',leftX+leftW-48,ry+10,6.6,{align:'right'});
+          appendPdfText(commands,outsourceReferralPdfLabel(pair[0])+' :',leftX+leftW-48,ry+10,6.6,{align:'right'});
           appendPdfText(commands,String(n),leftX+leftW-18,ry+10,6.6,{align:'right',bold:true});
           ry+=14;
         });
-        var extraRefs=Object.keys(referrals).filter(function(k){return referralDefs.every(function(pair){return pair[1]!==k;});}).sort();
+        var extraRefs=Object.keys(referrals).filter(function(k){return !OUTSOURCE_REFERRAL_DEFS.some(function(def){return def.code===k;});}).sort();
         extraRefs.forEach(function(k){
           appendPdfFillOnlyRect(commands,leftX,ry,leftW,14,[1,1,1]);
           appendPdfText(commands,k+' :',leftX+leftW-48,ry+10,6.2,{align:'right'});
@@ -3903,7 +3892,7 @@ hoagApiRequest('logout', {
                 '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div>'+
                 '<div class="outsource-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input type="text" id="osDispatchDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
-                '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option><option>H SELAYANG</option><option>HKL</option><option>IPR</option><option>MKAK</option><option>MVN BOTANIK</option><option>H AMPANG</option><option>IMR/NIH</option><option>HTA</option><option>H PUTRAJAYA</option></select></div>'+
+                '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option>'+OUTSOURCE_REFERRAL_DEFS.map(function(item){return '<option value="'+outsourceEsc(item.code)+'">'+outsourceEsc(item.code)+'</option>';}).join('')+'</select></div>'+
                 '<div class="outsource-field"><label>Outsource Lab</label><select id="osLab"><option value="">Select laboratory</option></select></div>'+
                 '<div class="outsource-field outsource-test-field"><label>Test / Investigation *</label><select id="osTest" required><option value="">Select test / investigation</option></select></div>'+
                 
@@ -4052,8 +4041,10 @@ hoagApiRequest('logout', {
         ];
         dimensions.forEach(function(item){
           var values={},sel=$(item[0]),prev=String(sel&&sel.value||'ALL');
-          rows.forEach(function(r){var v=String(r[item[2]]||'').trim();if(item[2]==='lab')v=canonicalOutsourceLabName(v);if(item[2]==='unit')v=canonicalOutsourceUnitName(v);if(v)values[v]=true;});
+          if(item[2]==='referral'){ OUTSOURCE_REFERRAL_DEFS.forEach(function(def){values[def.code]=true;}); }
+          rows.forEach(function(r){var v=String(r[item[2]]||'').trim();if(item[2]==='lab')v=canonicalOutsourceLabName(v);if(item[2]==='unit')v=canonicalOutsourceUnitName(v);if(item[2]==='referral')v=canonicalOutsourceReferralName(v);if(v)values[v]=true;});
           populateOutsourceFilter(item[0],item[1],values,prev);
+          if(item[2]==='referral'){Array.prototype.forEach.call(sel.options,function(opt){if(opt.value!=='ALL'){opt.textContent=outsourceReferralLabel(opt.value);}});}
         });
       }
       var outsourceRowsRenderTimer=null;
@@ -4126,11 +4117,11 @@ hoagApiRequest('logout', {
         }
         var rowNum = typeof index === 'number' ? (index + 1) : '';
         return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'">'+
-          '<td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(canonicalOutsourceLabName(r.lab))+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td><div class="outsource-actions"><button type="button" class="outsource-mini" title="View full details" aria-label="View full details" data-outsource-action="view" data-id="'+outsourceEsc(r.id)+'">&#128065;</button><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
+          '<td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(outsourceReferralLabel(r.referral))+'</td><td>'+outsourceEsc(canonicalOutsourceLabName(r.lab))+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td><div class="outsource-actions"><button type="button" class="outsource-mini" title="View full details" aria-label="View full details" data-outsource-action="view" data-id="'+outsourceEsc(r.id)+'">&#128065;</button><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
       }
       function openOutsourceDetailModal(id){
         var r=getOutsourceRowsCached().find(function(x){return String(x.id)===String(id);});if(!r)return;
-        var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',r.referral],['Outsource Lab',canonicalOutsourceLabName(r.lab)],['Test / Investigation',r.test]];
+        var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',outsourceReferralLabel(r.referral)],['Outsource Lab',canonicalOutsourceLabName(r.lab)],['Test / Investigation',r.test]];
         var modal=document.getElementById('outsourceDetailModal');if(!modal){modal=document.createElement('div');modal.id='outsourceDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE SAMPLE</div><h2>FULL SAMPLE DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-detail-editor"><div class="outsource-modal-field"><label for="outsourceDetailStatus">STATUS</label><select id="outsourceDetailStatus"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECTED</option></select></div><div class="outsource-modal-field outsource-date-field"><label for="outsourceDetailResultDateVisible">RESULT DATE</label><input type="hidden" id="outsourceDetailResultDate"><input type="text" id="outsourceDetailResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label for="outsourceDetailReferenceNo">REFERENCE NO.</label><input id="outsourceDetailReferenceNo" type="text" maxlength="120" placeholder="External report / accession no."></div><div class="outsource-modal-field"><label for="outsourceDetailRejectReason">REJECT REASON</label><select id="outsourceDetailRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field outsource-detail-notes-field"><label for="outsourceDetailNotes">NOTES</label><textarea id="outsourceDetailNotes" rows="3" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceDetailCancel">CLOSE</button><button type="button" class="outsource-btn primary" id="outsourceDetailSave">SAVE CHANGES</button></div></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#outsourceDetailCancel'))modal.hidden=true;});modal.querySelector('#outsourceDetailSave').addEventListener('click',saveOutsourceDetailFields);var syncRejectReasonState=function(){var reject=modal.querySelector('#outsourceDetailRejectReason');var statusValue=String(modal.querySelector('#outsourceDetailStatus').value||'').toUpperCase();var enabled=statusValue==='REJECT'||statusValue==='REJECTED';reject.disabled=!enabled;reject.style.pointerEvents='auto';reject.style.opacity=enabled?'1':'.58';reject.setAttribute('aria-disabled',enabled?'false':'true');};modal.querySelector('#outsourceDetailStatus').addEventListener('change',syncRejectReasonState);modal.querySelector('#outsourceDetailStatus').addEventListener('input',syncRejectReasonState);}
         modal.dataset.recordId=String(r.id);modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){return '<div class="outsource-detail-item"><label>'+outsourceEsc(f[0])+'</label><div>'+outsourceEsc(f[1]||'—')+'</div></div>';}).join('');
         var status=String(r.result||'PENDING').toUpperCase();if(status==='ADA')status='COMPLETED';modal.querySelector('#outsourceDetailStatus').value=status==='REJECT'?'REJECT':status==='COMPLETED'?'COMPLETED':'PENDING';
@@ -4452,7 +4443,7 @@ hoagApiRequest('logout', {
       function saveOutsourceSample(){
         var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(),sampleDate=String($('osSampleDate').value||'').trim(); if(!sampleDate){alert('Sample Date is required.');return;} if(!name||!test){alert('Name and Test / Investigation are required.');return;}
         var editId=String($('outsourceEditId').value||'').trim(),existing=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(r){return String(r.id||'')===editId;});
-        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:String($('osReferral').value||'').trim(),lab:String($('osLab').value||'').trim(),test:test,result:existing?String(existing.result||'PENDING').trim()||'PENDING':'PENDING',resultDate:existing?String(existing.resultDate||''):'',referenceNo:existing?String(existing.referenceNo||''):'',rejectReason:existing?String(existing.rejectReason||''):'',notes:existing?String(existing.notes||'').trim():'',createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
+        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:canonicalOutsourceReferralName($('osReferral').value),lab:String($('osLab').value||'').trim(),test:test,result:existing?String(existing.result||'PENDING').trim()||'PENDING':'PENDING',resultDate:existing?String(existing.resultDate||''):'',referenceNo:existing?String(existing.referenceNo||''):'',rejectReason:existing?String(existing.rejectReason||''):'',notes:existing?String(existing.notes||'').trim():'',createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
         if(editId){
           if(typeof OutSource!=='undefined'&&OutSource.upsertSample) OutSource.upsertSample(row);
           invalidateOutsourceRowsCache();
@@ -4480,7 +4471,7 @@ hoagApiRequest('logout', {
       }
       function editOutsourceSample(id){
         var r=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
-        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=r.referral||'';$('osLab').value=r.lab||'';populateOutsourceTests(r.test||'');$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
+        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=canonicalOutsourceReferralName(r.referral)||'';$('osLab').value=r.lab||'';populateOutsourceTests(r.test||'');$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
         var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
       }
       function bindOutsourceResultModal(){
@@ -8764,6 +8755,43 @@ function exportMonthlySchedulePdfs() {
       var aliases={'PATOLOGI KIMIA':'BIOCHEMISTRY','PATHOLOGI KIMIA':'BIOCHEMISTRY','PATOLOGY KIMIA':'BIOCHEMISTRY','PATHOLOGY KIMIA':'BIOCHEMISTRY','KIMIA':'BIOCHEMISTRY','CHEMISTRY':'BIOCHEMISTRY','MIKROBIOLOGI':'MICROBIOLOGY','MICROBIOLOGI':'MICROBIOLOGY','SITOLOGI':'CYTOLOGY','CYTOLOGI':'CYTOLOGY','HEMATOLOGI':'HEMATOLOGY','HAEMATOLOGI':'HEMATOLOGY','HAEMATOLOGY':'HEMATOLOGY','HEMATOLOGY':'HEMATOLOGY','HISTOLOGI':'HISTOLOGY','HISTOLOGY':'HISTOLOGY','BIOCHEMISTRY':'BIOCHEMISTRY','MICROBIOLOGY':'MICROBIOLOGY','CYTOLOGY':'CYTOLOGY'};
       return aliases[raw]||raw;
     }
+    var OUTSOURCE_REFERRAL_DEFS=[
+      {code:'HKL',label:'HOSPITAL KUALA LUMPUR'},
+      {code:'IPR',label:'INSTITUT PERUBATAN RESPIRATORI'},
+      {code:'IMR/NIH',label:'INSTITUTE NATIONAL OF HEALTH / INSTITUTE OF MEDICAL RESEARCH'},
+      {code:'MKAK',label:'MAKMAL KESIHATAN AWAM KEBANGSAAN'},
+      {code:'H AMPANG',label:'HOSPITAL AMPANG'},
+      {code:'H SELAYANG',label:'HOSPITAL SELAYANG'},
+      {code:'H PUTRAJAYA',label:'HOSPITAL PUTRAJAYA'},
+      {code:'HTA',label:'HOSPITAL TUNKU AZIZAH'},
+      {code:'MVN',label:'MAKMAL VEKTOR NEGERI'}
+    ];
+    function canonicalOutsourceReferralName(value){
+      var raw=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
+      if(!raw)return '';
+      var aliases={
+        'HKL':'HKL','HOSPITAL KUALA LUMPUR':'HKL',
+        'IPR':'IPR','INSTITUT PERUBATAN RESPIRATORI':'IPR',
+        'IMR':'IMR/NIH','NIH':'IMR/NIH','IMR/NIH':'IMR/NIH','INSTITUTE OF MEDICAL RESEARCH':'IMR/NIH','NATIONAL INSTITUTE OF HEALTH':'IMR/NIH','INSTITUTE NATIONAL OF HEALTH':'IMR/NIH','INSTITUTE OF NATIONAL HEALTH':'IMR/NIH','INSTITUTE NATIONAL OF HEALTH / INSTITUTE OF MEDICAL RESEARCH':'IMR/NIH','NATIONAL INSTITUTE OF HEALTH / INSTITUTE OF MEDICAL RESEARCH':'IMR/NIH',
+        'MKAK':'MKAK','MAKMAL KESIHATAN AWAM KEBANGSAAN':'MKAK',
+        'H AMPANG':'H AMPANG','HOSPITAL AMPANG':'H AMPANG','AMPANG':'H AMPANG',
+        'H SELAYANG':'H SELAYANG','HOSPITAL SELAYANG':'H SELAYANG','SELAYANG':'H SELAYANG',
+        'H PUTRAJAYA':'H PUTRAJAYA','HOSPITAL PUTRAJAYA':'H PUTRAJAYA','PUTRAJAYA':'H PUTRAJAYA',
+        'HTA':'HTA','HOSPITAL TUNKU AZIZAH':'HTA',
+        'MVN':'MVN','MVN BOTANIK':'MVN','MAKMAL VEKTOR NEGERI':'MVN','MAKMAL VEKTOR NEGERI BANDAR BOTANIK':'MVN'
+      };
+      return aliases[raw]||raw;
+    }
+    function outsourceReferralLabel(value){
+      /* UI dropdowns/tables use ONLY the approved short referral code.
+         The full name + code is reserved for the RETEN PDF. */
+      return canonicalOutsourceReferralName(value)||'';
+    }
+    function outsourceReferralPdfLabel(value){
+      var code=canonicalOutsourceReferralName(value);
+      var def=OUTSOURCE_REFERRAL_DEFS.find(function(item){return item.code===code;});
+      return def?def.label+' ('+def.code+')':(code||'');
+    }
     function canonicalOutsourceUnitName(value){
       var raw=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
       var aliases={'WAD1':'WARD 1','WAD 1':'WARD 1','WAD2':'WARD 2','WAD 2':'WARD 2','WAD3':'WARD 3','WAD 3':'WARD 3','WAD4':'WARD 4','WAD 4':'WARD 4','ED':'EMERGENCY DEPARTMENT','OPD':'OUTPATIENT DEPARTMENT','UKIA':'UKIA','PRIMER':'PRIMARY HEALTHCARE','PRIMARY HEALTH CARE':'PRIMARY HEALTHCARE'};
@@ -8784,8 +8812,12 @@ function exportMonthlySchedulePdfs() {
         rows=Array.isArray(rows)?rows.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
         var changed=[];
         rows.forEach(function(r){
-          var canonical=canonicalOutsourceLabName(r.lab);
-          if(canonical&&canonical!==String(r.lab||'')){r.lab=canonical;changed.push(clone(r));}
+          var canonicalLab=canonicalOutsourceLabName(r.lab);
+          var canonicalReferral=canonicalOutsourceReferralName(r.referral);
+          var dirty=false;
+          if(canonicalLab&&canonicalLab!==String(r.lab||'')){r.lab=canonicalLab;dirty=true;}
+          if(canonicalReferral&&canonicalReferral!==String(r.referral||'')){r.referral=canonicalReferral;dirty=true;}
+          if(dirty)changed.push(clone(r));
         });
         return changed;
       }
@@ -8849,7 +8881,7 @@ function exportMonthlySchedulePdfs() {
         var id=String(row.id), idx=rows.findIndex(function(r){return String(r.id)===id;});
         var previous=idx>=0?rows[idx]:null;
         var now=new Date().toISOString();
-        var next=Object.assign({},previous||{},clone(row)||{}, {updatedAt:now}); next.lab=canonicalOutsourceLabName(next.lab);
+        var next=Object.assign({},previous||{},clone(row)||{}, {updatedAt:now}); next.lab=canonicalOutsourceLabName(next.lab); next.referral=canonicalOutsourceReferralName(next.referral);
         if(!previous){next.createdAt=next.createdAt||now;next.createdBy=next.createdBy||String(state.authUserDisplayName||'UNKNOWN');}
         if(idx>=0)rows[idx]=next;else rows.push(next);
         normalize(); revision+=1; saveLocal();
