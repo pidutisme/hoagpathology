@@ -3619,14 +3619,15 @@ hoagApiRequest('logout', {
           {key:'HISTOLOGY',label:'HISTOLOGY'}
         ];
         var unitDefs=[
-          {key:'WAD1',label:'WARD 1'},
-          {key:'WAD2',label:'WARD 2'},
-          {key:'WAD3',label:'WARD 3'},
-          {key:'WAD4',label:'WARD 4'},
-          {key:'ED',canonical:'EMERGENCY DEPARTMENT',label:'UNIT KECEMASAN'},
-          {key:'OPD',canonical:'OUTPATIENT DEPARTMENT',label:'PESAKIT LUAR'},
+          {key:'WAD1',canonical:'WAD 1',label:'WAD 1'},
+          {key:'WAD2',canonical:'WAD 2',label:'WAD 2'},
+          {key:'WAD3',canonical:'WAD 3',label:'WAD 3'},
+          {key:'WAD4',canonical:'WAD 4',label:'WAD 4'},
+          {key:'ED',canonical:'ED',label:'ED'},
+          {key:'OPD',canonical:'OPD',label:'OPD'},
           {key:'UKIA',canonical:'UKIA',label:'UKIA'},
-          {key:'PRIMER',canonical:'PRIMARY HEALTHCARE',label:'KESIHATAN AWAM'}
+          {key:'PRIMER',canonical:'PRIMER',label:'PRIMER'},
+          {key:'UNIT KA',canonical:'UNIT KA',label:'UNIT KA'}
         ];
         var unitLab={},labTotals={},referrals={},total=rows.length;
         labs.forEach(function(l){labTotals[l.key]=0;});
@@ -3651,13 +3652,13 @@ hoagApiRequest('logout', {
         var commands=[];
         var W=841.89,H=595.28,M=28.35,contentW=W-(M*2),titleY=14,titleH=42;
         appendPdfFilledRect(commands,M,titleY,contentW,titleH,[0.96,0.78,0.12],.8);
-        appendPdfColorText(commands,'RETEN OUTSOURCE UNIT MAKMAL PATOLOGI',W/2,26,12,[0.37,0.00,1.00],{align:'center',bold:true});
+        appendPdfColorText(commands,'RETEN OUTSOURCE PATHOLOGY LABORATORY UNIT',W/2,26,12,[0.37,0.00,1.00],{align:'center',bold:true});
         appendPdfColorText(commands,'HOSPITAL ORANG ASLI GOMBAK',W/2,37,10,[0.37,0.00,1.00],{align:'center'});
-        appendPdfColorText(commands,'TAHUN '+periodYear,W/2,48,9,[0.37,0.00,1.00],{align:'center',bold:true});
+        appendPdfColorText(commands,'YEAR '+periodYear,W/2,48,9,[0.37,0.00,1.00],{align:'center',bold:true});
         var topY=58, headH=17,rowH=16,totalH=17,colW=contentW/unitDefs.length;
         unitDefs.forEach(function(u,i){
           var x=M+i*colW;
-          var fills=[[0.23,0.47,0.82],[0.52,0.64,0.90],[0.47,0.48,0.84],[0.77,0.62,0.42],[0.16,0.82,0.58],[0.95,0.33,0.17],[1.00,0.98,0.00],[0.39,0.62,0.88]];
+          var fills=[[0.23,0.47,0.82],[0.52,0.64,0.90],[0.47,0.48,0.84],[0.77,0.62,0.42],[0.16,0.82,0.58],[0.95,0.33,0.17],[1.00,0.98,0.00],[0.39,0.62,0.88],[0.55,0.72,0.86]];
           appendPdfFilledRect(commands,x,topY,colW,headH,fills[i],.45);
           appendPdfText(commands,u.label,x+colW/2,topY+12,7.2,{align:'center',bold:true});
         });
@@ -3673,15 +3674,15 @@ hoagApiRequest('logout', {
         unitDefs.forEach(function(u,i){
           var n=labs.reduce(function(a,l){return a+(unitLab[u.key][l.key]||0);},0),x=M+i*colW;
           appendPdfFilledRect(commands,x,totalY,colW,totalH,[0.90,0.93,0.96],.45);
-          appendPdfText(commands,'JUMLAH :   '+n,x+colW/2,totalY+11,6.6,{align:'center',bold:true});
+          appendPdfText(commands,'TOTAL :   '+n,x+colW/2,totalY+11,6.6,{align:'center',bold:true});
         });
         var lowerY=totalY+28,leftX=M,leftW=272,gap=22,midX=leftX+leftW+gap,midW=272,rightX=midX+midW+gap,rightW=contentW-leftW-midW-(gap*2);
         var sectionH=18;
         appendPdfFilledRect(commands,leftX,lowerY,leftW,sectionH,[0.96,0.78,0.78],.45);
         appendPdfFilledRect(commands,midX,lowerY,midW,sectionH,[0.74,0.88,0.68],.45);
         appendPdfFilledRect(commands,rightX,lowerY,rightW,sectionH,[0.13,0.82,0.87],.45);
-        appendPdfText(commands,'JUMLAH MENGIKUT PUSAT RUJUKAN',leftX+leftW/2,lowerY+12,7.1,{align:'center',bold:true});
-        appendPdfText(commands,'JUMLAH KESELURUHAN',midX+midW/2,lowerY+12,7.1,{align:'center',bold:true});
+        appendPdfText(commands,'TOTAL BY REFERRAL CENTRE',leftX+leftW/2,lowerY+12,7.1,{align:'center',bold:true});
+        appendPdfText(commands,'OVERALL TOTAL',midX+midW/2,lowerY+12,7.1,{align:'center',bold:true});
         appendPdfText(commands,'RETEN OUTSOURCE HKL',rightX+rightW/2,lowerY+12,7.1,{align:'center',bold:true});
         var ry=lowerY+19;
         referralDefs.forEach(function(pair,i){
@@ -3695,10 +3696,10 @@ hoagApiRequest('logout', {
            Records without a referral are not rendered as a blank/extra row. */
         var referralTotal=OUTSOURCE_REFERRAL_DEFS.reduce(function(sum,def){return sum+(referrals[def.code]||0);},0);
         appendPdfFillOnlyRect(commands,leftX,ry,leftW,16,[0.88,0.94,0.96]);
-        appendPdfText(commands,'JUMLAH :',leftX+leftW-48,ry+11,6.8,{align:'right',bold:true});
+        appendPdfText(commands,'TOTAL :',leftX+leftW-48,ry+11,6.8,{align:'right',bold:true});
         appendPdfText(commands,String(referralTotal),leftX+leftW-18,ry+11,6.8,{align:'right',bold:true});
         var cy=lowerY+24;
-        [['JUMLAH UJIAN DIHANTAR',total],['JUMLAH KEPUTUSAN UJIAN DITERIMA',completed],['JUMLAH UJIAN REJECT',rejected]].forEach(function(item,i){
+        [['TOTAL TESTS SENT',total],['TOTAL TEST RESULTS RECEIVED',completed],['TOTAL TESTS REJECTED',rejected]].forEach(function(item,i){
           appendPdfFillOnlyRect(commands,midX,cy,midW,17,i%2?[0.86,0.95,0.97]:[1,1,1]);
           appendPdfText(commands,item[0]+' :',midX+midW-64,cy+12,7,{align:'right'});
           appendPdfText(commands,String(item[1]),midX+midW-25,cy+12,7,{align:'right',bold:true}); cy+=20;
@@ -3710,9 +3711,9 @@ hoagApiRequest('logout', {
           appendPdfText(commands,String(labTotals[l.key]||0),rightX+rightW-18,ly+11,6.8,{align:'right',bold:true}); ly+=16;
         });
         appendPdfFillOnlyRect(commands,rightX,ly,rightW,17,[0.86,0.95,0.97]);
-        appendPdfText(commands,'JUMLAH :',rightX+rightW-52,ly+12,7,{align:'right',bold:true});
+        appendPdfText(commands,'TOTAL :',rightX+rightW-52,ly+12,7,{align:'right',bold:true});
         appendPdfText(commands,String(total),rightX+rightW-18,ly+12,7,{align:'right',bold:true});
-        appendPdfText(commands,'BULAN :',rightX+rightW-88,H-40,7.4,{align:'right'});
+        appendPdfText(commands,'MONTH : ',rightX+rightW-88,H-40,7.4,{align:'right'});
         appendPdfLine(commands,rightX+rightW-80,H-39,rightX+rightW,H-39,.55);
         if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,H-43,6.8,{align:'center'});
 
@@ -3743,7 +3744,7 @@ hoagApiRequest('logout', {
         var page2=[];
         appendPdfFilledRect(page2,M,14,contentW,42,[0.96,0.78,0.12],.8);
         appendPdfColorText(page2,'RETEN OUTSOURCE - TEST / INVESTIGATION',W/2,28,12,[0.37,0.00,1.00],{align:'center',bold:true});
-        appendPdfColorText(page2,'TAHUN '+periodYear+(month!=='ALL'?'  •  '+periodMonth:''),W/2,42,8.5,[0.37,0.00,1.00],{align:'center',bold:true});
+        appendPdfColorText(page2,'YEAR '+periodYear+(month!=='ALL'?'  •  '+periodMonth:''),W/2,42,8.5,[0.37,0.00,1.00],{align:'center',bold:true});
 
         var tableY=66,columnCount=3,columnGap=10,columnW=(contentW-(columnGap*(columnCount-1)))/columnCount;
         var rowH2=10,labHeadH=14,maxRows=Math.floor((H-58-tableY-30)/rowH2);
@@ -3820,9 +3821,9 @@ hoagApiRequest('logout', {
 
         var grandY=H-28;
         appendPdfFillOnlyRect(page2,M,grandY,contentW,18,[0.88,0.94,0.96]);
-        appendPdfText(page2,'JUMLAH SEMUA UJIAN',M+contentW-90,grandY+12,7,{align:'right',bold:true});
+        appendPdfText(page2,'TOTAL TESTS',M+contentW-90,grandY+12,7,{align:'right',bold:true});
         appendPdfText(page2,String(total),M+contentW-8,grandY+12,7,{align:'right',bold:true});
-        if(!labGroups.length) appendPdfText(page2,'TIADA UJIAN / INVESTIGATION DIREKOD',W/2,100,8,{align:'center'});
+        if(!labGroups.length) appendPdfText(page2,'NO TEST / INVESTIGATION RECORDED',W/2,100,8,{align:'center'});
         return buildOutsourcePdfDocument([commands,page2]);
       }
       function bindOutsourceRetentionDownloadControls(){
@@ -4007,7 +4008,7 @@ hoagApiRequest('logout', {
                 '<div class="outsource-field"><label>ID / IC</label><input id="osIdIc" placeholder="NRIC / Passport"></div>'+
                 '<div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><input id="osSex" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
-                '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div>'+
+                '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD 1</option><option>WAD 2</option><option>WAD 3</option><option>WAD 4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>UNIT KA</option></select></div>'+
                 '<div class="outsource-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input type="text" id="osDispatchDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
                 '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option>'+OUTSOURCE_REFERRAL_DEFS.map(function(item){return '<option value="'+outsourceEsc(item.code)+'">'+outsourceEsc(item.code)+'</option>';}).join('')+'</select></div>'+
                 '<div class="outsource-field"><label>Outsource Lab</label><select id="osLab"><option value="">Select laboratory</option></select></div>'+
@@ -8911,7 +8912,7 @@ function exportMonthlySchedulePdfs() {
     }
     function canonicalOutsourceUnitName(value){
       var raw=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
-      var aliases={'WAD1':'WARD 1','WAD 1':'WARD 1','WAD2':'WARD 2','WAD 2':'WARD 2','WAD3':'WARD 3','WAD 3':'WARD 3','WAD4':'WARD 4','WAD 4':'WARD 4','ED':'EMERGENCY DEPARTMENT','OPD':'OUTPATIENT DEPARTMENT','UKIA':'UKIA','PRIMER':'PRIMARY HEALTHCARE','PRIMARY HEALTH CARE':'PRIMARY HEALTHCARE'};
+      var aliases={'WAD1':'WAD 1','WAD 1':'WAD 1','WAD2':'WAD 2','WAD 2':'WAD 2','WAD3':'WAD 3','WAD 3':'WAD 3','WAD4':'WAD 4','WAD 4':'WAD 4','ED':'ED','EMERGENCY DEPARTMENT':'ED','UNIT KECEMASAN':'ED','OPD':'OPD','OUTPATIENT DEPARTMENT':'OPD','PESAKIT LUAR':'OPD','UKIA':'UKIA','PRIMER':'PRIMER','PRIMARY HEALTHCARE':'PRIMER','PRIMARY HEALTH CARE':'PRIMER','UNIT KA':'UNIT KA','VEKTOR':'UNIT KA','TB/KUSTA':'UNIT KA'};
       return aliases[raw]||raw;
     }
 
@@ -8931,9 +8932,11 @@ function exportMonthlySchedulePdfs() {
         rows.forEach(function(r){
           var canonicalLab=canonicalOutsourceLabName(r.lab);
           var canonicalReferral=canonicalOutsourceReferralName(r.referral);
+          var canonicalUnit=canonicalOutsourceUnitName(r.unit);
           var dirty=false;
           if(canonicalLab&&canonicalLab!==String(r.lab||'')){r.lab=canonicalLab;dirty=true;}
           if(canonicalReferral&&canonicalReferral!==String(r.referral||'')){r.referral=canonicalReferral;dirty=true;}
+          if(canonicalUnit&&canonicalUnit!==String(r.unit||'')){r.unit=canonicalUnit;dirty=true;}
           if(dirty)changed.push(clone(r));
         });
         return changed;
