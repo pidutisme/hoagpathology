@@ -3690,10 +3690,28 @@ hoagApiRequest('logout', {
         var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[];
         var filtered=outsourceReportRowsForPeriod(rows,year,month);
         if(!filtered.length){requestAppConfirm('NO DATA','No outsource data was found for the selected period.',function(){});return;}
-        var pdf=buildOutsourceRetentionPdf(filtered,year,month);
-        var blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-        a.href=url;a.download=outsourceReportDownloadFilename(year,month);document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);
-        modal.hidden=true;
+        try {
+          var pdf=buildOutsourceRetentionPdf(filtered,year,month);
+          if(typeof pdf!=='string' || pdf.indexOf('%PDF-')!==0) throw new Error('PDF generation failed');
+          var blob=new Blob([pdf],{type:'application/pdf'});
+          var url=URL.createObjectURL(blob);
+          var filename=outsourceReportDownloadFilename(year,month);
+          var a=document.createElement('a');
+          a.href=url;
+          a.download=filename;
+          a.rel='noopener';
+          a.style.display='none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function(){
+            if(a.parentNode)a.parentNode.removeChild(a);
+            try{URL.revokeObjectURL(url);}catch(e){}
+          },1500);
+          modal.hidden=true;
+        } catch(error) {
+          console.error('Outsource Reten PDF download failed:',error);
+          requestAppConfirm('DOWNLOAD FAILED','PDF could not be generated. Please try again.',function(){});
+        }
       }
       function openOutsourceRetentionDownload(){
         var modal=document.getElementById('outsourceReportDownloadModal');if(!modal)return;
