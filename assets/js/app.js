@@ -3693,20 +3693,20 @@ hoagApiRequest('logout', {
         try {
           var pdf=buildOutsourceRetentionPdf(filtered,year,month);
           if(typeof pdf!=='string' || pdf.indexOf('%PDF-')!==0) throw new Error('PDF generation failed');
-          var blob=new Blob([pdf],{type:'application/pdf'});
-          var url=URL.createObjectURL(blob);
           var filename=outsourceReportDownloadFilename(year,month);
           var a=document.createElement('a');
-          a.href=url;
           a.download=filename;
           a.rel='noopener';
           a.style.display='none';
+          /*
+           * Use a base64 data URL first. This avoids environments where
+           * URL.createObjectURL() is unavailable or blocked for generated blobs.
+           */
+          var base64=window.btoa(unescape(encodeURIComponent(pdf)));
+          a.href='data:application/pdf;base64,'+base64;
           document.body.appendChild(a);
           a.click();
-          setTimeout(function(){
-            if(a.parentNode)a.parentNode.removeChild(a);
-            try{URL.revokeObjectURL(url);}catch(e){}
-          },1500);
+          setTimeout(function(){if(a.parentNode)a.parentNode.removeChild(a);},1000);
           modal.hidden=true;
         } catch(error) {
           console.error('Outsource Reten PDF download failed:',error);
