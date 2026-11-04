@@ -3492,8 +3492,11 @@ hoagApiRequest('logout', {
         return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
       }
       function outsourceReportRowsForPeriod(rows,year,month){
+        /* MUST match the table year/month filter exactly: use sampleDate only.
+           Do not fall back to createdAt, otherwise PDF can count records that
+           are not visible in the same table period filter. */
         return (Array.isArray(rows)?rows:[]).filter(function(r){
-          var p=getOutsourceDateParts(r.sampleDate||r.createdAt); if(!p.year)return false;
+          var p=getOutsourceDateParts(r.sampleDate); if(!p.year)return false;
           if(year && year!=='ALL' && p.year!==year)return false;
           if(month && month!=='ALL' && p.month!==month)return false;
           return true;
@@ -3527,11 +3530,11 @@ hoagApiRequest('logout', {
       }
       function buildOutsourceRetentionPdf(rows,year,month){
         var labs=[
-          {key:'BIOCHEMISTRY',label:'PATOLOGI KIMIA'},
-          {key:'MICROBIOLOGY',label:'MIKROBIOLOGI'},
-          {key:'HAEMATOLOGY',label:'HEMATOLOGI'},
-          {key:'CYTOLOGY',label:'SITOLOGI'},
-          {key:'HISTOLOGY',label:'HISTOLOGI'}
+          {key:'BIOCHEMISTRY',label:'BIOCHEMISTRY'},
+          {key:'MICROBIOLOGY',label:'MICROBIOLOGY'},
+          {key:'HEMATOLOGY',label:'HEMATOLOGY'},
+          {key:'CYTOLOGY',label:'CYTOLOGY'},
+          {key:'HISTOLOGY',label:'HISTOLOGY'}
         ];
         var unitDefs=[
           {key:'WAD1',label:'WARD 1'},
@@ -3560,15 +3563,10 @@ hoagApiRequest('logout', {
           return aliases[k]||k||'LAIN-LAIN';
         }
         rows.forEach(function(r){
-          var rawUnit=String(r.unit||'').trim().toUpperCase(), unit=rawUnit;
-          if(rawUnit==='WAD1'||rawUnit==='WAD 1')unit='WAD1';
-          else if(rawUnit==='WAD2'||rawUnit==='WAD 2')unit='WAD2';
-          else if(rawUnit==='WAD3'||rawUnit==='WAD 3')unit='WAD3';
-          else if(rawUnit==='WAD4'||rawUnit==='WAD 4')unit='WAD4';
-          else if(rawUnit==='ED'||rawUnit==='A&E'||rawUnit==='EMERGENCY DEPARTMENT')unit='ED';
-          else if(rawUnit==='OPD'||rawUnit==='OUTPATIENT DEPARTMENT')unit='OPD';
-          else if(rawUnit==='UKIA')unit='UKIA';
-          else if(rawUnit==='PRIMER'||rawUnit==='PRIMARY HEALTHCARE'||rawUnit==='KESIHATAN AWAM')unit='PRIMER';
+          /* Use the exact same canonical lab/unit functions as the table. */
+          var canonicalUnit=canonicalOutsourceUnitName(r.unit);
+          var unitDef=unitDefs.find(function(u){return u.label===canonicalUnit;});
+          var unit=unitDef?unitDef.key:'';
           var lab=outsourceReportLabName(r.lab);
           if(unitLab[unit]&&unitLab[unit][lab]!=null)unitLab[unit][lab]+=1;
           if(labTotals[lab]==null)labTotals[lab]=0;
