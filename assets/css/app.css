@@ -4954,7 +4954,7 @@
         max-height: none;
       }
 
-      .module-year-grid .year-card {
+      .module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid) .year-card {
         --year-card-min-height: 0;
         --year-card-padding: clamp(8px, 1.05vh, 14px) clamp(10px, .95vw, 18px);
         --year-card-gap: clamp(3px, .55vh, 7px);
@@ -11759,7 +11759,7 @@ html.dark-mode-preload {
 /* All Leave / Courses / module year cards use the same compact footprint.   */
 /* ========================================================================== */
 
-:root {
+:is(.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid), .leave-course-year-grid) {
   --year-card-min-height: 112px;
   --year-card-radius: 18px;
   --year-card-padding: 10px;
@@ -11979,7 +11979,7 @@ body.visitor-read-only .visitor-disabled-control svg {
 
 
 /* V4 FIXED V5 — compact year cards. */
-:root {
+:is(.module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid), .leave-course-year-grid) {
   --year-card-min-height: 96px !important;
   --year-card-radius: 16px !important;
   --year-card-padding: 8px !important;
