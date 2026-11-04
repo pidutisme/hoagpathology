@@ -3634,6 +3634,9 @@ hoagApiRequest('logout', {
         unitDefs.forEach(function(u){unitLab[u.key]={};labs.forEach(function(l){unitLab[u.key][l.key]=0;});});
         var referralDefs=OUTSOURCE_REFERRAL_DEFS.map(function(item){return [item.code,item.label];});
         function referralLabel(v){ return canonicalOutsourceReferralName(v); }
+        /* The right-hand RETEN OUTSOURCE HKL panel is HKL-only. Keep the
+           overall totals and referral-centre breakdown based on all rows. */
+        var hklRows=rows.filter(function(r){return referralLabel(r.referral)==='HKL';});
         rows.forEach(function(r){
           /* Use the exact same canonical lab/unit functions as the table. */
           var canonicalUnit=canonicalOutsourceUnitName(r.unit);
@@ -3641,9 +3644,12 @@ hoagApiRequest('logout', {
           var unit=unitDef?unitDef.key:'';
           var lab=outsourceReportLabName(r.lab);
           if(unitLab[unit]&&unitLab[unit][lab]!=null)unitLab[unit][lab]+=1;
+          var ref=referralLabel(r.referral); if(ref) referrals[ref]=(referrals[ref]||0)+1;
+        });
+        hklRows.forEach(function(r){
+          var lab=outsourceReportLabName(r.lab);
           if(labTotals[lab]==null)labTotals[lab]=0;
           labTotals[lab]+=1;
-          var ref=referralLabel(r.referral); if(ref) referrals[ref]=(referrals[ref]||0)+1;
         });
         var monthNames=['ALL MONTHS','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
         var periodYear=year==='ALL'?'ALL':year, periodMonth=month==='ALL'?monthNames[0]:monthNames[Number(month)];
@@ -3712,7 +3718,7 @@ hoagApiRequest('logout', {
         });
         appendPdfFillOnlyRect(commands,rightX,ly,rightW,17,[0.86,0.95,0.97]);
         appendPdfText(commands,'TOTAL :',rightX+rightW-52,ly+12,7,{align:'right',bold:true});
-        appendPdfText(commands,String(total),rightX+rightW-18,ly+12,7,{align:'right',bold:true});
+        appendPdfText(commands,String(hklRows.length),rightX+rightW-18,ly+12,7,{align:'right',bold:true});
         appendPdfText(commands,'MONTH : ',rightX+rightW-88,H-40,7.4,{align:'right'});
         appendPdfLine(commands,rightX+rightW-80,H-39,rightX+rightW,H-39,.55);
         if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,H-43,6.8,{align:'center'});
