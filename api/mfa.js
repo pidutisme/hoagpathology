@@ -57,7 +57,7 @@ async function getSettings() {
   const { data, error } = await supabase
     .from('app_settings')
     .select('data,settings')
-    .eq('id', true)
+    .eq('id', 'true')
     .maybeSingle();
 
   if (error) throw error;
@@ -72,11 +72,11 @@ async function saveSettings(settings) {
   const { error } = await supabase
     .from('app_settings')
     .upsert({
-      id: true,
+      id: 'true',
       data: settings,
       settings,
       updated_at: new Date().toISOString()
-    });
+    }, { onConflict: 'id' });
 
   if (error) throw error;
 }

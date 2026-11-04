@@ -89,7 +89,11 @@
     }
     return {name:name,rows:out,errors:errors};
   }
-  function getExisting(){return (window.Inventory&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[];}
+  function getExisting(){
+    var osApi=(window.LabApp&&window.LabApp.OutSource)||window.OutSource;
+    if(osApi&&typeof osApi.getSamples==='function')return osApi.getSamples();
+    return (window.Inventory&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[];
+  }
   function buildPreview(){
     var existing=getExisting(), existingKeys={}; existing.forEach(function(r){existingKeys[rowKey(r)]=true;});
     var seen={}, valid=[], dupExisting=0, dupSelected=0, invalid=0, errors=[];
@@ -121,6 +125,13 @@
   function runImport(){
     var result=buildPreview(), rows=result.valid;
     if(!rows.length){alert('No new valid records to import.');return;}
+    var osApi=(window.LabApp&&window.LabApp.OutSource)||window.OutSource;
+    if(osApi&&typeof osApi.bulkUpsert==='function'){
+      var addedCount=osApi.bulkUpsert(rows);
+      alert(addedCount+' historical Outsource record(s) imported. Existing records were kept unchanged.');
+      closeModal();
+      return;
+    }
     var inventoryApi=window.LabApp&&window.LabApp.Inventory;
     if(!inventoryApi||typeof inventoryApi.bulkUpsertOutsourceSamples!=='function'){alert('Import function is unavailable. Please reload the app and try again.');return;}
     var added=inventoryApi.bulkUpsertOutsourceSamples(rows);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-const app = fs.readFileSync('app.js', 'utf8');
+const app = fs.readFileSync(new URL('../assets/js/app.js', import.meta.url), 'utf8');
 const asset = fs.readFileSync('assets/js/app.js', 'utf8');
 const styles = fs.readFileSync('assets/css/app.css', 'utf8');
 assert.match(app, /cloudHasAssignment/);

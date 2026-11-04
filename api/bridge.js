@@ -10,6 +10,7 @@ import { bridgeRequestSchema, loginRequestSchema, outsourceRecordSchema } from '
 import { inventoryMovementSchema } from '../lib/schemas/inventory.js';
 import { loginWithPassword } from './login.js';
 import { hasPermission } from '../lib/permissions.js';
+import { canDeleteTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
 
 const require = createRequire(import.meta.url);
 const VERSION = require('../package.json').version || '2.1.4';
@@ -166,8 +167,8 @@ async function getInventoryRoot() {
   return data || { id: true, version: 4, scope: 'team', inventory: {} };
 }
 
-async function saveInventoryRoot(inventory, userId, expectedUpdatedAt) {
-  const current = await getInventoryRoot();
+async function saveInventoryRoot(inventory, userId, expectedUpdatedAt, prefetchedRoot = null) {
+  const current = prefetchedRoot || await getInventoryRoot();
   if (expectedUpdatedAt && String(current.updated_at || '') !== expectedUpdatedAt) return { committed: false, current };
   const cleanInv = inventory && typeof inventory === 'object' ? { ...inventory } : {};
   delete cleanInv.outsourceSamples;
@@ -268,8 +269,7 @@ function mapInventoryItemRow(x) {
 }
 
 async function inventoryFromTables() {
-  const root = await getInventoryRoot();
-  const items = await getInventoryItems();
+  const [root, items] = await Promise.all([getInventoryRoot(), getInventoryItems()]);
   const inv = root.inventory && typeof root.inventory === 'object' ? { ...root.inventory } : {};
   const data = inv;
   const next = inv;
@@ -455,7 +455,9 @@ async function dispatch(db, method, a, req) {
       if (Object.keys(input).some(key => !fields.includes(key) && !metadata.has(key))) fail('Unsupported request field.');
       const candidate = Object.fromEntries(fields.map(key => [key, input[key] ?? '']));
       const rawAge = clean(candidate.age, 20);
-      if (rawAge && !/^\d{0,3}$/.test(rawAge)) {
+      if (/^nb\/no ic$/i.test(rawAge)) {
+        candidate.age = 'NB/NO IC';
+      } else if (rawAge && !/^\d{0,3}$/.test(rawAge)) {
         candidate.age = rawAge.replace(/\D+/g, '').slice(0, 3);
       }
       const record = parseRequest(outsourceRecordSchema, candidate);
@@ -529,6 +531,11 @@ async function dispatch(db, method, a, req) {
       if (existingErr) throw existingErr;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
       if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      if (!hasPermission(s, existing ? 'transfusion.update' : 'transfusion.create')) fail('You are not authorized to save this transfusion record.', 403);
+      if (existing && !canWriteTransfusionRecord(s, existing) && !canWriteLegacyTransfusionRecord(s, existing)) fail('You cannot update this transfusion record.', 403);
+      if (existing && rawPayload.expectedVersion !== undefined && Number(existing.version || 1) !== Number(rawPayload.expectedVersion)) {
+        fail('Transfusion record changed or was not found. Reload before editing.', 409);
+      }
       const now = iso();
       const createdAt = existing?.createdAt || now;
       const nextVersion = Number(existing?.version || 0) + 1 || 1;
@@ -537,17 +544,17 @@ async function dispatch(db, method, a, req) {
         id: rid,
         date: clean(rawRecord.date, 20),
         name: clean(rawRecord.name, 160),
-        tt: clean(rawRecord.tt, 60),
-        idIc: clean(rawRecord.idIc, 40),
+        tt: clean(rawRecord.tt, 80),
+        idIc: clean(rawRecord.idIc, 80),
         sex: clean(rawRecord.sex, 10),
         age: clean(rawRecord.age, 20),
         unit: clean(rawRecord.unit, 80),
         bloodGroup: clean(rawRecord.bloodGroup, 10),
-        packNo: clean(rawRecord.packNo, 200),
+        packNo: clean(rawRecord.packNo, 300),
         staff: clean(rawRecord.staff, 80),
         googleDriveLink: clean(rawRecord.googleDriveLink, 500),
         remarks: clean(rawRecord.remarks, 400),
-        notes: clean(rawRecord.notes, 1000),
+        notes: clean(rawRecord.notes, 3000),
         createdAt,
         updatedAt: now,
         createdBy: existing?.createdBy || s.userId,
@@ -575,10 +582,21 @@ async function dispatch(db, method, a, req) {
       if (existingErr) throw existingErr;
       if (!existingRow) return { ok: true, deleted: true, recordId: rid, version: VERSION };
       if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
-      const { error: delErr } = await supabase.from('transfusion_records').delete().eq('id', rid);
+      const current = existingRow.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id } : { id: rid };
+      if (!canDeleteTransfusionRecord(s, current) && !canWriteLegacyTransfusionRecord(s, current)) fail('You cannot delete this transfusion record.', 403);
+      const now = iso();
+      const deleted = {
+        ...current,
+        deletedAt: now,
+        deletedBy: s.userId,
+        updatedAt: now,
+        updatedBy: s.userId,
+        version: Math.max(Number(current.version || 0) + 1, 2)
+      };
+      const { error: delErr } = await supabase.from('transfusion_records').update({ data: deleted, updated_at: now }).eq('id', rid);
       if (delErr) throw delErr;
       await log(db, s.userId, 'TRANSFUSION_RECORD_DELETED', `Deleted transfusion record ${rid}.`);
-      return { ok: true, deleted: true, recordId: rid, deletedAt: iso(), version: VERSION, userId: s.userId };
+      return { ok: true, deleted: true, recordId: rid, deletedAt: now, version: VERSION, userId: s.userId };
     }
 
     case 'getSharedInventory': {
@@ -607,7 +625,34 @@ async function dispatch(db, method, a, req) {
       }
       const oldTx = Array.isArray(oldInventory.transactions) ? oldInventory.transactions : [];
       const requestedTx = Array.isArray(requestedInventory.transactions) ? requestedInventory.transactions : oldTx;
-      const parsed = parseRequest(inventoryMovementSchema.array().max(1000), requestedTx);
+      const normalizedRequestedTx = requestedTx.map(tx => {
+        if (!tx || typeof tx !== 'object') return tx;
+        const entry = {
+          id: clean(tx.id, 120),
+          itemId: clean(tx.itemId, 120),
+          type: tx.type,
+          qty: Number(tx.qty),
+          lotNo: clean(tx.lotNo, 120),
+          expiry: clean(tx.expiry, 40),
+          staff: clean(tx.staff, 120),
+          notes: clean(tx.notes, 500),
+          at: clean(tx.at, 40)
+        };
+        if (tx.unitPrice !== undefined && tx.unitPrice !== null && tx.unitPrice !== '') {
+          entry.unitPrice = Number(tx.unitPrice);
+        }
+        if (tx.expectedVersion !== undefined) {
+          entry.expectedVersion = Number(tx.expectedVersion);
+        }
+        return entry;
+      });
+      const parsed = [];
+      for (let i = 0; i < normalizedRequestedTx.length; i += 1000) {
+        parsed.push(...parseRequest(inventoryMovementSchema.array().max(1000), normalizedRequestedTx.slice(i, i + 1000)));
+      }
+      if (normalizedRequestedTx.length === 0) {
+        parseRequest(inventoryMovementSchema.array().max(1000), normalizedRequestedTx);
+      }
       if (s.role !== 'ADMIN' && oldTx.length > 0) {
         const parsedById = new Map(parsed.map(tx => [String(tx.id), tx]));
         for (const prevTx of oldTx) {
@@ -625,7 +670,7 @@ async function dispatch(db, method, a, req) {
         }
       }
       const inventory = { ...oldInventory, ...requestedInventory, items: newItems, transactions: parsed };
-      const result = await saveInventoryRoot(inventory, s.userId, a[2]);
+      const result = await saveInventoryRoot(inventory, s.userId, a[2], current);
       if (!result.committed) return { ok: false, conflict: true, inventory: inventoryView(result.current.inventory || {}), updatedAt: clean(result.current.updated_at), error: 'Inventory was changed on another device. The latest inventory has been returned for merging.', version: VERSION };
       return { ok: true, inventory: inventoryView(inventory), updatedAt: result.current.updated_at, scope: 'team', storageSource: 'supabase', version: VERSION };
     }
@@ -641,8 +686,18 @@ async function dispatch(db, method, a, req) {
     case 'getLiveChatMessages': await requireSession(db, tokenAt(0)); return chatEnvelopeDisabled();
     case 'sendLiveChatMessage': fail('Live chat is no longer available.', 410);
     case 'deleteLiveChatMessage': fail('Live chat is no longer available.', 410);
-    case 'markLiveChatRead': fail('Live chat is no longer available.', 410);
-    case 'reactLiveChatMessage': fail('Live chat is no longer available.', 410);
+    case 'markLiveChatRead': {
+      const s = await requireSession(db, tokenAt(0));
+      const chatId = clean(a[1], 120);
+      if (chatId.startsWith('dm:')&&s.role!=='ADMIN') fail('Direct chat access denied.', 403);
+      fail('Live chat is no longer available.', 410);
+    }
+    case 'reactLiveChatMessage': {
+      const s = await requireSession(db, tokenAt(0));
+      const m = { chatType: clean(a[1], 40) };
+      if (m.chatType==='direct'&&s.role!=='ADMIN') fail('Direct chat reaction denied.', 403);
+      fail('Live chat is no longer available.', 410);
+    }
 
     case 'getAdminControlData': {
       const s = await requireAdmin(db, tokenAt(0));
@@ -713,6 +768,7 @@ async function dispatch(db, method, a, req) {
       const { data, error } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordCost.N, salt: p.passwordSalt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id).select('user_id').maybeSingle();
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
+      await supabase.from('app_sessions').delete().eq('user_id', id);
       await log(db, s.userId, 'ADMIN_RESET_PASSWORD', `Reset password for ${id}.`, a[3]);
       return { ok: true, version: VERSION };
     }
@@ -725,8 +781,25 @@ async function dispatch(db, method, a, req) {
       const { data, error } = await supabase.from('app_users').update(patch).eq('user_id', id).select('user_id').maybeSingle();
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
+      if (!a[2]) await supabase.from('app_sessions').delete().eq('user_id', id);
       await log(db, s.userId, 'ADMIN_SET_USER_ACTIVE', `${id}: ${!!a[2]}`, a[3]);
       return { ok: true, version: VERSION };
+    }
+
+    case 'adminSetAuthUserRole': {
+      const s = await requireAdmin(db, tokenAt(0));
+      const id = normalizeUserId(a[1]);
+      if (!id) fail('User ID is required.');
+      const requestedRole = normalizeUserId(a[2]);
+      const role = requestedRole === 'ADMIN' ? 'ADMIN' : requestedRole === 'VISITOR' ? 'VISITOR' : 'USER';
+      if (id === normalizeUserId(s.userId) && role !== 'ADMIN') fail('You cannot remove administrator access from your own account.', 403);
+      const now = iso();
+      const { data, error } = await supabase.from('app_users').update({ role, is_super_admin: role === 'ADMIN', sessions_revoked_at: now, updated_at: now }).eq('user_id', id).select('user_id').maybeSingle();
+      if (error) throw error;
+      if (!data) fail('User was not found.', 404);
+      await supabase.from('app_sessions').delete().eq('user_id', id);
+      await log(db, s.userId, 'ADMIN_SET_USER_ROLE', `${id}: ${role}`, a[3]);
+      return { ok: true, role, version: VERSION };
     }
 
     case 'adminDeleteAuthUser': {
@@ -738,6 +811,7 @@ async function dispatch(db, method, a, req) {
       const { data, error } = await supabase.from('app_users').update({ deleted: true, active: false, sessions_revoked_at: now, updated_at: now }).eq('user_id', id).select('user_id').maybeSingle();
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
+      await supabase.from('app_sessions').delete().eq('user_id', id);
       await log(db, s.userId, 'ADMIN_DELETE_USER', `Deleted user ${id}.`, a[2]);
       return { ok: true, version: VERSION };
     }
@@ -811,10 +885,17 @@ async function dispatch(db, method, a, req) {
       if (!name) fail('Item name is required.');
       const id = clean(item.id, 120) || `item-${randomUUID()}`;
       const now = iso();
-      const { data: duplicate, error: duplicateError } = await supabase.from('inventory_items').select('id').ilike('name', name).neq('id', id).eq('active', true).maybeSingle();
+      const [
+        { data: duplicate, error: duplicateError },
+        { data: existing },
+        { root, inventory }
+      ] = await Promise.all([
+        supabase.from('inventory_items').select('id').ilike('name', name).neq('id', id).eq('active', true).maybeSingle(),
+        supabase.from('inventory_items').select('created_at, created_by').eq('id', id).maybeSingle(),
+        inventoryFromTables()
+      ]);
       if (duplicateError) throw duplicateError;
       if (duplicate) fail('An item with this name already exists.');
-      const { data: existing } = await supabase.from('inventory_items').select('created_at, created_by').eq('id', id).maybeSingle();
       const row = {
         id,
         name,
@@ -835,14 +916,13 @@ async function dispatch(db, method, a, req) {
       if (!Number.isFinite(row.price) || row.price < 0) fail('Invalid item price.');
       const { error } = await supabase.from('inventory_items').upsert(row, { onConflict: 'id' });
       if (error) throw error;
-      const { inventory } = await inventoryFromTables();
       const mapped = mapInventoryItemRow(row);
       const nextItems = Array.isArray(inventory.items) ? inventory.items.filter(x => x && String(x.id) !== String(id)) : [];
       nextItems.push(mapped);
       const deletedMap = inventory.deletedItemIds && typeof inventory.deletedItemIds === 'object' ? { ...inventory.deletedItemIds } : {};
       delete deletedMap[id];
       const nextInventory = { ...inventory, items: nextItems, deletedItemIds: deletedMap };
-      const saved = await saveInventoryRoot(nextInventory, s.userId);
+      const saved = await saveInventoryRoot(nextInventory, s.userId, undefined, root);
       await log(db, s.userId, existing ? 'ADMIN_UPDATE_INVENTORY_ITEM' : 'ADMIN_ADD_INVENTORY_ITEM', `${existing ? 'Updated' : 'Added'} item ${name}.`, a[3]);
       return { ok: true, item: mapped, inventory: inventoryView(nextInventory), updatedAt: saved.current.updated_at, version: VERSION };
     }
@@ -852,12 +932,20 @@ async function dispatch(db, method, a, req) {
       const itemId = clean(a[1], 120);
       if (!itemId) fail('Item ID is required.');
       const now = iso();
-      const { data: target, error: readError } = await supabase.from('inventory_items').select('*').eq('id', itemId).maybeSingle();
+      const [
+        { data: target, error: readError },
+        { root, inventory }
+      ] = await Promise.all([
+        supabase.from('inventory_items').select('*').eq('id', itemId).maybeSingle(),
+        inventoryFromTables()
+      ]);
       if (readError) throw readError;
-      if (!target) fail('Item was not found.', 404);
-      const { error } = await supabase.from('inventory_items').update({ active: false, updated_by: s.userId, updated_at: now }).eq('id', itemId);
-      if (error) throw error;
-      const { inventory } = await inventoryFromTables();
+      const fallbackItem = Array.isArray(inventory.items) ? inventory.items.find(x => x && String(x.id) === String(itemId)) : null;
+      if (!target && !fallbackItem) fail('Item was not found.', 404);
+      if (target) {
+        const { error } = await supabase.from('inventory_items').update({ active: false, updated_by: s.userId, updated_at: now }).eq('id', itemId);
+        if (error) throw error;
+      }
       const deletedMap = inventory.deletedItemIds && typeof inventory.deletedItemIds === 'object' ? { ...inventory.deletedItemIds } : {};
       deletedMap[itemId] = now;
       const monthlyPrices = inventory.monthlyPrices && typeof inventory.monthlyPrices === 'object' ? { ...inventory.monthlyPrices } : {};
@@ -875,8 +963,8 @@ async function dispatch(db, method, a, req) {
         monthlyPrices,
         deletedItemIds: deletedMap
       };
-      const saved = await saveInventoryRoot(nextInventory, s.userId);
-      await log(db, s.userId, 'ADMIN_DELETE_INVENTORY_ITEM', `Deleted item ${clean(target.name, 300)}.`, a[3]);
+      const saved = await saveInventoryRoot(nextInventory, s.userId, undefined, root);
+      await log(db, s.userId, 'ADMIN_DELETE_INVENTORY_ITEM', `Deleted item ${clean((target && target.name) || (fallbackItem && fallbackItem.name) || itemId, 300)}.`, a[3]);
       return { ok: true, deletedItemId: itemId, inventory: inventoryView(nextInventory), updatedAt: saved.current.updated_at, version: VERSION };
     }
 

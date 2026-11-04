@@ -2647,7 +2647,7 @@
           if (typeof RosterSync !== 'undefined' && RosterSync && typeof RosterSync.handleAuthChange === 'function') {
             RosterSync.handleAuthChange({ freshLogin: !!options.freshLogin });
           }
-          try { if(typeof OutSource!=='undefined'&&OutSource.initPage) window.setTimeout(function(){OutSource.initPage();},0); } catch(e) {}
+          try { if(typeof OutSource!=='undefined'&&OutSource.ensureReady) window.setTimeout(function(){OutSource.ensureReady();},0); } catch(e) {}
 
           recordSuccessfulLoginAfterUnlock_(options);
         }, options.freshLogin ? 250 : 120);
@@ -3369,24 +3369,36 @@ hoagApiRequest('logout', {
       }
       function outsourceNewId(){return 'outsource-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);}
       var OUTSOURCE_REJECT_REASONS=["Quantity Not Sufficient","Clotted Sample","Haemolysed Sample","Lipemic Sample","Icteric Sample","Wrong Specimen Type","Wrong Container","Wrong Anticoagulant","Wrong Volume/Ratio","Unlabelled Sample","Mismatched Identification","Incomplete Identification","No Requester Stamp/Sign","Leaking Container","Broken Container","Contaminated Sample","Delayed Transport","Improper Storage","Exceeded Stability","Duplicate Sample","No Specimen Received","Improper Sample Collection","Unsuitable Specimen","Test/Specimen Mismatch","Test Not Offered","Redundant Request","Other"];
-      function outsourceResultClass(value){
+      function normalizeOutsourceStatus(value, row){
         var v=String(value||'').trim().toUpperCase();
-        if(v==='REJECT')return 'status-reject';
-        if(v==='ADA'||v==='COMPLETED'||v==='POSITIVE'||v==='NEGATIVE')return 'status-done';
+        if(v==='REJECT'||v==='REJECTED')return 'REJECT';
+        if(v==='COMPLETED'||v==='ADA'||v==='POSITIVE'||v==='NEGATIVE')return 'COMPLETED';
+        if(!v||v==='PENDING')return 'PENDING';
+        /* Numeric results or reference strings must not be mistaken for status. */
+        if(row&&(String(row.resultDate||'').trim()||String(row.referenceNo||'').trim()))return 'COMPLETED';
+        return 'PENDING';
+      }
+      function outsourceResultClass(value, row){
+        var st=normalizeOutsourceStatus(value, row);
+        if(st==='REJECT')return 'status-reject';
+        if(st==='COMPLETED')return 'status-done';
         return 'status-pending';
       }
       var OUTSOURCE_TEST_CATALOG={"BIOCHEMISTRY":["24 Hours Urine Magnesium","24 Hours Urine Microalbumin","24 Hours Urine Potassium","24 Hours Urine Protein","24 Hours Urine Sodium","Acetaminophen","Adenocorticotrophic Hormone (ACTH)","Adenosine Deaminase (ADA)","Aldosterone","Alpha Feto Protein (AFP)","Alpha-1-Antitrypsin","Amino Acid","Ammonia","Amylase","Anti Acetylcholine Receptor Antibody (AChR)","Anti-Thyroglobulin Antibody (Anti-Tg)","Anti-TPO (Anti-Thyroid Peroxidase Antibodies)","Beta Human Chorionic Gonadotropin (B-hCG)","Body Fluid FEME","Body Fluid pH","Brain Natriuretic Peptide (BNP)","C-Peptide","C-Reactive Protein (CRP)","Caeruloplasmin","Calcitonin","Calcium (Ca)","Cancer Antigen 125","Cancer Antigen 15-3","Cancer Antigen 19-9","Carbamazepine","Carcinoembryonic Antigen (CEA)","Cardiac Enzyme","Ceruloplasmin","Cholinesterase","Complement C3","Complement C4","Congenital Hypothyroidism","Creatinine Clearance","Creatinine Kinase (CK)","Creatinine Kinase Isoenzyme (CKMB)","Dehydroxyepiendrosteron Sulphate (DHEA-S)","Estradiol (Oestradiol/E2)","Estrogen","Ferritin","Folate","Folic Acid","Follicle Stimulating Hormone (FSH)","Free Tri-iodothyronine (FT3)","Fructosamine","Gamma Glutamyl Transpeptidase (GGT)","Growth Hormone (GH)","Haemoglobin A1c (HbA1c)","Haptoglobin","IGF-1 (Insulin-like Growth Factor 1)","Immunoglobulin A","Immunoglobulin G","Immunoglobulin M","Inborn Error Metabolism (IEM)","Insulin","Intact Parathyroid Hormone (iPTH)","Iron Profile","Lactate","Lactate Dehydrogenase (LDH)","Lithium","Luteinising Hormone (LH)","Magnesium (Mg)","Phosphate (PO4)","Pleural Fluid Biochemistry","Pleural Fluid FEME","Pleural Fluid Glucose","Pleural Fluid Protein","Progesterone","Prolactin","Prostate Specific Antigen (PSA)","Protein Albumin","Protein Creatinine Index (PCI)","Protein Electrophoresis","Pyruvate","Renin","Rheumatoid Factor (RF)","Serum Copper","Serum Cortisol","Serum Immunoglobulin","Serum Osmolality","Stool Occult Blood","Testosterone","Therapeutic Drug Monitoring (TDM) Acetaminophen","Therapeutic Drug Monitoring (TDM) Amikacin","Therapeutic Drug Monitoring (TDM) Benzodiazepine","Therapeutic Drug Monitoring (TDM) Carbamazepine","Therapeutic Drug Monitoring (TDM) Cyclosporine","Therapeutic Drug Monitoring (TDM) Digoxin","Therapeutic Drug Monitoring (TDM) Ethanol","Therapeutic Drug Monitoring (TDM) Everolimus","Therapeutic Drug Monitoring (TDM) Gentamicin","Therapeutic Drug Monitoring (TDM) Methotrexate","Therapeutic Drug Monitoring (TDM) Mycophenolic Acid","Therapeutic Drug Monitoring (TDM) Phenytoin","Therapeutic Drug Monitoring (TDM) Valproic Acid","Therapeutic Drug Monitoring (TDM) Vancomycin","Thyroglobulin","Thyroid Function Test (TFT)","Thyroid Stimulating Hormone (TSH)","Thyroid Stimulating Hormone (TSH) Cord Blood","Thyrotropin Receptor Antibody (TRAb)","Thyroxine Free (T4)","Thyroxine Free (T4) Cord Blood","Total Iron Binding Capacity (TIBC)","Transferrin","Troponin I","Troponin T","Urine Copper","Urine Cortisol","Urine Creatinine Albumin Ratio (ACR)","Urine Drug","Urine Mercury","Urine Organic Acid","Urine Osmolality","Urine Paraquat","Urine PCR","Urine Sodium","Urine Toxicology","Vitamin B12","Vitamin D"],"MICROBIOLOGY":["Adenovirus Antigen Detection (IFAT)","Anti B2 Glycoprotein IgG/M","Anti Cardiolipin IgG/M","Anti Double Stranded DNA (DsDNA)","Anti Gastric Parietal Cell Antibody (GPA)","Anti HBc","Anti HBe","Anti HBs","Anti HCV","Anti HIV","Anti Mitochondrial Antibody (AMA)","Anti Neutrophil Cytoplasmic Antigen (ANCA)","Anti Nuclear Antibody (ANA)","Anti Smooth Muscle (ASMA)","Anti Thyroglobulin Antibody","Anti Thyroid Peroxidase","Anti-Cyclic Citrulinated Peptide (CCP)","Anti-Liver Kidney Microsomal Antibody (Anti-LKM)","Anti-Mitochondrial Antibody (AMA)","Anti-Smooth Muscle Antibody (ASMA)","Antistreptolysin O Titer (ASOT)","Aspirate Culture & Sensitivity","Blood Culture & Sensitivity","Body Fluid Culture & Sensitivity","Body Fluid Fungal Culture & Sensitivity","Chlamydia Pneumonia Antibody","Clostridium Defficile Ag / Toxin","Coxsackie Virus Serology","CSF Bacterial Ag","CSF C&S","CSF Cryptococcal Ag","Cytomegalovirus (CMV)","Dengue Serology","Ear Culture & Sensitivity","ELEK Test","Enterovirus PCR","Epstein–Barr Virus","Extractable Nuclear Antibody (ENA)","Eye Culture & Sensitivity","Fungal Culture & Sensitivity","Gastric Lavage Culture & Sensitivity","Glomerular Basement Membrane Antibody (GBM)","Gram Stain","Hand, Feet and Mouth Disease (HFMD)","Hepatitis A","Hepatitis B","Hepatitis B Surface Antigen (HBsAg)","Hepatitis B Virus DNA (HBV DNA)","Hepatitis C","Hepatitis C Virus RNA (HCV RNA)","Herpes Simplex Virus (HSV)","High Vaginal Swab Culture & Sensitivity","HIV Viral Load","Human Immunodeficiency Virus (HIV)","Human Papilloma Virus (HPV)","Indian Ink","Legionella Pneumophilia Antigen","Leptospira Serology","Leptospirosis Microagglutination Test (MAT)","Leptospirosis Polymerase Chain Reaction (PCR)","Liver Specific Antibody","Measles","Measles PCR","Measles Serology","Melioidosis Serology","Mers-COV PCR","MTB Body Fluid Culture & Sensitivity","MTB Gastric Lavage Culture & Sensitivity","MTB IGRA","MTB MGIT","MTB Pleural Fluid Culture & Sensitivity","MTB Polymerase Chain Reaction (PCR)","MTB Sputum Culture & Sensitivity","MTB Stool Culture & Sensitivity","MTB Urine Culture & Sensitivity","Mumps","Mycoplasma Antibody Total","Mycoplasma IgM","Nasal Culture & Sensitivity","Parvo Virus B19","Peritoneal Dialysis Fluid Culture & Sensitivity","Pleural Fluid AFB","Pleural Fluid Gram Stain","Polio, Acute Flaccid Paralysis","Pus/Wound Culture & Sensitivity","Rabies","Rapid Plasma Reagin (RPR)","Respiratory Culture & Sensitivity","Respiratory Screen Virus","Rotavirus","Rubella IgG/M","Sputum Culture & Sensitivity","Sputum For Leprosy PCR","Sputum Gene Xpert/RIF","Sputum Line Probe Assay (LPA)","Sputum Xpert XDR","Stool Culture & Sensitivity","Stool Line Probe Assay (LPA)","Swab Culture & Sensitivity","Tissue Culture & Sensitivity","Torches","Toxoplasma","Treponema Pallidum HaemaAgglutination (TPHA)","Treponema Pallidum Particle Agglutination (TPPA)","Urine Culture & Sensitivity","Urine Gene Xpert/RIF","Urine Line Probe Assay (LPA)","Varicella Zoster Virus DNA PCR","Varicella Zoster Virus Serology","Venereal Disease Research Laboratory (VDRL)","Vibrio Cholera","Zika Polymerase Chain Reaction (PCR)"],"HEMATOLOGY":["Activated Partial Thrombin Time (APTT)","Bone Marrow Aspiration","Bone Marrow Trephine Biopsy","CD4/CD8 Enumeration","Coagulation Profile","Coomb's Test","Cryoglobulin","CSF For Blast","D-Dimer","Direct Antiglobulin Test (DAT)","DNA Analysis","Factor IX","Factor VIII Assay","FBC In Citrate","Fibrinogen","Full Blood Picture (FBP)","Group Screen & Hold (GSH)","Grouping & Cross Matching (GXM)","H Inclusion","Haemoglobin Analysis","Hb F Quantitation","Heinz Bodies","HLA Typing","Immunoglobulin","Kleihauer Test","LAP/NAP Score","Leukaemia/Lymphoma Immunophenotyping","Molecular Alpha Thalassaemia","Molecular JAK-2","Osmotic Fragility Test (OFT)","Paroxysmal Nocturnal Haemoglobinuria (PNH)","Plasmin Inhibitor","Plasminogen","Platelet Function Test","Pleural Fluid Differential Count","Prothrombin Time (PT)/INR","RBC Phenotyping","Reticulocyte Count","Rh Typing","Seminal Fluid Analysis (SFA)","Serum Erythropoeitin","Sickling Test","Stem Cell Enumeration","Thrombin Time(TT)","Urine Hemosiderin","Von Willebrand Assay"],"CYTOLOGY":["Body Fluid Cytology","Fine Needle Aspiration","High Vaginal Swab","Non Gynaecology","PAP Smear","Seminal Fluid Analysis"],"HISTOLOGY":["Enzyme Histochemistry","Histophatological Examination (HPE)"]};
       function populateOutsourceTests(selectedValue){
         var labEl=$('osLab'), testEl=$('osTest');
         if(!labEl||!testEl)return;
-        var lab=String(labEl.value||'').trim().toUpperCase();
+        var lab=canonicalOutsourceLabName(labEl.value);
         var previous=String(selectedValue!=null?selectedValue:testEl.value||'').trim();
-        var list=OUTSOURCE_TEST_CATALOG[lab]||[];
+        var list=(OUTSOURCE_TEST_CATALOG[lab]||[]).slice();
+        if(previous&&!list.some(function(x){return String(x).toLowerCase()===previous.toLowerCase();})){
+          list.push(previous);
+        }
         testEl.innerHTML='<option value="">Select test / investigation</option>'+list.map(function(name){
           return '<option value="'+outsourceEsc(name)+'">'+outsourceEsc(name)+'</option>';
         }).join('');
-        if(previous&&list.indexOf(previous)>=0)testEl.value=previous;
-        else testEl.value='';
+        var matched=previous?list.find(function(x){return String(x).toLowerCase()===previous.toLowerCase();}):'';
+        testEl.value=matched||'';
         testEl.dispatchEvent(new Event('change',{bubbles:true}));
       }
       function bindOutsourceTestCatalog(){
@@ -3653,8 +3665,8 @@ hoagApiRequest('logout', {
         });
         var monthNames=['ALL MONTHS','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
         var periodYear=year==='ALL'?'ALL':year, periodMonth=month==='ALL'?monthNames[0]:monthNames[Number(month)];
-        var completed=rows.filter(function(r){var x=String(r.result||'').toUpperCase();return x==='COMPLETED'||x==='ADA'||x==='POSITIVE'||x==='NEGATIVE';}).length;
-        var rejected=rows.filter(function(r){return ['REJECT','REJECTED'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
+        var completed=rows.filter(function(r){return normalizeOutsourceStatus(r.result,r)==='COMPLETED';}).length;
+        var rejected=rows.filter(function(r){return normalizeOutsourceStatus(r.result,r)==='REJECT';}).length;
         var commands=[];
         var W=841.89,H=595.28,M=28.35,contentW=W-(M*2),titleY=14,titleH=42;
         appendPdfFilledRect(commands,M,titleY,contentW,titleH,[0.96,0.78,0.12],.8);
@@ -3999,9 +4011,9 @@ hoagApiRequest('logout', {
         var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[];
         outsourceDataSignature=getOutsourceRowSignature(rows);
         rows.sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
-        var total=rows.length,pending=rows.filter(function(r){return !String(r.result||'').trim()||String(r.result).toUpperCase()==='PENDING';}).length;
-        var done=rows.filter(function(r){return ['ADA','COMPLETED','POSITIVE','NEGATIVE'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
-        var rejected=rows.filter(function(r){return String(r.result||'').toUpperCase()==='REJECT';}).length;
+        var total=rows.length,pending=rows.filter(function(r){return normalizeOutsourceStatus(r.result,r)==='PENDING';}).length;
+        var done=rows.filter(function(r){return normalizeOutsourceStatus(r.result,r)==='COMPLETED';}).length;
+        var rejected=rows.filter(function(r){return normalizeOutsourceStatus(r.result,r)==='REJECT';}).length;
         var today=outsourceToday();
         grid.innerHTML='<div class="outsource-register">'+
           '<div class="outsource-grid">'+
@@ -4013,7 +4025,7 @@ hoagApiRequest('logout', {
                 '<div class="outsource-field"><label>Name *</label><input id="osName" required placeholder="Patient name"></div>'+
                 '<div class="outsource-field"><label>ID / IC</label><input id="osIdIc" placeholder="NRIC / Passport"></div>'+
                 '<div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><input id="osSex" placeholder="Auto from IC" readonly></div>'+
-                '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input type="number" min="0" max="130" id="osAge" placeholder="Auto from IC" readonly></div>'+
+                '<div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input id="osAge" placeholder="Auto from IC" readonly></div>'+
                 '<div class="outsource-field"><label>Unit</label><select id="osUnit"><option value="">Select unit</option><option>WAD 1</option><option>WAD 2</option><option>WAD 3</option><option>WAD 4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>UNIT KA</option></select></div>'+
                 '<div class="outsource-field outsource-date-field"><label>Dispatch Date</label><input type="hidden" id="osDispatchDate" value="'+outsourceEsc(today)+'"><input type="text" id="osDispatchDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div>'+
                 '<div class="outsource-field"><label>Referral</label><select id="osReferral"><option value="">Select referral</option>'+OUTSOURCE_REFERRAL_DEFS.map(function(item){return '<option value="'+outsourceEsc(item.code)+'">'+outsourceEsc(item.code)+'</option>';}).join('')+'</select></div>'+
@@ -4219,8 +4231,7 @@ hoagApiRequest('logout', {
         return len+':'+rev+':'+(first&&first.id||'')+'='+(first&&(first.updatedAt||first.createdAt)||'')+':'+(last&&last.id||'')+'='+(last&&(last.updatedAt||last.createdAt)||'');
       }
       function buildOutsourceRowHtml(r, index){
-        var result=String(r.result||'PENDING').toUpperCase();
-        if(result==='ADA')result='COMPLETED';
+        var result=normalizeOutsourceStatus(r.result, r);
         var cls=result==='COMPLETED'?'status-done':result==='REJECT'?'status-reject':'status-pending';
         /* Existing rows may have been saved before the M-prefix NB/no-IC rule.
            Derive the displayed values from the identifier so old and new rows
@@ -4248,47 +4259,66 @@ hoagApiRequest('logout', {
         var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',outsourceReferralLabel(r.referral)],['Outsource Lab',canonicalOutsourceLabName(r.lab)],['Test / Investigation',r.test]];
         var modal=document.getElementById('outsourceDetailModal');if(!modal){modal=document.createElement('div');modal.id='outsourceDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE SAMPLE</div><h2>FULL SAMPLE DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-detail-editor"><div class="outsource-modal-field"><label for="outsourceDetailStatus">STATUS</label><select id="outsourceDetailStatus"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECTED</option></select></div><div class="outsource-modal-field outsource-date-field"><label for="outsourceDetailResultDateVisible">RESULT DATE</label><input type="hidden" id="outsourceDetailResultDate"><input type="text" id="outsourceDetailResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label for="outsourceDetailReferenceNo">REFERENCE NO.</label><input id="outsourceDetailReferenceNo" type="text" maxlength="120" placeholder="External report / accession no."></div><div class="outsource-modal-field"><label for="outsourceDetailRejectReason">REJECT REASON</label><select id="outsourceDetailRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field outsource-detail-notes-field"><label for="outsourceDetailNotes">NOTES</label><textarea id="outsourceDetailNotes" rows="3" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceDetailCancel">CLOSE</button><button type="button" class="outsource-btn primary" id="outsourceDetailSave">SAVE CHANGES</button></div></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#outsourceDetailCancel'))modal.hidden=true;});modal.querySelector('#outsourceDetailSave').addEventListener('click',saveOutsourceDetailFields);var syncRejectReasonState=function(){var reject=modal.querySelector('#outsourceDetailRejectReason');var statusValue=String(modal.querySelector('#outsourceDetailStatus').value||'').toUpperCase();var enabled=statusValue==='REJECT'||statusValue==='REJECTED';reject.disabled=!enabled;reject.style.pointerEvents='auto';reject.style.opacity=enabled?'1':'.58';reject.setAttribute('aria-disabled',enabled?'false':'true');};modal.querySelector('#outsourceDetailStatus').addEventListener('change',syncRejectReasonState);modal.querySelector('#outsourceDetailStatus').addEventListener('input',syncRejectReasonState);}
         modal.dataset.recordId=String(r.id);modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){return '<div class="outsource-detail-item"><label>'+outsourceEsc(f[0])+'</label><div>'+outsourceEsc(f[1]||'—')+'</div></div>';}).join('');
-        var status=String(r.result||'PENDING').toUpperCase();if(status==='ADA')status='COMPLETED';modal.querySelector('#outsourceDetailStatus').value=status==='REJECT'?'REJECT':status==='COMPLETED'?'COMPLETED':'PENDING';
+        var status=normalizeOutsourceStatus(r.result,r);modal.querySelector('#outsourceDetailStatus').value=status;
         modal.querySelector('#outsourceDetailResultDate').value=r.resultDate||'';modal.querySelector('#outsourceDetailResultDateVisible').value='';modal.querySelector('#outsourceDetailReferenceNo').value=r.referenceNo||'';modal.querySelector('#outsourceDetailRejectReason').innerHTML='<option value="">Select reject reason</option>'+getOutsourceRejectReasons().map(function(v){return '<option value="'+outsourceEsc(v)+'">'+outsourceEsc(v)+'</option>';}).join('');modal.querySelector('#outsourceDetailRejectReason').value=r.rejectReason||'';modal.querySelector('#outsourceDetailRejectReason').disabled=!(status==='REJECT'||status==='REJECTED');modal.querySelector('#outsourceDetailRejectReason').style.pointerEvents='auto';modal.querySelector('#outsourceDetailRejectReason').style.opacity=(status==='REJECT'||status==='REJECTED')?'1':'.58';modal.querySelector('#outsourceDetailNotes').value=r.notes||'';
         if(window.initOutsourceNeumorphicDates)window.initOutsourceNeumorphicDates();var dateVisible=modal.querySelector('#outsourceDetailResultDateVisible');if(dateVisible&&dateVisible._syncDate)dateVisible._syncDate();modal.hidden=false;
       }
       async function saveOutsourceDetailFields(){
         var modal=document.getElementById('outsourceDetailModal');if(!modal)return;var id=String(modal.dataset.recordId||''),rows=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
         r.result=String(modal.querySelector('#outsourceDetailStatus').value||'PENDING');r.resultDate=String(modal.querySelector('#outsourceDetailResultDate').value||'');r.referenceNo=String(modal.querySelector('#outsourceDetailReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String(modal.querySelector('#outsourceDetailRejectReason').value||'').trim():'';r.notes=String(modal.querySelector('#outsourceDetailNotes').value||'').trim();
+        delete r._haystack;
         if(typeof OutSource==='undefined'||typeof OutSource.upsertSample!=='function'){alert('Outsource save function is unavailable.');return;}
         var btn=modal.querySelector('#outsourceDetailSave');if(btn){btn.disabled=true;btn.textContent='SAVING...';}
         try{await OutSource.upsertSample(r);invalidateOutsourceRowsCache();renderOutsourceRows();modal.hidden=true;}
         catch(error){alert('Unable to save outsource result: '+(error&&error.message?error.message:'Please try again.'));}
         finally{if(btn){btn.disabled=false;btn.textContent='SAVE CHANGES';}}
       }
+      function updateOutsourceSummaryCounts(rows){
+        var root=$('moduleYearGrid');if(!root||!root.classList.contains('outsource-active-grid'))return;
+        var card=root.querySelector('.outsource-grid .outsource-card:nth-child(2)');if(!card)return;
+        var nums=card.querySelectorAll('.outsource-summary .num');if(!nums||!nums.length)return;
+        var list=Array.isArray(rows)?rows:[];
+        var pending=0,done=0,rejected=0;
+        for(var i=0;i<list.length;i++){
+          var st=normalizeOutsourceStatus(list[i]&&list[i].result,list[i]);
+          if(st==='COMPLETED')done++;
+          else if(st==='REJECT')rejected++;
+          else pending++;
+        }
+        if(nums[0])nums[0].textContent=String(list.length);
+        if(nums[1])nums[1].textContent=String(pending);
+        if(nums[2])nums[2].textContent=String(done);
+        if(nums[3])nums[3].textContent=String(rejected);
+      }
       function renderOutsourceRows(){
         var body=$('outsourceTableBody'),empty=$('outsourceEmpty'); if(!body)return;
         var allRows=getOutsourceRowsCached();
-        renderOutsourceFilterYears(allRows);
         var signature=getOutsourceRowSignature(allRows);
         if(signature!==outsourceRowsDomSignature || !Array.isArray(outsourceRowsSorted)){
           outsourceRowsDomSignature=signature;
+          renderOutsourceFilterYears(allRows);
           outsourceRowsSorted=allRows.slice().sort(function(a,b){return String(b.sampleDate||b.createdAt||'').localeCompare(String(a.sampleDate||a.createdAt||''));});
         }
+        updateOutsourceSummaryCounts(allRows);
         var q=String(($('outsourceSearch')||{}).value||'').trim().toLowerCase();
         var year=String(($('outsourceYearFilter')||{}).value||'ALL');
         var month=String(($('outsourceMonthFilter')||{}).value||'ALL');
         var status=String(($('outsourceStatusFilter')||{}).value||'ALL').toUpperCase();
+        var referral=String(($('outsourceReferralFilter')||{}).value||'ALL').toLowerCase();
+        var lab=String(($('outsourceLabFilter')||{}).value||'ALL').toLowerCase();
+        var test=String(($('outsourceTestFilter')||{}).value||'ALL').toLowerCase();
+        var unit=String(($('outsourceUnitFilter')||{}).value||'ALL').toLowerCase();
         var filtered=[];
         outsourceRowsSorted.forEach(function(r){
-          var result=String(r.result||'PENDING').toUpperCase(); if(result==='ADA')result='COMPLETED';
+          var result=normalizeOutsourceStatus(r.result,r);
           var dateParts=getOutsourceDateParts(r.sampleDate); var match=true;
           if(status!=='ALL'&&result!==status)match=false;
           if(match&&year!=='ALL'&&dateParts.year!==year)match=false;
           if(match&&month!=='ALL'&&dateParts.month!==month)match=false;
-          var referral=String(($('outsourceReferralFilter')||{}).value||'ALL');
-          var lab=String(($('outsourceLabFilter')||{}).value||'ALL');
-          var test=String(($('outsourceTestFilter')||{}).value||'ALL');
-          var unit=String(($('outsourceUnitFilter')||{}).value||'ALL');
-          if(match&&referral!=='ALL'&&String(r.referral||'').toLowerCase()!==referral.toLowerCase())match=false;
-          if(match&&lab!=='ALL'&&canonicalOutsourceLabName(r.lab).toLowerCase()!==lab.toLowerCase())match=false;
-          if(match&&test!=='ALL'&&String(r.test||'').toLowerCase()!==test.toLowerCase())match=false;
-          if(match&&unit!=='ALL'&&canonicalOutsourceUnitName(r.unit).toLowerCase()!==unit.toLowerCase())match=false;
+          if(match&&referral!=='all'&&canonicalOutsourceReferralName(r.referral).toLowerCase()!==referral)match=false;
+          if(match&&lab!=='all'&&canonicalOutsourceLabName(r.lab).toLowerCase()!==lab)match=false;
+          if(match&&test!=='all'&&String(r.test||'').toLowerCase()!==test)match=false;
+          if(match&&unit!=='all'&&canonicalOutsourceUnitName(r.unit).toLowerCase()!==unit)match=false;
           if(match&&q){
             var hay=r._haystack;
             if(!hay){
@@ -4564,38 +4594,79 @@ hoagApiRequest('logout', {
         bindOutsourcePostSaveModalEvents();
         try{modal.querySelector('#outsourceNewSampleBtn')?.focus();}catch(_e){}
       }
+      var outsourceSaveInFlight=false;
       function saveOutsourceSample(){
+        if(outsourceSaveInFlight)return;
         var name=String($('osName').value||'').trim(),test=String($('osTest').value||'').trim(),sampleDate=String($('osSampleDate').value||'').trim(); if(!sampleDate){alert('Sample Date is required.');return;} if(!name||!test){alert('Name and Test / Investigation are required.');return;}
         var editId=String($('outsourceEditId').value||'').trim(),existing=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(r){return String(r.id||'')===editId;});
-        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:String($('osUnit').value||'').trim(),dispatchDate:String($('osDispatchDate').value||''),referral:canonicalOutsourceReferralName($('osReferral').value),lab:String($('osLab').value||'').trim(),test:test,result:existing?String(existing.result||'PENDING').trim()||'PENDING':'PENDING',resultDate:existing?String(existing.resultDate||''):'',referenceNo:existing?String(existing.referenceNo||''):'',rejectReason:existing?String(existing.rejectReason||''):'',notes:existing?String(existing.notes||'').trim():'',createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:(typeof state!=='undefined'&&state.currentUser)?String(state.currentUser.name||state.currentUser.email||''):''};
-        if(editId){
-          if(typeof OutSource!=='undefined'&&OutSource.upsertSample) OutSource.upsertSample(row);
-          invalidateOutsourceRowsCache();
-          renderOutsourceRows();
-          clearOutsourceForm();
+        var creator=existing&&existing.createdBy?String(existing.createdBy):((typeof state!=='undefined'&&(state.authUserDisplayName||state.authUserId))?String(state.authUserDisplayName||state.authUserId):'');
+        var row={id:editId||outsourceNewId(),sampleDate:String($('osSampleDate').value||''),barCode:String($('osBarCode').value||'').trim(),name:name,idIc:String($('osIdIc').value||'').trim(),sex:String($('osSex').value||''),age:String($('osAge').value||''),unit:canonicalOutsourceUnitName($('osUnit').value),dispatchDate:String($('osDispatchDate').value||''),referral:canonicalOutsourceReferralName($('osReferral').value),lab:canonicalOutsourceLabName($('osLab').value),test:test,result:existing?normalizeOutsourceStatus(existing.result,existing):'PENDING',resultDate:existing?String(existing.resultDate||''):'',referenceNo:existing?String(existing.referenceNo||''):'',rejectReason:existing?String(existing.rejectReason||''):'',notes:existing?String(existing.notes||'').trim():'',createdAt:existing&&existing.createdAt?existing.createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),createdBy:creator};
+        if(typeof OutSource==='undefined'||typeof OutSource.upsertSample!=='function'){
+          alert('Outsource save function is unavailable.');
           return;
         }
-        /* New registration: mark/open the BODY-level modal before the independent
-           OUTSOURCE store is updated. This keeps the confirmation flow isolated from Inventory. */
+        outsourceSaveInFlight=true;
+        var saveBtn=$('outsourceSaveBtn');
+        if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='SAVING...';}
         try{
-          /* Save first without re-entering the Inventory renderer. The OUTSOURCE
-             page owns the visible table and the modal lifecycle. */
-          if(typeof OutSource==='undefined'||typeof OutSource.upsertSample!=='function') throw new Error('Outsource save function is unavailable.');
-          OutSource.upsertSample(row);
+          var savePromise=OutSource.upsertSample(row);
           invalidateOutsourceRowsCache();
           renderOutsourceRows();
-          /* Only show the post-save choice after the record is actually persisted
-             locally. This prevents a renderer exception from being mistaken for a
-             modal problem. */
-          showOutsourcePostSaveModal();
+          Promise.resolve(savePromise).then(function(){
+            invalidateOutsourceRowsCache();
+            renderOutsourceRows();
+            if(editId){
+              clearOutsourceForm();
+            }else{
+              showOutsourcePostSaveModal();
+            }
+          }).catch(function(error){
+            console.error('OUTSOURCE save failed:',error);
+            alert('Unable to save sample. '+(error&&error.message?error.message:'Please try again.'));
+            if(typeof OutSource!=='undefined'&&OutSource.refresh)OutSource.refresh(true);
+          }).finally(function(){
+            outsourceSaveInFlight=false;
+            if(saveBtn){
+              saveBtn.disabled=false;
+              saveBtn.textContent=$('outsourceEditId')&&$('outsourceEditId').value?'SAVE CHANGES':'REGISTER SAMPLE';
+            }
+          });
         }catch(error){
+          outsourceSaveInFlight=false;
+          if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=editId?'SAVE CHANGES':'REGISTER SAMPLE';}
           console.error('OUTSOURCE register failed:',error);
           alert('Unable to register sample. '+(error&&error.message?error.message:'Please try again.'));
         }
       }
       function editOutsourceSample(id){
         var r=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
-        $('outsourceEditId').value=r.id||'';$('osSampleDate').value=r.sampleDate||'';$('osBarCode').value=r.barCode||'';$('osName').value=r.name||'';$('osIdIc').value=r.idIc||'';$('osSex').value=r.sex||'';$('osAge').value=r.age||'';applyOutsourceIcAutofill();$('osUnit').value=r.unit||'';$('osDispatchDate').value=r.dispatchDate||'';$('osReferral').value=canonicalOutsourceReferralName(r.referral)||'';$('osLab').value=r.lab||'';populateOutsourceTests(r.test||'');$('outsourceEditHint').textContent='EDITING RECORD';$('outsourceSaveBtn').textContent='SAVE CHANGES';
+        $('outsourceEditId').value=r.id||'';
+        restoreOutsourceDate('osSampleDate','osSampleDateVisible',r.sampleDate||'');
+        restoreOutsourceDate('osDispatchDate','osDispatchDateVisible',r.dispatchDate||'');
+        $('osBarCode').value=r.barCode||'';
+        $('osName').value=r.name||'';
+        $('osIdIc').value=r.idIc||'';
+        $('osSex').value=r.sex||'';
+        $('osAge').value=r.age||'';
+        applyOutsourceIcAutofill();
+        if(!$('osSex').value&&r.sex)$('osSex').value=r.sex;
+        if(!$('osAge').value&&r.age)$('osAge').value=r.age;
+        var unitVal=canonicalOutsourceUnitName(r.unit);
+        var unitEl=$('osUnit');
+        if(unitEl){
+          if(unitVal&&!Array.prototype.some.call(unitEl.options,function(opt){return opt.value===unitVal;})){
+            var uOpt=document.createElement('option');uOpt.value=unitVal;uOpt.textContent=unitVal;unitEl.appendChild(uOpt);
+          }
+          unitEl.value=unitVal||'';
+        }
+        $('osReferral').value=canonicalOutsourceReferralName(r.referral)||'';
+        var labVal=canonicalOutsourceLabName(r.lab);
+        renderOutsourceLabs(labVal);
+        $('osLab').value=labVal||'';
+        populateOutsourceTests(r.test||'');
+        ['osSex','osUnit','osReferral','osLab','osTest'].forEach(function(fid){var el=$(fid);if(el)el.dispatchEvent(new Event('change',{bubbles:true}));});
+        $('outsourceEditHint').textContent='EDITING RECORD';
+        $('outsourceSaveBtn').textContent='SAVE CHANGES';
         var form=$('outsourceForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
       }
       function bindOutsourceResultModal(){
@@ -4607,13 +4678,14 @@ hoagApiRequest('logout', {
       function openOutsourceResultModal(id){
         var r=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});if(!r)return;
         window.__outsourceResultEditId=String(r.id||'');$('outsourceResultTitle').textContent=String(r.test||'RESULT');$('outsourceResultSub').textContent=[r.name,r.idIc,r.barCode].filter(Boolean).join(' • ');
-        var currentResult=String(r.result||'PENDING').toUpperCase();if(currentResult==='ADA')currentResult='COMPLETED';
-        $('outsourceModalResult').value=(currentResult==='REJECT'?'REJECT':currentResult==='COMPLETED'?'COMPLETED':'PENDING');$('outsourceModalResultDate').value=r.resultDate||'';$('outsourceModalResultDateVisible').value='';if($('outsourceModalResultDateVisible')._syncDate)$('outsourceModalResultDateVisible')._syncDate();$('outsourceModalReferenceNo').value=r.referenceNo||'';$('outsourceModalRejectReason').value=r.rejectReason||'';$('outsourceModalRejectReason').disabled=$('outsourceModalResult').value!=='REJECT';$('outsourceModalNotes').value=r.notes||'';$('outsourceResultModal').hidden=false;
+        var currentResult=normalizeOutsourceStatus(r.result,r);
+        $('outsourceModalResult').value=currentResult;$('outsourceModalResultDate').value=r.resultDate||'';$('outsourceModalResultDateVisible').value='';if($('outsourceModalResultDateVisible')._syncDate)$('outsourceModalResultDateVisible')._syncDate();$('outsourceModalReferenceNo').value=r.referenceNo||'';$('outsourceModalRejectReason').value=r.rejectReason||'';$('outsourceModalRejectReason').disabled=$('outsourceModalResult').value!=='REJECT';$('outsourceModalNotes').value=r.notes||'';$('outsourceResultModal').hidden=false;
       }
       function closeOutsourceResultModal(){var m=$('outsourceResultModal');if(m)m.hidden=true;window.__outsourceResultEditId='';}
       function saveOutsourceResult(){
         var id=String(window.__outsourceResultEditId||'');if(!id)return;var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
         r.result=String($('outsourceModalResult').value||'PENDING');r.resultDate=String($('outsourceModalResultDate').value||'');r.referenceNo=String($('outsourceModalReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String($('outsourceModalRejectReason').value||'').trim():'';r.notes=String($('outsourceModalNotes').value||'').trim();r.updatedAt=new Date().toISOString();
+        delete r._haystack;
         if(typeof OutSource!=='undefined'&&OutSource.upsertSample)OutSource.upsertSample(r); invalidateOutsourceRowsCache(); closeOutsourceResultModal(); renderOutsourceRows();
       }
       function deleteOutsourceSample(id){
@@ -4648,13 +4720,7 @@ hoagApiRequest('logout', {
         var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[];
         var liveSignature=getOutsourceRowSignature(rows);
         if(liveSignature!==outsourceDataSignature){outsourceDataSignature=liveSignature;invalidateOutsourceRowsCache();renderOutsourceRows();}
-        var card=root.querySelector('.outsource-grid .outsource-card:nth-child(2)');
-        if(card){var nums=card.querySelectorAll('.outsource-summary .num');
-          var pending=rows.filter(function(r){return !String(r.result||'').trim()||String(r.result).toUpperCase()==='PENDING';}).length;
-          var done=rows.filter(function(r){return ['ADA','COMPLETED','POSITIVE','NEGATIVE'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
-          var rejected=rows.filter(function(r){return String(r.result||'').toUpperCase()==='REJECT';}).length;
-          if(nums[0])nums[0].textContent=rows.length;if(nums[1])nums[1].textContent=pending;if(nums[2])nums[2].textContent=done;if(nums[3])nums[3].textContent=rejected;
-        }
+        else updateOutsourceSummaryCounts(rows);
       }
 
       /* +----------------------------------+
@@ -4688,7 +4754,6 @@ hoagApiRequest('logout', {
           }
           invalidateOutsourceRowsCache();
           renderOutsourcePage();
-          if(typeof OutSource!=='undefined'&&OutSource.loadCatalog)OutSource.loadCatalog();
           if(window.outsourceInitNeumorphicDropdowns)setTimeout(window.outsourceInitNeumorphicDropdowns,30);
           return;
         }
@@ -7706,42 +7771,9 @@ function exportMonthlySchedulePdfs() {
               return;
             }
             state.rosterCloudLoading = false;
-            console.warn('Roster cloud envelope load failed, trying legacy load:', error && error.message ? error.message : error);
-            hoagApi.run
-              .withSuccessHandler(function (legacyEnvelope) {
-                var cloud;
-                if (requestStorageId !== getRosterStorageUserId()) return;
-                cloud = extractRosterFromEnvelope(legacyEnvelope);
-                state.rosterCloudStore = normalizeRoster(cloud);
-                var local = readAllLocalRoster();
-                if (requestRevision !== state.rosterLocalRevision) {
-                  setSyncStatus('Pending save...', 'saving');
-                  scheduleCloudPoll();
-                  return;
-                }
-                if (isEmptyCloudBootstrap(cloud, legacyEnvelope) && hasRosterRows(local)) {
-                  state.rosterLastSavedJson = stableJson(cloud);
-                  state.rosterCloudUpdatedAt = '';
-                  setSyncStatus('Saving local roster...', 'saving');
-                  saveCloudRoster(local, { force: true });
-                  return;
-                }
-                if (!sameRoster(cloud, local)) {
-                  writeLocalRoster(cloud);
-                  refreshCalendar();
-                }
-                state.rosterLastSavedJson = stableJson(cloud);
-                state.rosterCloudUpdatedAt = String(legacyEnvelope && legacyEnvelope.updatedAt || '');
-                if (!options.silent) setSyncStatus('Synced', 'synced');
-                scheduleCloudPoll();
-              })
-              .withFailureHandler(function (legacyError) {
-                if (requestStorageId !== getRosterStorageUserId()) return;
-                setSyncStatus('Sync failed', 'error');
-                console.warn('Roster cloud load failed:', legacyError && legacyError.message ? legacyError.message : legacyError);
-                scheduleCloudPoll();
-              })
-              .getUserRoster(typeof Auth !== 'undefined' && Auth.getToken ? Auth.getToken() : '');
+            setSyncStatus('Sync failed', 'error');
+            console.warn('Roster cloud envelope load failed:', error && error.message ? error.message : error);
+            scheduleCloudPoll();
           })
           .getUserRosterEnvelope(typeof Auth !== 'undefined' && Auth.getToken ? Auth.getToken() : '');
       }
@@ -8977,26 +9009,25 @@ function exportMonthlySchedulePdfs() {
         });
         rows=Object.keys(map).map(function(k){return map[k];}); normalize(); revision+=1; saveLocal();
       }
+      var refreshPromise=null;
       function refresh(silent){
-        if(loading||!token())return Promise.resolve(false);
+        if(!token())return Promise.resolve(false);
+        if(loading&&refreshPromise)return refreshPromise;
         loading=true;
-        return hoagApiRequest('action',{method:'getOutsourceSamples',args:[token()]}).then(function(result){
+        refreshPromise=hoagApiRequest('action',{method:'getOutsourceSamples',args:[token()]}).then(function(result){
           if(result&&result.ok!==false){
             /* The API response is the authoritative OUTSOURCE snapshot. Do not merge it
                with browser cache: merging would resurrect rows that the server has deleted. */
             rows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-            var labNameMigrations=normalize();
+            normalize();
             revision+=1;
             lastUpdatedAt=String(result.updatedAt||'');
             saveLocal();
-            if(labNameMigrations.length){
-              Promise.all(labNameMigrations.map(function(row){return upsertSample(row).catch(function(error){console.warn('Outsource lab-name standardisation skipped for record '+row.id+':',error&&error.message?error.message:error);return null;});})).then(function(){
-                if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
-              });
-            }else if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+            if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
           }
           return true;
-        }).catch(function(error){console.warn('Independent OUTSOURCE refresh failed:',error&&error.message?error.message:error);return false;}).finally(function(){loading=false;});
+        }).catch(function(error){console.warn('Independent OUTSOURCE refresh failed:',error&&error.message?error.message:error);return false;}).finally(function(){loading=false;refreshPromise=null;});
+        return refreshPromise;
       }
       function initPage(){
         if(!initialized){
@@ -9017,11 +9048,12 @@ function exportMonthlySchedulePdfs() {
       function getSamples(){ensureReady();return rows.slice();}
       function getRevision(){return revision;}
       function upsertSample(row){
-        ensureReady(); if(!row||!row.id)return;
+        ensureReady(); if(!row||!row.id)return Promise.resolve(null);
         var id=String(row.id), idx=rows.findIndex(function(r){return String(r.id)===id;});
         var previous=idx>=0?rows[idx]:null;
         var now=new Date().toISOString();
         var next=Object.assign({},previous||{},clone(row)||{}, {updatedAt:now}); next.lab=canonicalOutsourceLabName(next.lab); next.referral=canonicalOutsourceReferralName(next.referral);
+        delete next._haystack; delete next._displaySex; delete next._displayAge;
         if(!previous){next.createdAt=next.createdAt||now;next.createdBy=next.createdBy||String(state.authUserDisplayName||'UNKNOWN');}
         if(idx>=0)rows[idx]=next;else rows.push(next);
         normalize(); revision+=1; saveLocal();
@@ -9216,12 +9248,17 @@ function exportMonthlySchedulePdfs() {
           else scheduleSharedPoll();
         }).withFailureHandler(function(){ scheduleSharedPoll(); }).getSharedInventoryMeta(token);
       }
+      var sharedSavePending = false;
       function saveRemote(options){
         options=options||{};
-        if(sharedSyncBusy && !options.force) return;
+        if(sharedSyncBusy && !options.force){
+          sharedSavePending=true;
+          return;
+        }
         var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
         if(!token || !hasVercelBackend()) return;
         sharedSyncBusy=true;
+        sharedSavePending=false;
         hoagApi.run.withSuccessHandler(function(result){
           sharedSyncBusy=false;
           if(result && result.ok===false && result.conflict){
@@ -9236,17 +9273,27 @@ function exportMonthlySchedulePdfs() {
           }
           if(result && result.ok!==false){
             sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
-            if(result.inventory && typeof result.inventory==='object' && Array.isArray(result.inventory.items)){
+            if(!sharedSavePending && result.inventory && typeof result.inventory==='object' && Array.isArray(result.inventory.items)){
               mergeCloudAuthoritative(result.inventory);
               saveLocal();
               render();
             }
+          }
+          if(sharedSavePending){
+            sharedSavePending=false;
+            saveRemote();
+            return;
           }
           // The revision poll detects changes from other clients without a read/write loop.
           scheduleSharedPoll();
         }).withFailureHandler(function(error){
           sharedSyncBusy=false;
           console.warn('Shared Inventory save failed:',error&&error.message?error.message:error);
+          if(sharedSavePending){
+            sharedSavePending=false;
+            saveRemote();
+            return;
+          }
           scheduleSharedPoll();
         }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
       }
@@ -9270,10 +9317,18 @@ function exportMonthlySchedulePdfs() {
           hoagApi.run.withSuccessHandler(function(result){
             sharedSyncBusy=false;
             if(!result || result.ok===false){
-              scheduleSharedPoll(); render(); resolve(false); return;
+              if(sharedSavePending){ sharedSavePending=false; saveRemote(); }
+              else scheduleSharedPoll();
+              render(); resolve(false); return;
             }
             var remote=result.inventory||{};
             sharedUpdatedAt=String(result.updatedAt||'');
+            if(sharedSavePending){
+              sharedSavePending=false;
+              saveRemote();
+              resolve(true);
+              return;
+            }
             var remoteHasData=(Array.isArray(remote.items)&&remote.items.length>0)||
               (Array.isArray(remote.transactions)&&remote.transactions.length>0)||
               (remote.monthlyPrices&&Object.keys(remote.monthlyPrices).length>0)||
@@ -9290,7 +9345,9 @@ function exportMonthlySchedulePdfs() {
           }).withFailureHandler(function(error){
             sharedSyncBusy=false;
             console.warn('Shared Inventory load failed:',error&&error.message?error.message:error);
-            scheduleSharedPoll(); render(); resolve(false);
+            if(sharedSavePending){ sharedSavePending=false; saveRemote(); }
+            else scheduleSharedPoll();
+            render(); resolve(false);
           }).getSharedInventory(token);
         });
       }
@@ -9303,8 +9360,8 @@ function exportMonthlySchedulePdfs() {
         saveLocal();
         saveRemote();
       }
-      function getItem(itemId){return data.items.find(function(x){return x.id===itemId;})||null;}
-      function getTransactionsForItem(itemId){return data.transactions.filter(function(t){return t.itemId===itemId;});}
+      function getItem(itemId){var idStr=String(itemId||'');return data.items.find(function(x){return String(x.id)===idStr;})||null;}
+      function getTransactionsForItem(itemId){var idStr=String(itemId||'');return data.transactions.filter(function(t){return String(t.itemId)===idStr;});}
       function signedQty(t){return t.type==='OUT'?-Number(t.qty||0):Number(t.qty||0);}
       function itemBalance(itemId){
         var item=getItem(itemId);
@@ -9373,7 +9430,7 @@ function exportMonthlySchedulePdfs() {
       }
       function renderItems(){
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';
-        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;var st=itemStatus(i);if(status==='LOW'&&st!=='LOW')return false;if(status==='OUT'&&st!=='OUT')return false;if(status==='EXPIRING'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRING';}).length)return false;if(status==='EXPIRED'&&!allLots().filter(function(x){return x.item.id===i.id&&expiryStatus(x.lot.expiry)==='EXPIRED';}).length)return false;return !q||[i.name,i.category,i.type].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
+        var rows=data.items.filter(function(i){if(i.active===false)return false;if(cat!=='ALL'&&i.category!==cat)return false;var st=itemStatus(i);if(status==='LOW'&&st!=='LOW')return false;if(status==='OUT'&&st!=='OUT')return false;if(status==='EXPIRING'&&!lotsForItem(i.id).some(function(l){return expiryStatus(l.expiry)==='EXPIRING';}))return false;if(status==='EXPIRED'&&!lotsForItem(i.id).some(function(l){return expiryStatus(l.expiry)==='EXPIRED';}))return false;return !q||[i.name,i.category,i.type].join(' ').toLowerCase().indexOf(q)!==-1;}).sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'en',{sensitivity:'base',numeric:true});});
         var html='<table class="inventory-table"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>PRICE / UNIT</th><th class="inventory-center-head">TOTAL IN</th><th class="inventory-center-head">TOTAL OUT</th><th class="inventory-center-head">BALANCE</th><th>VALUE</th><th>LOT(S)</th><th>STATUS</th></tr></thead><tbody>';
         var monthKey=currentMonthKey();
         rows.forEach(function(i){var lots=lotsForItem(i.id);var st=itemStatus(i);var displaySt=inventoryDisplayStatus(i);var totalIn=totalInForItem(i.id,monthKey);var totalOut=totalOutForItem(i.id,monthKey);var balance=itemBalance(i.id);var rowClass=st==='OUT'?'inventory-status-out':st==='LOW'?'inventory-status-low':displaySt==='EXPIRED'?'inventory-status-expired':displaySt==='EXPIRING'?'inventory-status-expiring':'';var badgeClass=displaySt==='OK'?'ok':displaySt==='LOW'?'low':displaySt==='OUT'||displaySt==='EXPIRED'?'expired':'expiring';html+='<tr class="inventory-item-row '+rowClass+'" data-inventory-item-id="'+esc(i.id)+'" tabindex="0" title="Click to view Stock In / Stock Out records"><td><div class="inventory-item-name">'+esc(i.name)+'</div></td><td>'+esc(i.category)+'</td><td class="inventory-money">'+money(i.price)+'</td><td class="inventory-num inventory-center-num">'+totalIn+'</td><td class="inventory-num inventory-center-num">'+totalOut+'</td><td class="inventory-num inventory-center-num">'+balance+'</td><td class="inventory-money">'+money(balance*Number(i.price||0))+'</td><td>'+ (lots.length?lots.map(function(l){return '<span class="inventory-badge legacy">'+esc(l.lotNo)+': '+l.qty+'</span>';}).join(' '):'<span class="inventory-muted">—</span>')+'</td><td><span class="inventory-badge '+badgeClass+'">'+esc(displaySt)+'</span></td></tr>';});
@@ -9415,15 +9472,23 @@ function exportMonthlySchedulePdfs() {
         var prevKey=monthKeyOffset(monthKey,-1);
         var items=data.items.filter(function(i){return i.active!==false&&(category==='ALL'||i.category===category);});
         var lastBalance=0, stockIn=0, stockOut=0;
+        var txByItem={};
+        data.transactions.forEach(function(t){
+          var k=String(t&&t.itemId||'');
+          if(!k)return;
+          if(!txByItem[k])txByItem[k]=[];
+          txByItem[k].push(t);
+        });
 
         items.forEach(function(item){
-          var itemTransactions=data.transactions.filter(function(t){return String(t.itemId)===String(item.id);});
+          var itemTransactions=txByItem[String(item.id)]||[];
           // Rebuild the carry-forward value from the full ledger rather than
           // trusting a potentially stale saved monthly snapshot.
           var previousPrice=priceForMonth(item,prevKey);
           lastBalance+=Number(item.openingStock||0)*previousPrice;
           itemTransactions.forEach(function(t){
-            if(transactionMonthKey(t)>=monthKey) return;
+            var txMonth=transactionMonthKey(t);
+            if(!txMonth||txMonth>=monthKey) return;
             var value=Number(t.qty||0)*transactionUnitPrice(t,item);
             lastBalance+=(t.type==='OUT'?-value:value);
           });
@@ -9515,7 +9580,8 @@ function exportMonthlySchedulePdfs() {
         var expiryVisible=$('inventoryExpiryVisible');if(expiryVisible&&expiryVisible._syncDate)expiryVisible._syncDate();
         updateLotSelect(String(tx.id||''));
         if(tx.type==='OUT'){
-          var lotSelect=$('inventoryLotSelect');if(lotSelect){lotSelect.value=tx.lotNo||'';if(lotSelect.value!==String(tx.lotNo||'')){var opt=document.createElement('option');opt.value=tx.lotNo||'';opt.textContent=(tx.lotNo||'OPENING / NO LOT')+' · current record';lotSelect.appendChild(opt);lotSelect.value=tx.lotNo||'';}}
+          var txLot=tx.lotNo||'OPENING / NO LOT';
+          var lotSelect=$('inventoryLotSelect');if(lotSelect){lotSelect.value=txLot;if(lotSelect.value!==String(txLot)){var opt=document.createElement('option');opt.value=txLot;opt.textContent=(txLot==='OPENING / NO LOT'?'NO LOT':txLot)+' · current record';lotSelect.appendChild(opt);lotSelect.value=txLot;}}
           var fefo=$('inventoryFefoInput');if(fefo)fefo.checked=false;
           var fefoWrap=$('inventoryFefoWrap');if(fefoWrap)fefoWrap.hidden=true;
           syncStockOutLotFields();
@@ -9616,8 +9682,9 @@ function exportMonthlySchedulePdfs() {
         if(!item||!sel)return;
         var lots=lotsForItem(item.id);
         if(excludeTxId){
-          var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===item.id;});
-          if(current&&current.lotNo&&!lots.some(function(l){return l.lotNo===current.lotNo;}))lots.push({lotNo:current.lotNo,qty:0,expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});
+          var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&String(t.itemId)===String(item.id);});
+          var currentLot=current?(current.lotNo||'OPENING / NO LOT'):'';
+          if(current&&currentLot&&!lots.some(function(l){return l.lotNo===currentLot;}))lots.push({lotNo:currentLot,qty:0,expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});
         }
         // Stock Out LOT NO is always an explicit lot selector. No AUTO FEFO option.
         // If there is no positive-balance lot, expose NO LOT as the only option.
@@ -9643,6 +9710,12 @@ function exportMonthlySchedulePdfs() {
         }
         var item=getItem(($('inventoryItemInput')||{}).value);
         var lots=item?lotsForItem(item.id):[];
+        var excludeTxId=cleanText(($('inventoryEditingId')||{}).value);
+        if(item&&excludeTxId){
+          var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&String(t.itemId)===String(item.id);});
+          var currentLot=current?(current.lotNo||'OPENING / NO LOT'):'';
+          if(current&&currentLot&&!lots.some(function(l){return l.lotNo===currentLot;}))lots.push({lotNo:currentLot,qty:0,expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});
+        }
         if(!lots.length)lots=[{lotNo:'OPENING / NO LOT',qty:0,expiry:'',lastMovement:'',hasIn:false}];
         var chosen=select&&select.value?lots.find(function(l){return String(l.lotNo)===String(select.value);}):lots[0];
         if(!chosen)chosen=lots[0];
@@ -9659,7 +9732,7 @@ function exportMonthlySchedulePdfs() {
       function showModal(type){var modal=$('inventoryModal');if(!modal)return;modal.classList.remove('inventory-editing');var editing=$('inventoryEditingId');if(editing)editing.value='';modal.hidden=false;setMode(type);var dateInput=$('inventoryMovementDateInput');if(dateInput&&!dateInput.value)dateInput.value=localDateKey();syncItemCustom();var item=$('inventoryItemTrigger');if(item)item.focus();}
       function closeModal(){var modal=$('inventoryModal');if(modal){modal.hidden=true;modal.classList.remove('inventory-editing');}closeItemCustom();var form=$('inventoryMovementForm');if(form)form.reset();var editing=$('inventoryEditingId');if(editing)editing.value='';var dateInput=$('inventoryMovementDateInput');if(dateInput)dateInput.value=localDateKey();var dateVisible=$('inventoryMovementDateVisible');if(dateVisible&&dateVisible._syncDate)dateVisible._syncDate();var expiryVisible=$('inventoryExpiryVisible');if(expiryVisible&&expiryVisible._syncDate)expiryVisible._syncDate();syncItemCustom();setMode('IN');}
       function allocations(itemId,qty,preferredLot,fefo,excludeTxId){
-        var lots=lotsForItem(itemId);if(excludeTxId){var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&t.itemId===itemId;});if(current&&current.lotNo){var existing=lots.find(function(l){return l.lotNo===current.lotNo;});if(existing)existing.qty+=Number(current.qty||0);else lots.push({lotNo:current.lotNo,qty:Number(current.qty||0),expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});}}
+        var lots=lotsForItem(itemId);if(excludeTxId){var current=data.transactions.find(function(t){return String(t.id)===String(excludeTxId)&&t.type==='OUT'&&String(t.itemId)===String(itemId);});var currentLot=current?(current.lotNo||'OPENING / NO LOT'):'';if(current&&currentLot){var existing=lots.find(function(l){return l.lotNo===currentLot;});if(existing)existing.qty+=Number(current.qty||0);else lots.push({lotNo:currentLot,qty:Number(current.qty||0),expiry:current.expiry||'',lastMovement:current.at||'',hasIn:false});}}
         if(preferredLot){var found=lots.find(function(l){return l.lotNo===preferredLot;});return found&&found.qty>=qty?[{lotNo:found.lotNo,qty:qty,expiry:found.expiry}]:null;}
         if(!fefo){return lots.length&&lots[0].qty>=qty?[{lotNo:lots[0].lotNo,qty:qty,expiry:lots[0].expiry}]:null;}
         lots.sort(function(a,b){return (a.expiry||'9999').localeCompare(b.expiry||'9999');});var need=qty,out=[];for(var i=0;i<lots.length&&need>0;i++){var take=Math.min(need,lots[i].qty);if(take>0)out.push({lotNo:lots[i].lotNo,qty:take,expiry:lots[i].expiry});need-=take;}return need>0?null:out;
@@ -9688,7 +9761,7 @@ function exportMonthlySchedulePdfs() {
             tx=[{id:editingId||id(),itemId:itemId,type:'IN',qty:qty,unitPrice:(existingTx&&String(existingTx.itemId)===String(itemId)&&existingTx.unitPrice!==undefined&&existingTx.unitPrice!==null&&existingTx.unitPrice!==''&&Number.isFinite(Number(existingTx.unitPrice)))?Number(existingTx.unitPrice):Number(item.price||0),lotNo:lot,expiry:expiry,staff:staff,notes:notes,at:movementAt}];
           } else {
             var preferred=(($('inventoryLotSelect')||{}).value)||'';
-            if(editingId&&existingTx&&existingTx.type==='OUT'&&!preferred)preferred=existingTx.lotNo||'';
+            if(editingId&&existingTx&&existingTx.type==='OUT'&&!preferred)preferred=existingTx.lotNo||'OPENING / NO LOT';
             var a=allocations(itemId,qty,preferred,false,editingId||'');
             if(!a){if(msg)msg.textContent='Insufficient stock for the selected item/lot. Check the LOT STOCK view.';return;}
             if(editingId){
@@ -9855,7 +9928,7 @@ function exportMonthlySchedulePdfs() {
         if(new Date(now.getFullYear(),now.getMonth(),now.getDate())<new Date(now.getFullYear(),b.getMonth(),b.getDate()))age--;
         return {sex:sexDigit%2?'L':'P',age:String(age)};
       }
-      function bindIc(){var el=document.getElementById('trIdIc');if(!el)return;var apply=function(){var d=calcIc(el.value,document.getElementById('trDate')&&document.getElementById('trDate').value);var sex=document.getElementById('trSex'),age=document.getElementById('trAge');if(sex)sex.value=d.sex; if(age)age.value=d.age;};el.addEventListener('input',apply);el.addEventListener('blur',apply);}
+      function bindIc(){var el=document.getElementById('trIdIc');if(!el||el.dataset.icBound==='1')return;el.dataset.icBound='1';var apply=function(){var d=calcIc(el.value,document.getElementById('trDate')&&document.getElementById('trDate').value);var sex=document.getElementById('trSex'),age=document.getElementById('trAge');if(sex)sex.value=d.sex; if(age)age.value=d.age;};el.addEventListener('input',apply);el.addEventListener('blur',apply);}
       async function requestTransfusion(method, values){
         var query='', body;
         if(method==='GET'||method==='DELETE'){
@@ -9869,36 +9942,51 @@ function exportMonthlySchedulePdfs() {
         if(!response.ok)throw new Error(result&&result.error?result.error:'Unable to process transfusion request.');
         return result;
       }
+      var transfusionLoadingPromise=null;
+      var isSavingTransfusion=false;
       async function loadTransfusionRecords(){
-        /* Keep the first request small enough for fast first paint, then fetch
-           additional pages concurrently. The old implementation requested every
-           page strictly one-by-one, which made large Transfusion histories feel slow. */
-        var rows=[],limit=500;
-        var first=await requestTransfusion('GET',{year:'ALL',limit:limit,offset:0});
-        rows=rows.concat(Array.isArray(first.records)?first.records:[]);
-        var offset=limit, more=!!(first&&first.hasMore);
-        while(more){
-          var offsets=[offset,offset+limit,offset+(limit*2)];
-          var batch=await Promise.all(offsets.map(function(pageOffset){
-            return requestTransfusion('GET',{year:'ALL',limit:limit,offset:pageOffset});
-          }));
-          batch.forEach(function(result){
-            rows=rows.concat(Array.isArray(result&&result.records)?result.records:[]);
-          });
-          offset+=limit*batch.length;
-          /* The highest requested page tells us whether another page exists. */
-          more=!!(batch[batch.length-1]&&batch[batch.length-1].hasMore);
+        if(transfusionLoadingPromise)return transfusionLoadingPromise;
+        transfusionLoadingPromise=(async function(){
+          /* Keep the first request small enough for fast first paint, then fetch
+             additional pages concurrently. The old implementation requested every
+             page strictly one-by-one, which made large Transfusion histories feel slow. */
+          var rows=[],limit=500;
+          var first=await requestTransfusion('GET',{year:'ALL',limit:limit,offset:0});
+          rows=rows.concat(Array.isArray(first.records)?first.records:[]);
+          var total=Number(first&&first.total||0);
+          var offset=limit, more=!!(first&&first.hasMore);
+          while(more){
+            var offsets=[offset,offset+limit,offset+(limit*2)].filter(function(pageOffset){
+              return !total || pageOffset < total;
+            });
+            if(!offsets.length)break;
+            var batch=await Promise.all(offsets.map(function(pageOffset){
+              return requestTransfusion('GET',{year:'ALL',limit:limit,offset:pageOffset});
+            }));
+            batch.forEach(function(result){
+              rows=rows.concat(Array.isArray(result&&result.records)?result.records:[]);
+            });
+            offset+=limit*batch.length;
+            /* The highest requested page tells us whether another page exists. */
+            more=!!(batch[batch.length-1]&&batch[batch.length-1].hasMore);
+          }
+          transfusionRows=rows;
+          saveTransfusionCache();
+          renderYears(rows);
+          renderRows();
+          return rows;
+        })();
+        try{
+          return await transfusionLoadingPromise;
+        }finally{
+          transfusionLoadingPromise=null;
         }
-        transfusionRows=rows;
-        saveTransfusionCache();
-        renderYears(rows);
-        renderRows();
-        return rows;
       }
       function records(){return transfusionRows;}
       function transfusionRecordPayload(row, changes){
         var fields=['id','date','name','tt','idIc','sex','age','unit','bloodGroup','packNo','staff','googleDriveLink','remarks','notes'];
         var input=Object.assign({},row||{},changes||{}),record={};
+        if(!input.googleDriveLink&&input.fileLink)input.googleDriveLink=input.fileLink;
         fields.forEach(function(field){record[field]=input[field]==null?'':input[field];});
         return record;
       }
@@ -9970,7 +10058,7 @@ function exportMonthlySchedulePdfs() {
       }
       function syncTransfusionSelect(id){var el=document.getElementById(id);if(el){el.dispatchEvent(new Event('change',{bubbles:true}));}}
       function clearForm(){currentEditId='';var ids=['trDate','trName','trIdIc','trSex','trAge','trUnit','trBloodGroup','trPackNo','trStaff','trGoogleDriveLink'];ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var d=document.getElementById('trDate');if(d)d.value=today();var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='REGISTER TRANSFUSION';bindIc();}
-      function edit(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;currentEditId=r.id;var values={trDate:r.date,trName:r.name,trIdIc:r.idIc,trSex:r.sex,trAge:r.age,trUnit:r.unit,trBloodGroup:r.bloodGroup,trPackNo:r.packNo,trStaff:r.staff,trGoogleDriveLink:r.googleDriveLink||r.fileLink||''};Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id]||'';});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='SAVE CHANGES';document.getElementById('trName')?.focus();}
+      function edit(rid){var r=records().find(function(x){return String(x.id)===String(rid);});if(!r)return;currentEditId=r.id;var values={trDate:r.date,trName:r.name,trIdIc:r.idIc,trSex:r.sex,trAge:r.age,trUnit:r.unit,trBloodGroup:r.bloodGroup,trPackNo:r.packNo,trStaff:r.staff,trGoogleDriveLink:r.googleDriveLink||r.fileLink||''};Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(!el)return;var val=values[id]||'';if(el.tagName==='SELECT'&&val&&!Array.from(el.options).some(function(o){return o.value===val||o.textContent===val;})){var opt=document.createElement('option');opt.value=val;opt.textContent=val;el.appendChild(opt);}el.value=val;});syncTransfusionSelect('trUnit');syncTransfusionSelect('trBloodGroup');syncTransfusionSelect('trStaff');var dv=document.getElementById('trDateVisible');if(dv&&dv._syncDate)dv._syncDate();var save=document.getElementById('trSave');if(save)save.textContent='SAVE CHANGES';document.getElementById('trName')?.focus();}
       function openRemarksModal(rid){
         var r=records().find(function(x){return String(x.id)===String(rid);});
         var modal=document.getElementById('transfusionRemarksModal');
@@ -10007,6 +10095,7 @@ function exportMonthlySchedulePdfs() {
       }
       async function save(e){
         if(e)e.preventDefault();
+        if(isSavingTransfusion)return;
         var name=String(document.getElementById('trName')?.value||'').trim();
         var date=String(document.getElementById('trDate')?.value||'').trim();
         var blood=String(document.getElementById('trBloodGroup')?.value||'').trim();
@@ -10014,10 +10103,13 @@ function exportMonthlySchedulePdfs() {
         var existing=records().find(function(r){return String(r.id)===String(currentEditId);});
         var recordId=currentEditId||id();
         var saveBtn=document.getElementById('trSave');
+        isSavingTransfusion=true;
         if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='SAVING...';}
         try{
           var drive=String(document.getElementById('trGoogleDriveLink')?.value||'').trim();
-          var row=transfusionRecordPayload({id:recordId,date:date,name:name,tt:existing?String(existing.tt||''):'',idIc:String(document.getElementById('trIdIc')?.value||'').trim(),sex:String(document.getElementById('trSex')?.value||'').trim(),age:String(document.getElementById('trAge')?.value||'').trim(),unit:String(document.getElementById('trUnit')?.value||'').trim(),bloodGroup:blood,packNo:String(document.getElementById('trPackNo')?.value||'').trim(),staff:String(document.getElementById('trStaff')?.value||'').trim(),googleDriveLink:drive,remarks:existing?String(existing.remarks||'').trim():'',notes:existing?String(existing.notes||'').trim():''});
+          var rawPackNo=String(document.getElementById('trPackNo')?.value||'').trim();
+          var normalizedPackNo=rawPackNo?rawPackNo.split(',').map(function(p){return p.trim();}).filter(Boolean).join(', '):'';
+          var row=transfusionRecordPayload({id:recordId,date:date,name:name,tt:existing?String(existing.tt||''):'',idIc:String(document.getElementById('trIdIc')?.value||'').trim(),sex:String(document.getElementById('trSex')?.value||'').trim(),age:String(document.getElementById('trAge')?.value||'').trim(),unit:String(document.getElementById('trUnit')?.value||'').trim(),bloodGroup:blood,packNo:normalizedPackNo,staff:String(document.getElementById('trStaff')?.value||'').trim(),googleDriveLink:drive,remarks:existing?String(existing.remarks||'').trim():'',notes:existing?String(existing.notes||'').trim():''});
           var result=existing
             ?await requestTransfusion('PATCH',{record:row,expectedVersion:Number(existing.version||1)})
             :await requestTransfusion('POST',row);
@@ -10027,7 +10119,7 @@ function exportMonthlySchedulePdfs() {
           saveTransfusionCache();
           clearForm();renderRows();
         }catch(err){window.alert(err&&err.message?err.message:'Unable to save transfusion record.');}
-        finally{if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=currentEditId?'SAVE CHANGES':'REGISTER TRANSFUSION';}}
+        finally{isSavingTransfusion=false;if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=currentEditId?'SAVE CHANGES':'REGISTER TRANSFUSION';}}
       }
       function render(year){selectedYear=Number(year)||currentYear;var grid=document.getElementById('moduleYearGrid');if(!grid)return;grid.className='module-year-grid transfusion-active-grid';var title=document.getElementById('moduleYearsTitle'),desc=document.getElementById('moduleYearsDesc');if(title)title.textContent='TRANSFUSION';if(desc)desc.textContent='Register, track and maintain transfusion service records in one live workspace.';var rows=records();var total=rows.length,pending=rows.filter(function(r){var st=String(r.remarks||'PENDING').trim().toUpperCase();return !st||st==='PENDING';}).length,done=rows.filter(function(r){return String(r.remarks||'').trim().toUpperCase()==='COMPLETED';}).length,rejected=rows.filter(function(r){return String(r.remarks||'').trim().toUpperCase()==='REJECT';}).length;grid.innerHTML='<div class="outsource-register"><div class="outsource-grid"><section class="outsource-card transfusion-card"><div class="outsource-card-head"><h3>REGISTER TRANSFUSION</h3><span id="trEditHint">LIVE RECORD</span></div><form class="outsource-form" id="transfusionForm" autocomplete="off"><div class="outsource-field outsource-date-field"><label>Date *</label><input type="hidden" id="trDate" value="'+esc(today())+'"><input type="text" id="trDateVisible" class="outsource-neumorphic-date" required readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-field"><label>Name *</label><input id="trName" required placeholder="Patient name"></div><div class="outsource-field"><label>ID / IC</label><input id="trIdIc" placeholder="NRIC / Passport"></div><div class="outsource-field"><label>Sex <span class="os-auto-badge">AUTO FROM IC</span></label><input id="trSex" readonly placeholder="Auto from IC"></div><div class="outsource-field"><label>Age <span class="os-auto-badge">AUTO FROM IC</span></label><input id="trAge" readonly placeholder="Auto from IC"></div><div class="outsource-field"><label>Unit</label><select id="trUnit"><option value="">Select unit</option><option>WAD1</option><option>WAD2</option><option>WAD3</option><option>WAD4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB/KUSTA</option></select></div><div class="outsource-field"><label>Blood Group</label><select id="trBloodGroup"><option value="">Select blood group</option><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option></select></div><div class="outsource-field"><label>Pack No.</label><input id="trPackNo" placeholder="Pack number(s) — e.g. 114557133391/1, 114557133392/1" title="For multiple blood packs, enter the pack numbers separated by comma"></div><div class="outsource-field"><label>Staff</label><select id="trStaff"><option value="">Select staff</option><option>NUR LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div><div class="outsource-field"><label>Google Drive Link</label><input id="trGoogleDriveLink" type="url" placeholder="Paste Google Drive link"></div><div class="outsource-form-actions"><button class="outsource-btn secondary" type="button" id="trClear">CLEAR</button><button class="outsource-btn primary" type="submit" id="trSave">REGISTER TRANSFUSION</button></div></form></section><section class="outsource-card transfusion-card"><div class="outsource-card-head"><h3>REGISTERED TRANSFUSIONS</h3><span id="trTotal">'+total+' TOTAL</span></div><div class="outsource-summary"><div class="outsource-stat"><div class="num" id="trStatTotal">'+total+'</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num" id="trStatPending">'+pending+'</div><div class="lbl">Pending</div></div><div class="outsource-stat"><div class="num" id="trStatDone">'+done+'</div><div class="lbl">Completed</div></div><div class="outsource-stat"><div class="num" id="trStatReject">'+rejected+'</div><div class="lbl">Rejected</div></div></div><div class="outsource-search"><input id="trSearch" placeholder="Search name, ID/IC, pack no. or staff..." aria-label="Search transfusion records"><select id="trYearFilter"><option value="ALL">All years</option></select><select id="trMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><select id="trStatusFilter"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option><option value="REJECT">Rejected</option></select></div><div class="outsource-table-wrap"><table class="outsource-table"><thead><tr><th>Date</th><th>Name</th><th>IC / ID</th><th>Unit</th><th>Blood Group</th><th>Pack No.</th><th>Status</th><th>Action</th></tr></thead><tbody id="trTableBody"></tbody></table><div class="outsource-empty" id="trEmpty" hidden>No transfusion record registered yet.</div></div><div class="outsource-pager" id="trPager">Showing 0–0 of 0</div></section></div></div><div class="outsource-result-modal transfusion-remarks-modal" id="transfusionRemarksModal" hidden><div class="outsource-result-dialog"><button type="button" class="outsource-result-close" id="transfusionRemarksClose">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2 id="transfusionRemarksTitle">REMARKS &amp; NOTES</h2><div class="outsource-modal-sub" id="transfusionRemarksSub"></div><div class="outsource-modal-field"><label>REMARKS</label><select id="transfusionRemarksStatus"><option value="">Select status</option><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECT</option></select></div><div class="outsource-modal-field"><label>NOTES</label><textarea id="transfusionNotesText" placeholder="Enter additional notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="transfusionRemarksCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="transfusionRemarksSave">SAVE</button></div></div></div>';
         renderYears(rows);
@@ -10061,7 +10153,7 @@ function exportMonthlySchedulePdfs() {
         });
         if(typeof ActivityTracker!=='undefined'&&ActivityTracker.track)ActivityTracker.track('OPEN_TRANSFUSION','Opened TRANSFUSION registration.',{page:'moduleYears',module:'TRANSFUSION'},{dedupeMs:2000});
       }
-      return {open:open,render:render};
+      return {open:open,render:render,records:records,calcIc:calcIc};
     })();
 
     var LabApp = {
@@ -10116,7 +10208,8 @@ function exportMonthlySchedulePdfs() {
       Modules: Modules,
       Calendar: Calendar,
       RosterSync: RosterSync,
-
+      OutSource: OutSource,
+      Transfusion: Transfusion,
       Settings: Settings,
       Auth: Auth,
       ActivityTracker: ActivityTracker,

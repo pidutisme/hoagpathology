@@ -24,7 +24,7 @@ for (const [id, count] of counts) {
 
 if (!fs.existsSync(path.join(root, 'assets/css/app.css'))) fail('Missing consolidated CSS asset: assets/css/app.css');
 if (!fs.existsSync(path.join(root, 'assets/js/app.js'))) fail('Missing consolidated JS asset: assets/js/app.js');
-if (!html.includes('href="/assets/css/app.css"')) fail('index.html does not reference assets/css/app.css.');
+if (!html.includes('href="/assets/css/app.css')) fail('index.html does not reference assets/css/app.css.');
 if (!/<script[^>]+src=["']\/assets\/js\/app\.js(?:\?[^"']*)?["']/i.test(html)) fail('index.html does not reference assets/js/app.js.');
 if (/<style\b/i.test(html)) fail('index.html still contains inline <style> blocks.');
 const inlineScriptCount = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]

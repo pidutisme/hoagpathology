@@ -20,7 +20,7 @@ test('outsource writes are record-level and deletes are admin-or-owner scoped', 
 
 test('outsource legacy inventory is merged once, deduplicated, then removed', () => {
   const bridge = read('api/bridge.js');
-  const app = read('app.js');
+  const app = read('assets/js/app.js');
   assert.match(bridge, /hasLegacyField/);
   assert.match(bridge, /legacyInventory\.outsourceSamples/);
   assert.match(bridge, /OUTSOURCE_DELETED/);

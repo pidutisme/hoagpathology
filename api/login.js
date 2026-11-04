@@ -64,13 +64,16 @@ const mfaKeyFor = userId =>
 async function getSettings() {
   const { data, error } = await supabase
     .from('app_settings')
-    .select('settings')
+    .select('data,settings')
     .eq('id', 'true')
     .maybeSingle();
 
   if (error) throw error;
 
-  return data?.settings || {};
+  return {
+    ...(data?.data && typeof data.data === 'object' ? data.data : {}),
+    ...(data?.settings && typeof data.settings === 'object' ? data.settings : {})
+  };
 }
 
 async function saveSettings(settings) {
@@ -79,6 +82,7 @@ async function saveSettings(settings) {
     .upsert(
       {
         id: 'true',
+        data: settings,
         settings,
         updated_at: new Date().toISOString()
       },
@@ -90,62 +94,50 @@ async function saveSettings(settings) {
   if (error) throw error;
 }
 
-async function getLoginFailure(key) {
-  const settings = await getSettings();
-  return settings?.loginFailures?.[key] || null;
-}
-
-async function bumpFailure(key, kind, lockAfter) {
-  const settings = await getSettings();
-
+async function recordLoginFailures(baseSettings, entries) {
+  const settings = baseSettings && typeof baseSettings === 'object' ? baseSettings : await getSettings();
   const loginFailures =
-    settings?.loginFailures &&
-    typeof settings.loginFailures === 'object'
+    settings?.loginFailures && typeof settings.loginFailures === 'object'
       ? { ...settings.loginFailures }
       : {};
+  const nowIso = new Date().toISOString();
+  const nowMs = Date.now();
 
-  const current =
-    loginFailures[key] &&
-    typeof loginFailures[key] === 'object'
-      ? loginFailures[key]
-      : {};
-
-  const count = Number(current.count || 0) + 1;
-
-  const next = {
-    count,
-    until: count >= lockAfter ? Date.now() + 300000 : 0,
-    kind,
-    updatedAt: new Date().toISOString()
-  };
-
-  loginFailures[key] = next;
+  for (const { key, kind, lockAfter } of entries) {
+    if (!key) continue;
+    const current =
+      loginFailures[key] && typeof loginFailures[key] === 'object'
+        ? loginFailures[key]
+        : {};
+    const count = Number(current.count || 0) + 1;
+    loginFailures[key] = {
+      count,
+      until: count >= lockAfter ? nowMs + 300000 : 0,
+      kind,
+      updatedAt: nowIso
+    };
+  }
 
   await saveSettings({
     ...settings,
     loginFailures
   });
-
-  return next;
 }
 
-async function clearFailure(key) {
-  const settings = await getSettings();
-
-  if (
-    !settings?.loginFailures ||
-    typeof settings.loginFailures !== 'object' ||
-    !settings.loginFailures[key]
-  ) {
+async function clearLoginFailures(baseSettings, keys) {
+  const settings = baseSettings && typeof baseSettings === 'object' ? baseSettings : await getSettings();
+  if (!settings?.loginFailures || typeof settings.loginFailures !== 'object') {
     return;
   }
-
-  const loginFailures = {
-    ...settings.loginFailures
-  };
-
-  delete loginFailures[key];
-
+  const loginFailures = { ...settings.loginFailures };
+  let changed = false;
+  for (const key of keys) {
+    if (key && Object.prototype.hasOwnProperty.call(loginFailures, key)) {
+      delete loginFailures[key];
+      changed = true;
+    }
+  }
+  if (!changed) return;
   await saveSettings({
     ...settings,
     loginFailures
@@ -229,11 +221,9 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
   const userKey = userKeyFor(username);
   const ipKey = ipKeyFor(ip);
 
-  const [userFail, ipFail, settings] = await Promise.all([
-    getLoginFailure(userKey),
-    getLoginFailure(ipKey),
-    getSettings()
-  ]);
+  const settings = await getSettings();
+  const userFail = settings?.loginFailures?.[userKey] || null;
+  const ipFail = settings?.loginFailures?.[ipKey] || null;
 
   if (
     Number(userFail?.until || 0) > Date.now() ||
@@ -261,9 +251,9 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
   );
 
   if (!user || user.active === false || user.deleted === true || !passwordValid) {
-    await Promise.all([
-      bumpFailure(userKey, 'user', 5),
-      bumpFailure(ipKey, 'ip', 20)
+    await recordLoginFailures(settings, [
+      { key: userKey, kind: 'user', lockAfter: 5 },
+      { key: ipKey, kind: 'ip', lockAfter: 20 }
     ]);
 
     return {
@@ -331,10 +321,9 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
     }
   }
 
-  await Promise.all([
-    userFail ? clearFailure(userKey) : Promise.resolve(),
-    ipFail ? clearFailure(ipKey) : Promise.resolve()
-  ]);
+  if (userFail || ipFail) {
+    await clearLoginFailures(settings, [userKey, ipKey]);
+  }
 
   const now = Date.now();
   const issuedAt = new Date(now).toISOString();
@@ -369,6 +358,25 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
     });
 
   if (sessionError) throw sessionError;
+
+  try {
+    const info =
+      credentials?.clientInfo &&
+      typeof credentials.clientInfo === 'object'
+        ? credentials.clientInfo
+        : {};
+    await supabase
+      .from('app_users')
+      .update({
+        last_login_at: issuedAt,
+        last_seen_at: issuedAt,
+        last_seen_device: clean(info.deviceLabel || info.deviceType || '', 120),
+        last_seen_page: clean(info.page || info.path || '', 300)
+      })
+      .eq('user_id', canonicalUserId);
+  } catch {
+    // Non-blocking login metadata update
+  }
 
   try {
     const info =

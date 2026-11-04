@@ -4,7 +4,8 @@ import { sessionFor, appendSystemLog } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { transfusionDeleteQuerySchema, transfusionPatchSchema, transfusionQuerySchema, transfusionRecordSchema } from '../lib/schemas/transfusion.js';
-import { canReadLegacyTransfusionRecord, canReadTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
+import { hasPermission } from '../lib/permissions.js';
+import { canDeleteTransfusionRecord, canReadLegacyTransfusionRecord, canReadTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
 
 const ROOT = 'labapp/transfusion/records';
 const LEGACY_INVENTORY = 'labapp/inventory';
@@ -13,10 +14,25 @@ const tokenHash = token => createHash('sha256').update(`token\n${String(token ||
 const audit = (db, actorId, action, requestId) => appendSystemLog(db,{at:new Date().toISOString(),actorId,action,details:'',result:'SUCCESS',requestId,metadata:{}});
 const bodyOrEmpty = body => body && typeof body === 'object' && !Array.isArray(body) ? body : {};
 
+/* READ-ONLY legacy compatibility: legacy inventory transfusion records are never mutated on read. */
+async function logLegacyMigrationAudit(db, actorId, requestId) {
+  try { await audit(db,actorId,'TRANSFUSION_DATA_MIGRATED',requestId); } catch { console.warn('Transfusion migration audit skipped'); }
+}
+
 async function getTransfusionRows() {
-  const { data, error } = await supabase.from('transfusion_records').select('*').order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data || []).map(row => ({
+  const pageSize = 1000;
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('transfusion_records')
+      .select('id, data, created_at, updated_at')
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return rows.map(row => ({
     ...(row.data && typeof row.data === 'object' ? row.data : {}),
     id: row.id,
     createdAt: row.created_at,
@@ -46,9 +62,12 @@ export default async function handler(req,res) {
       const rows=(await getTransfusionRows()).filter(row=>canReadTransfusionRecord(session,row)||canReadLegacyTransfusionRecord(session,row));
       const filtered=rows.filter(row=>!query.year||query.year==='ALL'||String(row.date||'').slice(0,4)===query.year).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
       const records=filtered.slice(offset,offset+limit);
-      return res.status(200).json({ok:true,records,hasMore:offset+records.length<filtered.length,requestId:req.requestId});
+      return res.status(200).json({ok:true,records,total:filtered.length,offset,limit,hasMore:offset+records.length<filtered.length,requestId:req.requestId});
     }
     if(req.method==='POST'){
+      if(!hasPermission(session,'transfusion.create')){
+        return res.status(403).json({ok:false,error:'You cannot create transfusion records.',requestId:req.requestId});
+      }
       const record=parseRequest(transfusionRecordSchema,req.body);
       const now = new Date().toISOString();
 const created = {
@@ -149,7 +168,7 @@ if (insertError) {
         return res.status(409).json({ok:false,error:'Transfusion record changed, was not found, or was already deleted.',requestId:req.requestId});
       }
 
-      if(!canWriteTransfusionRecord(session,current)&&!canWriteLegacyTransfusionRecord(session,current)){
+      if(!canDeleteTransfusionRecord(session,current)&&!canWriteLegacyTransfusionRecord(session,current)){
         return res.status(403).json({ok:false,error:'You cannot delete this transfusion record.',requestId:req.requestId});
       }
 
