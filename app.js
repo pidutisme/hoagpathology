@@ -3487,22 +3487,8 @@ hoagApiRequest('logout', {
         setOutsourceAdminMessage('Adding rejection reason...');
         hoagApiRequest('action',{method:'adminAddOutsourceRejectReason',args:[outsourceAdminToken(),reason]}).then(function(result){if(!result||result.ok===false)throw new Error(result&&result.error||'Unable to add rejection reason.');mergeOutsourceCatalog(result);renderOutsourceAdminCatalog();renderOutsourceRejectReasonOptions();input.value='';setOutsourceAdminMessage('Rejection reason added successfully.');}).catch(function(error){setOutsourceAdminMessage(error&&error.message?error.message:'Unable to add rejection reason.',true);});
       }
-      function outsourceReportLabName(value){
-        var v=String(value||'').trim().toUpperCase();
-        var map={
-          'PATOLOGI KIMIA':'BIOCHEMISTRY','PATOLOGY KIMIA':'BIOCHEMISTRY','BIOCHEMISTRY':'BIOCHEMISTRY',
-          'HEMATOLOGI':'HAEMATOLOGY','HEMATOLOGY':'HAEMATOLOGY','HAEMATOLOGY':'HAEMATOLOGY',
-          'MIKROBIOLOGI':'MICROBIOLOGY','MICROBIOLOGY':'MICROBIOLOGY',
-          'SITOLOGI':'CYTOLOGY','CYTOLOGY':'CYTOLOGY',
-          'HISTOLOGI':'HISTOLOGY','HISTOLOGY':'HISTOLOGY'
-        };
-        return map[v] || String(value||'').trim().toUpperCase();
-      }
-      function outsourceReportUnitName(value){
-        var v=String(value||'').trim().toUpperCase();
-        var map={'WAD1':'WARD 1','WAD2':'WARD 2','WAD3':'WARD 3','WAD4':'WARD 4','ED':'EMERGENCY DEPARTMENT','OPD':'OUTPATIENT DEPARTMENT','UKIA':'UKIA','PRIMER':'PRIMARY HEALTHCARE'};
-        return map[v] || v;
-      }
+      function outsourceReportLabName(value){ return canonicalOutsourceLabName(value); }
+      function outsourceReportUnitName(value){ return canonicalOutsourceUnitName(value); }
       function outsourceReportSafeText(value){
         return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
       }
@@ -3521,7 +3507,7 @@ hoagApiRequest('logout', {
         return 'RETEN_OUTSOURCE_'+y+'_'+(m==='ALL-MONTHS'?m:names[Number(m)]||m)+'.xls';
       }
       function buildOutsourceRetentionReport(rows,year,month){
-        var labs=['BIOCHEMISTRY','MICROBIOLOGY','HAEMATOLOGY','CYTOLOGY','HISTOLOGY'];
+        var labs=['BIOCHEMISTRY','MICROBIOLOGY','HEMATOLOGY','CYTOLOGY','HISTOLOGY'];
         var units=[], unitSeen={};
         rows.forEach(function(r){var u=outsourceReportUnitName(r.unit);if(u&&!unitSeen[u]){unitSeen[u]=true;units.push(u);}});
         units.sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});});
@@ -3748,7 +3734,7 @@ hoagApiRequest('logout', {
         ];
         dimensions.forEach(function(item){
           var values={},sel=$(item[0]),prev=String(sel&&sel.value||'ALL');
-          rows.forEach(function(r){var v=String(r[item[2]]||'').trim();if(v)values[v]=true;});
+          rows.forEach(function(r){var v=String(r[item[2]]||'').trim();if(item[2]==='lab')v=canonicalOutsourceLabName(v);if(item[2]==='unit')v=canonicalOutsourceUnitName(v);if(v)values[v]=true;});
           populateOutsourceFilter(item[0],item[1],values,prev);
         });
       }
@@ -3822,11 +3808,11 @@ hoagApiRequest('logout', {
         }
         var rowNum = typeof index === 'number' ? (index + 1) : '';
         return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'">'+
-          '<td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td><div class="outsource-actions"><button type="button" class="outsource-mini" title="View full details" aria-label="View full details" data-outsource-action="view" data-id="'+outsourceEsc(r.id)+'">&#128065;</button><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
+          '<td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(canonicalOutsourceLabName(r.lab))+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td><div class="outsource-actions"><button type="button" class="outsource-mini" title="View full details" aria-label="View full details" data-outsource-action="view" data-id="'+outsourceEsc(r.id)+'">&#128065;</button><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
       }
       function openOutsourceDetailModal(id){
         var r=getOutsourceRowsCached().find(function(x){return String(x.id)===String(id);});if(!r)return;
-        var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',r.referral],['Outsource Lab',r.lab],['Test / Investigation',r.test]];
+        var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',r.referral],['Outsource Lab',canonicalOutsourceLabName(r.lab)],['Test / Investigation',r.test]];
         var modal=document.getElementById('outsourceDetailModal');if(!modal){modal=document.createElement('div');modal.id='outsourceDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE SAMPLE</div><h2>FULL SAMPLE DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-detail-editor"><div class="outsource-modal-field"><label for="outsourceDetailStatus">STATUS</label><select id="outsourceDetailStatus"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECTED</option></select></div><div class="outsource-modal-field outsource-date-field"><label for="outsourceDetailResultDateVisible">RESULT DATE</label><input type="hidden" id="outsourceDetailResultDate"><input type="text" id="outsourceDetailResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label for="outsourceDetailReferenceNo">REFERENCE NO.</label><input id="outsourceDetailReferenceNo" type="text" maxlength="120" placeholder="External report / accession no."></div><div class="outsource-modal-field"><label for="outsourceDetailRejectReason">REJECT REASON</label><select id="outsourceDetailRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field outsource-detail-notes-field"><label for="outsourceDetailNotes">NOTES</label><textarea id="outsourceDetailNotes" rows="3" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceDetailCancel">CLOSE</button><button type="button" class="outsource-btn primary" id="outsourceDetailSave">SAVE CHANGES</button></div></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#outsourceDetailCancel'))modal.hidden=true;});modal.querySelector('#outsourceDetailSave').addEventListener('click',saveOutsourceDetailFields);var syncRejectReasonState=function(){var reject=modal.querySelector('#outsourceDetailRejectReason');var statusValue=String(modal.querySelector('#outsourceDetailStatus').value||'').toUpperCase();var enabled=statusValue==='REJECT'||statusValue==='REJECTED';reject.disabled=!enabled;reject.style.pointerEvents='auto';reject.style.opacity=enabled?'1':'.58';reject.setAttribute('aria-disabled',enabled?'false':'true');};modal.querySelector('#outsourceDetailStatus').addEventListener('change',syncRejectReasonState);modal.querySelector('#outsourceDetailStatus').addEventListener('input',syncRejectReasonState);}
         modal.dataset.recordId=String(r.id);modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){return '<div class="outsource-detail-item"><label>'+outsourceEsc(f[0])+'</label><div>'+outsourceEsc(f[1]||'—')+'</div></div>';}).join('');
         var status=String(r.result||'PENDING').toUpperCase();if(status==='ADA')status='COMPLETED';modal.querySelector('#outsourceDetailStatus').value=status==='REJECT'?'REJECT':status==='COMPLETED'?'COMPLETED':'PENDING';
@@ -3867,9 +3853,9 @@ hoagApiRequest('logout', {
           var test=String(($('outsourceTestFilter')||{}).value||'ALL');
           var unit=String(($('outsourceUnitFilter')||{}).value||'ALL');
           if(match&&referral!=='ALL'&&String(r.referral||'').toLowerCase()!==referral.toLowerCase())match=false;
-          if(match&&lab!=='ALL'&&String(r.lab||'').toLowerCase()!==lab.toLowerCase())match=false;
+          if(match&&lab!=='ALL'&&canonicalOutsourceLabName(r.lab).toLowerCase()!==lab.toLowerCase())match=false;
           if(match&&test!=='ALL'&&String(r.test||'').toLowerCase()!==test.toLowerCase())match=false;
-          if(match&&unit!=='ALL'&&String(r.unit||'').toLowerCase()!==unit.toLowerCase())match=false;
+          if(match&&unit!=='ALL'&&canonicalOutsourceUnitName(r.unit).toLowerCase()!==unit.toLowerCase())match=false;
           if(match&&q){
             var hay=r._haystack;
             if(!hay){
@@ -8456,22 +8442,13 @@ function exportMonthlySchedulePdfs() {
      * + Own cache + own Supabase path    +
      * +----------------------------------+ */
     function canonicalOutsourceLabName(value){
-      var raw=String(value||'').replace(/\\s+/g,' ').trim().toUpperCase();
-      var aliases={
-        'PATOLOGI KIMIA':'BIOCHEMISTRY',
-        'PATHOLOGI KIMIA':'BIOCHEMISTRY',
-        'KIMIA':'BIOCHEMISTRY',
-        'MIKROBIOLOGI':'MICROBIOLOGY',
-        'SITOLOGI':'CYTOLOGY',
-        'HAEMATOLOGY':'HEMATOLOGY',
-        'HEMATOLOGI':'HEMATOLOGY',
-        'HAEMATOLOGI':'HEMATOLOGY',
-        'HEMATOLOGY':'HEMATOLOGY',
-        'HISTOLOGY':'HISTOLOGY',
-        'BIOCHEMISTRY':'BIOCHEMISTRY',
-        'MICROBIOLOGY':'MICROBIOLOGY',
-        'CYTOLOGY':'CYTOLOGY'
-      };
+      var raw=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
+      var aliases={'PATOLOGI KIMIA':'BIOCHEMISTRY','PATHOLOGI KIMIA':'BIOCHEMISTRY','PATOLOGY KIMIA':'BIOCHEMISTRY','PATHOLOGY KIMIA':'BIOCHEMISTRY','KIMIA':'BIOCHEMISTRY','CHEMISTRY':'BIOCHEMISTRY','MIKROBIOLOGI':'MICROBIOLOGY','MICROBIOLOGI':'MICROBIOLOGY','SITOLOGI':'CYTOLOGY','CYTOLOGI':'CYTOLOGY','HEMATOLOGI':'HEMATOLOGY','HAEMATOLOGI':'HEMATOLOGY','HAEMATOLOGY':'HEMATOLOGY','HEMATOLOGY':'HEMATOLOGY','HISTOLOGI':'HISTOLOGY','HISTOLOGY':'HISTOLOGY','BIOCHEMISTRY':'BIOCHEMISTRY','MICROBIOLOGY':'MICROBIOLOGY','CYTOLOGY':'CYTOLOGY'};
+      return aliases[raw]||raw;
+    }
+    function canonicalOutsourceUnitName(value){
+      var raw=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
+      var aliases={'WAD1':'WARD 1','WAD 1':'WARD 1','WAD2':'WARD 2','WAD 2':'WARD 2','WAD3':'WARD 3','WAD 3':'WARD 3','WAD4':'WARD 4','WAD 4':'WARD 4','ED':'EMERGENCY DEPARTMENT','OPD':'OUTPATIENT DEPARTMENT','UKIA':'UKIA','PRIMER':'PRIMARY HEALTHCARE','PRIMARY HEALTH CARE':'PRIMARY HEALTHCARE'};
       return aliases[raw]||raw;
     }
 

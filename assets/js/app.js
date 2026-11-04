@@ -3486,22 +3486,8 @@ hoagApiRequest('logout', {
         setOutsourceAdminMessage('Adding rejection reason...');
         hoagApiRequest('action',{method:'adminAddOutsourceRejectReason',args:[outsourceAdminToken(),reason]}).then(function(result){if(!result||result.ok===false)throw new Error(result&&result.error||'Unable to add rejection reason.');mergeOutsourceCatalog(result);renderOutsourceAdminCatalog();renderOutsourceRejectReasonOptions();input.value='';setOutsourceAdminMessage('Rejection reason added successfully.');}).catch(function(error){setOutsourceAdminMessage(error&&error.message?error.message:'Unable to add rejection reason.',true);});
       }
-      function outsourceReportLabName(value){
-        var v=String(value||'').trim().toUpperCase();
-        var map={
-          'PATOLOGI KIMIA':'BIOCHEMISTRY','PATOLOGY KIMIA':'BIOCHEMISTRY','BIOCHEMISTRY':'BIOCHEMISTRY',
-          'HEMATOLOGI':'HAEMATOLOGY','HEMATOLOGY':'HAEMATOLOGY','HAEMATOLOGY':'HAEMATOLOGY',
-          'MIKROBIOLOGI':'MICROBIOLOGY','MICROBIOLOGY':'MICROBIOLOGY',
-          'SITOLOGI':'CYTOLOGY','CYTOLOGY':'CYTOLOGY',
-          'HISTOLOGI':'HISTOLOGY','HISTOLOGY':'HISTOLOGY'
-        };
-        return map[v] || String(value||'').trim().toUpperCase();
-      }
-      function outsourceReportUnitName(value){
-        var v=String(value||'').trim().toUpperCase();
-        var map={'WAD1':'WARD 1','WAD2':'WARD 2','WAD3':'WARD 3','WAD4':'WARD 4','ED':'EMERGENCY DEPARTMENT','OPD':'OUTPATIENT DEPARTMENT','UKIA':'UKIA','PRIMER':'PRIMARY HEALTHCARE'};
-        return map[v] || v;
-      }
+      function outsourceReportLabName(value){ return canonicalOutsourceLabName(value); }
+      function outsourceReportUnitName(value){ return canonicalOutsourceUnitName(value); }
       function outsourceReportSafeText(value){
         return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
       }
@@ -3518,59 +3504,7 @@ hoagApiRequest('logout', {
         var m=month==='ALL'?'ALL-MONTHS':['','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][Number(month)]||month;
         return 'RETEN_OUTSOURCE_'+y+'_'+m+'.pdf';
       }
-            /* +----------------------------------+
-       * + PDF helpers for outsource Reten  +
-       * +----------------------------------+ */
-      function escapePdfText(value) {
-        return String(value == null ? '' : value)
-          .replace(/[^\x20-\x7E]/g, ' ')
-          .replace(/\\/g, '\\\\')
-          .replace(/\(/g, '\\(')
-          .replace(/\)/g, '\\)')
-          .replace(/\s+/g, ' ')
-          .trim();
-      }
-      function estimatePdfTextWidth(text, size, bold) {
-        text = escapePdfText(text);
-        return text.length * size * (bold ? 0.56 : 0.52);
-      }
-      function appendPdfText(commands, text, x, y, size, options) {
-        options = options || {};
-        text = escapePdfText(text);
-        if (!text) return;
-        if (options.align === 'center') x -= estimatePdfTextWidth(text, size, options.bold) / 2;
-        if (options.align === 'right') x -= estimatePdfTextWidth(text, size, options.bold);
-        commands.push('BT /' + (options.bold ? 'F2' : 'F1') + ' ' + size + ' Tf ' + x.toFixed(2) + ' ' + (595.28 - y).toFixed(2) + ' Td (' + text + ') Tj ET');
-      }
-      function appendPdfLine(commands, x1, y1, x2, y2, width) {
-        commands.push((width || .6).toFixed(2) + ' w ' + x1.toFixed(2) + ' ' + (595.28 - y1).toFixed(2) + ' m ' + x2.toFixed(2) + ' ' + (595.28 - y2).toFixed(2) + ' l S');
-      }
-      function buildPdfDocument(commands) {
-        var stream = commands.join('\n');
-        var objects = [
-          '<< /Type /Catalog /Pages 2 0 R >>',
-          '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-          '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 841.89 595.28] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
-          '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-          '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
-          '<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream'
-        ];
-        var pdf = '%PDF-1.4\n';
-        var offsets = [0];
-        objects.forEach(function (body, index) {
-          offsets.push(pdf.length);
-          pdf += (index + 1) + ' 0 obj\n' + body + '\nendobj\n';
-        });
-        var xref = pdf.length;
-        pdf += 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n';
-        for (var i = 1; i < offsets.length; i += 1) {
-          pdf += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
-        }
-        pdf += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF';
-        return pdf;
-      }
-
-function appendPdfFilledRect(commands,x,y,width,height,fillColor,lineWidth){
+      function appendPdfFilledRect(commands,x,y,width,height,fillColor,lineWidth){
         fillColor=fillColor||[1,1,1];
         commands.push((fillColor[0]).toFixed(3)+' '+(fillColor[1]).toFixed(3)+' '+(fillColor[2]).toFixed(3)+' rg');
         commands.push('0.000 0.000 0.000 RG');
@@ -3988,7 +3922,7 @@ function appendPdfFilledRect(commands,x,y,width,height,fillColor,lineWidth){
         ];
         dimensions.forEach(function(item){
           var values={},sel=$(item[0]),prev=String(sel&&sel.value||'ALL');
-          rows.forEach(function(r){var v=String(r[item[2]]||'').trim();if(v)values[v]=true;});
+          rows.forEach(function(r){var v=String(r[item[2]]||'').trim();if(item[2]==='lab')v=canonicalOutsourceLabName(v);if(item[2]==='unit')v=canonicalOutsourceUnitName(v);if(v)values[v]=true;});
           populateOutsourceFilter(item[0],item[1],values,prev);
         });
       }
@@ -4062,11 +3996,11 @@ function appendPdfFilledRect(commands,x,y,width,height,fillColor,lineWidth){
         }
         var rowNum = typeof index === 'number' ? (index + 1) : '';
         return '<tr class="outsource-data-row" data-result-id="'+outsourceEsc(r.id)+'">'+
-          '<td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(r.lab)+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td><div class="outsource-actions"><button type="button" class="outsource-mini" title="View full details" aria-label="View full details" data-outsource-action="view" data-id="'+outsourceEsc(r.id)+'">&#128065;</button><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
+          '<td>'+outsourceEsc(r.sampleDate)+'</td><td>'+outsourceEsc(r.barCode)+'</td><td><strong>'+outsourceEsc(r.name)+'</strong></td><td>'+outsourceEsc(r.idIc)+'</td><td>'+outsourceEsc(r.referral)+'</td><td>'+outsourceEsc(canonicalOutsourceLabName(r.lab))+'</td><td>'+outsourceEsc(r.test)+'</td><td class="outsource-result"><span class="outsource-result-pill '+cls+'">'+outsourceEsc(result)+'</span></td><td><div class="outsource-actions"><button type="button" class="outsource-mini" title="View full details" aria-label="View full details" data-outsource-action="view" data-id="'+outsourceEsc(r.id)+'">&#128065;</button><button type="button" class="outsource-mini" data-outsource-action="edit" data-id="'+outsourceEsc(r.id)+'">EDIT</button><button type="button" class="outsource-mini delete" data-outsource-action="delete" data-id="'+outsourceEsc(r.id)+'">DELETE</button></div></td></tr>';
       }
       function openOutsourceDetailModal(id){
         var r=getOutsourceRowsCached().find(function(x){return String(x.id)===String(id);});if(!r)return;
-        var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',r.referral],['Outsource Lab',r.lab],['Test / Investigation',r.test]];
+        var fields=[['Sample Date',r.sampleDate],['Barcode',r.barCode],['Patient Name',r.name],['IC / ID',r.idIc],['Sex',r.sex],['Age',r.age],['Unit',r.unit],['Dispatch Date',r.dispatchDate],['Referral',r.referral],['Outsource Lab',canonicalOutsourceLabName(r.lab)],['Test / Investigation',r.test]];
         var modal=document.getElementById('outsourceDetailModal');if(!modal){modal=document.createElement('div');modal.id='outsourceDetailModal';modal.className='outsource-result-modal';modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE SAMPLE</div><h2>FULL SAMPLE DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-detail-editor"><div class="outsource-modal-field"><label for="outsourceDetailStatus">STATUS</label><select id="outsourceDetailStatus"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECTED</option></select></div><div class="outsource-modal-field outsource-date-field"><label for="outsourceDetailResultDateVisible">RESULT DATE</label><input type="hidden" id="outsourceDetailResultDate"><input type="text" id="outsourceDetailResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label for="outsourceDetailReferenceNo">REFERENCE NO.</label><input id="outsourceDetailReferenceNo" type="text" maxlength="120" placeholder="External report / accession no."></div><div class="outsource-modal-field"><label for="outsourceDetailRejectReason">REJECT REASON</label><select id="outsourceDetailRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field outsource-detail-notes-field"><label for="outsourceDetailNotes">NOTES</label><textarea id="outsourceDetailNotes" rows="3" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceDetailCancel">CLOSE</button><button type="button" class="outsource-btn primary" id="outsourceDetailSave">SAVE CHANGES</button></div></div></div>';(document.getElementById('moduleYearGrid')||document.body).appendChild(modal);modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#outsourceDetailCancel'))modal.hidden=true;});modal.querySelector('#outsourceDetailSave').addEventListener('click',saveOutsourceDetailFields);var syncRejectReasonState=function(){var reject=modal.querySelector('#outsourceDetailRejectReason');var statusValue=String(modal.querySelector('#outsourceDetailStatus').value||'').toUpperCase();var enabled=statusValue==='REJECT'||statusValue==='REJECTED';reject.disabled=!enabled;reject.style.pointerEvents='auto';reject.style.opacity=enabled?'1':'.58';reject.setAttribute('aria-disabled',enabled?'false':'true');};modal.querySelector('#outsourceDetailStatus').addEventListener('change',syncRejectReasonState);modal.querySelector('#outsourceDetailStatus').addEventListener('input',syncRejectReasonState);}
         modal.dataset.recordId=String(r.id);modal.querySelector('.outsource-detail-grid').innerHTML=fields.map(function(f){return '<div class="outsource-detail-item"><label>'+outsourceEsc(f[0])+'</label><div>'+outsourceEsc(f[1]||'—')+'</div></div>';}).join('');
         var status=String(r.result||'PENDING').toUpperCase();if(status==='ADA')status='COMPLETED';modal.querySelector('#outsourceDetailStatus').value=status==='REJECT'?'REJECT':status==='COMPLETED'?'COMPLETED':'PENDING';
@@ -4107,9 +4041,9 @@ function appendPdfFilledRect(commands,x,y,width,height,fillColor,lineWidth){
           var test=String(($('outsourceTestFilter')||{}).value||'ALL');
           var unit=String(($('outsourceUnitFilter')||{}).value||'ALL');
           if(match&&referral!=='ALL'&&String(r.referral||'').toLowerCase()!==referral.toLowerCase())match=false;
-          if(match&&lab!=='ALL'&&String(r.lab||'').toLowerCase()!==lab.toLowerCase())match=false;
+          if(match&&lab!=='ALL'&&canonicalOutsourceLabName(r.lab).toLowerCase()!==lab.toLowerCase())match=false;
           if(match&&test!=='ALL'&&String(r.test||'').toLowerCase()!==test.toLowerCase())match=false;
-          if(match&&unit!=='ALL'&&String(r.unit||'').toLowerCase()!==unit.toLowerCase())match=false;
+          if(match&&unit!=='ALL'&&canonicalOutsourceUnitName(r.unit).toLowerCase()!==unit.toLowerCase())match=false;
           if(match&&q){
             var hay=r._haystack;
             if(!hay){
@@ -8696,22 +8630,13 @@ function exportMonthlySchedulePdfs() {
      * + Own cache + own Supabase path    +
      * +----------------------------------+ */
     function canonicalOutsourceLabName(value){
-      var raw=String(value||'').replace(/\\s+/g,' ').trim().toUpperCase();
-      var aliases={
-        'PATOLOGI KIMIA':'BIOCHEMISTRY',
-        'PATHOLOGI KIMIA':'BIOCHEMISTRY',
-        'KIMIA':'BIOCHEMISTRY',
-        'MIKROBIOLOGI':'MICROBIOLOGY',
-        'SITOLOGI':'CYTOLOGY',
-        'HAEMATOLOGY':'HEMATOLOGY',
-        'HEMATOLOGI':'HEMATOLOGY',
-        'HAEMATOLOGI':'HEMATOLOGY',
-        'HEMATOLOGY':'HEMATOLOGY',
-        'HISTOLOGY':'HISTOLOGY',
-        'BIOCHEMISTRY':'BIOCHEMISTRY',
-        'MICROBIOLOGY':'MICROBIOLOGY',
-        'CYTOLOGY':'CYTOLOGY'
-      };
+      var raw=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
+      var aliases={'PATOLOGI KIMIA':'BIOCHEMISTRY','PATHOLOGI KIMIA':'BIOCHEMISTRY','PATOLOGY KIMIA':'BIOCHEMISTRY','PATHOLOGY KIMIA':'BIOCHEMISTRY','KIMIA':'BIOCHEMISTRY','CHEMISTRY':'BIOCHEMISTRY','MIKROBIOLOGI':'MICROBIOLOGY','MICROBIOLOGI':'MICROBIOLOGY','SITOLOGI':'CYTOLOGY','CYTOLOGI':'CYTOLOGY','HEMATOLOGI':'HEMATOLOGY','HAEMATOLOGI':'HEMATOLOGY','HAEMATOLOGY':'HEMATOLOGY','HEMATOLOGY':'HEMATOLOGY','HISTOLOGI':'HISTOLOGY','HISTOLOGY':'HISTOLOGY','BIOCHEMISTRY':'BIOCHEMISTRY','MICROBIOLOGY':'MICROBIOLOGY','CYTOLOGY':'CYTOLOGY'};
+      return aliases[raw]||raw;
+    }
+    function canonicalOutsourceUnitName(value){
+      var raw=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
+      var aliases={'WAD1':'WARD 1','WAD 1':'WARD 1','WAD2':'WARD 2','WAD 2':'WARD 2','WAD3':'WARD 3','WAD 3':'WARD 3','WAD4':'WARD 4','WAD 4':'WARD 4','ED':'EMERGENCY DEPARTMENT','OPD':'OUTPATIENT DEPARTMENT','UKIA':'UKIA','PRIMER':'PRIMARY HEALTHCARE','PRIMARY HEALTH CARE':'PRIMARY HEALTHCARE'};
       return aliases[raw]||raw;
     }
 
