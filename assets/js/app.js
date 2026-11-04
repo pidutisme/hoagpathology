@@ -3582,7 +3582,7 @@ hoagApiRequest('logout', {
         pageCommands.forEach(function(commands,i){
           var pageObj=3+(i*2),contentObj=pageObj+1;
           var stream=commands.join('\n');
-          objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 841.89 595.28] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents '+contentObj+' 0 R >>');
+          objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 841.89 595.28] /CropBox [0 0 841.89 595.28] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents '+contentObj+' 0 R >>');
           objects.push('<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream');
         });
         /* Font objects must come after the page/content objects so references
@@ -3649,7 +3649,7 @@ hoagApiRequest('logout', {
         var completed=rows.filter(function(r){var x=String(r.result||'').toUpperCase();return x==='COMPLETED'||x==='ADA'||x==='POSITIVE'||x==='NEGATIVE';}).length;
         var rejected=rows.filter(function(r){return ['REJECT','REJECTED'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
         var commands=[];
-        var W=841.89,M=22,contentW=W-(M*2),titleY=14,titleH=42;
+        var W=841.89,H=595.28,M=28.35,contentW=W-(M*2),titleY=14,titleH=42;
         appendPdfFilledRect(commands,M,titleY,contentW,titleH,[0.96,0.78,0.12],.8);
         appendPdfColorText(commands,'RETEN OUTSOURCE UNIT MAKMAL PATOLOGI',W/2,26,12,[0.37,0.00,1.00],{align:'center',bold:true});
         appendPdfColorText(commands,'HOSPITAL ORANG ASLI GOMBAK',W/2,37,10,[0.37,0.00,1.00],{align:'center'});
@@ -3712,9 +3712,9 @@ hoagApiRequest('logout', {
         appendPdfFillOnlyRect(commands,rightX,ly,rightW,17,[0.86,0.95,0.97]);
         appendPdfText(commands,'JUMLAH :',rightX+rightW-52,ly+12,7,{align:'right',bold:true});
         appendPdfText(commands,String(total),rightX+rightW-18,ly+12,7,{align:'right',bold:true});
-        appendPdfText(commands,'BULAN :',rightX+rightW-88,555,7.4,{align:'right'});
-        appendPdfLine(commands,rightX+rightW-80,556,rightX+rightW,556,.55);
-        if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,552,6.8,{align:'center'});
+        appendPdfText(commands,'BULAN :',rightX+rightW-88,H-40,7.4,{align:'right'});
+        appendPdfLine(commands,rightX+rightW-80,H-39,rightX+rightW,H-39,.55);
+        if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,H-43,6.8,{align:'center'});
 
         /* PAGE 2: test / investigation totals for the same selected period. */
         var testMap={};
@@ -3735,7 +3735,7 @@ hoagApiRequest('logout', {
 
         var tableY=66,tableW=contentW,cols=[0,tableW*0.68,tableW*0.83,tableW],rowH2=10;
         var columnCount=3,columnGap=10,columnW=(contentW-(columnGap*(columnCount-1)))/columnCount;
-        var maxRows=Math.floor((548-(tableY+18))/rowH2),chunks=[];
+        var maxRows=Math.floor((H-58-(tableY+18))/rowH2),chunks=[];
         for(var ti=0;ti<tests.length;ti+=maxRows)chunks.push(tests.slice(ti,ti+maxRows));
         if(!chunks.length)chunks=[[]];
         chunks=chunks.slice(0,3);
@@ -3756,9 +3756,9 @@ hoagApiRequest('logout', {
         });
         var shownTests=chunks.reduce(function(n,c){return n+c.length;},0);
         if(tests.length>shownTests){
-          appendPdfText(page2,'* '+String(tests.length-shownTests)+' ujian tambahan tidak dipaparkan kerana had ruang halaman.',M,560,5.8);
+          appendPdfText(page2,'* '+String(tests.length-shownTests)+' ujian tambahan tidak dipaparkan kerana had ruang halaman.',M,H-35,5.8);
         }
-        var grandY=566;
+        var grandY=H-28;
         appendPdfFillOnlyRect(page2,M,grandY,contentW,18,[0.88,0.94,0.96]);
         appendPdfText(page2,'JUMLAH SEMUA UJIAN',M+contentW-90,grandY+12,7,{align:'right',bold:true});
         appendPdfText(page2,String(total),M+contentW-8,grandY+12,7,{align:'right',bold:true});
