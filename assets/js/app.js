@@ -3682,9 +3682,20 @@ hoagApiRequest('logout', {
         var generateButton=modal.querySelector('#outsourceReportGenerate');
         if(generateButton){generateButton.disabled=true;generateButton.textContent='GENERATING PDF…';}
 
+        var filename=outsourceReportDownloadFilename(year,month);
+        var pdf='';
+        var blob=null;
+        var blobUrl='';
+        var urlApi=window.URL||window.webkitURL;
+
         try {
-          var pdf=buildOutsourceRetentionPdf(filtered,year,month);
-          if(typeof pdf!=='string'||pdf.indexOf('%PDF-')!==0)throw new Error('Invalid PDF document');
+          /* Build the PDF first. Download/browser handling is deliberately kept
+             outside this try so a blocked browser download is not misreported
+             as a PDF-generation failure. */
+          pdf=buildOutsourceRetentionPdf(filtered,year,month);
+          if(typeof pdf!=='string'||pdf.indexOf('%PDF-')!==0){
+            throw new Error('Invalid PDF document generated.');
+          }
 
           /* The PDF builder emits ASCII-only PDF syntax. Encode it explicitly as
              bytes so /Length and xref offsets always match the downloaded file. */
@@ -3695,11 +3706,46 @@ hoagApiRequest('logout', {
             bytes=new Uint8Array(pdf.length);
             for(var i=0;i<pdf.length;i++)bytes[i]=pdf.charCodeAt(i)&255;
           }
-          var blob=new Blob([bytes],{type:'application/pdf'});
-          var filename=outsourceReportDownloadFilename(year,month);
-          var urlApi=window.URL||window.webkitURL;
-          var blobUrl=urlApi&&urlApi.createObjectURL?urlApi.createObjectURL(blob):'';
+          blob=new Blob([bytes],{type:'application/pdf'});
+          if(!blob||blob.size<8)throw new Error('Generated PDF is empty.');
+          if(urlApi&&typeof urlApi.createObjectURL==='function'){
+            blobUrl=urlApi.createObjectURL(blob);
+          }
+        } catch(error) {
+          console.error('Outsource Reten PDF generation failed:',error);
+          modal.hidden=true;
+          requestAppConfirm('PDF GENERATION FAILED',error&&error.message?error.message:'PDF could not be generated. Please try again.',function(){});
+          if(generateButton){generateButton.disabled=false;generateButton.textContent='DOWNLOAD PDF';}
+          return;
+        }
 
+        modal.hidden=true;
+
+        /* Prefer the native Save File picker when the browser supports it.
+           This avoids Chromium/Electron download restrictions around synthetic
+           anchor clicks and gives the user a deterministic save destination. */
+        if(typeof window.showSaveFilePicker==='function'){
+          window.showSaveFilePicker({
+            suggestedName:filename,
+            types:[{description:'PDF document',accept:{'application/pdf':['.pdf']}}]
+          }).then(function(handle){
+            return handle.createWritable().then(function(writable){
+              return writable.write(blob).then(function(){return writable.close();});
+            });
+          }).catch(function(error){
+            if(error&&error.name==='AbortError')return;
+            console.error('Outsource Reten PDF save failed:',error);
+            requestAppConfirm('DOWNLOAD FAILED','The PDF was generated, but the browser could not save it. Please try again.',function(){});
+          }).finally(function(){
+            if(blobUrl&&urlApi&&typeof urlApi.revokeObjectURL==='function'){
+              window.setTimeout(function(){try{urlApi.revokeObjectURL(blobUrl);}catch(e){}},1000);
+            }
+            if(generateButton){generateButton.disabled=false;generateButton.textContent='DOWNLOAD PDF';}
+          });
+          return;
+        }
+
+        try {
           if(window.navigator&&typeof window.navigator.msSaveOrOpenBlob==='function'){
             window.navigator.msSaveOrOpenBlob(blob,filename);
           }else if(blobUrl){
@@ -3709,33 +3755,40 @@ hoagApiRequest('logout', {
             link.rel='noopener';
             link.style.display='none';
             document.body.appendChild(link);
+            var clicked=false;
             try{
               link.click();
+              clicked=true;
             }catch(clickError){
-              /* Some embedded browsers reject HTMLElement.click(); use a real mouse event. */
-              link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+              console.warn('Synthetic anchor click failed:',clickError);
             }
+            if(!clicked){
+              try{link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));}catch(mouseError){
+                console.warn('MouseEvent PDF download fallback failed:',mouseError);
+              }
+            }
+            /* Keep the object URL alive long enough for Chromium/Electron to
+               consume the download request. */
             setTimeout(function(){
+              try{if(link.parentNode)link.parentNode.removeChild(link);}catch(e){}
               try{if(urlApi&&urlApi.revokeObjectURL)urlApi.revokeObjectURL(blobUrl);}catch(e){}
-              if(link.parentNode)link.parentNode.removeChild(link);
-            },5000);
+            },10000);
           }else{
-            /* Last-resort fallback for browsers without Blob URLs. */
-            var dataUrl='data:application/pdf;base64,'+btoa(unescape(encodeURIComponent(pdf)));
-            var fallbackLink=document.createElement('a');
-            fallbackLink.href=dataUrl;
-            fallbackLink.download=filename;
-            fallbackLink.style.display='none';
-            document.body.appendChild(fallbackLink);
-            fallbackLink.click();
-            setTimeout(function(){if(fallbackLink.parentNode)fallbackLink.parentNode.removeChild(fallbackLink);},1000);
+            throw new Error('This browser does not support PDF downloads.');
           }
-          modal.hidden=true;
         } catch(error) {
-          console.error('Outsource Reten PDF generation/download failed:',error);
-          /* Always close the report selector before showing the error dialog. */
-          modal.hidden=true;
-          requestAppConfirm('DOWNLOAD FAILED','PDF could not be generated. Please try again.',function(){});
+          console.error('Outsource Reten PDF download failed:',error);
+          /* Last-resort: navigate the current tab to the generated PDF rather
+             than claiming that PDF generation itself failed. */
+          try{
+            if(blobUrl){
+              window.location.href=blobUrl;
+              return;
+            }
+          }catch(navigationError){
+            console.error('Outsource Reten PDF navigation fallback failed:',navigationError);
+          }
+          requestAppConfirm('DOWNLOAD FAILED','The PDF was generated, but the browser blocked the download. Please use a browser that allows PDF downloads.',function(){});
         } finally {
           if(generateButton){generateButton.disabled=false;generateButton.textContent='DOWNLOAD PDF';}
         }
