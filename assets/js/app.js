@@ -3690,27 +3690,65 @@ hoagApiRequest('logout', {
         var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[];
         var filtered=outsourceReportRowsForPeriod(rows,year,month);
         if(!filtered.length){requestAppConfirm('NO DATA','No outsource data was found for the selected period.',function(){});return;}
+
+        /* Build first. Keep generation errors separate from browser download errors. */
+        var pdf;
         try {
-          var pdf=buildOutsourceRetentionPdf(filtered,year,month);
-          if(typeof pdf!=='string' || pdf.indexOf('%PDF-')!==0) throw new Error('PDF generation failed');
-          var filename=outsourceReportDownloadFilename(year,month);
-          var a=document.createElement('a');
-          a.download=filename;
-          a.rel='noopener';
-          a.style.display='none';
-          /*
-           * Use a base64 data URL first. This avoids environments where
-           * URL.createObjectURL() is unavailable or blocked for generated blobs.
-           */
+          pdf=buildOutsourceRetentionPdf(filtered,year,month);
+          if(typeof pdf!=='string' || pdf.indexOf('%PDF-')!==0) throw new Error('PDF builder returned invalid data');
+        } catch(error) {
+          console.error('Outsource Reten PDF generation failed:',error);
+          requestAppConfirm('DOWNLOAD FAILED','PDF could not be generated. Please try again.',function(){});
+          return;
+        }
+
+        var filename=outsourceReportDownloadFilename(year,month);
+        try {
+          /* Preferred path: Blob URL, which handles arbitrary PDF size safely. */
+          var bytes=new Uint8Array(pdf.length);
+          for(var i=0;i<pdf.length;i++) bytes[i]=pdf.charCodeAt(i)&255;
+          var blob=new Blob([bytes],{type:'application/pdf'});
+          var blobUrl=window.URL && window.URL.createObjectURL ? window.URL.createObjectURL(blob) : '';
+          if(blobUrl){
+            var link=document.createElement('a');
+            link.href=blobUrl;
+            link.download=filename;
+            link.rel='noopener';
+            link.style.display='none';
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(function(){
+              try{if(window.URL&&window.URL.revokeObjectURL)window.URL.revokeObjectURL(blobUrl);}catch(e){}
+              if(link.parentNode)link.parentNode.removeChild(link);
+            },1500);
+            modal.hidden=true;
+            return;
+          }
+        } catch(error) {
+          console.warn('Blob PDF download failed; trying data URL fallback.',error);
+        }
+
+        try {
+          /* Fallback for browsers/environments without usable Blob URLs. */
           var base64=window.btoa(unescape(encodeURIComponent(pdf)));
-          a.href='data:application/pdf;base64,'+base64;
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function(){if(a.parentNode)a.parentNode.removeChild(a);},1000);
+          var fallback=document.createElement('a');
+          fallback.href='data:application/pdf;base64,'+base64;
+          fallback.download=filename;
+          fallback.rel='noopener';
+          fallback.style.display='none';
+          document.body.appendChild(fallback);
+          fallback.click();
+          setTimeout(function(){if(fallback.parentNode)fallback.parentNode.removeChild(fallback);},1000);
           modal.hidden=true;
         } catch(error) {
-          console.error('Outsource Reten PDF download failed:',error);
-          requestAppConfirm('DOWNLOAD FAILED','PDF could not be generated. Please try again.',function(){});
+          console.error('Outsource Reten PDF browser download failed:',error);
+          /* Last-resort same-tab PDF open. The user can save it from the PDF viewer. */
+          try {
+            var openBase64=window.btoa(unescape(encodeURIComponent(pdf)));
+            var opened=window.open('data:application/pdf;base64,'+openBase64,'_blank');
+            if(opened){modal.hidden=true;return;}
+          } catch(e) {}
+          requestAppConfirm('DOWNLOAD FAILED','Browser could not download the PDF. Please allow downloads/pop-ups and try again.',function(){});
         }
       }
       function openOutsourceRetentionDownload(){
