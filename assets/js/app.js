@@ -4667,7 +4667,14 @@ hoagApiRequest('logout', {
         if (!grid || !title || !desc) return;
   
         var displayName = normalizeModuleName(moduleName);
+        /* Modules with dedicated workspaces never render Year Cards. */
+        if(displayName==='INVENTORY' && typeof Inventory!=='undefined' && Inventory.open){ Inventory.open(); return; }
+        if(displayName==='TRANSFUSION' && typeof Transfusion!=='undefined' && Transfusion.open){ Transfusion.open(state.selectedModuleYear || new Date().getFullYear()); return; }
+        /* Clear special full-workspace classes when returning to ordinary year cards.
+           Transfusion applies this class to the shared grid; if it is left behind,
+           its display:block rules force every later module year card into one column. */
         if(displayName!=='OUTSOURCE') grid.classList.remove('outsource-active-grid');
+        if(displayName!=='TRANSFUSION') grid.classList.remove('transfusion-active-grid');
         if(displayName==='OUTSOURCE'){
           /* OUTSOURCE depends on the shared Inventory dataset, but Inventory is
              intentionally lazy. Initialize/load it when OUTSOURCE is opened,
@@ -4685,6 +4692,13 @@ hoagApiRequest('logout', {
           if(window.outsourceInitNeumorphicDropdowns)setTimeout(window.outsourceInitNeumorphicDropdowns,30);
           return;
         }
+        /* Ordinary module Year Cards use a dedicated layout namespace.
+           The shared workspace is also reused by Outsource and Transfusion;
+           reset its class list before rendering cards so module-specific CSS
+           can never leak into this view. */
+        var yearModuleSlug = displayName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+        grid.className = 'module-year-grid year-cards-independent year-cards-module--' + yearModuleSlug;
+        grid.dataset.yearModule = displayName;
         var activeYear = currentYear();
         title.textContent = displayName;
         desc.textContent = moduleYearDescriptions[displayName] || 'Select a year for ' + displayName + '. The current year and previous year are open. Future years are locked and will unlock automatically when the new year begins.';

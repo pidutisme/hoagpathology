@@ -12394,3 +12394,99 @@ body.visitor-read-only [data-outsource-action="delete"] {
   width:0 !important;
   height:0 !important;
 }
+
+
+/* ========================================================================== */
+/* INDEPENDENT YEAR CARDS                                                     */
+/* This layout is intentionally namespaced and isolated from module workspaces. */
+/* ========================================================================== */
+#moduleYearGrid.year-cards-independent {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: 112px !important;
+  align-content: start !important;
+  align-items: start !important;
+  gap: 12px !important;
+  padding: 4px !important;
+  overflow: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+}
+#moduleYearGrid.year-cards-independent > .year-card {
+  display: grid !important;
+  width: 100% !important;
+  height: 112px !important;
+  min-height: 112px !important;
+  max-height: 112px !important;
+  box-sizing: border-box !important;
+  align-self: start !important;
+  grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+  padding: 10px !important;
+  gap: 4px !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+}
+#moduleYearGrid.year-cards-independent > .year-card .year-card-icon-shell {
+  width: 30px !important;
+  height: 30px !important;
+}
+#moduleYearGrid.year-cards-independent > .year-card .year-card-year {
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+#moduleYearGrid.year-cards-independent > .year-card .year-card-description {
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+#moduleYearGrid.year-cards-independent > .year-card .year-card-status {
+  padding: 4px 8px !important;
+  font-size: 7px !important;
+  line-height: 1.1 !important;
+}
+@media (max-width: 1100px) {
+  #moduleYearGrid.year-cards-independent {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 700px) {
+  #moduleYearGrid.year-cards-independent {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+}
+@media (max-width: 420px) {
+  #moduleYearGrid.year-cards-independent {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* ================================================================
+   YEAR CARDS — MODULE ISOLATION HOOKS
+   Shared visual contract; module-specific namespaces prevent future
+   module overrides from leaking into another module's Year Cards.
+   Dedicated workspaces (OUTSOURCE / TRANSFUSION / INVENTORY) do not
+   render Year Cards.
+   ================================================================ */
+:is(.year-cards-module--chemical-pathology,
+    .year-cards-module--haematology,
+    .year-cards-module--microbiology,
+    .year-cards-module--histopathology,
+    .year-cards-module--cytology,
+    .year-cards-module--notification,
+    .year-cards-module--leave) .year-card {
+  box-sizing: border-box;
+}
+
+/* Keep one shared geometry/design contract across every module namespace. */
+:is(.year-cards-module--chemical-pathology,
+    .year-cards-module--haematology,
+    .year-cards-module--microbiology,
+    .year-cards-module--histopathology,
+    .year-cards-module--cytology,
+    .year-cards-module--notification,
+    .year-cards-module--leave) {
+  --year-cards-column-gap: var(--year-card-column-gap, clamp(10px, 1.2vw, 18px));
+  --year-cards-row-gap: var(--year-card-row-gap, clamp(10px, 1.2vh, 18px));
+}
