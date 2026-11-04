@@ -3716,53 +3716,73 @@ hoagApiRequest('logout', {
         appendPdfLine(commands,rightX+rightW-80,H-39,rightX+rightW,H-39,.55);
         if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,H-43,6.8,{align:'center'});
 
-        /* PAGE 2: test / investigation totals for the same selected period. */
-        var testMap={};
+        /* PAGE 2: test / investigation totals grouped by laboratory.
+           Each laboratory gets its own heading, followed by all tests and
+           counts belonging to that laboratory. Keep this page to one A4 page
+           by distributing complete lab groups across three columns. */
+        var labTestMap={};
         rows.forEach(function(r){
           var test=String(r.test||'').trim();
           if(!test)return;
-          var key=test.toUpperCase();
-          if(!testMap[key])testMap[key]={name:test,count:0,lab:outsourceReportLabName(r.lab)||''};
-          testMap[key].count+=1;
+          var lab=outsourceReportLabName(r.lab)||'OTHER';
+          var labKey=lab.toUpperCase();
+          if(!labTestMap[labKey])labTestMap[labKey]={name:lab,tests:{}};
+          var testKey=test.toUpperCase();
+          if(!labTestMap[labKey].tests[testKey])labTestMap[labKey].tests[testKey]={name:test,count:0};
+          labTestMap[labKey].tests[testKey].count+=1;
         });
-        var tests=Object.keys(testMap).map(function(k){return testMap[k];}).sort(function(a,b){
-          return b.count-a.count || a.name.localeCompare(b.name);
-        });
+        var labGroups=Object.keys(labTestMap).map(function(k){
+          var group=labTestMap[k];
+          group.tests=Object.keys(group.tests).map(function(tk){return group.tests[tk];}).sort(function(a,b){
+            return b.count-a.count || a.name.localeCompare(b.name);
+          });
+          group.rowCount=1+group.tests.length;
+          return group;
+        }).sort(function(a,b){return a.name.localeCompare(b.name);});
+
         var page2=[];
         appendPdfFilledRect(page2,M,14,contentW,42,[0.96,0.78,0.12],.8);
         appendPdfColorText(page2,'RETEN OUTSOURCE - TEST / INVESTIGATION',W/2,28,12,[0.37,0.00,1.00],{align:'center',bold:true});
         appendPdfColorText(page2,'TAHUN '+periodYear+(month!=='ALL'?'  •  '+periodMonth:''),W/2,42,8.5,[0.37,0.00,1.00],{align:'center',bold:true});
 
-        var tableY=66,tableW=contentW,cols=[0,tableW*0.68,tableW*0.83,tableW],rowH2=10;
-        var columnCount=3,columnGap=10,columnW=(contentW-(columnGap*(columnCount-1)))/columnCount;
-        var maxRows=Math.floor((H-58-(tableY+18))/rowH2),chunks=[];
-        for(var ti=0;ti<tests.length;ti+=maxRows)chunks.push(tests.slice(ti,ti+maxRows));
-        if(!chunks.length)chunks=[[]];
-        chunks=chunks.slice(0,3);
-        chunks.forEach(function(chunk,ci){
-          var x=M+ci*(columnW+columnGap);
-          appendPdfFilledRect(page2,x,tableY,columnW,18,[0.74,0.88,0.68],.5);
-          appendPdfText(page2,'TEST / INVESTIGATION',x+6,tableY+12,6.2,{bold:true});
-          appendPdfText(page2,'TOTAL',x+columnW-6,tableY+12,6.2,{align:'right',bold:true});
-          var cy2=tableY+18;
-          chunk.forEach(function(item,ri){
-            appendPdfFillOnlyRect(page2,x,cy2,columnW,rowH2,ri%2?[0.86,0.95,0.97]:[1,1,1]);
-            var testName=pdfExportEscapeText(item.name),maxNameW=columnW-38;
-            while(testName.length>3 && estimatePdfTextWidth(testName,5.2,false)>maxNameW)testName=testName.slice(0,-2).replace(/\s+$/,'')+'…';
-            appendPdfText(page2,testName,x+5,cy2+7.2,5.2);
-            appendPdfText(page2,String(item.count),x+columnW-6,cy2+7.2,5.4,{align:'right',bold:true});
-            cy2+=rowH2;
+        var tableY=66,columnCount=3,columnGap=10,columnW=(contentW-(columnGap*(columnCount-1)))/columnCount;
+        var rowH2=10,labHeadH=14,maxRows=Math.floor((H-58-tableY-30)/rowH2);
+        var columns=[[],[],[]],columnRows=[0,0,0],currentCol=0;
+        labGroups.forEach(function(group){
+          var needed=group.rowCount+1;
+          /* Keep a laboratory together where possible. If it is too large,
+             continue within the same column rather than splitting the heading. */
+          if(columnRows[currentCol]>0 && columnRows[currentCol]+needed>maxRows && currentCol<columnCount-1){
+            currentCol+=1;
+          }
+          columns[currentCol].push(group);
+          columnRows[currentCol]+=needed;
+        });
+
+        columns.forEach(function(groups,ci){
+          var x=M+ci*(columnW+columnGap),cy2=tableY;
+          groups.forEach(function(group){
+            appendPdfFilledRect(page2,x,cy2,columnW,labHeadH,[0.74,0.88,0.68],.5);
+            appendPdfText(page2,group.name,x+6,cy2+9.5,6.2,{bold:true});
+            appendPdfText(page2,'TOTAL',x+columnW-6,cy2+9.5,6.2,{align:'right',bold:true});
+            cy2+=labHeadH;
+            group.tests.forEach(function(item,ri){
+              appendPdfFillOnlyRect(page2,x,cy2,columnW,rowH2,ri%2?[0.86,0.95,0.97]:[1,1,1]);
+              var testName=pdfExportEscapeText(item.name),maxNameW=columnW-38;
+              while(testName.length>3 && estimatePdfTextWidth(testName,5.2,false)>maxNameW)testName=testName.slice(0,-2).replace(/\s+$/,'')+'…';
+              appendPdfText(page2,testName,x+5,cy2+7.2,5.2);
+              appendPdfText(page2,String(item.count),x+columnW-6,cy2+7.2,5.4,{align:'right',bold:true});
+              cy2+=rowH2;
+            });
+            cy2+=3;
           });
         });
-        var shownTests=chunks.reduce(function(n,c){return n+c.length;},0);
-        if(tests.length>shownTests){
-          appendPdfText(page2,'* '+String(tests.length-shownTests)+' ujian tambahan tidak dipaparkan kerana had ruang halaman.',M,H-35,5.8);
-        }
+
         var grandY=H-28;
         appendPdfFillOnlyRect(page2,M,grandY,contentW,18,[0.88,0.94,0.96]);
         appendPdfText(page2,'JUMLAH SEMUA UJIAN',M+contentW-90,grandY+12,7,{align:'right',bold:true});
         appendPdfText(page2,String(total),M+contentW-8,grandY+12,7,{align:'right',bold:true});
-        if(!tests.length) appendPdfText(page2,'TIADA UJIAN / INVESTIGATION DIREKOD',W/2,100,8,{align:'center'});
+        if(!labGroups.length) appendPdfText(page2,'TIADA UJIAN / INVESTIGATION DIREKOD',W/2,100,8,{align:'center'});
         return buildOutsourcePdfDocument([commands,page2]);
       }
       function bindOutsourceRetentionDownloadControls(){
