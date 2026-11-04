@@ -3515,41 +3515,155 @@ hoagApiRequest('logout', {
       }
       function outsourceReportDownloadFilename(year,month){
         var y=year==='ALL'?'ALL-YEARS':year;
-        var m=month==='ALL'?'ALL-MONTHS':month;
-        var names=['','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
-        return 'RETEN_OUTSOURCE_'+y+'_'+(m==='ALL-MONTHS'?m:names[Number(m)]||m)+'.xls';
+        var m=month==='ALL'?'ALL-MONTHS':['','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][Number(month)]||month;
+        return 'RETEN_OUTSOURCE_'+y+'_'+m+'.pdf';
       }
-      function buildOutsourceRetentionReport(rows,year,month){
-        var labs=['BIOCHEMISTRY','MICROBIOLOGY','HAEMATOLOGY','CYTOLOGY','HISTOLOGY'];
-        var units=[], unitSeen={};
-        rows.forEach(function(r){var u=outsourceReportUnitName(r.unit);if(u&&!unitSeen[u]){unitSeen[u]=true;units.push(u);}});
-        units.sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});});
-        var referrals={}, labTotals={}, unitLab={};
-        labs.forEach(function(l){labTotals[l]=0;});
+      function appendPdfFilledRect(commands,x,y,width,height,fillColor,lineWidth){
+        fillColor=fillColor||[1,1,1];
+        commands.push((fillColor[0]).toFixed(3)+' '+(fillColor[1]).toFixed(3)+' '+(fillColor[2]).toFixed(3)+' rg');
+        commands.push('0.000 0.000 0.000 RG');
+        commands.push((lineWidth||.45).toFixed(2)+' w '+x.toFixed(2)+' '+(595.28-y-height).toFixed(2)+' '+width.toFixed(2)+' '+height.toFixed(2)+' re B');
+        commands.push('0 0 0 rg');
+      }
+      function appendPdfFillOnlyRect(commands,x,y,width,height,fillColor){
+        fillColor=fillColor||[1,1,1];
+        commands.push(fillColor[0].toFixed(3)+' '+fillColor[1].toFixed(3)+' '+fillColor[2].toFixed(3)+' rg');
+        commands.push(x.toFixed(2)+' '+(595.28-y-height).toFixed(2)+' '+width.toFixed(2)+' '+height.toFixed(2)+' re f');
+        commands.push('0 0 0 rg');
+      }
+      function appendPdfColorText(commands,text,x,y,size,color,options){
+        options=options||{}; color=color||[0,0,0]; text=escapePdfText(text); if(!text)return;
+        if(options.align==='center')x-=estimatePdfTextWidth(text,size,options.bold)/2;
+        if(options.align==='right')x-=estimatePdfTextWidth(text,size,options.bold);
+        commands.push(color[0].toFixed(3)+' '+color[1].toFixed(3)+' '+color[2].toFixed(3)+' rg');
+        commands.push('BT /'+(options.bold?'F2':'F1')+' '+size+' Tf '+x.toFixed(2)+' '+(595.28-y).toFixed(2)+' Td ('+text+') Tj ET');
+        commands.push('0 0 0 rg');
+      }
+      function buildOutsourceRetentionPdf(rows,year,month){
+        var labs=[
+          {key:'BIOCHEMISTRY',label:'PATOLOGI KIMIA'},
+          {key:'MICROBIOLOGY',label:'MIKROBIOLOGI'},
+          {key:'HAEMATOLOGY',label:'HEMATOLOGI'},
+          {key:'CYTOLOGY',label:'SITOLOGI'},
+          {key:'HISTOLOGY',label:'HISTOLOGI'}
+        ];
+        var unitDefs=[
+          {key:'WAD1',label:'WARD 1'},
+          {key:'WAD2',label:'WARD 2'},
+          {key:'WAD3',label:'WARD 3'},
+          {key:'WAD4',label:'WARD 4'},
+          {key:'ED',label:'UNIT KECEMASAN'},
+          {key:'OPD',label:'PESAKIT LUAR'},
+          {key:'UKIA',label:'UKIA'},
+          {key:'PRIMER',label:'KESIHATAN AWAM'}
+        ];
+        var unitLab={},labTotals={},referrals={},total=rows.length;
+        labs.forEach(function(l){labTotals[l.key]=0;});
+        unitDefs.forEach(function(u){unitLab[u.key]={};labs.forEach(function(l){unitLab[u.key][l.key]=0;});});
+        var referralDefs=[
+          ['HKL','HOSPITAL KUALA LUMPUR'],['IPR','INSTITUT PERUBATAN RESPIRATORI'],
+          ['MAKMAL KESIHATAN AWAM KEBANGSAAN','MAKMAL KESIHATAN AWAM KEBANGSAAN'],
+          ['IMR','INSTITUTE OF MEDICAL RESEARCH'],['HOSPITAL AMPANG','HOSPITAL AMPANG'],
+          ['NATIONAL INSTITUTE OF HEALTH','NATIONAL INSTITUTE OF HEALTH'],
+          ['MAKMAL VEKTOR NEGERI BANDAR BOTANIK','MAKMAL VEKTOR NEGERI BANDAR BOTANIK'],
+          ['HOSPITAL TUNKU AZIZAH','HOSPITAL TUNKU AZIZAH'],['HOSPITAL SELAYANG','HOSPITAL SELAYANG']
+        ];
+        function referralLabel(v){
+          var k=String(v||'').trim().toUpperCase();
+          var aliases={HKL:'HOSPITAL KUALA LUMPUR',IPR:'INSTITUT PERUBATAN RESPIRATORI',IMR:'INSTITUTE OF MEDICAL RESEARCH'};
+          return aliases[k]||k||'LAIN-LAIN';
+        }
         rows.forEach(function(r){
-          var u=outsourceReportUnitName(r.unit)||'UNSPECIFIED';
-          var lab=outsourceReportLabName(r.lab)||'UNSPECIFIED';
-          var ref=String(r.referral||'UNSPECIFIED').trim().toUpperCase();
-          referrals[ref]=(referrals[ref]||0)+1;
-          labTotals[lab]=(labTotals[lab]||0)+1;
-          if(!unitLab[u])unitLab[u]={}; unitLab[u][lab]=(unitLab[u][lab]||0)+1;
-          if(units.indexOf(u)<0)units.push(u);
+          var rawUnit=String(r.unit||'').trim().toUpperCase(), unit=rawUnit;
+          if(rawUnit==='WAD1'||rawUnit==='WAD 1')unit='WAD1';
+          else if(rawUnit==='WAD2'||rawUnit==='WAD 2')unit='WAD2';
+          else if(rawUnit==='WAD3'||rawUnit==='WAD 3')unit='WAD3';
+          else if(rawUnit==='WAD4'||rawUnit==='WAD 4')unit='WAD4';
+          else if(rawUnit==='ED'||rawUnit==='A&E'||rawUnit==='EMERGENCY DEPARTMENT')unit='ED';
+          else if(rawUnit==='OPD'||rawUnit==='OUTPATIENT DEPARTMENT')unit='OPD';
+          else if(rawUnit==='UKIA')unit='UKIA';
+          else if(rawUnit==='PRIMER'||rawUnit==='PRIMARY HEALTHCARE'||rawUnit==='KESIHATAN AWAM')unit='PRIMER';
+          var lab=outsourceReportLabName(r.lab);
+          if(unitLab[unit]&&unitLab[unit][lab]!=null)unitLab[unit][lab]+=1;
+          if(labTotals[lab]==null)labTotals[lab]=0;
+          labTotals[lab]+=1;
+          var ref=referralLabel(r.referral); referrals[ref]=(referrals[ref]||0)+1;
         });
-        units.sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});});
         var monthNames=['ALL MONTHS','JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
-        var period=(year==='ALL'?'ALL YEARS':year)+' / '+(month==='ALL'?monthNames[0]:monthNames[Number(month)]);
+        var periodYear=year==='ALL'?'ALL':year, periodMonth=month==='ALL'?monthNames[0]:monthNames[Number(month)];
         var completed=rows.filter(function(r){var x=String(r.result||'').toUpperCase();return x==='COMPLETED'||x==='ADA'||x==='POSITIVE'||x==='NEGATIVE';}).length;
         var rejected=rows.filter(function(r){return ['REJECT','REJECTED'].indexOf(String(r.result||'').toUpperCase())>=0;}).length;
-        var html='<!doctype html><html><head><meta charset="utf-8"><title>Reten Outsource '+outsourceReportSafeText(period)+'</title><style>'+
-          'body{font-family:Arial,sans-serif;font-size:11px;color:#111;margin:24px}h1,h2{text-align:center;margin:0}h1{font-size:18px;color:#5b00ff}h2{font-size:15px;color:#5b00ff;margin-top:4px}h3{font-size:13px;text-align:center;margin:4px 0 16px}table{border-collapse:collapse;width:100%;margin-bottom:18px}th,td{border:1px solid #333;padding:4px 6px;text-align:center}th{font-weight:700;background:#d9e7f5}td.label{text-align:left} .title{background:#f4c62d;padding:8px}.section{background:#cde2f2;font-weight:700}.total{font-weight:700;background:#dce8f2}.left{text-align:left}.small{font-size:10px}'+
-          '</style></head><body><div class="title"><h1>RETEN OUTSOURCE UNIT MAKMAL PATOLOGI</h1><h2>HOSPITAL ORANG ASLI GOMBAK</h2><h3>TAHUN '+outsourceReportSafeText(year==='ALL'?'ALL':year)+' &nbsp;|&nbsp; '+outsourceReportSafeText(month==='ALL'?monthNames[0]:monthNames[Number(month)])+'</h3></div>'+
-          '<p><b>PERIOD:</b> '+outsourceReportSafeText(period)+' &nbsp;&nbsp; <b>TOTAL SAMPLES:</b> '+rows.length+'</p>'+
-          '<table><thead><tr><th>LAB / UNIT</th>'+units.map(function(u){return '<th>'+outsourceReportSafeText(u)+'</th>';}).join('')+'<th>JUMLAH</th></tr></thead><tbody>'+
-          labs.map(function(l){var sum=0;var cells=units.map(function(u){var n=(unitLab[u]&&unitLab[u][l])||0;sum+=n;return '<td>'+n+'</td>';}).join('');return '<tr><td class="label"><b>'+outsourceReportSafeText(l)+'</b></td>'+cells+'<td><b>'+sum+'</b></td></tr>';}).join('')+
-          '<tr class="total"><td>JUMLAH</td>'+units.map(function(u){return '<td><b>'+labs.reduce(function(a,l){return a+((unitLab[u]&&unitLab[u][l])||0);},0)+'</b></td>';}).join('')+'<td><b>'+rows.length+'</b></td></tr></tbody></table>'+
-          '<table><thead><tr><th class="section">JUMLAH MENGIKUT PUSAT RUJUKAN</th><th class="section">JUMLAH KESELURUHAN</th><th class="section">RETEN OUTSOURCE LAB</th></tr></thead><tbody><tr><td valign="top">'+Object.keys(referrals).sort().map(function(k){return '<div class="left">'+outsourceReportSafeText(k)+' : <b>'+referrals[k]+'</b></div>';}).join('')+'<div class="left"><b>JUMLAH : '+rows.length+'</b></div></td><td valign="top"><div>JUMLAH UJIAN DIHANTAR : <b>'+rows.length+'</b></div><div>JUMLAH KEPUTUSAN UJIAN DITERIMA : <b>'+completed+'</b></div><div>JUMLAH UJIAN REJECT : <b>'+rejected+'</b></div></td><td valign="top">'+Object.keys(labTotals).sort().map(function(k){return '<div class="left">'+outsourceReportSafeText(k)+' : <b>'+labTotals[k]+'</b></div>';}).join('')+'<div class="left"><b>JUMLAH : '+rows.length+'</b></div></td></tr></tbody></table>'+
-          '<h3>DETAILED OUTSOURCE RECORDS</h3><table><thead><tr><th>DATE</th><th>BARCODE</th><th>NAME</th><th>IC / ID</th><th>UNIT</th><th>REFERRAL</th><th>LAB</th><th>TEST / INVESTIGATION</th><th>STATUS</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+outsourceReportSafeText(r.sampleDate||'')+'</td><td>'+outsourceReportSafeText(r.barCode||r.barcode||'')+'</td><td class="left">'+outsourceReportSafeText(r.name||'')+'</td><td>'+outsourceReportSafeText(r.idIc||r.ic||r.icId||'')+'</td><td>'+outsourceReportSafeText(outsourceReportUnitName(r.unit))+'</td><td>'+outsourceReportSafeText(r.referral||'')+'</td><td>'+outsourceReportSafeText(outsourceReportLabName(r.lab))+'</td><td class="left">'+outsourceReportSafeText(r.test||r.testName||'')+'</td><td>'+outsourceReportSafeText(r.result||'PENDING')+'</td></tr>';}).join('')+'</tbody></table></body></html>';
-        return html;
+        var commands=[];
+        var W=841.89,M=22,contentW=W-(M*2),titleY=14,titleH=42;
+        appendPdfFilledRect(commands,M,titleY,contentW,titleH,[0.96,0.78,0.12],.8);
+        appendPdfColorText(commands,'RETEN OUTSOURCE UNIT MAKMAL PATOLOGI',W/2,26,12,[0.37,0.00,1.00],{align:'center',bold:true});
+        appendPdfColorText(commands,'HOSPITAL ORANG ASLI GOMBAK',W/2,37,10,[0.37,0.00,1.00],{align:'center'});
+        appendPdfColorText(commands,'TAHUN '+periodYear,W/2,48,9,[0.37,0.00,1.00],{align:'center',bold:true});
+        var topY=58, headH=17,rowH=16,totalH=17,colW=contentW/unitDefs.length;
+        unitDefs.forEach(function(u,i){
+          var x=M+i*colW;
+          var fills=[[0.23,0.47,0.82],[0.52,0.64,0.90],[0.47,0.48,0.84],[0.77,0.62,0.42],[0.16,0.82,0.58],[0.95,0.33,0.17],[1.00,0.98,0.00],[0.39,0.62,0.88]];
+          appendPdfFilledRect(commands,x,topY,colW,headH,fills[i],.45);
+          appendPdfText(commands,u.label,x+colW/2,topY+12,7.2,{align:'center',bold:true});
+        });
+        labs.forEach(function(l,ri){
+          var y=topY+headH+(ri*rowH);
+          unitDefs.forEach(function(u,i){
+            var x=M+i*colW,n=unitLab[u.key][l.key]||0;
+            appendPdfFilledRect(commands,x,y,colW,rowH,ri%2?[0.84,0.94,0.96]:[1,1,1],.35);
+            appendPdfText(commands,l.label+' :   '+n,x+colW/2,y+11,6.6,{align:'center'});
+          });
+        });
+        var totalY=topY+headH+(labs.length*rowH);
+        unitDefs.forEach(function(u,i){
+          var n=labs.reduce(function(a,l){return a+(unitLab[u.key][l.key]||0);},0),x=M+i*colW;
+          appendPdfFilledRect(commands,x,totalY,colW,totalH,[0.90,0.93,0.96],.45);
+          appendPdfText(commands,'JUMLAH :   '+n,x+colW/2,totalY+11,6.6,{align:'center',bold:true});
+        });
+        var lowerY=totalY+28,leftX=M,leftW=272,gap=22,midX=leftX+leftW+gap,midW=272,rightX=midX+midW+gap,rightW=contentW-leftW-midW-(gap*2);
+        var sectionH=18;
+        appendPdfFilledRect(commands,leftX,lowerY,leftW,sectionH,[0.96,0.78,0.78],.45);
+        appendPdfFilledRect(commands,midX,lowerY,midW,sectionH,[0.74,0.88,0.68],.45);
+        appendPdfFilledRect(commands,rightX,lowerY,rightW,sectionH,[0.13,0.82,0.87],.45);
+        appendPdfText(commands,'JUMLAH MENGIKUT PUSAT RUJUKAN',leftX+leftW/2,lowerY+12,7.1,{align:'center',bold:true});
+        appendPdfText(commands,'JUMLAH KESELURUHAN',midX+midW/2,lowerY+12,7.1,{align:'center',bold:true});
+        appendPdfText(commands,'RETEN OUTSOURCE HKL',rightX+rightW/2,lowerY+12,7.1,{align:'center',bold:true});
+        var ry=lowerY+19;
+        referralDefs.forEach(function(pair,i){
+          var n=referrals[pair[1]]||referrals[pair[0]]||0;
+          appendPdfFillOnlyRect(commands,leftX,ry,leftW,14,i%2?[0.86,0.95,0.97]:[1,1,1]);
+          appendPdfText(commands,pair[1]+' :',leftX+leftW-48,ry+10,6.6,{align:'right'});
+          appendPdfText(commands,String(n),leftX+leftW-18,ry+10,6.6,{align:'right',bold:true});
+          ry+=14;
+        });
+        var extraRefs=Object.keys(referrals).filter(function(k){return referralDefs.every(function(pair){return pair[1]!==k;});}).sort();
+        extraRefs.forEach(function(k){
+          appendPdfFillOnlyRect(commands,leftX,ry,leftW,14,[1,1,1]);
+          appendPdfText(commands,k+' :',leftX+leftW-48,ry+10,6.2,{align:'right'});
+          appendPdfText(commands,String(referrals[k]),leftX+leftW-18,ry+10,6.2,{align:'right',bold:true}); ry+=14;
+        });
+        appendPdfFillOnlyRect(commands,leftX,ry,leftW,16,[0.88,0.94,0.96]);
+        appendPdfText(commands,'JUMLAH :',leftX+leftW-48,ry+11,6.8,{align:'right',bold:true});
+        appendPdfText(commands,String(total),leftX+leftW-18,ry+11,6.8,{align:'right',bold:true});
+        var cy=lowerY+24;
+        [['JUMLAH UJIAN DIHANTAR',total],['JUMLAH KEPUTUSAN UJIAN DITERIMA',completed],['JUMLAH UJIAN REJECT',rejected]].forEach(function(item,i){
+          appendPdfFillOnlyRect(commands,midX,cy,midW,17,i%2?[0.86,0.95,0.97]:[1,1,1]);
+          appendPdfText(commands,item[0]+' :',midX+midW-64,cy+12,7,{align:'right'});
+          appendPdfText(commands,String(item[1]),midX+midW-25,cy+12,7,{align:'right',bold:true}); cy+=20;
+        });
+        var ly=lowerY+19;
+        labs.forEach(function(l,i){
+          appendPdfFillOnlyRect(commands,rightX,ly,rightW,16,i%2?[0.86,0.95,0.97]:[1,1,1]);
+          appendPdfText(commands,l.label+' :',rightX+rightW-52,ly+11,6.8,{align:'right'});
+          appendPdfText(commands,String(labTotals[l.key]||0),rightX+rightW-18,ly+11,6.8,{align:'right',bold:true}); ly+=16;
+        });
+        appendPdfFillOnlyRect(commands,rightX,ly,rightW,17,[0.86,0.95,0.97]);
+        appendPdfText(commands,'JUMLAH :',rightX+rightW-52,ly+12,7,{align:'right',bold:true});
+        appendPdfText(commands,String(total),rightX+rightW-18,ly+12,7,{align:'right',bold:true});
+        appendPdfText(commands,'BULAN :',rightX+rightW-88,555,7.4,{align:'right'});
+        appendPdfLine(commands,rightX+rightW-80,556,rightX+rightW,556,.55);
+        if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,552,6.8,{align:'center'});
+        return buildPdfDocument(commands);
       }
       function bindOutsourceRetentionDownloadControls(){
         var reportBtn=$('outsourceDownloadReportBtn');
@@ -3576,8 +3690,8 @@ hoagApiRequest('logout', {
         var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[];
         var filtered=outsourceReportRowsForPeriod(rows,year,month);
         if(!filtered.length){requestAppConfirm('NO DATA','No outsource data was found for the selected period.',function(){});return;}
-        var html=buildOutsourceRetentionReport(filtered,year,month);
-        var blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+        var pdf=buildOutsourceRetentionPdf(filtered,year,month);
+        var blob=new Blob([pdf],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');
         a.href=url;a.download=outsourceReportDownloadFilename(year,month);document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);
         modal.hidden=true;
       }
@@ -3643,7 +3757,7 @@ hoagApiRequest('logout', {
           '</div></div>';
         grid.insertAdjacentHTML('beforeend','<div class="outsource-result-modal" id="outsourceResultModal" hidden><div class="outsource-result-dialog"><button type="button" class="outsource-result-close" id="outsourceResultClose">×</button><div class="outsource-modal-kicker">UPDATE RESULT</div><h2 id="outsourceResultTitle">RESULT</h2><div class="outsource-modal-sub" id="outsourceResultSub"></div><div class="outsource-modal-field"><label>RESULT</label><select id="outsourceModalResult"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECT</option></select></div><div class="outsource-modal-row"><div class="outsource-modal-field outsource-date-field"><label>RESULT DATE</label><input type="hidden" id="outsourceModalResultDate"><input type="text" id="outsourceModalResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label>REFERENCE NO.</label><input id="outsourceModalReferenceNo" placeholder="External report / accession no."></div></div><div class="outsource-modal-field"><label>REJECT REASON</label><select id="outsourceModalRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field"><label>NOTES</label><textarea id="outsourceModalNotes" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceResultCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceResultSave">UPDATE RESULT</button></div></div></div>');
         grid.insertAdjacentHTML('beforeend','<div class="outsource-admin-modal" id="outsourceAdminCatalogModal" hidden><div class="outsource-admin-backdrop" data-outsource-admin-close></div><div class="outsource-admin-dialog"><div class="outsource-admin-head"><div><div class="outsource-admin-kicker">ADMIN ONLY</div><h2>OUTSOURCE CONTROL</h2><p>Add outsource laboratories and tests.</p></div><button type="button" class="outsource-admin-close" data-outsource-admin-close>×</button></div><div class="outsource-admin-section"><label>ADD OUTSOURCE LAB</label><div class="outsource-admin-inline"><input id="outsourceAdminLabInput" placeholder="e.g. IMMUNOLOGY" maxlength="100"><button type="button" class="outsource-btn primary" id="outsourceAdminAddLabBtn">ADD LAB</button></div></div><div class="outsource-admin-section"><label>ADD TEST / INVESTIGATION</label><div class="outsource-admin-grid"><select id="outsourceAdminTestLab"></select><input id="outsourceAdminTestInput" placeholder="e.g. New external test" maxlength="200"></div><button type="button" class="outsource-btn primary outsource-admin-add-test" id="outsourceAdminAddTestBtn">ADD TEST</button></div><div class="outsource-admin-section"><label>ADD REJECTION REASON</label><div class="outsource-admin-inline"><input id="outsourceAdminRejectReasonInput" placeholder="e.g. Insufficient specimen" maxlength="200"><button type="button" class="outsource-btn primary" id="outsourceAdminAddRejectReasonBtn">ADD REASON</button></div></div><div class="outsource-admin-message" id="outsourceAdminCatalogMessage"></div><div class="outsource-admin-list" id="outsourceAdminCatalogList"></div></div></div>');
-        grid.insertAdjacentHTML('beforeend','<div class="outsource-report-download-modal" id="outsourceReportDownloadModal" hidden><div class="outsource-report-backdrop"></div><div class="outsource-report-dialog"><button type="button" class="outsource-result-close outsource-report-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE REPORT</div><h2>DOWNLOAD RETEN</h2><p class="outsource-report-help">Pilih tahun dan bulan untuk jana laporan seperti reten outsource.</p><div class="outsource-report-select-row"><div class="outsource-modal-field"><label>YEAR</label><select id="outsourceReportYear"><option value="ALL">All years</option></select></div><div class="outsource-modal-field"><label>MONTH</label><select id="outsourceReportMonth"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceReportCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceReportGenerate">DOWNLOAD EXCEL</button></div></div></div>');
+        grid.insertAdjacentHTML('beforeend','<div class="outsource-report-download-modal" id="outsourceReportDownloadModal" hidden><div class="outsource-report-backdrop"></div><div class="outsource-report-dialog"><button type="button" class="outsource-result-close outsource-report-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE REPORT</div><h2>DOWNLOAD RETEN</h2><p class="outsource-report-help">Pilih tahun dan bulan untuk jana laporan seperti reten outsource.</p><div class="outsource-report-select-row"><div class="outsource-modal-field"><label>YEAR</label><select id="outsourceReportYear"><option value="ALL">All years</option></select></div><div class="outsource-modal-field"><label>MONTH</label><select id="outsourceReportMonth"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceReportCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceReportGenerate">DOWNLOAD PDF</button></div></div></div>');
         bindOutsourceRetentionDownloadControls();
         /* The post-register modal is managed as a persistent BODY-level element.
            Do not create it inside moduleYearGrid: this grid is rebuilt by module,
