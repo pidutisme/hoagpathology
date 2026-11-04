@@ -3570,6 +3570,34 @@ hoagApiRequest('logout', {
         commands.push('BT /'+(options.bold?'F2':'F1')+' '+size+' Tf '+x.toFixed(2)+' '+(595.28-y).toFixed(2)+' Td ('+text+') Tj ET');
         commands.push('0 0 0 rg');
       }
+      /* Self-contained PDF document serializer for Reten Outsource.
+         Do not call the calendar/roster PDF serializer here: that serializer
+         lives inside the Calendar module closure and is intentionally private. */
+      function buildOutsourcePdfDocument(commands){
+        var stream=commands.join('\n');
+        var objects=[
+          '<< /Type /Catalog /Pages 2 0 R >>',
+          '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+          '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 841.89 595.28] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
+          '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+          '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+          '<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'
+        ];
+        var pdf='%PDF-1.4\n';
+        var offsets=[0];
+        objects.forEach(function(body,index){
+          offsets.push(pdf.length);
+          pdf+=(index+1)+' 0 obj\n'+body+'\nendobj\n';
+        });
+        var xref=pdf.length;
+        pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+        for(var i=1;i<offsets.length;i+=1){
+          pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+        }
+        pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+        return pdf;
+      }
+
       function buildOutsourceRetentionPdf(rows,year,month){
         var labs=[
           {key:'BIOCHEMISTRY',label:'BIOCHEMISTRY'},
@@ -3689,7 +3717,7 @@ hoagApiRequest('logout', {
         appendPdfText(commands,'BULAN :',rightX+rightW-88,555,7.4,{align:'right'});
         appendPdfLine(commands,rightX+rightW-80,556,rightX+rightW,556,.55);
         if(month!=='ALL') appendPdfText(commands,periodMonth,rightX+rightW-40,552,6.8,{align:'center'});
-        return buildPdfDocument(commands);
+        return buildOutsourcePdfDocument(commands);
       }
       function bindOutsourceRetentionDownloadControls(){
         var reportBtn=$('outsourceDownloadReportBtn');
