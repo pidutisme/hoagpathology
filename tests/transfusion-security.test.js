@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { canReadTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
+import { canReadTransfusionRecord, canWriteTransfusionRecord, canReadLegacyTransfusionRecord, canWriteLegacyTransfusionRecord } from '../lib/transfusion-access.js';
 import { inventoryView } from '../lib/inventory-view.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { transfusionRecordSchema, transfusionPatchSchema } from '../lib/schemas/transfusion.js';
@@ -51,4 +51,13 @@ test('legacy transfusion migration audit cannot make the read endpoint fail', ()
   const api = fs.readFileSync(new URL('../api/transfusion.js', import.meta.url), 'utf8');
   assert.match(api, /try\s*\{\s*await audit\(db,actorId,'TRANSFUSION_DATA_MIGRATED'/);
   assert.match(api, /Transfusion migration audit skipped/);
+});
+
+test('historical CSV transfusion imports are readable but remain read-only for ordinary users', () => {
+  const imported = { createdBy: 'Historical CSV Migration', deletedAt: '' };
+  const user = { userId: 'user-b', role: 'USER' };
+  assert.equal(canReadLegacyTransfusionRecord(user, imported), true);
+  assert.equal(canWriteLegacyTransfusionRecord(user, imported), false);
+  assert.equal(canReadTransfusionRecord(user, imported), false);
+  assert.equal(canWriteTransfusionRecord(user, imported), false);
 });
