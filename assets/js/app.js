@@ -3534,6 +3534,34 @@ hoagApiRequest('logout', {
           .trim();
       }
 
+      /* Keep the Reten Outsource PDF builder fully self-contained. The older
+         roster PDF helpers live in a different closure, so relying on their
+         estimatePdfTextWidth/appendPdfText/appendPdfLine functions causes
+         ReferenceError failures in deployments where that closure is isolated. */
+      function estimatePdfTextWidth(text,size,bold){
+        text=pdfExportEscapeText(text);
+        try {
+          var canvas=document.createElement('canvas');
+          var ctx=canvas.getContext&&canvas.getContext('2d');
+          if(ctx&&ctx.measureText){
+            ctx.font=(bold?'700 ':'400 ')+size+'px Helvetica, Arial, sans-serif';
+            return ctx.measureText(text).width;
+          }
+        } catch(error) {}
+        return text.length*size*(bold?0.58:0.54);
+      }
+      function appendPdfText(commands,text,x,y,size,options){
+        options=options||{};
+        text=pdfExportEscapeText(text);
+        if(!text)return;
+        if(options.align==='center')x-=estimatePdfTextWidth(text,size,options.bold)/2;
+        if(options.align==='right')x-=estimatePdfTextWidth(text,size,options.bold);
+        commands.push('BT /'+(options.bold?'F2':'F1')+' '+size+' Tf '+x.toFixed(2)+' '+(595.28-y).toFixed(2)+' Td ('+text+') Tj ET');
+      }
+      function appendPdfLine(commands,x1,y1,x2,y2,width){
+        commands.push((width||.6).toFixed(2)+' w '+x1.toFixed(2)+' '+(595.28-y1).toFixed(2)+' m '+x2.toFixed(2)+' '+(595.28-y2).toFixed(2)+' l S');
+      }
+
       function appendPdfColorText(commands,text,x,y,size,color,options){
         options=options||{}; color=color||[0,0,0]; text=pdfExportEscapeText(text); if(!text)return;
         if(options.align==='center')x-=estimatePdfTextWidth(text,size,options.bold)/2;
