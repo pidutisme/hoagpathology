@@ -3541,17 +3541,10 @@ hoagApiRequest('logout', {
           {key:'WAD2',label:'WARD 2'},
           {key:'WAD3',label:'WARD 3'},
           {key:'WAD4',label:'WARD 4'},
-<<<<<<< HEAD
           {key:'ED',canonical:'EMERGENCY DEPARTMENT',label:'UNIT KECEMASAN'},
           {key:'OPD',canonical:'OUTPATIENT DEPARTMENT',label:'PESAKIT LUAR'},
           {key:'UKIA',canonical:'UKIA',label:'UKIA'},
           {key:'PRIMER',canonical:'PRIMARY HEALTHCARE',label:'KESIHATAN AWAM'}
-=======
-          {key:'ED',label:'UNIT KECEMASAN'},
-          {key:'OPD',label:'PESAKIT LUAR'},
-          {key:'UKIA',label:'UKIA'},
-          {key:'PRIMER',label:'KESIHATAN AWAM'}
->>>>>>> f5c5d0681c50ed759cdfdbaa88ddef922acec366
         ];
         var unitLab={},labTotals={},referrals={},total=rows.length;
         labs.forEach(function(l){labTotals[l.key]=0;});
@@ -3572,11 +3565,7 @@ hoagApiRequest('logout', {
         rows.forEach(function(r){
           /* Use the exact same canonical lab/unit functions as the table. */
           var canonicalUnit=canonicalOutsourceUnitName(r.unit);
-<<<<<<< HEAD
           var unitDef=unitDefs.find(function(u){return (u.canonical||u.label)===canonicalUnit;});
-=======
-          var unitDef=unitDefs.find(function(u){return u.label===canonicalUnit;});
->>>>>>> f5c5d0681c50ed759cdfdbaa88ddef922acec366
           var unit=unitDef?unitDef.key:'';
           var lab=outsourceReportLabName(r.lab);
           if(unitLab[unit]&&unitLab[unit][lab]!=null)unitLab[unit][lab]+=1;
@@ -3686,7 +3675,6 @@ hoagApiRequest('logout', {
         var filtered=outsourceReportRowsForPeriod(rows,year,month);
         if(!filtered.length){requestAppConfirm('NO DATA','No outsource data was found for the selected period.',function(){});return;}
 
-<<<<<<< HEAD
         var generateButton=modal.querySelector('#outsourceReportGenerate');
         if(generateButton){generateButton.disabled=true;generateButton.textContent='GENERATING PDF…';}
 
@@ -3724,66 +3712,6 @@ hoagApiRequest('logout', {
           requestAppConfirm('DOWNLOAD FAILED','PDF could not be generated. Please try again.',function(){});
         } finally {
           if(generateButton){generateButton.disabled=false;generateButton.textContent='DOWNLOAD PDF';}
-=======
-        /* Build first. Keep generation errors separate from browser download errors. */
-        var pdf;
-        try {
-          pdf=buildOutsourceRetentionPdf(filtered,year,month);
-          if(typeof pdf!=='string' || pdf.indexOf('%PDF-')!==0) throw new Error('PDF builder returned invalid data');
-        } catch(error) {
-          console.error('Outsource Reten PDF generation failed:',error);
-          requestAppConfirm('DOWNLOAD FAILED','PDF could not be generated. Please try again.',function(){});
-          return;
-        }
-
-        var filename=outsourceReportDownloadFilename(year,month);
-        try {
-          /* Preferred path: Blob URL, which handles arbitrary PDF size safely. */
-          var bytes=new Uint8Array(pdf.length);
-          for(var i=0;i<pdf.length;i++) bytes[i]=pdf.charCodeAt(i)&255;
-          var blob=new Blob([bytes],{type:'application/pdf'});
-          var blobUrl=window.URL && window.URL.createObjectURL ? window.URL.createObjectURL(blob) : '';
-          if(blobUrl){
-            var link=document.createElement('a');
-            link.href=blobUrl;
-            link.download=filename;
-            link.rel='noopener';
-            link.style.display='none';
-            document.body.appendChild(link);
-            link.click();
-            setTimeout(function(){
-              try{if(window.URL&&window.URL.revokeObjectURL)window.URL.revokeObjectURL(blobUrl);}catch(e){}
-              if(link.parentNode)link.parentNode.removeChild(link);
-            },1500);
-            modal.hidden=true;
-            return;
-          }
-        } catch(error) {
-          console.warn('Blob PDF download failed; trying data URL fallback.',error);
-        }
-
-        try {
-          /* Fallback for browsers/environments without usable Blob URLs. */
-          var base64=window.btoa(unescape(encodeURIComponent(pdf)));
-          var fallback=document.createElement('a');
-          fallback.href='data:application/pdf;base64,'+base64;
-          fallback.download=filename;
-          fallback.rel='noopener';
-          fallback.style.display='none';
-          document.body.appendChild(fallback);
-          fallback.click();
-          setTimeout(function(){if(fallback.parentNode)fallback.parentNode.removeChild(fallback);},1000);
-          modal.hidden=true;
-        } catch(error) {
-          console.error('Outsource Reten PDF browser download failed:',error);
-          /* Last-resort same-tab PDF open. The user can save it from the PDF viewer. */
-          try {
-            var openBase64=window.btoa(unescape(encodeURIComponent(pdf)));
-            var opened=window.open('data:application/pdf;base64,'+openBase64,'_blank');
-            if(opened){modal.hidden=true;return;}
-          } catch(e) {}
-          requestAppConfirm('DOWNLOAD FAILED','Browser could not download the PDF. Please allow downloads/pop-ups and try again.',function(){});
->>>>>>> f5c5d0681c50ed759cdfdbaa88ddef922acec366
         }
       }
       function openOutsourceRetentionDownload(){
@@ -3848,15 +3776,11 @@ hoagApiRequest('logout', {
           '</div></div>';
         grid.insertAdjacentHTML('beforeend','<div class="outsource-result-modal" id="outsourceResultModal" hidden><div class="outsource-result-dialog"><button type="button" class="outsource-result-close" id="outsourceResultClose">×</button><div class="outsource-modal-kicker">UPDATE RESULT</div><h2 id="outsourceResultTitle">RESULT</h2><div class="outsource-modal-sub" id="outsourceResultSub"></div><div class="outsource-modal-field"><label>RESULT</label><select id="outsourceModalResult"><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="REJECT">REJECT</option></select></div><div class="outsource-modal-row"><div class="outsource-modal-field outsource-date-field"><label>RESULT DATE</label><input type="hidden" id="outsourceModalResultDate"><input type="text" id="outsourceModalResultDateVisible" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off"></div><div class="outsource-modal-field"><label>REFERENCE NO.</label><input id="outsourceModalReferenceNo" placeholder="External report / accession no."></div></div><div class="outsource-modal-field"><label>REJECT REASON</label><select id="outsourceModalRejectReason"><option value="">Select reject reason</option></select></div><div class="outsource-modal-field"><label>NOTES</label><textarea id="outsourceModalNotes" placeholder="Additional result / follow-up notes"></textarea></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceResultCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceResultSave">UPDATE RESULT</button></div></div></div>');
         grid.insertAdjacentHTML('beforeend','<div class="outsource-admin-modal" id="outsourceAdminCatalogModal" hidden><div class="outsource-admin-backdrop" data-outsource-admin-close></div><div class="outsource-admin-dialog"><div class="outsource-admin-head"><div><div class="outsource-admin-kicker">ADMIN ONLY</div><h2>OUTSOURCE CONTROL</h2><p>Add outsource laboratories and tests.</p></div><button type="button" class="outsource-admin-close" data-outsource-admin-close>×</button></div><div class="outsource-admin-section"><label>ADD OUTSOURCE LAB</label><div class="outsource-admin-inline"><input id="outsourceAdminLabInput" placeholder="e.g. IMMUNOLOGY" maxlength="100"><button type="button" class="outsource-btn primary" id="outsourceAdminAddLabBtn">ADD LAB</button></div></div><div class="outsource-admin-section"><label>ADD TEST / INVESTIGATION</label><div class="outsource-admin-grid"><select id="outsourceAdminTestLab"></select><input id="outsourceAdminTestInput" placeholder="e.g. New external test" maxlength="200"></div><button type="button" class="outsource-btn primary outsource-admin-add-test" id="outsourceAdminAddTestBtn">ADD TEST</button></div><div class="outsource-admin-section"><label>ADD REJECTION REASON</label><div class="outsource-admin-inline"><input id="outsourceAdminRejectReasonInput" placeholder="e.g. Insufficient specimen" maxlength="200"><button type="button" class="outsource-btn primary" id="outsourceAdminAddRejectReasonBtn">ADD REASON</button></div></div><div class="outsource-admin-message" id="outsourceAdminCatalogMessage"></div><div class="outsource-admin-list" id="outsourceAdminCatalogList"></div></div></div>');
-<<<<<<< HEAD
         var existingOutsourceReportModal=document.getElementById('outsourceReportDownloadModal');
         if(existingOutsourceReportModal)existingOutsourceReportModal.remove();
         grid.insertAdjacentHTML('beforeend','<div class="outsource-report-download-modal" id="outsourceReportDownloadModal" hidden><div class="outsource-report-backdrop"></div><div class="outsource-report-dialog"><button type="button" class="outsource-result-close outsource-report-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE REPORT</div><h2>DOWNLOAD RETEN</h2><p class="outsource-report-help">Pilih tahun dan bulan untuk jana laporan seperti reten outsource.</p><div class="outsource-report-select-row"><div class="outsource-modal-field"><label>YEAR</label><select id="outsourceReportYear"><option value="ALL">All years</option></select></div><div class="outsource-modal-field"><label>MONTH</label><select id="outsourceReportMonth"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceReportCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceReportGenerate">DOWNLOAD PDF</button></div></div></div>');
         var newOutsourceReportModal=document.getElementById('outsourceReportDownloadModal');
         if(newOutsourceReportModal&&newOutsourceReportModal.parentNode!==document.body)document.body.appendChild(newOutsourceReportModal);
-=======
-        grid.insertAdjacentHTML('beforeend','<div class="outsource-report-download-modal" id="outsourceReportDownloadModal" hidden><div class="outsource-report-backdrop"></div><div class="outsource-report-dialog"><button type="button" class="outsource-result-close outsource-report-close" aria-label="Close">×</button><div class="outsource-modal-kicker">OUTSOURCE REPORT</div><h2>DOWNLOAD RETEN</h2><p class="outsource-report-help">Pilih tahun dan bulan untuk jana laporan seperti reten outsource.</p><div class="outsource-report-select-row"><div class="outsource-modal-field"><label>YEAR</label><select id="outsourceReportYear"><option value="ALL">All years</option></select></div><div class="outsource-modal-field"><label>MONTH</label><select id="outsourceReportMonth"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="outsourceReportCancel">CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceReportGenerate">DOWNLOAD PDF</button></div></div></div>');
->>>>>>> f5c5d0681c50ed759cdfdbaa88ddef922acec366
         bindOutsourceRetentionDownloadControls();
         /* The post-register modal is managed as a persistent BODY-level element.
            Do not create it inside moduleYearGrid: this grid is rebuilt by module,
