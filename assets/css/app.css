@@ -7451,28 +7451,44 @@
 }
 
 /* Left Registration Form */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:first-child {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-grid > .outsource-card:first-child::-webkit-scrollbar,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-form::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-form {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   align-content: start;
   padding: 12px 14px;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field {
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field.full,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field.outsource-test-field {
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 5px;
   min-width: 0;
-}
-
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field.full,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field.outsource-test-field {
-  grid-column: 1 / -1;
 }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field label {
@@ -7679,15 +7695,25 @@
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) repeat(auto-fit, minmax(128px, max-content));
+  grid-template-columns: minmax(190px, 1.55fr) repeat(auto-fit, minmax(100px, 1fr));
   gap: 8px;
   align-items: center;
   padding: 10px 14px;
   border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+#moduleYearGrid.outsource-active-grid .outsource-search {
+  grid-template-columns: minmax(185px, 1.6fr) repeat(7, minmax(92px, 1fr));
+}
+
+#moduleYearGrid.transfusion-active-grid .outsource-search {
+  grid-template-columns: minmax(220px, 2.2fr) repeat(3, minmax(120px, 0.55fr));
 }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search input {
   width: 100%;
+  min-width: 0;
   min-height: 36px;
   height: 36px;
   padding: 0 12px;
@@ -7696,12 +7722,49 @@
   background: var(--surface-inset);
   box-shadow: var(--shadow-inset);
   color: var(--text);
+  font: inherit;
   font-size: 12px;
   font-weight: 750;
   outline: none;
+  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search input:focus {
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 30px 0 11px;
+  border-radius: 12px;
+  border: 1px solid var(--year-page-card-border);
+  background-color: var(--surface-inset);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%235e6d85' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 13px 13px;
+  box-shadow: var(--shadow-inset);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  outline: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+}
+
+body.dark-mode :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select,
+html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2397a6c0' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search input:focus,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select:hover,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select:focus {
   border-color: var(--primary);
   box-shadow: var(--shadow-inset), var(--focus-ring);
 }
@@ -7765,7 +7828,9 @@
 
 /* Right Results Pane: Virtualized Data Table */
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table-wrap {
+  position: relative;
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   max-height: none;
   margin: 0 14px 8px;
@@ -7774,22 +7839,46 @@
   background: var(--surface-inset);
   box-shadow: var(--shadow-inset);
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table {
-  width: 100%;
-  min-width: 820px;
+  width: 100% !important;
+  min-width: 860px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
   font-size: 11.5px;
 }
 
+/* Virtual scroll spacer row: prevent colspan="18" from creating 9 phantom empty columns */
+.outsource-table tbody tr.outsource-virtual-spacer {
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
+.outsource-table tbody tr.outsource-virtual-spacer td {
+  display: block !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table th {
   position: sticky;
   top: 0;
   z-index: 3;
-  padding: 10px 8px;
+  padding: 10px 6px;
   background: var(--neo-surface-elevated);
   color: var(--primary);
   border-bottom: 1px solid var(--year-page-card-border);
@@ -7804,7 +7893,9 @@
 }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td {
-  padding: 8px;
+  height: 36px;
+  padding: 6px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--line);
   color: var(--text);
   font-size: 11.5px;
@@ -7816,9 +7907,50 @@
   text-overflow: ellipsis;
 }
 
+/* Outsource 9-column proportional layout (sums to 100%) */
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(1),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(1) { width: 8.5%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(2),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(2) { width: 8%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(3),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(3) { width: 16%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(4),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(4) { width: 11%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(5),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(5) { width: 8%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(6),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(6) { width: 10.5%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(7),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(7) { width: 16%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(8),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(8) { width: 8.5%; }
+#moduleYearGrid.outsource-active-grid .outsource-table th:nth-child(9),
+#moduleYearGrid.outsource-active-grid .outsource-table td:nth-child(9) { width: 13.5%; overflow: visible; }
+
+/* Transfusion 8-column proportional layout (sums to 100%) */
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(1),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(1) { width: 10%; }
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(2),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(2) { width: 20%; }
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(3),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(3) { width: 13%; }
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(4),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(4) { width: 8%; }
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(5),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(5) { width: 10%; }
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(6),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(6) { width: 15.5%; }
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(7),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(7) { width: 10%; }
+#moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(8),
+#moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(8) { width: 13.5%; overflow: visible; }
+
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table tbody tr.outsource-data-row,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table tbody tr.transfusion-data-row {
-  cursor: pointer;
+  height: 36px;
+  max-height: 36px;
+  box-sizing: border-box;
+  cursor: default;
   transition: background-color 0.15s ease;
 }
 
@@ -7868,6 +8000,7 @@
 }
 
 .outsource-result-pill.done,
+.outsource-result-pill.status-done,
 .outsource-result.status-done .outsource-result-pill {
   color: var(--ok);
   background: var(--ok-bg);
@@ -7875,6 +8008,7 @@
 }
 
 .outsource-result-pill.pending,
+.outsource-result-pill.status-pending,
 .outsource-result.status-pending .outsource-result-pill {
   color: var(--warning);
   background: var(--warning-bg);
@@ -7882,6 +8016,7 @@
 }
 
 .outsource-result-pill.reject,
+.outsource-result-pill.status-reject,
 .outsource-result.status-reject .outsource-result-pill {
   color: var(--danger);
   background: var(--danger-bg);
@@ -7921,12 +8056,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 
 .outsource-mini {
   min-height: 26px;
-  padding: 0 9px;
+  padding: 0 8px;
   border-radius: 999px;
   border: 1px solid var(--year-page-card-border);
   background: var(--neo-surface-soft);
@@ -7936,8 +8072,23 @@
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
   transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-mini.tr-view,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) [data-outsource-action="view"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  min-width: 30px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .outsource-mini:hover {
@@ -7989,8 +8140,13 @@
     height: auto;
   }
 
-  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-summary {
+  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-summary,
+  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search > input:first-child {
+    grid-column: 1 / -1;
   }
 
   :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table-wrap {
@@ -8295,10 +8451,15 @@
   color: var(--primary);
 }
 
+.outsource-result-dialog h2,
 .outsource-result-dialog h3,
+.outsource-report-dialog h2,
 .outsource-report-dialog h3,
+.outsource-admin-head h2,
 .outsource-admin-head h3,
+.outsource-post-save-dialog h2,
 .outsource-post-save-dialog h3,
+.outsource-import-head h2,
 .outsource-import-head h3 {
   margin: 2px 0 0;
   font-size: clamp(18px, 1.4vw, 22px);
@@ -8309,7 +8470,8 @@
 
 .outsource-modal-sub,
 .outsource-report-help,
-.outsource-import-help {
+.outsource-import-help,
+.outsource-post-save-dialog > p {
   margin: 0;
   font-size: 12.5px;
   font-weight: 700;
@@ -8351,10 +8513,21 @@
 }
 
 .outsource-detail-grid,
-.outsource-modal-row {
+.outsource-modal-row,
+.outsource-report-select-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.outsource-detail-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  align-items: start;
 }
 
 .outsource-detail-item,
@@ -8371,32 +8544,37 @@
 }
 
 .outsource-detail-item.full,
-.outsource-detail-item.outsource-detail-notes-field {
+.outsource-detail-item.outsource-detail-notes-field,
+.outsource-modal-field.outsource-detail-notes-field,
+.outsource-detail-editor > .outsource-detail-notes-field,
+.outsource-detail-editor > .outsource-modal-actions {
   grid-column: 1 / -1;
 }
 
+.outsource-detail-item label,
 .outsource-detail-item span,
 .outsource-modal-field label {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
+.outsource-detail-item > div,
 .outsource-detail-item strong {
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 12.5px;
+  font-weight: 800;
   color: var(--text);
-  line-height: 1.35;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
-.outsource-detail-editor,
 .transfusion-detail-control,
 .outsource-modal-field input,
 .outsource-modal-field select,
 .outsource-modal-field textarea,
+#transfusionDetailStatus,
 #transfusionStatusSelect {
   width: 100%;
   min-height: 40px;
@@ -8407,12 +8585,11 @@
   box-shadow: var(--shadow-inset);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
   outline: none;
 }
 
-textarea.outsource-detail-editor,
 textarea.transfusion-detail-control,
 .outsource-modal-field textarea {
   min-height: 76px;
@@ -8420,8 +8597,9 @@ textarea.transfusion-detail-control,
   line-height: 1.45;
 }
 
-select.outsource-detail-editor,
 select.transfusion-detail-control,
+.outsource-modal-field select,
+#transfusionDetailStatus,
 #transfusionStatusSelect {
   appearance: none;
   -webkit-appearance: none;
@@ -8432,30 +8610,108 @@ select.transfusion-detail-control,
   background-size: 14px 14px;
 }
 
-body.dark-mode select.outsource-detail-editor,
 body.dark-mode select.transfusion-detail-control,
+body.dark-mode .outsource-modal-field select,
+body.dark-mode #transfusionDetailStatus,
 body.dark-mode #transfusionStatusSelect {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2397a6c0' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
-.outsource-detail-editor:focus,
 .transfusion-detail-control:focus,
 .outsource-modal-field input:focus,
 .outsource-modal-field select:focus,
 .outsource-modal-field textarea:focus,
+#transfusionDetailStatus:focus,
 #transfusionStatusSelect:focus {
   border-color: var(--primary);
   box-shadow: var(--shadow-inset), var(--focus-ring);
 }
 
 .outsource-modal-actions,
-.outsource-post-save-actions,
 .outsource-import-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
   padding-top: 6px;
+}
+
+/* Post-Save Next-Step Modal (#outsourcePostSaveModal) */
+#outsourcePostSaveModal.outsource-post-save-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#outsourcePostSaveModal.outsource-post-save-modal[hidden] {
+  display: none !important;
+}
+
+#outsourcePostSaveModal.outsource-post-save-modal[aria-hidden="true"] {
+  visibility: hidden;
+}
+
+.outsource-post-save-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.outsource-post-save-option {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s var(--ease-spring), border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.outsource-post-save-option:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--year-page-card-hover-shadow);
+}
+
+.outsource-post-save-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  box-shadow: var(--shadow-inset);
+  font-size: 20px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+}
+
+.outsource-post-save-option strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.outsource-post-save-option small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--muted);
 }
 
 /* Outsource Admin Modal */
@@ -9571,21 +9827,21 @@ body.dark-mode #transfusionStatusSelect {
    + 7. AUTH VERIFYING & VISITOR READ-ONLY GUARDRAILS                       +
    +------------------------------------------------------------------------+ */
 body.auth-verifying .app {
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  transform: none !important;
-  filter: none !important;
+  opacity: 0.10 !important;
+  pointer-events: none !important;
+  transform: scale(0.985);
+  filter: blur(8px) saturate(0.86);
 }
 
 body.auth-verifying .auth-screen {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 body.auth-verifying #moduleYearGrid,
 body.auth-verifying #dailyRosterList {
-  pointer-events: auto !important;
+  pointer-events: none !important;
 }
 
 body.auth-verifying #moduleYearGrid input,
@@ -9597,7 +9853,20 @@ body.auth-verifying #dailyRosterList select,
 body.auth-verifying #dailyRosterList textarea,
 body.auth-verifying #dailyRosterList button {
   pointer-events: none !important;
-  cursor: progress !important;
+  cursor: wait !important;
+}
+
+body.auth-ready #dashboard [data-dashboard-module] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+body.auth-ready #dashboard [data-dashboard-module] * {
+  pointer-events: none;
+}
+
+body.auth-ready .app {
+  pointer-events: auto !important;
 }
 
 body.visitor-read-only .visitor-disabled-control,
