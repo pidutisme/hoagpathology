@@ -902,14 +902,27 @@
       .finally(function () { notificationSaving = false; });
   }
 
+  function isNotificationAdmin() {
+    try { return typeof Auth !== 'undefined' && Auth.getUser && String((Auth.getUser() || {}).role || '').toUpperCase() === 'ADMIN'; }
+    catch (e) { return false; }
+  }
+  function deleteNotificationRecord(id) {
+    if (!isNotificationAdmin()) return Promise.reject(new Error('Admin access is required to delete notification records.'));
+    return notificationApi('deleteNotificationRecord', [id]).then(function () {
+      records = records.filter(function (r) { return String(r.id) !== String(id); });
+      if (editingId && String(editingId) === String(id)) clearForm();
+      render();
+    });
+  }
+
   function setDefaultForm() {
-    var dt = $('notificationDateTime'); if (dt) dt.value = nowLocalInput();
+    var dt = $('notificationDateTime'); if (dt) dt.value = nowLocalInput(); var dtv = $('notificationDateTimeVisible'); if (dtv && dtv._syncNotificationDateTime) dtv._syncNotificationDateTime();
     var status = $('notificationStatus'); if (status) status.value = 'INFORMED';
     editingId = null;
     var mode = $('notificationFormMode'); if (mode) mode.textContent = 'NEW RECORD';
   }
   function clearForm() {
-    var form = $('notificationForm'); if (form) form.reset();
+    var form = $('notificationForm'); if (form) form.reset(); var dtv = $('notificationDateTimeVisible'); if (dtv) dtv.value = '';
     var sex = $('notificationSex'); if (sex) sex.value = '';
     var age = $('notificationAge'); if (age) age.value = '';
     var test = $('notificationTest'); if (test) { test.innerHTML = '<option value="">Select discipline first</option>'; test.dispatchEvent(new Event('change',{bubbles:true})); }
@@ -1052,6 +1065,153 @@
     setFlag('REVIEW', 'normal');
   }
 
+  function initNotificationNeumorphicDateTime() {
+    var hidden = $('notificationDateTime'), visible = $('notificationDateTimeVisible');
+    if (!hidden || !visible || visible._notificationDateTimeReady) return;
+    visible._notificationDateTimeReady = true;
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function parseValue(value) {
+      var raw = String(value || '').trim();
+      if (!raw) return null;
+      var m = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (m) return { year:Number(m[1]), month:Number(m[2])-1, day:Number(m[3]), hour:Number(m[4]), minute:Number(m[5]) };
+      var d = new Date(raw);
+      if (isNaN(d.getTime())) return null;
+      return { year:d.getFullYear(), month:d.getMonth(), day:d.getDate(), hour:d.getHours(), minute:d.getMinutes() };
+    }
+    function toValue(parts) {
+      return parts.year + '-' + pad(parts.month + 1) + '-' + pad(parts.day) + 'T' + pad(parts.hour) + ':' + pad(parts.minute);
+    }
+    function display(parts) {
+      if (!parts) return '';
+      var d = new Date(parts.year, parts.month, parts.day);
+      var h = parts.hour % 12 || 12, ap = parts.hour >= 12 ? 'PM' : 'AM';
+      return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear() + ' ' + pad(h) + ':' + pad(parts.minute) + ' ' + ap;
+    }
+    function cloneParts(p) { return {year:p.year, month:p.month, day:p.day, hour:p.hour, minute:p.minute}; }
+    function currentParts() {
+      var p = parseValue(hidden.value);
+      if (p) return p;
+      var d = new Date();
+      return {year:d.getFullYear(), month:d.getMonth(), day:d.getDate(), hour:d.getHours(), minute:d.getMinutes()};
+    }
+    function setValue(parts) {
+      hidden.value = toValue(parts);
+      visible.value = display(parts);
+      hidden.dispatchEvent(new Event('input', {bubbles:true}));
+      hidden.dispatchEvent(new Event('change', {bubbles:true}));
+      visible.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+
+    var pop = document.createElement('div');
+    pop.className = 'notification-datetime-popover';
+    pop.hidden = true;
+    pop.innerHTML =
+      '<div class="notification-datetime-head">' +
+        '<div class="notification-datetime-month"></div>' +
+        '<div class="notification-datetime-nav"><button type="button" data-prev aria-label="Previous month">‹</button><button type="button" data-next aria-label="Next month">›</button></div>' +
+      '</div>' +
+      '<div class="notification-datetime-body">' +
+        '<div class="notification-datetime-calendar">' +
+          '<div class="notification-datetime-week"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>' +
+          '<div class="notification-datetime-grid"></div>' +
+        '</div>' +
+        '<div class="notification-datetime-time">' +
+          '<div class="notification-datetime-time-title">TIME</div>' +
+          '<div class="notification-time-columns"><div><div class="notification-time-label">HOUR</div><div class="notification-time-list" data-hours></div></div><div><div class="notification-time-label">MIN</div><div class="notification-time-list" data-minutes></div></div><div><div class="notification-time-label">AM/PM</div><div class="notification-time-list" data-period></div></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="notification-datetime-foot"><button type="button" data-clear>Clear</button><button type="button" data-now>Now</button></div>';
+    document.body.appendChild(pop);
+
+    var view = currentParts();
+
+    function key(parts) { return parts.year + '-' + pad(parts.month+1) + '-' + pad(parts.day); }
+    function position() {
+      var r = visible.getBoundingClientRect(), w = pop.offsetWidth || 470, h = pop.offsetHeight || 360;
+      var left = Math.min(Math.max(10, r.left), Math.max(10, window.innerWidth - w - 10));
+      var top = r.bottom + 8;
+      if (top + h > window.innerHeight - 10) top = Math.max(10, r.top - h - 8);
+      pop.style.left = left + 'px'; pop.style.top = top + 'px';
+    }
+    function chooseDate(date) {
+      view.year=date.getFullYear(); view.month=date.getMonth(); view.day=date.getDate();
+      setValue(view); render();
+    }
+    function renderTime() {
+      var parts = currentParts();
+      var hours = pop.querySelector('[data-hours]'), mins = pop.querySelector('[data-minutes]'), periods = pop.querySelector('[data-period]');
+      hours.innerHTML = ''; mins.innerHTML = ''; periods.innerHTML = '';
+      for (var h=1; h<=12; h++) {
+        var hb=document.createElement('button'); hb.type='button'; hb.textContent=pad(h); hb.dataset.hour=String(h);
+        if ((parts.hour % 12 || 12)===h) hb.classList.add('selected');
+        hours.appendChild(hb);
+      }
+      for (var m=0; m<60; m++) {
+        var mb=document.createElement('button'); mb.type='button'; mb.textContent=pad(m); mb.dataset.minute=String(m);
+        if (parts.minute===m) mb.classList.add('selected');
+        mins.appendChild(mb);
+      }
+      ['AM','PM'].forEach(function(ap){
+        var pb=document.createElement('button'); pb.type='button'; pb.textContent=ap; pb.dataset.period=ap;
+        if ((parts.hour>=12?'PM':'AM')===ap) pb.classList.add('selected');
+        periods.appendChild(pb);
+      });
+    }
+    function render() {
+      var parts = currentParts();
+      var monthLabel = pop.querySelector('.notification-datetime-month');
+      monthLabel.textContent = new Date(view.year, view.month, 1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+      var grid = pop.querySelector('.notification-datetime-grid');
+      grid.innerHTML = '';
+      var first = new Date(view.year, view.month, 1), start = (first.getDay()+6)%7;
+      var days = new Date(view.year, view.month+1, 0).getDate();
+      var prevDays = new Date(view.year, view.month, 0).getDate();
+      var today = new Date();
+      var todayKey = key({year:today.getFullYear(),month:today.getMonth(),day:today.getDate()});
+      for (var i=0;i<42;i++) {
+        var n=i-start+1, d=new Date(view.year,view.month,n), muted=false;
+        if(n<1){d=new Date(view.year,view.month-1,prevDays+n);muted=true;}
+        else if(n>days){d=new Date(view.year,view.month+1,n-days);muted=true;}
+        var b=document.createElement('button'); b.type='button'; b.className='notification-datetime-day'+(muted?' muted':'')+(key({year:d.getFullYear(),month:d.getMonth(),day:d.getDate()})===todayKey?' today':'')+(d.getFullYear()===parts.year&&d.getMonth()===parts.month&&d.getDate()===parts.day?' selected':'');
+        b.textContent=d.getDate(); b.dataset.date=key({year:d.getFullYear(),month:d.getMonth(),day:d.getDate()}); grid.appendChild(b);
+      }
+      renderTime();
+    }
+    function open() {
+      var parts=currentParts(); view=cloneParts(parts); render(); pop.hidden=false; position();
+      var selected=pop.querySelector('.notification-datetime-day.selected'); if(selected) selected.scrollIntoView({block:'nearest',inline:'nearest'});
+    }
+    function close() { pop.hidden=true; }
+    function chooseTime(hour12, minute, period) {
+      var parts=currentParts(), h=Number(hour12)%12;
+      parts.hour = period==='PM' ? h+12 : h;
+      parts.minute = Number(minute);
+      setValue(parts); renderTime();
+    }
+
+    visible.value = display(currentParts());
+    visible.addEventListener('click', function(e){ e.preventDefault(); open(); });
+    visible.addEventListener('focus', open);
+    pop.addEventListener('click', function(e) {
+      var b=e.target.closest('button'); if(!b) return;
+      if(b.hasAttribute('data-prev')) { view.month--; if(view.month<0){view.month=11;view.year--;} render(); position(); }
+      else if(b.hasAttribute('data-next')) { view.month++; if(view.month>11){view.month=0;view.year++;} render(); position(); }
+      else if(b.dataset.date) { var parts=currentParts(), a=b.dataset.date.split('-').map(Number); parts.year=a[0];parts.month=a[1]-1;parts.day=a[2];setValue(parts);render(); }
+      else if(b.dataset.hour) { var p=currentParts(); chooseTime(Number(b.dataset.hour),p.minute,p.hour>=12?'PM':'AM'); }
+      else if(b.dataset.minute) { var p2=currentParts(); chooseTime(p2.hour%12||12,Number(b.dataset.minute),p2.hour>=12?'PM':'AM'); }
+      else if(b.dataset.period) { var p3=currentParts(); chooseTime(p3.hour%12||12,p3.minute,b.dataset.period); }
+      else if(b.hasAttribute('data-now')) { var d=new Date(); setValue({year:d.getFullYear(),month:d.getMonth(),day:d.getDate(),hour:d.getHours(),minute:d.getMinutes()}); render(); }
+      else if(b.hasAttribute('data-clear')) { hidden.value=''; visible.value=''; hidden.dispatchEvent(new Event('change',{bubbles:true})); visible.focus(); close(); }
+    });
+    document.addEventListener('mousedown',function(e){if(!pop.hidden&&!pop.contains(e.target)&&e.target!==visible)close();});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!pop.hidden)close();});
+    window.addEventListener('resize',function(){if(!pop.hidden)position();});
+    window.addEventListener('scroll',function(){if(!pop.hidden)position();},true);
+    visible._syncNotificationDateTime = function(){ visible.value=display(parseValue(hidden.value)); };
+  }
+
   function initNotificationNeumorphicSelects() {
     var page = $('notification');
     if (!page) return;
@@ -1151,7 +1311,7 @@
         '<td class="result">' + esc(formatNotificationResult(r)) + '</td>' +
         '<td><span class="notification-pill flag">' + esc(r.flag) + '</span></td>' +
         '<td><span class="notification-pill status ' + statusCls + '">' + esc(r.status) + '</span></td>' +
-        '<td><div class="notification-actions"><button class="notification-action" type="button" data-notification-view="' + esc(r.id) + '" title="View">◉</button><button class="notification-action" type="button" data-notification-edit="' + esc(r.id) + '" title="Edit">✎</button></div></td></tr>';
+        '<td><div class="notification-actions"><button type="button" class="notification-action outsource-mini" data-notification-view="' + esc(r.id) + '" title="View full details" aria-label="View full details">&#128065;</button><button type="button" class="notification-action outsource-mini" data-notification-edit="' + esc(r.id) + '" title="Edit" aria-label="Edit">EDIT</button>' + (isNotificationAdmin() ? '<button type="button" class="notification-action outsource-mini delete" data-notification-delete="' + esc(r.id) + '" title="Delete" aria-label="Delete">DELETE</button>' : '') + '</div></td></tr>';
     }).join('');
     if (empty) empty.hidden = rows.length > 0;
     var shownStart = filtered.length ? start + 1 : 0;
@@ -1242,11 +1402,18 @@
     ['notificationSearch','notificationYearFilter','notificationMonthFilter','notificationDisciplineFilter','notificationFlagFilter','notificationStatusFilter'].forEach(function (id) { var el = $(id); if (el) { ['input','change'].forEach(function (evt) { el.addEventListener(evt, function () { currentPage = 1; render(); }); }); } });
     var body = $('notificationTableBody'); if (body) body.addEventListener('click', function (e) {
       var view = e.target.closest('[data-notification-view]'); if (view) { var r = records.find(function (x) { return String(x.id) === String(view.dataset.notificationView); }); if (r) showDetail(r); return; }
-      var edit = e.target.closest('[data-notification-edit]'); if (edit) editRecord(edit.dataset.notificationEdit);
+      var edit = e.target.closest('[data-notification-edit]'); if (edit) { editRecord(edit.dataset.notificationEdit); return; }
+       var del = e.target.closest('[data-notification-delete]'); if (del) {
+         if (!isNotificationAdmin()) return;
+         var id = del.dataset.notificationDelete;
+         if (!window.confirm('Delete this notification record? This action cannot be undone.')) return;
+         del.disabled = true;
+         deleteNotificationRecord(id).catch(function(error){ del.disabled = false; window.alert(error && error.message ? error.message : 'Unable to delete notification record.'); });
+       }
     });
   }
 
   window.LabNotification = { open: open, render: render, getRecords: function () { return records.slice(); } };
   loadRecords();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicSelects(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }
 })(window, document);

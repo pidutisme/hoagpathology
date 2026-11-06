@@ -458,7 +458,7 @@
 <form class="notification-form" id="notificationForm" autocomplete="off">
 <div class="notification-section-title"><span class="icon">♙</span> PATIENT INFORMATION</div>
 <div class="notification-grid patient-info-grid">
-<div class="notification-field"><label for="notificationDateTime">Date / Time <span class="required">*</span></label><input id="notificationDateTime" type="datetime-local" required></div>
+<div class="notification-field"><label for="notificationDateTimeVisible">Date / Time <span class="required">*</span></label><div class="notification-datetime-wrap"><input id="notificationDateTime" type="hidden"><input id="notificationDateTimeVisible" class="notification-neumorphic-datetime" type="text" inputmode="none" autocomplete="off" placeholder="dd/mm/yyyy hh:mm AM" readonly required aria-label="Date and time"></div></div>
 <div class="notification-field"><label for="notificationBarcode">Barcode <span class="required">*</span></label><input id="notificationBarcode" maxlength="80" placeholder="Barcode" required></div>
 <div class="notification-field"><label for="notificationPatientName">Patient Name <span class="required">*</span></label><input id="notificationPatientName" maxlength="160" placeholder="Patient name" required></div>
 <div class="notification-field"><label for="notificationIdIc">ID / IC <span class="required">*</span></label><input id="notificationIdIc" maxlength="40" placeholder="NRIC / Passport" required></div>
@@ -794,7 +794,7 @@
 <!-- +----------------------------------+
      + CLIENT SCRIPT - ASSET LOADING    +
      +----------------------------------+ -->
-<script src="/assets/js/notification.js?v=notification-v1"></script>
+<script src="/assets/js/notification.js?v=notification-v2"></script>
 <script src="/assets/js/app.js?v=visitor-v30"></script>
 
 </body>

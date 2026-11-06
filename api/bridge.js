@@ -599,7 +599,7 @@ async function dispatch(db, method, a, req) {
 
     case 'deleteNotificationRecord': {
       const s = await requireSession(db, tokenAt(1));
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      if (String(s.role || '').toUpperCase() !== 'ADMIN') fail('Admin access is required to delete notification records.', 403);
       const rid = clean(a[0], 160);
       if (!rid) fail('Notification record ID is required.');
       const { data: row, error } = await supabase.from('notification_records').select('id').eq('id', rid).maybeSingle();
