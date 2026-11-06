@@ -31,6 +31,7 @@
 <meta content="telephone=no,email=no,address=no" name="format-detection"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800;900&family=Poppins:wght@700;800;900&display=swap"/>
 <link rel="stylesheet" href="/assets/css/app.css?v=visitor-v22"/>
+<link rel="stylesheet" href="/assets/css/notification.css?v=notification-v1"/>
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked">
@@ -440,6 +441,79 @@
 </div>
 </div>
 </section>
+<section class="page notification-page" id="notification">
+<div class="page-scroll notification-scroll">
+<div class="notification-shell">
+<div class="notification-head">
+<div class="notification-title-wrap">
+<div class="notification-kicker">Laboratory Communication Record</div>
+<h2>CRITICAL VALUE NOTIFICATION</h2>
+<p>Register, review and track critical laboratory findings and notification follow-up.</p>
+</div>
+<div class="notification-head-actions"><button class="notification-back-btn" id="notificationBackBtn" type="button">← BACK TO DASHBOARD</button></div>
+</div>
+<div class="notification-layout">
+<section class="notification-card notification-form-card">
+<div class="notification-card-head"><h3>＋ REGISTER CRITICAL VALUE</h3><span id="notificationFormMode">NEW RECORD</span></div>
+<form class="notification-form" id="notificationForm" autocomplete="off">
+<div class="notification-section-title"><span class="icon">♙</span> PATIENT INFORMATION</div>
+<div class="notification-grid four">
+<div class="notification-field"><label for="notificationDateTime">Date / Time <span class="required">*</span></label><input id="notificationDateTime" type="datetime-local" required></div>
+<div class="notification-field"><label for="notificationBarcode">Barcode <span class="required">*</span></label><input id="notificationBarcode" maxlength="80" placeholder="Barcode" required></div>
+<div class="notification-field"><label for="notificationPatientName">Patient Name <span class="required">*</span></label><input id="notificationPatientName" maxlength="160" placeholder="Patient name" required></div>
+<div class="notification-field"><label for="notificationIdIc">ID / IC <span class="required">*</span></label><input id="notificationIdIc" maxlength="40" placeholder="NRIC / Passport" required></div>
+</div>
+<div class="notification-grid four">
+<div class="notification-field"><label for="notificationSex">Sex <span class="notification-auto-badge">AUTO FROM IC</span></label><input id="notificationSex" readonly placeholder="Auto from IC"></div>
+<div class="notification-field"><label for="notificationAge">Age <span class="notification-auto-badge">AUTO FROM IC</span></label><input id="notificationAge" readonly placeholder="Auto from IC"></div>
+<div class="notification-field"><label for="notificationUnit">Unit <span class="required">*</span></label><select id="notificationUnit" required><option value="">Select unit</option><option>WAD 1</option><option>WAD 2</option><option>WAD 3</option><option>WAD 4</option><option>WAD 5</option><option>ICU</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>VEKTOR</option><option>TB / KUSTA</option><option>OTHER</option></select></div>
+<div class="notification-field"><label for="notificationDiscipline">Discipline <span class="required">*</span></label><select id="notificationDiscipline" required><option value="">Select discipline</option><option value="BIOCHEMISTRY">Biochemistry</option><option value="HAEMATOLOGY">Haematology</option><option value="MICROBIOLOGY">Microbiology</option></select></div>
+</div>
+<div class="notification-section-title"><span class="icon">⚗</span> CRITICAL VALUE DETAILS</div>
+<div class="notification-grid">
+<div class="notification-field"><label for="notificationTest">Test <span class="required">*</span></label><select id="notificationTest" required><option value="">Select discipline first</option></select></div>
+<div class="notification-field"><label>Critical Limit / Alert</label><div class="notification-critical-box is-empty" id="notificationCriticalLimit"><strong>Reference</strong><span>Select a test to load the critical value rule.</span></div></div>
+</div>
+<div class="notification-grid">
+<div class="notification-field"><label for="notificationResult">Result <span class="required">*</span></label><input id="notificationResult" maxlength="120" placeholder="Enter result" required></div>
+<div class="notification-field"><label>Flag</label><div class="notification-flag" id="notificationFlag">Awaiting result</div></div>
+</div>
+<div class="notification-section-title"><span class="icon">♧</span> NOTIFICATION DETAILS</div>
+<div class="notification-grid">
+<div class="notification-field"><label for="notificationStaff">Staff <span class="required">*</span></label><input id="notificationStaff" maxlength="100" placeholder="Staff name" required></div>
+<div class="notification-field"><label for="notificationInformTo">Inform To <span class="required">*</span></label><input id="notificationInformTo" maxlength="160" placeholder="Doctor / MO / ward" required></div>
+<div class="notification-field"><label for="notificationInformedTime">Time Informed <span class="required">*</span></label><input id="notificationInformedTime" type="time" required></div>
+<div class="notification-field"><label for="notificationStatus">Status</label><select id="notificationStatus"><option value="PENDING">PENDING</option><option value="INFORMED">INFORMED</option><option value="COMPLETED">COMPLETED</option></select></div>
+<div class="notification-field full"><label for="notificationNotes">Notes</label><textarea id="notificationNotes" maxlength="1000" placeholder="Optional notification / follow-up notes"></textarea></div>
+</div>
+<div class="notification-form-actions"><button class="notification-btn secondary" id="notificationClearBtn" type="button">↻ CLEAR</button><button class="notification-btn primary" type="submit">▣ SAVE NOTIFICATION</button></div>
+</form>
+</section>
+<section class="notification-card notification-record-card">
+<div class="notification-card-head"><h3>▣ REGISTERED CRITICAL VALUE NOTIFICATIONS</h3><span id="notificationTotal">0 TOTAL</span></div>
+<div class="notification-summary">
+<div class="notification-stat"><div class="num" id="notificationStatTotal">0</div><div class="lbl">Total</div></div>
+<div class="notification-stat bio"><div class="num" id="notificationStatBio">0</div><div class="lbl">Biochemistry</div></div>
+<div class="notification-stat hema"><div class="num" id="notificationStatHema">0</div><div class="lbl">Haematology</div></div>
+<div class="notification-stat micro"><div class="num" id="notificationStatMicro">0</div><div class="lbl">Microbiology</div></div>
+</div>
+<div class="notification-toolbar">
+<input id="notificationSearch" type="search" placeholder="Search patient / IC / barcode / test..." aria-label="Search notification records">
+<select id="notificationMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>
+<select id="notificationDisciplineFilter"><option value="ALL">All discipline</option><option value="BIOCHEMISTRY">Biochemistry</option><option value="HAEMATOLOGY">Haematology</option><option value="MICROBIOLOGY">Microbiology</option></select>
+<select id="notificationFlagFilter"><option value="ALL">All flag</option><option value="LOW CRITICAL">Low critical</option><option value="HIGH CRITICAL">High critical</option><option value="POSITIVE">Positive</option><option value="REACTIVE">Reactive</option><option value="DETECTED">Detected</option><option value="ABNORMAL">Abnormal</option></select>
+<select id="notificationStatusFilter"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="INFORMED">Informed</option><option value="COMPLETED">Completed</option></select>
+</div>
+<div class="notification-table-wrap">
+<table class="notification-table"><thead><tr><th>Date / Time</th><th>Patient</th><th>ID / IC</th><th>Unit</th><th>Discipline</th><th>Test</th><th>Result</th><th>Flag</th><th>Status</th><th>Action</th></tr></thead><tbody id="notificationTableBody"></tbody></table>
+<div class="notification-empty" id="notificationEmpty"><strong>No critical value notification records yet.</strong><span>Existing 2026 CSV data has intentionally not been imported. Use the registration form to create a new record.</span></div>
+</div>
+<div class="notification-pager" id="notificationPager">Showing 0–0 of 0</div>
+</section>
+</div>
+</div>
+</div>
+</section>
 <section class="page" id="inventory">
 <div class="page-scroll inventory-scroll">
 <div class="inventory-shell">
@@ -718,7 +792,8 @@
 <!-- +----------------------------------+
      + CLIENT SCRIPT - ASSET LOADING    +
      +----------------------------------+ -->
-<script src="/assets/js/app.js?v=visitor-v29"></script>
+<script src="/assets/js/notification.js?v=notification-v1"></script>
+<script src="/assets/js/app.js?v=visitor-v30"></script>
 
 </body>
 </html>

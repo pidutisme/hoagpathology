@@ -259,7 +259,6 @@
       'HEMATOLOGY': 'Annual Hematology records for documenting service activities, quality indicators, analyzer monitoring, and operational reference information.',
       'MICROBIOLOGY': 'Annual Microbiology records for documenting service activities, culture-related records, quality monitoring, and operational reference information.',
       'URINE/STOOL ANALYSIS': 'Annual Urine and Stool Analysis records for documenting examination activities, quality monitoring, workload tracking, and operational reference information.',
-      'NOTIFICATION': 'Centralized yearly notification records for documenting and tracking all critical laboratory findings to support immediate communication with healthcare providers.'
     };
   
     var moduleYearExternalLinks = {
@@ -279,9 +278,6 @@
       },
       'URINE/STOOL ANALYSIS': {
         '2026': 'https://drive.google.com/drive/folders/1XtPFI7XT8mha3IDQgfPpHam7sThSIlG_?usp=sharing'
-      },
-      'NOTIFICATION': {
-        '2026': 'https://docs.google.com/spreadsheets/d/1ki6SCA8NHiM6o-M1XV2hG-JHD3SQ8XqiC1AMfS5nsPo/edit?gid=0#gid=0'
       },
       'LEAVE': {
         '2026': 'https://docs.google.com/spreadsheets/d/14dH4UqPU4KV74XTc0EIz9ZRLcyEEQF4Wefq_Gtw4wgw/edit?gid=1348265286#gid=1348265286'
@@ -1313,8 +1309,8 @@
         if (pageId !== 'calendar' && typeof Calendar !== 'undefined' && Calendar && Calendar.flushPendingInputSave) {
           Calendar.flushPendingInputSave();
         }
-        if (pageId === 'notification' && typeof Modules !== 'undefined' && Modules && Modules.open) {
-          Modules.open('NOTIFICATION', btn || getNavButtonForPage('notification'));
+        if (pageId === 'notification' && typeof LabNotification !== 'undefined' && LabNotification && LabNotification.open) {
+          LabNotification.open();
           saveLastPage(pageId);
           writeRouteHistory(pageId, false);
           if (typeof ActivityTracker !== 'undefined' && ActivityTracker && ActivityTracker.track) {
@@ -4851,6 +4847,10 @@ hoagApiRequest('logout', {
         }
         if (normalizedName === 'TRANSFUSION' && typeof Transfusion !== 'undefined') {
           Transfusion.open(state.selectedModuleYear || new Date().getFullYear());
+          return;
+        }
+        if (normalizedName === 'NOTIFICATION' && typeof LabNotification !== 'undefined' && LabNotification && LabNotification.open) {
+          LabNotification.open();
           return;
         }
 
