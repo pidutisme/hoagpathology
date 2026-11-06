@@ -650,6 +650,7 @@
     var age = $('notificationAge'); if (age) age.value = '';
     var test = $('notificationTest'); if (test) { test.innerHTML = '<option value="">Select discipline first</option>'; test.dispatchEvent(new Event('change',{bubbles:true})); }
     var rule = $('notificationCriticalLimit'); if (rule) { rule.className = 'notification-critical-box is-empty'; rule.innerHTML = '<strong>Reference</strong><span>Select a test to load the critical value rule.</span>'; }
+    syncResultControl(null, '');
     setFlag('Awaiting result', '');
     setDefaultForm();
   }
@@ -673,6 +674,68 @@
     if ($('notificationAge')) $('notificationAge').value = Math.max(0, age);
     if ($('notificationSex')) $('notificationSex').value = sex;
   }
+  var qualitativeResultOptions = {
+    'Cerebrospinal Fluid Culture and Sensitivity': ['No Growth'],
+    'Cerebrospinal Fluid Antigen Detection': ['Negative'],
+    'Sterile Body Fluids': ['No Growth'],
+    'Sputum AFB': ['No AFB Seen'],
+    'BFMP': ['No Malaria Parasite Seen'],
+    'Any Culture & Sensitivity': ['No Significant Growth'],
+    'Antigen Detection': ['Negative'],
+    'VDRL': ['Non-reactive'],
+    'Hepatitis A': ['Non-reactive'],
+    'Hepatitis B': ['Non-reactive'],
+    'Hepatitis C': ['Non-reactive'],
+    'Syphilis - RPR/TPPA': ['Non-reactive'],
+    'MTB C&S': ['No Culture Growth'],
+    'Slit Skin Smear': ['Negative'],
+    'MTB Gene Xpert': ['MTB Not Detected'],
+    'Leptospirosis': ['IgG Not Detected', 'IgM Not Detected', 'LeptoMAT Negative'],
+    'Dengue Combo': ['NS1 Not Detected', 'IgM Negative', 'IgG Negative'],
+    'Influenza Test': ['Influenza A Not Detected', 'Influenza B Not Detected']
+  };
+
+  function findTestItem() {
+    var discipline = $('notificationDiscipline'), test = $('notificationTest');
+    if (!discipline || !test) return null;
+    var list = testCatalogue[discipline.value] || [];
+    return list.find(function (x) { return String(x.name) === String(test.value); }) || null;
+  }
+
+  function syncResultControl(item, selectedValue) {
+    var wrap = $('notificationResultSelectWrap');
+    var input = $('notificationResult');
+    var select = $('notificationResultSelect');
+    var hint = $('notificationResultHint');
+    if (!wrap || !input || !select) return;
+    var qualitative = !!(item && item.type === 'qualitative');
+    wrap.classList.toggle('is-qualitative', qualitative);
+    wrap.classList.toggle('is-quantitative', !qualitative);
+    select.required = qualitative;
+    input.required = !qualitative;
+    if (qualitative) {
+      var options = [];
+      (item.alerts || []).forEach(function (x) { if (options.indexOf(x) < 0) options.push(x); });
+      (qualitativeResultOptions[item.name] || []).forEach(function (x) { if (options.indexOf(x) < 0) options.push(x); });
+      select.innerHTML = '<option value="">Select result</option>' + options.map(function (x) { return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('');
+      select.value = selectedValue || '';
+      input.value = '';
+      if (hint) hint.textContent = 'Select the reported qualitative result from the catalogue.';
+    } else {
+      select.innerHTML = '<option value="">Select result</option>';
+      select.value = '';
+      input.value = selectedValue || '';
+      if (hint) hint.textContent = item ? 'Enter the quantitative result; the flag will be calculated automatically.' : 'Select a test first.';
+    }
+    var trigger = select.parentElement && select.parentElement.querySelector('.notification-select-trigger [data-notification-select-label]');
+    if (trigger) { var opt = select.options[select.selectedIndex]; trigger.textContent = opt ? opt.textContent : 'Select result'; }
+  }
+
+  function getResultValue() {
+    var item = findTestItem();
+    return item && item.type === 'qualitative' ? String(($('notificationResultSelect') || {}).value || '') : String(($('notificationResult') || {}).value || '').trim();
+  }
+
   function populateTests() {
     var discipline = $('notificationDiscipline');
     var test = $('notificationTest');
@@ -691,7 +754,7 @@
   function updateRuleAndFlag() {
     var discipline = $('notificationDiscipline');
     var test = $('notificationTest');
-    var result = $('notificationResult');
+    var resultValue = getResultValue();
     var box = $('notificationCriticalLimit');
     if (!discipline || !test || !box) return;
     var list = testCatalogue[discipline.value] || [];
@@ -699,12 +762,13 @@
     if (!item) {
       box.className = 'notification-critical-box is-empty';
       box.innerHTML = '<strong>Reference</strong><span>Critical-value catalogue will be connected in the next step.</span>';
-      setFlag(result && result.value ? 'REVIEW' : 'Awaiting result', result && result.value ? 'critical' : '');
+      setFlag(resultValue ? 'REVIEW' : 'Awaiting result', resultValue ? 'critical' : '');
       return;
     }
     box.className = 'notification-critical-box';
     box.innerHTML = '<strong>Critical Limit (' + esc(item.name) + ')</strong><span>' + esc(item.rule || 'See reference catalogue') + '</span>';
-    evaluateResult(item, result ? result.value : '');
+    syncResultControl(item, resultValue);
+    evaluateResult(item, resultValue);
   }
   function evaluateResult(item, value) {
     var raw = String(value || '').trim();
@@ -781,7 +845,7 @@
       discipline: $('notificationDiscipline').value,
       test_name: $('notificationTest').value,
       critical_limit: $('notificationCriticalLimit').innerText.replace(/^Reference\s*/i, '').trim(),
-      result: $('notificationResult').value.trim(),
+      result: getResultValue(),
       flag: $('notificationFlag').textContent.trim(),
       staff: $('notificationStaff').value.trim(),
       inform_to: $('notificationInformTo').value.trim(),
@@ -867,7 +931,8 @@
     populateTests();
     $('notificationTest').disabled = false;
     $('notificationTest').innerHTML = '<option value="' + esc(r.test_name || '') + '">' + esc(r.test_name || 'Current test') + '</option>';
-    $('notificationResult').value = r.result || '';
+    var editItem = findTestItem();
+    syncResultControl(editItem, r.result || '');
     $('notificationStaff').value = r.staff || '';
     $('notificationInformTo').value = r.inform_to || '';
     $('notificationInformedTime').value = r.informed_time || '';
@@ -903,6 +968,7 @@
     var discipline = $('notificationDiscipline'); if (discipline) discipline.addEventListener('change', function () { populateTests(); updateRuleAndFlag(); });
     var test = $('notificationTest'); if (test) test.addEventListener('change', updateRuleAndFlag);
     var result = $('notificationResult'); if (result) result.addEventListener('input', updateRuleAndFlag);
+    var resultSelect = $('notificationResultSelect'); if (resultSelect) resultSelect.addEventListener('change', updateRuleAndFlag);
     ['notificationSearch','notificationYearFilter','notificationMonthFilter','notificationDisciplineFilter','notificationFlagFilter','notificationStatusFilter'].forEach(function (id) { var el = $(id); if (el) { ['input','change'].forEach(function (evt) { el.addEventListener(evt, function () { currentPage = 1; render(); }); }); } });
     var body = $('notificationTableBody'); if (body) body.addEventListener('click', function (e) {
       var view = e.target.closest('[data-notification-view]'); if (view) { var r = records.find(function (x) { return String(x.id) === String(view.dataset.notificationView); }); if (r) showDetail(r); return; }

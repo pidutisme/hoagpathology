@@ -177,6 +177,16 @@
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 .notification-field textarea { min-height: 68px; resize: vertical; }
+.notification-result-control{min-width:0;}
+.notification-result-control .notification-custom-select-wrap{width:100%;}
+.notification-result-control .notification-select-trigger{min-height:37px;height:37px;border-radius:9px;}
+.notification-result-control .notification-native-select{position:absolute!important;}
+.notification-result-hint{display:block;margin-top:5px;color:#718096;font-size:9px;font-weight:800;}
+.notification-result-control.is-qualitative .notification-custom-select-wrap{display:block;}
+.notification-result-control.is-quantitative .notification-custom-select-wrap{display:none;}
+.notification-result-control.is-qualitative #notificationResult{display:none;}
+.notification-result-control.is-quantitative #notificationResult{display:block;}
+
 .notification-field input:focus,
 .notification-field select:focus,
 .notification-field textarea:focus {
