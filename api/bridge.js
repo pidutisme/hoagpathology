@@ -578,7 +578,7 @@ async function dispatch(db, method, a, req) {
     case 'getNotificationRecords': {
       const s = await requireSession(db, tokenAt(0));
       const records = await getNotificationRows();
-      return { ok: true, records, count: records.length, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+      return { ok: true, records, count: records.length, version: VERSION, userId: s.userId, userRole: String(s.role || '').toUpperCase(), isAdmin: String(s.role || '').toUpperCase() === 'ADMIN' || s.user?.is_super_admin === true, storageSource: 'supabase' };
     }
 
     case 'upsertNotificationRecord': {
@@ -599,7 +599,7 @@ async function dispatch(db, method, a, req) {
 
     case 'deleteNotificationRecord': {
       const s = await requireSession(db, tokenAt(1));
-      if (String(s.role || '').toUpperCase() !== 'ADMIN') fail('Admin access is required to delete notification records.', 403);
+      if (String(s.role || '').toUpperCase() !== 'ADMIN' && s.user?.is_super_admin !== true) fail('Admin access is required to delete notification records.', 403);
       const rid = clean(a[0], 160);
       if (!rid) fail('Notification record ID is required.');
       const { data: row, error } = await supabase.from('notification_records').select('id').eq('id', rid).maybeSingle();

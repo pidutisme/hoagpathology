@@ -743,6 +743,8 @@
   var recordsHydrated = false;
   var notificationLoading = false;
   var notificationSaving = false;
+  var notificationUserRole = '';
+  var notificationIsAdmin = false;
 
   function notificationApi(method, args) {
     return fetch('/api/bridge', {
@@ -878,6 +880,8 @@
     notificationApi('getNotificationRecords', [])
       .then(function (result) {
         records = Array.isArray(result.records) ? result.records.map(normalizeNotificationRecord) : [];
+        notificationUserRole = String(result.userRole || '').toUpperCase();
+        notificationIsAdmin = result.isAdmin === true || notificationUserRole === 'ADMIN';
         recordsHydrated = true;
         render();
       })
@@ -903,6 +907,7 @@
   }
 
   function isNotificationAdmin() {
+    if (notificationIsAdmin || notificationUserRole === 'ADMIN') return true;
     try { return typeof Auth !== 'undefined' && Auth.getUser && String((Auth.getUser() || {}).role || '').toUpperCase() === 'ADMIN'; }
     catch (e) { return false; }
   }
