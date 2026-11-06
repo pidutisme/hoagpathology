@@ -7,7 +7,7 @@
   'use strict';
 
   var records = [];
-  var pageSize = 20;
+  var pageSize = 1000;
   var currentPage = 1;
   var editingId = null;
 
@@ -766,6 +766,33 @@
     });
   }
 
+  function getCatalogueItemForRecord(r) {
+    var discipline = String(r && r.discipline || '');
+    var testName = String(r && r.test_name || '');
+    var list = testCatalogue[discipline] || [];
+    return list.find(function (x) { return String(x.name) === testName; }) || null;
+  }
+
+  function calculateRecordFlag(r) {
+    var item = getCatalogueItemForRecord(r);
+    if (!item) return String(r && r.flag || '');
+    var raw = String(r && r.result || '').trim();
+    if (!raw) return 'Awaiting result';
+
+    if (item.type === 'qualitative') {
+      var hit = (item.alerts || []).some(function (x) {
+        return String(x).toLowerCase() === raw.toLowerCase();
+      });
+      return hit ? raw.toUpperCase() : 'REVIEW';
+    }
+
+    var match = raw.replace(/,/g, '').match(/-?[0-9]+(?:\\.[0-9]+)?/);
+    var n = match ? Number(match[0]) : NaN;
+    if (item.low != null && !isNaN(n) && n < Number(item.low)) return 'LOW CRITICAL';
+    if (item.high != null && !isNaN(n) && n > Number(item.high)) return 'HIGH CRITICAL';
+    return 'REVIEW';
+  }
+
   function normalizeNotificationRecord(r) {
     r = r && typeof r === 'object' ? r : {};
     var dt = r.notification_datetime || '';
@@ -791,7 +818,7 @@
       test_name: String(r.test_name || ''),
       critical_limit: String(r.critical_limit || ''),
       result: String(r.result || ''),
-      flag: String(r.flag || ''),
+      flag: calculateRecordFlag(r),
       staff: String(r.staff || ''),
       inform_to: String(r.inform_to || ''),
       status: String(r.status || 'INFORMED'),
