@@ -448,3 +448,77 @@
 .notification-page .notification-title-wrap {
   min-width: 0;
 }
+
+/* =========================================================
+   NOTIFICATION FIXED WORKSPACE
+   The page itself never scrolls. Only the registration form
+   and the registered-records data area are scrollable.
+   ========================================================= */
+#notification.notification-page,
+#notification.notification-page .notification-scroll {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+#notification .notification-scroll {
+  box-sizing: border-box;
+  padding: 10px;
+}
+
+#notification .notification-shell {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  gap: 10px;
+}
+
+#notification .notification-head {
+  flex: 0 0 auto;
+}
+
+#notification .notification-layout {
+  flex: 1 1 auto;
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#notification .notification-form-card,
+#notification .notification-record-card {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#notification .notification-form {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+#notification .notification-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* Keep the page itself fixed even when the browser viewport is shorter. */
+#notification .notification-modal-dialog {
+  overflow: auto;
+}
+
+@media (max-width: 1180px) {
+  /* On narrower screens the two work areas stack, but the page still does not scroll. */
+  #notification .notification-layout {
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  #notification .notification-record-card {
+    min-height: 0;
+  }
+}
