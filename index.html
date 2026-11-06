@@ -480,7 +480,7 @@
 </div>
 <div class="notification-section-title"><span class="icon">♧</span> NOTIFICATION DETAILS</div>
 <div class="notification-grid">
-<div class="notification-field"><label for="notificationStaff">Staff <span class="required">*</span></label><input id="notificationStaff" maxlength="100" placeholder="Staff name" required></div>
+<div class="notification-field"><label for="notificationStaff">Staff <span class="required">*</span></label><select id="notificationStaff" required><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>
 <div class="notification-field"><label for="notificationInformTo">Inform To <span class="required">*</span></label><input id="notificationInformTo" maxlength="160" placeholder="Doctor / MO / ward" required></div>
 <div class="notification-field"><label for="notificationInformedTime">Time Informed <span class="required">*</span></label><input id="notificationInformedTime" type="time" required></div>
 <div class="notification-field"><label for="notificationStatus">Status</label><select id="notificationStatus"><option value="PENDING">PENDING</option><option value="INFORMED">INFORMED</option><option value="COMPLETED">COMPLETED</option></select></div>
@@ -499,6 +499,7 @@
 </div>
 <div class="notification-toolbar">
 <input id="notificationSearch" type="search" placeholder="Search patient / IC / barcode / test..." aria-label="Search notification records">
+<select id="notificationYearFilter"><option value="ALL">All years</option><option value="2026">2026</option></select>
 <select id="notificationMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>
 <select id="notificationDisciplineFilter"><option value="ALL">All discipline</option><option value="BIOCHEMISTRY">Biochemistry</option><option value="HAEMATOLOGY">Haematology</option><option value="MICROBIOLOGY">Microbiology</option></select>
 <select id="notificationFlagFilter"><option value="ALL">All flag</option><option value="LOW CRITICAL">Low critical</option><option value="HIGH CRITICAL">High critical</option><option value="POSITIVE">Positive</option><option value="REACTIVE">Reactive</option><option value="DETECTED">Detected</option><option value="ABNORMAL">Abnormal</option></select>

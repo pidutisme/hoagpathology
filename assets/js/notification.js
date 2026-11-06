@@ -14,11 +14,609 @@
   /* Test catalogue is intentionally empty in this first UI build.
      Backend/reference data can be connected later without changing the page shell. */
   var testCatalogue = {
-    BIOCHEMISTRY: [],
-    HAEMATOLOGY: [],
-    MICROBIOLOGY: []
-  };
-
+  "BIOCHEMISTRY": [
+    {
+      "name": "Sodium",
+      "rule": "<125 mmol/L / >155 mmol/L",
+      "low": 125.0,
+      "high": 155.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Potassium",
+      "rule": "<2.8 mmol/L / >6.0 mmol/L",
+      "low": 2.8,
+      "high": 6.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Glucose",
+      "rule": "<2.8 mmol/L / >20.0 mmol/L",
+      "low": 2.8,
+      "high": 20.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Calcium",
+      "rule": "<1.5 mmol/L / >3.0 mmol/L",
+      "low": 1.5,
+      "high": 3.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Magnesium",
+      "rule": "<0.41 mmol/L / >2.0 mmol/L",
+      "low": 0.41,
+      "high": 2.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Phosphate",
+      "rule": "<0.32 mmol/L / >2.87 mmol/L",
+      "low": 0.32,
+      "high": 2.87,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Lactate",
+      "rule": ">5.0 mmol/L",
+      "low": null,
+      "high": 5.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "pH",
+      "rule": "<7.2 / >7.55",
+      "low": 7.2,
+      "high": 7.55,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "pO2",
+      "rule": "<7.8 kPa",
+      "low": 7.8,
+      "high": null,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "pCO2",
+      "rule": ">9.3 kPa",
+      "low": null,
+      "high": 9.3,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Serum Osmolality",
+      "rule": "<250 mmol/kg / >350 mmol/kg",
+      "low": 250.0,
+      "high": 350.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Creatine Kinase",
+      "rule": ">5000 U/L",
+      "low": null,
+      "high": 5000.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Lithium",
+      "rule": ">1.5 mmol/L",
+      "low": null,
+      "high": 1.5,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "CSF-Glucose",
+      "rule": "<1.6 mmol/L",
+      "low": 1.6,
+      "high": null,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Calcium Paeds",
+      "rule": "<1.7 mmol/L / >3.1 mmol/L",
+      "low": 1.7,
+      "high": 3.1,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Magnesium Paeds",
+      "rule": "<0.5 mmol/L / >1.8 mmol/L",
+      "low": 0.5,
+      "high": 1.8,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Phosphate Paeds",
+      "rule": "<0.4 mmol/L / >2.8 mmol/L",
+      "low": 0.4,
+      "high": 2.8,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Lactate Paeds",
+      "rule": ">3.0 mmol/L",
+      "low": null,
+      "high": 3.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "pH Paeds",
+      "rule": ">7.60",
+      "low": null,
+      "high": 7.6,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "pO2 Paeds",
+      "rule": "<2.85 kPa / >16.0 kPa",
+      "low": 2.85,
+      "high": 16.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "pCO2 Paeds",
+      "rule": "<2.6 kPa / >9.1 kPa",
+      "low": 2.6,
+      "high": 9.1,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Serum Osmolality Paeds",
+      "rule": "<250 mmol/kg / >310 mmol/kg",
+      "low": 250.0,
+      "high": 310.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Creatinine Paeds",
+      "rule": ">330 µmol/L",
+      "low": null,
+      "high": 330.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Ammonia Paeds",
+      "rule": ">100 µmol/L",
+      "low": null,
+      "high": 100.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Bilirubin Paeds",
+      "rule": "Neonate >513 μmol/L / Children >428 μmol/L",
+      "low": null,
+      "high": null,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "CSF-Protein Paeds",
+      "rule": ">1.87 g/L",
+      "low": null,
+      "high": 1.87,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Urea Paeds",
+      "rule": ">19.0 mmol/L",
+      "low": null,
+      "high": 19.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Uric Acid Paeds",
+      "rule": ">500 μmol/L",
+      "low": null,
+      "high": 500.0,
+      "alerts": [],
+      "type": "numeric"
+    }
+  ],
+  "HAEMATOLOGY": [
+    {
+      "name": "Haemoglobin",
+      "rule": "<6.0 g/dL / >19.0 g/dL",
+      "low": 6.0,
+      "high": 19.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Haematocrit",
+      "rule": "<0.20 / 20% / >0.40 / 60%",
+      "low": 0.2,
+      "high": 0.4,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Platelet",
+      "rule": "<20 X 10^3 /μL / >1000 X 10^3 /μL",
+      "low": 20.0,
+      "high": 1000.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Fibrinogen",
+      "rule": "<100 mg/dL",
+      "low": 100.0,
+      "high": null,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "INR (Ratio)",
+      "rule": ">5",
+      "low": null,
+      "high": 5.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "PT",
+      "rule": ">2.5 Upper Limit",
+      "low": null,
+      "high": 2.5,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "APTT",
+      "rule": "80 sec or >2X Upper Reference range",
+      "low": null,
+      "high": null,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Haemoglobin Paeds",
+      "rule": "<7.0 g/dL / >20.0 g/dL",
+      "low": 7.0,
+      "high": 20.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Haemoglobin Neonate",
+      "rule": "<8.0 g/dL / >22.0 g/dL",
+      "low": 8.0,
+      "high": 22.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Haematocrit Paeds",
+      "rule": "<0.20 / 20% / >0.40 / 40%",
+      "low": 0.2,
+      "high": 0.4,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Haematocrit Neonate",
+      "rule": "<0.25 / 25% / >0.70 / 75%",
+      "low": 0.25,
+      "high": 0.7,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Platelet Paeds",
+      "rule": "<50 X 10^3 /μL / >1000 X 10^3 /μL",
+      "low": 50.0,
+      "high": 1000.0,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "Fibrinogen Paeds",
+      "rule": "<70 mg/dL",
+      "low": 70.0,
+      "high": null,
+      "alerts": [],
+      "type": "numeric"
+    },
+    {
+      "name": "WBC Paeds",
+      "rule": "<2.0 X 10^3 /μL / >50 X 10^3 /μL",
+      "low": 2.0,
+      "high": 50.0,
+      "alerts": [],
+      "type": "numeric"
+    }
+  ],
+  "MICROBIOLOGY": [
+    {
+      "name": "Cerebrospinal Fluid Culture and Sensitivity",
+      "rule": "Alert / critical result: Abnormal",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Abnormal"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Cerebrospinal Fluid Antigen Detection",
+      "rule": "Alert / critical result: Positive / AFB Seen / IgG Detected / Reactive / NS1 Detected / Listeria / Culture Growth / Influenza A Detected",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Positive",
+        "AFB Seen",
+        "IgG Detected",
+        "Reactive",
+        "NS1 Detected",
+        "Listeria",
+        "Culture Growth",
+        "Influenza A Detected"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Sterile Body Fluids",
+      "rule": "Alert / critical result: Positive / IgM Detected / IgM Positive / Bacillus / Influenza B Detected",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Positive",
+        "IgM Detected",
+        "IgM Positive",
+        "Bacillus",
+        "Influenza B Detected"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Sputum AFB",
+      "rule": "Alert / critical result: AFB Seen / LeptoMAT Inconclusive / IgG Positive / Clostridium",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "AFB Seen",
+        "LeptoMAT Inconclusive",
+        "IgG Positive",
+        "Clostridium"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "BFMP",
+      "rule": "Alert / critical result: Malaria Parasite Seen / LeptoMAT Positive / Streptococcus viridans",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Malaria Parasite Seen",
+        "LeptoMAT Positive",
+        "Streptococcus viridans"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Any Culture & Sensitivity",
+      "rule": "Alert / critical result: Listeria / Bacillus / Clostridium / Streptococcus viridans / Streptococcus pneumoniae / Streptococcus agalactiae / Streptococcus pyogenes / Streptococcus bovis / Enterococcus faecalis / Enterococcus faecium / Staphylococcus aureus / Staphylococcus epidermidis / Staphylococcus saprophyticus / Citrobacter koseri / Citrobacter freundii / Klebsiella aerogenes / Enterobacter cloacae / Enterobacter amnigenus / Enterobacter intermedius / Pectobacterium carotovorum / Dickeya dadantii / Escherichia coli / Klebsiella oxytoca / Klebsiella pneumoniae / Serratia fonticola / Serratia rubidaea / Edwardsiella tarda / Erwinia cacticida / Morganella morganii / Proteus mirabilis / Proteus vulgaris / Proteus penneri / Providencia stuartii / Salmonella bongori / Salmonella enterica / Serratia marcescens / Serratia liquefaciens / Shigella spp. / Yersinia enterocolitica / Yersinia pestis / Yersinia pseudotuberculosis / Salmonella typhi / Vibrio cholerae / Bordetella pertusis / Corynebacterium diptheria / Candida albican / Pseudomonas aeruginosa",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Listeria",
+        "Bacillus",
+        "Clostridium",
+        "Streptococcus viridans",
+        "Streptococcus pneumoniae",
+        "Streptococcus agalactiae",
+        "Streptococcus pyogenes",
+        "Streptococcus bovis",
+        "Enterococcus faecalis",
+        "Enterococcus faecium",
+        "Staphylococcus aureus",
+        "Staphylococcus epidermidis",
+        "Staphylococcus saprophyticus",
+        "Citrobacter koseri",
+        "Citrobacter freundii",
+        "Klebsiella aerogenes",
+        "Enterobacter cloacae",
+        "Enterobacter amnigenus",
+        "Enterobacter intermedius",
+        "Pectobacterium carotovorum",
+        "Dickeya dadantii",
+        "Escherichia coli",
+        "Klebsiella oxytoca",
+        "Klebsiella pneumoniae",
+        "Serratia fonticola",
+        "Serratia rubidaea",
+        "Edwardsiella tarda",
+        "Erwinia cacticida",
+        "Morganella morganii",
+        "Proteus mirabilis",
+        "Proteus vulgaris",
+        "Proteus penneri",
+        "Providencia stuartii",
+        "Salmonella bongori",
+        "Salmonella enterica",
+        "Serratia marcescens",
+        "Serratia liquefaciens",
+        "Shigella spp.",
+        "Yersinia enterocolitica",
+        "Yersinia pestis",
+        "Yersinia pseudotuberculosis",
+        "Salmonella typhi",
+        "Vibrio cholerae",
+        "Bordetella pertusis",
+        "Corynebacterium diptheria",
+        "Candida albican",
+        "Pseudomonas aeruginosa"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Antigen Detection",
+      "rule": "Alert / critical result: Legionella spp / Streptococcus agalactiae",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Legionella spp",
+        "Streptococcus agalactiae"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "VDRL",
+      "rule": "Alert / critical result: Reactive / Streptococcus pyogenes",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Reactive",
+        "Streptococcus pyogenes"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Hepatitis A",
+      "rule": "Alert / critical result: Reactive / Streptococcus bovis",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Reactive",
+        "Streptococcus bovis"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Hepatitis B",
+      "rule": "Alert / critical result: Reactive / Enterococcus faecalis",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Reactive",
+        "Enterococcus faecalis"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Hepatitis C",
+      "rule": "Alert / critical result: Reactive / Enterococcus faecium",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Reactive",
+        "Enterococcus faecium"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Syphilis - RPR/TPPA",
+      "rule": "Alert / critical result: Reactive / Staphylococcus aureus",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Reactive",
+        "Staphylococcus aureus"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "MTB C&S",
+      "rule": "Alert / critical result: Culture Growth / Staphylococcus epidermidis",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Culture Growth",
+        "Staphylococcus epidermidis"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Slit Skin Smear",
+      "rule": "Alert / critical result: Positive / Staphylococcus saprophyticus",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Positive",
+        "Staphylococcus saprophyticus"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "MTB Gene Xpert",
+      "rule": "Alert / critical result: MTB Detected / Citrobacter koseri",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "MTB Detected",
+        "Citrobacter koseri"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Leptospirosis",
+      "rule": "Alert / critical result: IgG Detected / IgM Detected / LeptoMAT Inconclusive / LeptoMAT Positive / Citrobacter freundii",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "IgG Detected",
+        "IgM Detected",
+        "LeptoMAT Inconclusive",
+        "LeptoMAT Positive",
+        "Citrobacter freundii"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Dengue Combo",
+      "rule": "Alert / critical result: NS1 Detected / IgM Positive / IgG Positive / Klebsiella aerogenes",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "NS1 Detected",
+        "IgM Positive",
+        "IgG Positive",
+        "Klebsiella aerogenes"
+      ],
+      "type": "qualitative"
+    },
+    {
+      "name": "Influenza Test",
+      "rule": "Alert / critical result: Influenza A Detected / Influenza B Detected / Enterobacter cloacae",
+      "low": null,
+      "high": null,
+      "alerts": [
+        "Influenza A Detected",
+        "Influenza B Detected",
+        "Enterobacter cloacae"
+      ],
+      "type": "qualitative"
+    }
+  ]
+};
   function $(id) { return document.getElementById(id); }
   function esc(value) {
     return String(value == null ? '' : value)
@@ -50,7 +648,7 @@
     var form = $('notificationForm'); if (form) form.reset();
     var sex = $('notificationSex'); if (sex) sex.value = '';
     var age = $('notificationAge'); if (age) age.value = '';
-    var test = $('notificationTest'); if (test) test.innerHTML = '<option value="">Select discipline first</option>';
+    var test = $('notificationTest'); if (test) { test.innerHTML = '<option value="">Select discipline first</option>'; test.dispatchEvent(new Event('change',{bubbles:true})); }
     var rule = $('notificationCriticalLimit'); if (rule) { rule.className = 'notification-critical-box is-empty'; rule.innerHTML = '<strong>Reference</strong><span>Select a test to load the critical value rule.</span>'; }
     setFlag('Awaiting result', '');
     setDefaultForm();
@@ -83,10 +681,12 @@
     if (!list.length) {
       test.innerHTML = '<option value="">Test catalogue not loaded yet</option>';
       test.disabled = true;
+      test.dispatchEvent(new Event('change',{bubbles:true}));
       return;
     }
     test.disabled = false;
     test.innerHTML = '<option value="">Select test</option>' + list.map(function (x) { return '<option value="' + esc(x.name) + '">' + esc(x.name) + '</option>'; }).join('');
+    test.dispatchEvent(new Event('change',{bubbles:true}));
   }
   function updateRuleAndFlag() {
     var discipline = $('notificationDiscipline');
@@ -107,11 +707,66 @@
     evaluateResult(item, result ? result.value : '');
   }
   function evaluateResult(item, value) {
-    var n = Number(String(value || '').replace(/,/g, '').trim());
-    if (!value) { setFlag('Awaiting result', ''); return; }
-    if (item && item.low != null && n < Number(item.low)) { setFlag('LOW CRITICAL', 'critical'); return; }
-    if (item && item.high != null && n > Number(item.high)) { setFlag('HIGH CRITICAL', 'critical'); return; }
+    var raw = String(value || '').trim();
+    var n = Number(raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/)?.[0] || '');
+    if (!raw) { setFlag('Awaiting result', ''); return; }
+    if (item && item.type === 'qualitative') {
+      var hit = (item.alerts || []).some(function (x) { return String(x).toLowerCase() === raw.toLowerCase(); });
+      if (hit) {
+        var up = raw.toUpperCase();
+        var tone = /DETECTED|POSITIVE|REACTIVE|ABNORMAL|SEEN|GROWTH|MALARIA/.test(up) ? 'critical' : 'normal';
+        setFlag(up, tone);
+      } else setFlag('REVIEW', 'normal');
+      return;
+    }
+    if (item && item.low != null && !isNaN(n) && n < Number(item.low)) { setFlag('LOW CRITICAL', 'critical'); return; }
+    if (item && item.high != null && !isNaN(n) && n > Number(item.high)) { setFlag('HIGH CRITICAL', 'critical'); return; }
     setFlag('REVIEW', 'normal');
+  }
+
+  function initNotificationNeumorphicSelects() {
+    var page = $('notification');
+    if (!page) return;
+    var openMenu = null, openTrigger = null, openSelect = null;
+    function close() {
+      if (openMenu) openMenu.remove();
+      if (openTrigger) { openTrigger.classList.remove('is-open'); openTrigger.setAttribute('aria-expanded','false'); }
+      openMenu = openTrigger = openSelect = null;
+    }
+    function position() {
+      if (!openMenu || !openTrigger) return;
+      var r=openTrigger.getBoundingClientRect(), w=Math.max(r.width,180), h=openMenu.offsetHeight;
+      var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-w-8)), top=r.bottom+6;
+      if(top+h>window.innerHeight-8) top=Math.max(8,r.top-h-6);
+      openMenu.style.width=w+'px'; openMenu.style.left=left+'px'; openMenu.style.top=top+'px';
+    }
+    function sync(select) {
+      var wrap=select.parentElement, trigger=wrap && wrap.querySelector('.notification-select-trigger');
+      if(!trigger) return;
+      var label=trigger.querySelector('[data-notification-select-label]'), opt=select.options[select.selectedIndex];
+      if(label) label.textContent=opt?opt.textContent:'Select...';
+      trigger.classList.toggle('is-disabled',!!select.disabled);
+      if(openMenu) openMenu.querySelectorAll('button').forEach(function(b){b.classList.toggle('is-selected',b.dataset.value===select.value);});
+    }
+    function setup(select) {
+      if(!select || select.dataset.notificationCustom==='1') { if(select) sync(select); return; }
+      select.dataset.notificationCustom='1';
+      var wrap=document.createElement('div'); wrap.className='notification-custom-select-wrap';
+      select.parentNode.insertBefore(wrap,select); wrap.appendChild(select); select.classList.add('notification-native-select');
+      var trigger=document.createElement('button'); trigger.type='button'; trigger.className='notification-select-trigger'; trigger.setAttribute('aria-haspopup','listbox'); trigger.setAttribute('aria-expanded','false');
+      trigger.innerHTML='<span data-notification-select-label></span><span class="notification-select-chevron">⌄</span>';
+      wrap.insertBefore(trigger,select); sync(select);
+      trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation(); if(select.disabled)return; if(openTrigger===trigger)close(); else {
+        close(); openTrigger=trigger; openSelect=select; openMenu=document.createElement('div'); openMenu.className='notification-select-menu'; openMenu.setAttribute('role','listbox');
+        Array.prototype.forEach.call(select.options,function(opt){ var b=document.createElement('button'); b.type='button'; b.textContent=opt.textContent; b.dataset.value=opt.value; b.setAttribute('role','option'); if(opt.value===select.value)b.classList.add('is-selected'); b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();select.value=opt.value;select.dispatchEvent(new Event('change',{bubbles:true}));sync(select);close();}); openMenu.appendChild(b); });
+        document.body.appendChild(openMenu); trigger.classList.add('is-open'); trigger.setAttribute('aria-expanded','true'); position();
+      }});
+      select.addEventListener('change',function(){sync(select);});
+    }
+    page.querySelectorAll('select').forEach(setup);
+    document.addEventListener('click',function(e){if(openMenu && !e.target.closest('.notification-select-menu') && !e.target.closest('.notification-select-trigger')) close();});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+    window.addEventListener('resize',position); window.addEventListener('scroll',position,true);
   }
   function collectForm() {
     return {
@@ -137,6 +792,7 @@
   }
   function render() {
     var search = String(($('notificationSearch') || {}).value || '').trim().toLowerCase();
+    var year = String(($('notificationYearFilter') || {}).value || 'ALL');
     var month = String(($('notificationMonthFilter') || {}).value || 'ALL');
     var discipline = String(($('notificationDisciplineFilter') || {}).value || 'ALL');
     var flag = String(($('notificationFlagFilter') || {}).value || 'ALL');
@@ -144,6 +800,7 @@
     var filtered = records.filter(function (r) {
       var hay = [r.patient_name, r.patient_id, r.barcode, r.test_name, r.unit, r.staff].join(' ').toLowerCase();
       if (search && hay.indexOf(search) < 0) return false;
+      if (year !== 'ALL' && String(r.notification_datetime || '').slice(0,4) !== year) return false;
       if (month !== 'ALL' && String(r.notification_datetime || '').slice(5,7) !== month) return false;
       if (discipline !== 'ALL' && r.discipline !== discipline) return false;
       if (flag !== 'ALL' && r.flag !== flag) return false;
@@ -246,7 +903,7 @@
     var discipline = $('notificationDiscipline'); if (discipline) discipline.addEventListener('change', function () { populateTests(); updateRuleAndFlag(); });
     var test = $('notificationTest'); if (test) test.addEventListener('change', updateRuleAndFlag);
     var result = $('notificationResult'); if (result) result.addEventListener('input', updateRuleAndFlag);
-    ['notificationSearch','notificationMonthFilter','notificationDisciplineFilter','notificationFlagFilter','notificationStatusFilter'].forEach(function (id) { var el = $(id); if (el) el.addEventListener('input', function () { currentPage = 1; render(); }); });
+    ['notificationSearch','notificationYearFilter','notificationMonthFilter','notificationDisciplineFilter','notificationFlagFilter','notificationStatusFilter'].forEach(function (id) { var el = $(id); if (el) { ['input','change'].forEach(function (evt) { el.addEventListener(evt, function () { currentPage = 1; render(); }); }); } });
     var body = $('notificationTableBody'); if (body) body.addEventListener('click', function (e) {
       var view = e.target.closest('[data-notification-view]'); if (view) { var r = records.find(function (x) { return String(x.id) === String(view.dataset.notificationView); }); if (r) showDetail(r); return; }
       var edit = e.target.closest('[data-notification-edit]'); if (edit) editRecord(edit.dataset.notificationEdit);
@@ -254,5 +911,5 @@
   }
 
   window.LabNotification = { open: open, render: render, getRecords: function () { return records.slice(); } };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicSelects(); }
 })(window, document);
