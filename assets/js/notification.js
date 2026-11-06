@@ -1411,9 +1411,23 @@
        var del = e.target.closest('[data-notification-delete]'); if (del) {
          if (!isNotificationAdmin()) return;
          var id = del.dataset.notificationDelete;
-         if (!window.confirm('Delete this notification record? This action cannot be undone.')) return;
-         del.disabled = true;
-         deleteNotificationRecord(id).catch(function(error){ del.disabled = false; window.alert(error && error.message ? error.message : 'Unable to delete notification record.'); });
+         var row = records.find(function (x) { return String(x.id) === String(id); });
+         if (!row) return;
+         var itemLabel = String(row.patient || row.patientName || row.name || 'this patient');
+         var detailLabel = [row.dateTime || row.date || row.createdAt, row.test || row.testName, row.discipline || row.department].filter(Boolean).join(' · ');
+         var confirmDelete = function () {
+           del.disabled = true;
+           deleteNotificationRecord(id).catch(function(error){ del.disabled = false; window.alert(error && error.message ? error.message : 'Unable to delete notification record.'); });
+         };
+         if (typeof window.requestAppConfirm === 'function') {
+           window.requestAppConfirm(
+             'DELETE NOTIFICATION RECORD?',
+             'Delete notification record for ' + itemLabel + (detailLabel ? ' · ' + detailLabel : '') + '? This cannot be undone.',
+             confirmDelete
+           );
+         } else {
+           console.warn('App confirm modal is unavailable; destructive action cancelled.');
+         }
        }
     });
   }

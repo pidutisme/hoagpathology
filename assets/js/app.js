@@ -803,6 +803,7 @@
       var cancel = $('appConfirmCancel');
       if (cancel) cancel.focus();
     }
+    window.requestAppConfirm = requestAppConfirm;
   
     /* +----------------------------------+
      * + normalizeRosterStorageUserId     +
