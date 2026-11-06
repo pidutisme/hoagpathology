@@ -1494,3 +1494,25 @@
   height: 0 !important;
   display: none !important;
 }
+
+/* Notification datetime picker: keep time columns scrollable but hide native scrollbar.
+   The popover is appended to <body>, so #notification-scoped rules do not apply. */
+.notification-datetime-popover .notification-time-list {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.notification-datetime-popover .notification-time-list::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.notification-datetime-popover .notification-time-list::-webkit-scrollbar-track,
+.notification-datetime-popover .notification-time-list::-webkit-scrollbar-thumb,
+.notification-datetime-popover .notification-time-list::-webkit-scrollbar-button {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
