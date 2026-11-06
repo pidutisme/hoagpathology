@@ -248,3 +248,97 @@ body.dark-mode #authScreen .auth-secondary-btn,body.dark-mode #authScreen .auth-
   #authScreen .auth-brand-panel{min-height:245px;padding:30px 24px 44px}
   #authScreen .auth-card-inner{padding:38px 22px 30px}
 }
+
+/* ================================================================
+   V17 — closer geometry to the supplied reference image
+   Visual-only. No authentication behaviour changes.
+   ================================================================ */
+#authScreen .auth-card{
+  width:min(100%,1420px);
+  height:min(760px,calc(100svh - 44px));
+  padding:12px;
+  grid-template-columns:54% 46%;
+  border-radius:30px;
+}
+
+/* Keep the left side rectangular; the right light panel creates the smooth
+   inward curve. This avoids the jagged/polygon divider from V16. */
+#authScreen .auth-brand-panel{
+  clip-path:none;
+  border-radius:18px 0 0 18px;
+  padding:76px 66px 58px;
+  background-image:
+    linear-gradient(112deg,rgba(2,21,54,.96) 0%,rgba(3,55,106,.84) 50%,rgba(0,105,160,.74) 100%),
+    url("../img/login-microscope-clean-v17.jpg");
+  background-size:cover;
+  background-position:center center;
+}
+
+/* Smooth white overlap: the reference has a large soft curved divider,
+   not a pointed/zig-zag edge. */
+#authScreen .auth-card-inner{
+  position:relative;
+  z-index:8;
+  margin-left:-62px;
+  padding:0 74px 0 136px;
+  min-height:100%;
+  align-content:center;
+  justify-content:stretch;
+  background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(232,242,253,.78));
+  border-radius:52% 0 0 52% / 50% 0 0 50%;
+  overflow:hidden;
+}
+
+#authScreen .auth-card-inner::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(232,242,253,.80));
+}
+#authScreen .auth-card-inner::after{
+  right:-12px;
+  top:-12px;
+  width:390px;
+  height:350px;
+  opacity:.22;
+  background-size:108px 94px;
+}
+
+/* Reference has only the cyan accent + form on the right. */
+#authScreen #authLoginPanel::before{
+  width:106px;
+  height:5px;
+  margin:0 0 28px;
+}
+#authScreen .auth-form{
+  width:100%;
+  max-width:548px;
+  gap:18px;
+  margin:0;
+}
+#authScreen .auth-input-wrap{min-height:76px;border-radius:17px}
+#authScreen .auth-input{min-height:76px;font-size:16px}
+#authScreen .auth-submit{min-height:78px;border-radius:17px}
+#authScreen .auth-actions{padding-top:38px}
+
+@media(max-width:1180px) and (min-width:981px){
+  #authScreen .auth-card{grid-template-columns:54% 46%}
+  #authScreen .auth-brand-panel{padding-left:48px;padding-right:48px}
+  #authScreen .auth-card-inner{margin-left:-48px;padding-left:112px;padding-right:52px}
+}
+@media(max-width:980px){
+  #authScreen .auth-card{grid-template-columns:1fr;padding:10px}
+  #authScreen .auth-brand-panel{border-radius:18px;min-height:320px;padding:48px 42px 54px}
+  #authScreen .auth-card-inner{
+    margin-left:0;
+    min-height:0;
+    padding:56px 42px 48px;
+    border-radius:18px;
+    align-content:center;
+  }
+}
+@media(max-width:650px){
+  #authScreen .auth-brand-panel{min-height:245px;padding:30px 24px 44px}
+  #authScreen .auth-card-inner{padding:38px 22px 30px}
+}
