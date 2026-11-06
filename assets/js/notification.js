@@ -746,16 +746,69 @@
     if (isNaN(d.getTime())) return esc(value);
     return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + '<br><small>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</small>';
   }
-  var STORAGE_KEY = 'hoagpathology.notification.records.v1';
-  function loadRecords() {
+  var STORAGE_KEY = 'hoagpathology.notification.records.v2';
+  var LEGACY_STORAGE_KEY = 'hoagpathology.notification.records.v1';
+  var DB_NAME = 'hoagpathology-notification';
+  var DB_STORE = 'records';
+  var recordsHydrated = false;
+
+  function localRead() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) raw = localStorage.getItem(LEGACY_STORAGE_KEY);
       var parsed = raw ? JSON.parse(raw) : [];
-      records = Array.isArray(parsed) ? parsed : [];
-    } catch (e) { records = []; }
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) { return []; }
+  }
+  function localWrite() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); return true; } catch (e) { return false; }
+  }
+  function openRecordsDB() {
+    return new Promise(function(resolve, reject) {
+      if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function() {
+        var db = req.result;
+        if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'id' });
+      };
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function() { reject(req.error || new Error('IndexedDB open failed')); };
+    });
+  }
+  function idbReadAll() {
+    return openRecordsDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(DB_STORE, 'readonly'), store = tx.objectStore(DB_STORE), req = store.getAll();
+        req.onsuccess = function() { resolve(Array.isArray(req.result) ? req.result : []); };
+        req.onerror = function() { reject(req.error || new Error('IndexedDB read failed')); };
+        tx.oncomplete = function() { try { db.close(); } catch (e) {} };
+      });
+    });
+  }
+  function idbWriteAll(list) {
+    return openRecordsDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(DB_STORE, 'readwrite'), store = tx.objectStore(DB_STORE);
+        store.clear();
+        list.forEach(function(item) { store.put(item); });
+        tx.oncomplete = function() { try { db.close(); } catch (e) {} resolve(true); };
+        tx.onerror = function() { try { db.close(); } catch (e) {} reject(tx.error || new Error('IndexedDB write failed')); };
+      });
+    });
+  }
+  function loadRecords() {
+    records = localRead();
+    recordsHydrated = false;
+    idbReadAll().then(function(saved) {
+      if (saved.length) records = saved;
+      else if (records.length) idbWriteAll(records).catch(function(){});
+      recordsHydrated = true;
+      render();
+    }).catch(function() { recordsHydrated = true; render(); });
   }
   function persistRecords() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch (e) {}
+    localWrite();
+    idbWriteAll(records).catch(function(){});
   }
 
   function setDefaultForm() {
@@ -926,10 +979,16 @@
       var t=current();
       menu.querySelectorAll('[data-time-part]').forEach(function(col){
         var part=col.dataset.timePart, val=part==='hour'?String(t.hour):part==='minute'?String(t.minute):t.ampm;
-        col.querySelectorAll('button').forEach(function(b){ b.classList.toggle('is-selected', b.dataset.timeValue===val); });
+        var selected=null;
+        col.querySelectorAll('button').forEach(function(b){
+          var on=b.dataset.timeValue===val;
+          b.classList.toggle('is-selected', on);
+          if(on) selected=b;
+        });
+        if(selected) selected.scrollIntoView({block:'nearest'});
       });
     }
-    function open(){ menu.hidden=false; input.setAttribute('aria-expanded','true'); trigger.classList.add('is-open'); var r=input.getBoundingClientRect(), mw=menu.offsetWidth||190, mh=menu.offsetHeight||240; var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-mw-8)); var top=r.bottom+6; if(top+mh>window.innerHeight-8) top=Math.max(8,r.top-mh-6); menu.style.left=left+'px'; menu.style.top=top+'px'; syncSelected(); var sel=menu.querySelector('[data-time-part="hour"] .is-selected'); if(sel) sel.scrollIntoView({block:'nearest'}); }
+    function open(){ menu.hidden=false; input.setAttribute('aria-expanded','true'); trigger.classList.add('is-open'); var r=input.getBoundingClientRect(), mw=menu.offsetWidth||190, mh=menu.offsetHeight||240; var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-mw-8)); var top=r.bottom+6; if(top+mh>window.innerHeight-8) top=Math.max(8,r.top-mh-6); menu.style.left=left+'px'; menu.style.top=top+'px'; syncSelected(); }
     function close(){ menu.hidden=true; input.setAttribute('aria-expanded','false'); trigger.classList.remove('is-open'); }
     function choose(part,value){
       var t=current();
