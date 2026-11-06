@@ -971,7 +971,10 @@
     var ampm = ['AM','PM'];
     var renderCol = function(part, values) {
       var col = menu.querySelector('[data-time-part="'+part+'"]');
-      col.innerHTML = values.map(function(v){ var text=part==='minute'?pad(v):String(v); return '<button type="button" data-time-value="'+esc(String(v))+'">'+esc(text)+'</button>'; }).join('');
+      col.innerHTML = values.map(function(v){
+        var text = part === 'minute' ? pad(v) : String(v);
+        return '<button type="button" data-time-value="'+esc(String(v))+'">'+esc(text)+'</button>';
+      }).join('');
     };
     renderCol('hour',hours); renderCol('minute',minutes); renderCol('ampm',ampm);
     function current(){ return parseTime12(input.value) || parseTime12(timeNow()); }
@@ -979,17 +982,20 @@
       var t=current();
       menu.querySelectorAll('[data-time-part]').forEach(function(col){
         var part=col.dataset.timePart, val=part==='hour'?String(t.hour):part==='minute'?String(t.minute):t.ampm;
-        var selected=null;
-        col.querySelectorAll('button').forEach(function(b){
-          var on=b.dataset.timeValue===val;
-          b.classList.toggle('is-selected', on);
-          if(on) selected=b;
-        });
-        if(selected) selected.scrollIntoView({block:'nearest'});
+        col.querySelectorAll('button').forEach(function(b){ b.classList.toggle('is-selected', b.dataset.timeValue===val); });
       });
     }
-    function open(){ menu.hidden=false; input.setAttribute('aria-expanded','true'); trigger.classList.add('is-open'); var r=input.getBoundingClientRect(), mw=menu.offsetWidth||190, mh=menu.offsetHeight||240; var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-mw-8)); var top=r.bottom+6; if(top+mh>window.innerHeight-8) top=Math.max(8,r.top-mh-6); menu.style.left=left+'px'; menu.style.top=top+'px'; syncSelected(); }
-    function close(){ menu.hidden=true; input.setAttribute('aria-expanded','false'); trigger.classList.remove('is-open'); }
+    function open(){
+      menu.hidden=false;
+      input.setAttribute('aria-expanded','true');
+      trigger.classList.add('is-open');
+      syncSelected();
+    }
+    function close(){
+      menu.hidden=true;
+      input.setAttribute('aria-expanded','false');
+      trigger.classList.remove('is-open');
+    }
     function choose(part,value){
       var t=current();
       if(part==='hour') t.hour=Number(value); else if(part==='minute') t.minute=Number(value); else t.ampm=value;
@@ -999,9 +1005,14 @@
     }
     trigger.addEventListener('click',function(e){e.stopPropagation(); menu.hidden ? open() : close();});
     input.addEventListener('click',function(){open();});
-    menu.addEventListener('click',function(e){var b=e.target.closest('button[data-time-value]'); if(!b) return; choose(b.parentElement.dataset.timePart,b.dataset.timeValue);});
+    menu.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-time-value]');
+      if(!b) return;
+      choose(b.parentElement.dataset.timePart,b.dataset.timeValue);
+    });
     document.addEventListener('click',function(e){if(!picker.contains(e.target)) close();});
-    window.addEventListener('resize',close); window.addEventListener('scroll',close,true);
+    window.addEventListener('resize',close);
+    window.addEventListener('scroll',close,true);
     input.value=timeNow();
   }
 
