@@ -363,41 +363,68 @@
 .notification-page .notification-toolbar .notification-custom-select-wrap{min-width:0}
 .notification-page .notification-toolbar .notification-select-trigger{height:36px}
 
-/* Notification custom neumorphic time picker — same floating behavior as Notification custom selects,
-   but visually organized as exactly 3 sections: HOUR | MINUTE | AM/PM. */
+/* Notification time picker — same custom-dropdown language as the other Notification selects.
+   Exactly 3 columns: HOUR | MINUTE | AM/PM. No visible scrollbars. */
 .notification-time-picker{position:relative;width:100%;}
 .notification-time-picker input{padding-right:38px!important;cursor:pointer;background:var(--surface-inset)!important;box-shadow:var(--shadow-inset)!important;border-color:var(--year-page-card-border)!important;}
-.notification-time-trigger{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;border-radius:9px;background:var(--surface-inset);box-shadow:var(--shadow-soft);color:#52709a;font:900 13px inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s ease;}
+.notification-time-trigger{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;border-radius:9px;background:var(--surface-inset);box-shadow:var(--shadow-soft);color:#52709a;font:900 13px inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s ease;z-index:3;}
 .notification-time-trigger:hover,.notification-time-trigger.is-open{color:var(--primary);box-shadow:var(--shadow-inset);}
 .notification-time-menu[hidden]{display:none!important;}
 .notification-time-menu{
   position:fixed!important;
   z-index:100001!important;
-  display:grid;
-  grid-template-columns:76px 176px 76px;
-  gap:8px;
-  padding:10px;
-  border:1px solid var(--year-page-card-border);
-  border-radius:14px;
+  display:grid!important;
+  grid-template-columns:72px 92px 72px!important;
+  gap:10px!important;
+  padding:12px!important;
+  border:1px solid var(--year-page-card-border)!important;
+  border-radius:14px!important;
   background:#eef3f9!important;
   box-shadow:0 18px 38px rgba(37,99,235,.18),var(--shadow-soft)!important;
   overflow:visible!important;
   isolation:isolate;
-  width:fit-content;
-  min-width:356px;
-  box-sizing:border-box;
+  width:auto!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
 }
 .notification-time-section{min-width:0;display:flex;flex-direction:column;gap:6px;}
 .notification-time-section-title{font:900 9px "Nunito Sans",sans-serif;color:#52709a;letter-spacing:.08em;text-align:center;text-transform:uppercase;}
-.notification-time-col{display:grid;gap:4px;padding:2px;background:transparent!important;align-content:start;overflow:visible!important;min-width:0;height:auto!important;max-height:none!important;scrollbar-width:none;-ms-overflow-style:none;}
-.notification-time-col::-webkit-scrollbar{display:none;width:0;height:0;}
-.notification-time-col[data-time-part="hour"]{grid-template-columns:repeat(3,1fr);}
-.notification-time-col[data-time-part="minute"]{grid-template-columns:repeat(6,1fr);}
-.notification-time-col[data-time-part="ampm"]{grid-template-columns:1fr;}
-.notification-time-col button{appearance:none;border:0;background:transparent!important;color:var(--text);font:800 11px "Nunito Sans",sans-serif;padding:6px 2px;border-radius:8px;cursor:pointer;min-height:27px;line-height:1;}
-.notification-time-col button:hover{background:var(--surface-inset)!important;box-shadow:var(--shadow-soft);}
-.notification-time-col button.is-selected{background:#dceaff!important;color:var(--primary);box-shadow:inset 3px 3px 7px rgba(163,177,198,.28),inset -3px -3px 7px rgba(255,255,255,.95)!important;font-weight:900;}
+.notification-time-col{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:3px!important;
+  padding:2px!important;
+  background:transparent!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  height:184px!important;
+  max-height:184px!important;
+  min-width:0!important;
+  scrollbar-width:none!important;
+  -ms-overflow-style:none!important;
+  overscroll-behavior:contain;
+}
+.notification-time-col::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+.notification-time-col button{
+  appearance:none!important;
+  flex:0 0 28px!important;
+  width:100%!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--text)!important;
+  font:800 11px "Nunito Sans",sans-serif!important;
+  padding:5px 2px!important;
+  border-radius:8px!important;
+  cursor:pointer!important;
+  min-height:28px!important;
+  line-height:1!important;
+  text-align:center!important;
+}
+.notification-time-col button:hover{background:var(--surface-inset)!important;box-shadow:var(--shadow-soft)!important;}
+.notification-time-col button.is-selected{background:#dceaff!important;color:var(--primary)!important;box-shadow:inset 3px 3px 7px rgba(163,177,198,.28),inset -3px -3px 7px rgba(255,255,255,.95)!important;font-weight:900!important;}
+.notification-time-col[data-time-part="ampm"]{height:auto!important;max-height:none!important;overflow:visible!important;}
 @media (max-width:520px){
-  .notification-time-menu{grid-template-columns:64px 150px 64px;min-width:300px;}
-  .notification-time-col[data-time-part="minute"]{grid-template-columns:repeat(6,1fr);}
+  .notification-time-menu{grid-template-columns:62px 82px 62px!important;gap:7px!important;padding:9px!important;}
+  .notification-time-col{height:170px!important;max-height:170px!important;}
 }

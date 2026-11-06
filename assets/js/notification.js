@@ -992,7 +992,15 @@
       var t=current();
       menu.querySelectorAll('[data-time-part]').forEach(function(col){
         var part=col.dataset.timePart, val=part==='hour'?String(t.hour):part==='minute'?String(t.minute):t.ampm;
-        col.querySelectorAll('button').forEach(function(b){ b.classList.toggle('is-selected', b.dataset.timeValue===val); });
+        var selected=null;
+        col.querySelectorAll('button').forEach(function(b){
+          var on=b.dataset.timeValue===val;
+          b.classList.toggle('is-selected', on);
+          if(on) selected=b;
+        });
+        if(selected && part!=='ampm') {
+          try { selected.scrollIntoView({block:'center', inline:'nearest'}); } catch(_) {}
+        }
       });
     }
     function position(){
