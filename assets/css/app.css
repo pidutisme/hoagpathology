@@ -10253,8 +10253,8 @@ body.visitor-read-only .notification-form input:not([type="hidden"]),
 body.visitor-read-only .notification-form select,
 body.visitor-read-only .notification-form textarea,
 body.visitor-read-only .notification-form button,
-body.visitor-read-only .notification-select-trigger,
-body.visitor-read-only .notification-neumorphic-datetime {
+body.visitor-read-only .notification-form .notification-select-trigger,
+body.visitor-read-only .notification-form .notification-neumorphic-datetime {
   opacity: 0.56 !important;
   cursor: not-allowed !important;
   pointer-events: none !important;
@@ -10288,8 +10288,8 @@ body.visitor-read-only .tr-edit,
 body.visitor-read-only .tr-delete,
 body.visitor-read-only [data-notification-edit],
 body.visitor-read-only [data-notification-delete],
-body.visitor-read-only .notification-select-trigger,
-body.visitor-read-only .notification-datetime-wrap .notification-neumorphic-datetime,
+body.visitor-read-only .notification-form .notification-select-trigger,
+body.visitor-read-only .notification-form .notification-datetime-wrap .notification-neumorphic-datetime,
 body.visitor-read-only .inventory-history-edit-head,
 body.visitor-read-only .inventory-history-edit-cell {
   display: none !important;
