@@ -1216,7 +1216,6 @@
     render();
   }
   function bind() {
-    var back = $('notificationBackBtn'); if (back) back.addEventListener('click', function () { var b = document.querySelector('.nav-btn[data-page="dashboard"]'); if (b) b.click(); });
     var form = $('notificationForm'); if (form) form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!form.checkValidity()) { form.reportValidity(); return; }

@@ -52,7 +52,6 @@
   font-weight: 700;
 }
 
-.notification-head-actions { display: flex; gap: 8px; align-items: center; }
 .notification-back-btn {
   border: 1px solid #d8e2ef;
   border-radius: 12px;
@@ -328,7 +327,6 @@
 @media (max-width: 780px) {
   #notification .notification-scroll { padding:8px; }
   .notification-head { align-items:flex-start; }
-  .notification-head-actions { display:none; }
   .notification-grid, .notification-grid.four { grid-template-columns:1fr; }
   .notification-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .notification-toolbar { grid-template-columns:1fr 1fr; }
@@ -440,4 +438,13 @@
 }
 @media (max-width: 760px) {
   .notification-page .patient-info-grid { grid-template-columns: 1fr; }
+}
+
+/* Notification follows the shared app shell: navigation lives in the global sidebar. */
+.notification-page .notification-head {
+  width: 100%;
+  padding-right: 0;
+}
+.notification-page .notification-title-wrap {
+  min-width: 0;
 }
