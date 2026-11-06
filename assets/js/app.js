@@ -1311,6 +1311,7 @@
         }
         if (pageId === 'notification' && typeof LabNotification !== 'undefined' && LabNotification && LabNotification.open) {
           LabNotification.open();
+          renderBackButton(pageId);
           saveLastPage(pageId);
           writeRouteHistory(pageId, false);
           if (typeof ActivityTracker !== 'undefined' && ActivityTracker && ActivityTracker.track) {
