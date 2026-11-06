@@ -368,6 +368,7 @@
 .notification-time-picker input{padding-right:38px!important;cursor:pointer;background:var(--surface-inset)!important;box-shadow:var(--shadow-inset)!important;border-color:var(--year-page-card-border)!important;}
 .notification-time-trigger{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;border-radius:9px;background:var(--surface-inset);box-shadow:var(--shadow-soft);color:#52709a;font:900 13px inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s ease;}
 .notification-time-trigger:hover,.notification-time-trigger.is-open{color:var(--primary);box-shadow:var(--shadow-inset);}
+.notification-time-menu[hidden]{display:none!important;}
 .notification-time-menu{position:absolute;z-index:100001;left:0!important;top:calc(100% + 7px)!important;display:grid;grid-template-columns:88px 150px 70px;gap:8px;padding:10px;border:1px solid #d7e1ee;border-radius:16px;background:#eef3f9;box-shadow:12px 12px 24px rgba(163,177,198,.28),-8px -8px 18px rgba(255,255,255,.95);overflow:visible;isolation:isolate;width:max-content;min-width:336px;}
 .notification-time-col{display:grid;gap:4px;max-height:none;overflow:visible;padding:2px;background:transparent!important;align-content:start;}
 .notification-time-col[data-time-part="hour"]{grid-template-columns:repeat(3,1fr);}

@@ -966,6 +966,10 @@
     var picker = $('notificationTimePicker'), input = $('notificationInformedTime'), trigger = $('notificationTimeTrigger'), menu = $('notificationTimeMenu');
     if (!picker || !input || !trigger || !menu || picker.dataset.ready === '1') return;
     picker.dataset.ready = '1';
+    // Keep the picker closed on initial page load; the HTML `hidden` attribute is authoritative.
+    menu.hidden = true;
+    input.setAttribute('aria-expanded','false');
+    trigger.classList.remove('is-open');
     var hours = Array.from({length:12}, function(_,i){ return i+1; });
     var minutes = Array.from({length:60}, function(_,i){ return i; });
     var ampm = ['AM','PM'];
