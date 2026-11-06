@@ -1,7 +1,7 @@
 /* =========================================================
    NOTIFICATION MODULE
-   Independent workspace. No CSV/API/database integration yet.
-   Existing notification data is intentionally NOT loaded.
+   Independent workspace. Critical-value catalogue is loaded as reference data.
+   Existing notification transaction data is intentionally NOT loaded.
    ========================================================= */
 (function (window, document) {
   'use strict';
@@ -11,8 +11,7 @@
   var currentPage = 1;
   var editingId = null;
 
-  /* Test catalogue is intentionally empty in this first UI build.
-     Backend/reference data can be connected later without changing the page shell. */
+  /* Critical-value reference catalogue. Transaction records remain empty. */
   var testCatalogue = {
   "BIOCHEMISTRY": [
     {
