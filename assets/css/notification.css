@@ -1,498 +1,1173 @@
 /* =========================================================
-   NOTIFICATION WORKSPACE
-   Fully isolated styles. Do not reuse module-year styles.
+   NOTIFICATION WORKSPACE (#notification)
+   Strictly scoped to #notification, #notificationDetailModal,
+   and .notification-select-menu. Uses the shared application
+   design tokens and component specifications.
    ========================================================= */
-#notification.notification-page {
-  background: linear-gradient(180deg, #f5f8fc 0%, #eef3f8 100%);
-}
 
-#notification .notification-scroll {
-  height: 100%;
-  overflow: auto;
-  padding: 14px;
-}
-
-.notification-shell {
-  width: 100%;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.notification-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 4px 4px 0;
-}
-
-.notification-title-wrap { min-width: 0; }
-.notification-kicker {
-  margin: 0 0 4px;
-  color: #24539a;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-}
-.notification-title-wrap h2 {
-  margin: 0;
-  color: #10284d;
-  font-family: Poppins, "Nunito Sans", sans-serif;
-  font-size: clamp(22px, 2.1vw, 32px);
-  font-weight: 900;
-  letter-spacing: -.025em;
-}
-.notification-title-wrap p {
-  margin: 4px 0 0;
-  color: #6b7b92;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.notification-back-btn {
-  border: 1px solid #d8e2ef;
-  border-radius: 12px;
-  background: #fff;
-  color: #365273;
-  min-height: 38px;
-  padding: 0 13px;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 3px 12px rgba(30,55,90,.06);
-}
-.notification-back-btn:hover { background: #f7faff; }
-
-.notification-layout {
-  min-height: 0;
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(360px, .73fr) minmax(620px, 1.55fr);
-  gap: 14px;
-  align-items: stretch;
-}
-
-.notification-card {
-  min-width: 0;
-  background: rgba(255,255,255,.96);
-  border: 1px solid #dce5ef;
-  border-radius: 20px;
-  box-shadow: 0 10px 28px rgba(39,67,102,.08);
-  overflow: hidden;
-}
-
-.notification-card-head {
-  min-height: 48px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  background: linear-gradient(100deg,#dceaff,#eef4fb);
-  border-bottom: 1px solid #dce6f2;
-}
-.notification-card-head h3 {
-  margin: 0;
-  color: #123d7d;
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: .02em;
-}
-.notification-card-head span {
-  color: #35537a;
-  font-size: 11px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.notification-form-card { display: flex; flex-direction: column; }
-.notification-form {
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
-  overflow: auto;
-}
-.notification-section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 10px;
-  background: #f3f7fc;
-  color: #1a4b8e;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-.notification-section-title .icon { font-size: 15px; }
-
-.notification-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.notification-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.notification-status-notes-grid { grid-template-columns: minmax(180px, .42fr) minmax(0, 1.58fr); align-items: stretch; }
-.notification-status-notes-grid .notification-notes-field textarea { min-height: 68px; height: 68px; resize: none; }
-.notification-field { min-width: 0; }
-.notification-field.full { grid-column: 1 / -1; }
-.notification-field label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 0 0 5px;
-  color: #344b68;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: .045em;
-}
-.notification-field label .required { color: #dc3030; }
-.notification-auto-badge {
-  margin-left: auto;
-  color: #5478a3;
-  background: #edf4fc;
-  border: 1px solid #d8e7f6;
-  border-radius: 999px;
-  padding: 2px 6px;
-  font-size: 8px;
-  letter-spacing: .04em;
-}
-.notification-field input,
-.notification-field select,
-.notification-field textarea {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #cfdbea;
-  border-radius: 9px;
-  background: #fff;
-  color: #182f4f;
-  min-height: 37px;
-  padding: 8px 10px;
-  outline: none;
-  font: 700 12px "Nunito Sans", sans-serif;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-.notification-field textarea { min-height: 68px; resize: vertical; }
-.notification-result-control{min-width:0;}
-.notification-result-control .notification-custom-select-wrap{width:100%;}
-.notification-result-control .notification-select-trigger{min-height:37px;height:37px;border-radius:9px;}
-.notification-result-control .notification-native-select{position:absolute!important;}
-.notification-result-hint{display:block;margin-top:5px;color:#718096;font-size:9px;font-weight:800;}
-.notification-result-control.is-qualitative .notification-custom-select-wrap{display:block;}
-.notification-result-control.is-quantitative .notification-custom-select-wrap{display:none;}
-.notification-result-control.is-qualitative #notificationResult{display:none;}
-.notification-result-control.is-quantitative #notificationResult{display:block;}
-
-.notification-field input:focus,
-.notification-field select:focus,
-.notification-field textarea:focus {
-  border-color: #5c9be9;
-  box-shadow: 0 0 0 3px rgba(61,132,222,.12);
-}
-.notification-field input[readonly] { background: #f1f4f8; color: #53657c; }
-
-.notification-critical-box {
-  border: 1px solid #f0d37b;
-  background: #fff8dd;
-  border-radius: 10px;
-  padding: 9px 11px;
-  color: #765700;
-}
-.notification-critical-box strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
-.notification-critical-box span { display: block; margin-top: 3px; font-size: 12px; font-weight: 900; }
-.notification-critical-box.is-empty { border-color:#dfe7f0; background:#f7f9fb; color:#718096; }
-
-.notification-flag {
-  min-height: 37px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 10px;
-  border: 1px solid #d7e0eb;
-  border-radius: 9px;
-  background: #f7f9fc;
-  color: #68778a;
-  font-size: 11px;
-  font-weight: 900;
-}
-.notification-flag.critical { border-color:#f0a9af; background:#fff0f1; color:#b52630; }
-.notification-flag.normal { border-color:#b9dfca; background:#effaf3; color:#187442; }
-.notification-flag::before { content:'●'; font-size: 10px; }
-
-.notification-form-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 2px;
-}
-.notification-btn {
-  border: 0;
-  border-radius: 10px;
-  min-height: 40px;
-  padding: 0 15px;
-  font: 900 11px "Nunito Sans", sans-serif;
-  letter-spacing: .03em;
-  cursor: pointer;
-}
-.notification-btn.secondary { background:#edf2f7; color:#435a74; }
-.notification-btn.primary { background:#1772e8; color:#fff; box-shadow:0 7px 15px rgba(23,114,232,.2); }
-.notification-btn.primary:hover { background:#0d65d5; }
-
-.notification-record-card { display:flex; flex-direction:column; min-height:0; }
-.notification-summary {
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:9px;
-  padding:12px 13px 4px;
-}
-.notification-stat {
-  min-width:0;
-  border:1px solid #e0e7ef;
-  border-radius:11px;
-  padding:9px 10px;
-  background:#fbfcfe;
-}
-.notification-stat .num { color:#173d72; font-size:20px; line-height:1; font-weight:900; }
-.notification-stat .lbl { margin-top:4px; color:#77869a; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; }
-.notification-stat.bio .num { color:#215fbe; }
-.notification-stat.hema .num { color:#7a3db7; }
-.notification-stat.micro .num { color:#14834b; }
-
-.notification-toolbar {
-  display:grid;
-  grid-template-columns:minmax(220px,1fr) repeat(5,minmax(100px,.34fr));
-  gap:7px;
-  padding:9px 13px 10px;
-}
-.notification-toolbar input,
-.notification-toolbar select {
-  width:100%; min-width:0; box-sizing:border-box;
-  min-height:34px; border:1px solid #d3deeb; border-radius:8px;
-  background:#fff; color:#415671; padding:7px 9px; font:800 10px "Nunito Sans",sans-serif; outline:none;
-}
-.notification-toolbar input:focus,.notification-toolbar select:focus { border-color:#5c9be9; box-shadow:0 0 0 3px rgba(61,132,222,.10); }
-
-.notification-table-wrap { flex:1; min-height:0; overflow:auto; margin:0 13px; border:1px solid #e1e7ef; border-radius:10px; background:#fff; }
-.notification-table { width:100%; border-collapse:collapse; min-width:760px; }
-.notification-table th {
-  position:sticky; top:0; z-index:1; background:#f0f4f9; color:#183861; border-bottom:1px solid #dbe4ee;
-  padding:9px 8px; text-align:left; font-size:9px; font-weight:900; text-transform:uppercase; white-space:nowrap;
-}
-.notification-table td { padding:9px 8px; border-bottom:1px solid #edf1f5; color:#334b68; font-size:10px; font-weight:700; vertical-align:middle; }
-.notification-table tbody tr:hover { background:#f8fbff; }
-.notification-table .patient { color:#142f53; font-weight:900; }
-.notification-table .result { color:#183b68; font-weight:900; }
-
-.notification-pill { display:inline-flex; align-items:center; justify-content:center; min-height:22px; padding:0 7px; border-radius:999px; font-size:8px; font-weight:900; white-space:nowrap; }
-.notification-pill.bio { color:#1559b0; background:#e7f0ff; }
-.notification-pill.hema { color:#7136a8; background:#f1e9ff; }
-.notification-pill.micro { color:#147542; background:#e5f7ed; }
-.notification-pill.flag { color:#ad2933; background:#ffe7e9; }
-.notification-pill.status { color:#27734b; background:#e1f5e9; }
-.notification-pill.status.pending { color:#946b00; background:#fff2cf; }
-.notification-pill.status.completed { color:#167045; background:#def5e7; }
-
-.notification-actions { display:flex; gap:5px; }
-.notification-action {
-  width:28px; height:28px; border:1px solid #cddaea; border-radius:7px; background:#fff; color:#2f65a6; cursor:pointer; font-weight:900;
-}
-.notification-action:hover { background:#edf5ff; }
-
-.notification-empty { padding:48px 18px; text-align:center; color:#8a98a9; }
-.notification-empty strong { display:block; color:#4e637e; font-size:13px; }
-.notification-empty span { display:block; margin-top:5px; font-size:10px; font-weight:700; }
-.notification-pager { padding:10px 13px 12px; color:#6d7d91; font-size:10px; font-weight:800; }
-
-.notification-modal[hidden] { display:none; }
-.notification-modal { position:fixed; inset:0; z-index:9999; background:rgba(16,38,70,.38); display:grid; place-items:center; padding:18px; }
-.notification-modal-dialog { width:min(720px,100%); max-height:90vh; overflow:auto; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(15,35,65,.28); }
-.notification-modal-head { display:flex; justify-content:space-between; gap:10px; padding:15px 17px; border-bottom:1px solid #e2e8f0; }
-.notification-modal-head h3 { margin:0; color:#15385f; font-size:15px; font-weight:900; }
-.notification-modal-close { border:0; background:transparent; font-size:24px; color:#68798e; cursor:pointer; }
-.notification-modal-body { padding:16px; }
-.notification-detail-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-.notification-detail { border:1px solid #e2e8f0; border-radius:9px; padding:9px; background:#fafcfe; }
-.notification-detail small { display:block; color:#8391a2; font-size:8px; font-weight:900; text-transform:uppercase; }
-.notification-detail strong { display:block; margin-top:3px; color:#243d5c; font-size:11px; }
-
-@media (max-width: 1180px) {
-  .notification-layout { grid-template-columns:1fr; }
-  .notification-form-card { max-height:none; }
-  .notification-record-card { min-height:600px; }
-}
-@media (max-width: 780px) {
-  #notification .notification-scroll { padding:8px; }
-  .notification-head { align-items:flex-start; }
-  .notification-grid, .notification-grid.four { grid-template-columns:1fr; }
-  .notification-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .notification-toolbar { grid-template-columns:1fr 1fr; }
-  .notification-toolbar input { grid-column:1/-1; }
-  .notification-detail-grid { grid-template-columns:1fr 1fr; }
-}
-@media (max-width: 480px) {
-  .notification-summary { grid-template-columns:1fr 1fr; }
-  .notification-toolbar { grid-template-columns:1fr; }
-  .notification-toolbar input { grid-column:auto; }
-  .notification-detail-grid { grid-template-columns:1fr; }
-}
-
-
-/* =========================================================
-   NOTIFICATION NEUMORPHIC SELECTS
-   Same visual language as Outsource / Transfusion, scoped only
-   to the independent Notification workspace.
-   ========================================================= */
-.notification-page .notification-custom-select-wrap{position:relative!important;display:block!important;width:100%!important;min-width:0!important}
-.notification-page .notification-native-select{position:absolute!important;inset:0!important;width:1px!important;height:1px!important;max-height:1px!important;padding:0!important;margin:0!important;border:0!important;opacity:0!important;pointer-events:none!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important}
-.notification-page .notification-select-trigger{position:relative;z-index:2;width:100%;min-height:36px;height:36px;padding:0 11px;border-radius:12px;border:1px solid var(--year-page-card-border);background:var(--surface-inset);box-shadow:var(--shadow-inset);color:var(--text);font:inherit;font-size:12px;font-weight:750;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;cursor:pointer;outline:none;transition:border-color .18s var(--ease-smooth),box-shadow .18s var(--ease-smooth)}
-.notification-page .notification-select-trigger:hover,.notification-page .notification-select-trigger.is-open,.notification-page .notification-select-trigger:focus-visible{border-color:var(--primary);box-shadow:var(--shadow-inset),var(--focus-ring)}
-.notification-page .notification-select-trigger.is-disabled{opacity:.58;cursor:not-allowed}
-.notification-page .notification-select-trigger>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.notification-page .notification-select-chevron{flex:0 0 auto;color:var(--muted);font-size:12px;transition:transform .18s var(--ease-smooth)}
-.notification-page .notification-select-trigger.is-open .notification-select-chevron{transform:rotate(180deg);color:var(--primary)}
-.notification-select-menu{position:fixed;z-index:100000;max-height:min(260px,calc(100vh - 24px));overflow:auto;padding:6px;border:1px solid var(--year-page-card-border);border-radius:14px;background:var(--neo-surface-elevated);background-color:#eef3f9;box-shadow:0 18px 38px rgba(37,99,235,.18),var(--shadow-soft);display:flex;flex-direction:column;gap:3px;isolation:isolate;backdrop-filter:none;-webkit-backdrop-filter:none}
-.notification-select-menu button{appearance:none;border:0;background:transparent;color:var(--text);text-align:left;font:inherit;font-size:12px;font-weight:750;padding:9px 11px;border-radius:10px;cursor:pointer;transition:background .15s ease,transform .15s ease}
-.notification-select-menu button:hover{background:var(--surface-inset);transform:translateX(1px)}
-.notification-select-menu button.is-selected{background:rgba(37,99,235,.10);color:var(--primary);font-weight:900}
-.notification-page .notification-toolbar .notification-custom-select-wrap{min-width:0}
-.notification-page .notification-toolbar .notification-select-trigger{height:36px}
-
-/* Notification time picker — same custom-dropdown language as the other Notification selects.
-   Exactly 3 columns: HOUR | MINUTE | AM/PM. No visible scrollbars. */
-
-/* Notification details: keep status on the left and time on the right. */
-.notification-notes-field textarea {
-  min-height: 68px;
-  height: 68px;
-  resize: vertical;
-  background: #fff;
-  border: 1px solid #cfdbea;
-  border-radius: 9px;
-  box-shadow: none;
-}
-@media (max-width: 760px) {
-}
-
-/* Patient information: roomy 4-row x 2-column layout */
-.notification-page .patient-info-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 14px;
-}
-.notification-page .patient-info-grid .notification-field input,
-.notification-page .patient-info-grid .notification-field select {
-  min-height: 42px;
-}
-@media (max-width: 760px) {
-  .notification-page .patient-info-grid { grid-template-columns: 1fr; }
-}
-
-/* Notification follows the shared app shell: navigation lives in the global sidebar. */
-.notification-page .notification-head {
-  width: 100%;
-  padding-right: 0;
-}
-.notification-page .notification-title-wrap {
-  min-width: 0;
-}
-
-/* =========================================================
-   NOTIFICATION FIXED WORKSPACE
-   The page itself never scrolls. Only the registration form
-   and the registered-records data area are scrollable.
-   ========================================================= */
 #notification.notification-page,
 #notification.notification-page .notification-scroll {
   height: 100%;
   min-height: 0;
   overflow: hidden !important;
+  background: transparent;
 }
 
 #notification .notification-scroll {
   box-sizing: border-box;
-  padding: 10px;
+  padding: 8px !important;
 }
 
 #notification .notification-shell {
+  width: 100%;
   height: 100%;
   min-height: 0;
+  margin: 0;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--year-page-card-border);
+  background: var(--year-page-card-bg);
+  box-shadow: var(--year-page-card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   overflow: hidden;
-  gap: 10px;
 }
 
+/* Header */
 #notification .notification-head {
   flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0;
+  margin: 0;
 }
 
+#notification .notification-title-wrap {
+  min-width: 0;
+}
+
+#notification .notification-kicker {
+  margin: 0 0 3px;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+#notification .notification-title-wrap h2 {
+  margin: 0;
+  color: var(--text);
+  font-family: Poppins, "Nunito Sans", Inter, sans-serif;
+  font-size: clamp(18px, 1.35vw, 24px);
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+#notification .notification-title-wrap p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
+#notification .notification-back-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), border-color 0.2s ease;
+}
+
+#notification .notification-back-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.34);
+  box-shadow: var(--year-page-card-hover-shadow);
+}
+
+#notification .notification-back-btn:active {
+  transform: translateY(0) scale(0.99);
+}
+
+#notification .notification-back-btn:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-soft), var(--focus-ring);
+}
+
+/* Main Two-Column Workspace Layout */
 #notification .notification-layout {
   flex: 1 1 auto;
   height: 0;
   min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(340px, 0.72fr) minmax(560px, 1.55fr);
+  gap: 14px;
+  align-items: stretch;
   overflow: hidden;
 }
 
-#notification .notification-form-card,
-#notification .notification-record-card {
+/* Shared Card Surface inside Notification */
+#notification .notification-card {
+  min-width: 0;
   height: 100%;
   min-height: 0;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  box-shadow: var(--year-page-card-shadow);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+}
+
+#notification .notification-card-head {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--neo-surface-light);
+  border-bottom: 1px solid var(--line);
+}
+
+#notification .notification-card-head h3 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#notification .notification-card-head span {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Registration Form Column */
+#notification .notification-form-card {
+  display: flex;
+  flex-direction: column;
 }
 
 #notification .notification-form {
   flex: 1 1 auto;
   min-height: 0;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
 }
 
+#notification .notification-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-light);
+  box-shadow: var(--shadow-soft);
+  color: var(--primary);
+  font-size: 10.5px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#notification .notification-section-title .icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Form Grids & Fields */
+#notification .notification-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+#notification .notification-grid.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+#notification .patient-info-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+#notification .notification-status-notes-grid {
+  grid-template-columns: minmax(170px, 0.44fr) minmax(0, 1.56fr);
+  align-items: stretch;
+}
+
+#notification .notification-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#notification .notification-field.full {
+  grid-column: 1 / -1;
+}
+
+#notification .notification-field label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+#notification .notification-field label .required {
+  color: var(--danger);
+}
+
+#notification .notification-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid rgba(37, 99, 235, 0.24);
+}
+
+/* Standardized Form Controls (Inputs, Selects, Textareas) */
+#notification .notification-field input,
+#notification .notification-field select:not(.notification-native-select),
+#notification .notification-field textarea,
+#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  height: 38px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  outline: none;
+  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+}
+
+#notification .notification-field textarea {
+  min-height: 64px;
+  height: auto;
+  padding: 8px 12px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
+  min-height: 38px;
+  height: 38px;
+  padding: 8px 12px;
+  line-height: 20px;
+  resize: none;
+}
+
+#notification .notification-field input::placeholder,
+#notification .notification-field textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.72;
+  font-weight: 650;
+}
+
+#notification .notification-field input:hover:not([readonly]):not(:disabled),
+#notification .notification-field select:not(.notification-native-select):hover:not(:disabled),
+#notification .notification-field textarea:hover:not([readonly]):not(:disabled),
+#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:hover:not([readonly]):not(:disabled) {
+  border-color: rgba(37, 99, 235, 0.36);
+}
+
+#notification .notification-field input:focus,
+#notification .notification-field select:not(.notification-native-select):focus,
+#notification .notification-field textarea:focus,
+#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:focus {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-inset), var(--focus-ring);
+  outline: none;
+}
+
+#notification .notification-field input[readonly] {
+  color: var(--text-secondary);
+  opacity: 0.88;
+  cursor: default;
+}
+
+#notification .notification-field input:disabled,
+#notification .notification-field select:disabled,
+#notification .notification-field textarea:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+/* Qualitative / Quantitative Result Field Switching */
+#notification .notification-result-control {
+  min-width: 0;
+}
+
+#notification .notification-result-control .notification-custom-select-wrap {
+  width: 100%;
+}
+
+#notification .notification-result-control .notification-select-trigger {
+  min-height: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+#notification .notification-result-control .notification-native-select {
+  position: absolute !important;
+}
+
+#notification .notification-result-hint {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+#notification .notification-result-control.is-qualitative .notification-custom-select-wrap {
+  display: block;
+}
+
+#notification .notification-result-control.is-quantitative .notification-custom-select-wrap {
+  display: none;
+}
+
+#notification .notification-result-control.is-qualitative #notificationResult {
+  display: none;
+}
+
+#notification .notification-result-control.is-quantitative #notificationResult {
+  display: block;
+}
+
+/* Critical Limit Banner & Status Flag */
+#notification .notification-critical-box {
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  border-radius: 12px;
+  padding: 9px 12px;
+  color: var(--warning);
+  box-shadow: var(--shadow-soft);
+}
+
+#notification .notification-critical-box strong {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+#notification .notification-critical-box span {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+#notification .notification-critical-box.is-empty {
+  border-color: var(--year-page-card-border);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+  color: var(--muted);
+}
+
+#notification .notification-critical-box.is-empty span {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+#notification .notification-flag {
+  min-height: 38px;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--year-page-card-border);
+  border-radius: 12px;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+#notification .notification-flag.critical {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+  box-shadow: none;
+}
+
+#notification .notification-flag.normal {
+  border-color: var(--ok-border);
+  background: var(--ok-bg);
+  color: var(--ok);
+  box-shadow: none;
+}
+
+#notification .notification-flag::before {
+  content: "●";
+  font-size: 10px;
+}
+
+/* Form Action Buttons (Identical to Application Pill Buttons) */
+#notification .notification-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+#notification .notification-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), border-color 0.2s ease;
+}
+
+#notification .notification-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.34);
+  box-shadow: var(--year-page-card-hover-shadow);
+}
+
+#notification .notification-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+#notification .notification-btn:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-soft), var(--focus-ring);
+}
+
+#notification .notification-btn:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#notification .notification-btn.secondary {
+  color: var(--text);
+  background: var(--neo-surface-soft);
+  border-color: var(--year-page-card-border);
+}
+
+#notification .notification-btn.primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24), inset 1px 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+#notification .notification-btn.primary:hover:not(:disabled) {
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.32), inset 1px 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+/* Right Column: Registered Records Card & KPI Summary */
+#notification .notification-record-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#notification .notification-summary {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 14px 6px;
+}
+
+#notification .notification-stat {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-light);
+  box-shadow: var(--shadow-soft);
+}
+
+#notification .notification-stat .num {
+  font-family: Poppins, "Nunito Sans", Inter, sans-serif;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+  order: 2;
+}
+
+#notification .notification-stat .lbl {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  order: 1;
+}
+
+#notification .notification-stat.bio .num {
+  color: var(--primary);
+}
+
+#notification .notification-stat.hema .num {
+  color: var(--primary-2);
+}
+
+#notification .notification-stat.micro .num {
+  color: var(--ok);
+}
+
+/* Filter & Search Toolbar */
+#notification .notification-toolbar {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(210px, 1.35fr) repeat(5, minmax(96px, 0.36fr));
+  gap: 8px;
+  align-items: center;
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+#notification .notification-toolbar input,
+#notification .notification-toolbar select:not(.notification-native-select) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  outline: none;
+  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+}
+
+#notification .notification-toolbar input::placeholder {
+  color: var(--muted);
+  opacity: 0.72;
+  font-weight: 650;
+}
+
+#notification .notification-toolbar input:hover,
+#notification .notification-toolbar select:not(.notification-native-select):hover {
+  border-color: rgba(37, 99, 235, 0.36);
+}
+
+#notification .notification-toolbar input:focus,
+#notification .notification-toolbar select:not(.notification-native-select):focus {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-inset), var(--focus-ring);
+}
+
+/* Registered Records Data Table */
 #notification .notification-table-wrap {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
+  margin: 10px 14px 6px;
+  border-radius: 16px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
 }
 
-/* Keep the page itself fixed even when the browser viewport is shorter. */
+#notification .notification-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 11.5px;
+}
+
+#notification .notification-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--neo-surface-elevated);
+  color: var(--primary);
+  border-bottom: 1px solid var(--year-page-card-border);
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#notification .notification-table td {
+  height: 36px;
+  padding: 7px 8px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 750;
+  vertical-align: middle;
+}
+
+#notification .notification-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+#notification .notification-table tbody tr:hover {
+  background: var(--primary-soft);
+}
+
+#notification .notification-table .patient {
+  color: var(--text);
+  font-weight: 900;
+}
+
+#notification .notification-table .result {
+  color: var(--primary);
+  font-weight: 900;
+}
+
+/* Standardized Badges / Pills */
+#notification .notification-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  color: var(--text);
+}
+
+#notification .notification-pill.bio {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: rgba(37, 99, 235, 0.24);
+}
+
+#notification .notification-pill.hema {
+  color: var(--primary-2);
+  background: rgba(14, 165, 233, 0.14);
+  border-color: rgba(14, 165, 233, 0.28);
+}
+
+#notification .notification-pill.micro {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+}
+
+#notification .notification-pill.flag {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+
+#notification .notification-pill.status,
+#notification .notification-pill.status.completed {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+}
+
+#notification .notification-pill.status.pending {
+  color: var(--warning);
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+/* Table Row Action Buttons (Identical to .outsource-mini) */
+#notification .notification-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#notification .notification-action {
+  min-width: 28px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  box-shadow: var(--shadow-soft);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+#notification .notification-action:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+}
+
+#notification .notification-action[data-notify-action="delete"] {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+
+#notification .notification-action[data-notify-action="delete"]:hover {
+  border-color: var(--danger);
+}
+
+/* Empty State & Pager */
+#notification .notification-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+#notification .notification-empty strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+#notification .notification-empty span {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--muted);
+}
+
+#notification .notification-pager {
+  flex: 0 0 auto;
+  padding: 6px 16px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+/* =========================================================
+   NOTIFICATION CUSTOM NEUMORPHIC SELECTS
+   Same visual language as Outsource / Transfusion / Inventory,
+   scoped strictly to #notification and .notification-select-menu.
+   ========================================================= */
+#notification .notification-custom-select-wrap {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#notification .notification-native-select {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  max-height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+}
+
+#notification .notification-select-trigger {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+}
+
+#notification .notification-select-trigger:hover,
+#notification .notification-select-trigger.is-open,
+#notification .notification-select-trigger:focus-visible {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-inset), var(--focus-ring);
+}
+
+#notification .notification-select-trigger.is-disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+#notification .notification-select-trigger > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#notification .notification-select-chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  transition: transform 0.18s var(--ease-smooth);
+}
+
+#notification .notification-select-trigger.is-open .notification-select-chevron {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+#notification .notification-toolbar .notification-custom-select-wrap {
+  min-width: 0;
+}
+
+#notification .notification-toolbar .notification-select-trigger {
+  min-height: 36px;
+  height: 36px;
+}
+
+.notification-select-menu {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  min-width: 180px;
+  max-height: min(280px, calc(100vh - 24px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--year-page-card-border);
+  border-radius: 16px;
+  background: var(--neo-surface-elevated);
+  box-shadow: var(--modal-shadow);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  isolation: isolate;
+}
+
+.notification-select-menu button {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.notification-select-menu button:hover,
+.notification-select-menu button.is-selected {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* =========================================================
+   NOTIFICATION DETAIL MODAL (#notificationDetailModal)
+   Identical modal surface, header, close button, and detail
+   grid cards as Outsource / Transfusion / Inventory modals.
+   ========================================================= */
+#notificationDetailModal.notification-modal[hidden],
+#notification .notification-modal[hidden] {
+  display: none !important;
+}
+
+#notificationDetailModal.notification-modal,
+#notification .notification-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 11500;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  place-items: center;
+  padding: 18px;
+}
+
+#notificationDetailModal .notification-modal-dialog,
 #notification .notification-modal-dialog {
-  overflow: auto;
+  width: min(760px, 95vw);
+  max-height: min(88vh, 780px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 22px 24px;
+  border-radius: 24px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--year-page-card-bg);
+  box-shadow: var(--modal-shadow);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
+#notificationDetailModal .notification-modal-head,
+#notification .notification-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+#notificationDetailModal .notification-modal-head h3,
+#notification .notification-modal-head h3 {
+  margin: 2px 0 0;
+  color: var(--text);
+  font-size: clamp(18px, 1.4vw, 22px);
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+#notificationDetailModal .notification-modal-close,
+#notification .notification-modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+#notificationDetailModal .notification-modal-close:hover,
+#notification .notification-modal-close:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+}
+
+#notificationDetailModal .notification-modal-body,
+#notification .notification-modal-body {
+  padding: 0;
+}
+
+#notificationDetailModal .notification-detail-grid,
+#notification .notification-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#notificationDetailModal .notification-detail,
+#notification .notification-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-soft);
+  box-shadow: var(--shadow-soft);
+  min-width: 0;
+}
+
+#notificationDetailModal .notification-detail small,
+#notification .notification-detail small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#notificationDetailModal .notification-detail strong,
+#notification .notification-detail strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* Responsive Breakpoints (Scoped to #notification & #notificationDetailModal) */
 @media (max-width: 1180px) {
-  /* On narrower screens the two work areas stack, but the page still does not scroll. */
   #notification .notification-layout {
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
     overflow: hidden;
   }
+
   #notification .notification-record-card {
     min-height: 0;
   }
 }
 
-/* V21: Notes uses the exact same compact field surface as the other Notification inputs/selects. */
-.notification-page .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
-  width: 100%;
-  min-height: 37px;
-  height: 37px;
-  box-sizing: border-box;
-  padding: 8px 10px;
-  border: 1px solid #cfdbea;
-  border-radius: 9px;
-  background: #fff;
-  color: #182f4f;
-  font: 700 12px "Nunito Sans", sans-serif;
-  line-height: 20px;
-  resize: none;
-  box-shadow: none;
+@media (max-width: 780px) {
+  #notification .notification-scroll {
+    padding: 6px !important;
+  }
+
+  #notification .notification-head {
+    align-items: flex-start;
+  }
+
+  #notification .notification-grid,
+  #notification .notification-grid.four,
+  #notification .patient-info-grid,
+  #notification .notification-status-notes-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #notification .notification-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #notification .notification-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #notification .notification-toolbar input {
+    grid-column: 1 / -1;
+  }
+
+  #notificationDetailModal .notification-detail-grid,
+  #notification .notification-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-.notification-page .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:focus {
-  border-color: #5c9be9;
-  box-shadow: 0 0 0 3px rgba(61,132,222,.12);
-  outline: none;
+
+@media (max-width: 480px) {
+  #notification .notification-summary,
+  #notification .notification-toolbar,
+  #notificationDetailModal .notification-detail-grid,
+  #notification .notification-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #notification .notification-toolbar input {
+    grid-column: auto;
+  }
 }
