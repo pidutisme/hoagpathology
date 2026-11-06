@@ -1,0 +1,249 @@
+/* HOAG Pathology — Login visual refresh (V9)
+ * Visual/CSS only. Authentication and MFA behaviour remain unchanged.
+ */
+
+#authScreen.auth-screen {
+  --auth-blue: #2563eb;
+  --auth-cyan: #0ea5e9;
+  --auth-ink: #16233f;
+  --auth-muted: #71809b;
+  --auth-panel: rgba(247, 250, 255, 0.78);
+  --auth-panel-border: rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle at 15% 18%, rgba(37, 99, 235, .14), transparent 30%),
+    radial-gradient(circle at 86% 82%, rgba(14, 165, 233, .13), transparent 34%),
+    linear-gradient(135deg, #eef4fb 0%, #e6eef8 48%, #f6f9fd 100%);
+}
+
+#authScreen .auth-orb-one {
+  width: clamp(240px, 34vw, 520px);
+  height: clamp(240px, 34vw, 520px);
+  left: -10vw;
+  top: -16vh;
+  opacity: .72;
+  background: radial-gradient(circle, rgba(37, 99, 235, .18), transparent 66%);
+}
+
+#authScreen .auth-orb-two {
+  width: clamp(220px, 30vw, 460px);
+  height: clamp(220px, 30vw, 460px);
+  right: -10vw;
+  bottom: -14vh;
+  opacity: .68;
+  background: radial-gradient(circle, rgba(14, 165, 233, .17), transparent 66%);
+}
+
+#authScreen .auth-card {
+  width: min(100%, 520px);
+  padding: 34px;
+  border-radius: 30px;
+  background: var(--auth-panel);
+  border: 1px solid var(--auth-panel-border);
+  box-shadow:
+    0 30px 70px rgba(43, 61, 91, .16),
+    0 8px 24px rgba(37, 99, 235, .08),
+    inset 1px 1px 0 rgba(255,255,255,.92),
+    inset -1px -1px 0 rgba(118, 137, 168, .10);
+  backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+}
+
+#authScreen .auth-card::before {
+  inset: 10px;
+  border-radius: 22px;
+  border-color: rgba(255,255,255,.56);
+  background: linear-gradient(145deg, rgba(255,255,255,.28), transparent 48%, rgba(87,108,142,.035));
+}
+
+#authScreen .auth-card-inner {
+  gap: 20px;
+}
+
+#authScreen .auth-badge {
+  min-height: 30px;
+  padding: 5px 12px;
+  gap: 8px;
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  box-shadow: 0 7px 18px rgba(46, 68, 103, .10), inset 1px 1px 0 rgba(255,255,255,.8);
+}
+
+#authScreen .auth-badge::before {
+  width: 6px;
+  height: 6px;
+}
+
+#authScreen .auth-title-block {
+  gap: 14px;
+}
+
+#authScreen .auth-title {
+  font-size: clamp(34px, 5vw, 48px);
+  line-height: .98;
+  letter-spacing: -.045em;
+  color: #17233d;
+  text-shadow: 0 2px 0 rgba(255,255,255,.55);
+}
+
+#authScreen .auth-title-block::after {
+  width: 76px;
+  height: 5px;
+  box-shadow: 0 7px 16px rgba(37,99,235,.22);
+}
+
+#authScreen .auth-form {
+  gap: 13px;
+  margin-top: 4px;
+}
+
+#authScreen .auth-input-wrap {
+  min-height: 54px;
+  border-radius: 16px;
+  background: rgba(235, 241, 249, .72);
+  border-color: rgba(183, 197, 218, .58);
+  box-shadow:
+    inset 4px 4px 10px rgba(142, 159, 184, .12),
+    inset -4px -4px 10px rgba(255,255,255,.82),
+    0 1px 0 rgba(255,255,255,.65);
+}
+
+#authScreen .auth-input-wrap:hover {
+  border-color: rgba(37,99,235,.28);
+  background: rgba(238,244,252,.86);
+}
+
+#authScreen .auth-input-wrap:focus-within {
+  border-color: rgba(37,99,235,.70);
+  box-shadow:
+    inset 3px 3px 8px rgba(142,159,184,.12),
+    inset -3px -3px 8px rgba(255,255,255,.80),
+    0 0 0 4px rgba(37,99,235,.10),
+    0 8px 20px rgba(37,99,235,.07);
+}
+
+#authScreen .auth-input {
+  min-height: 54px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+#authScreen .auth-input::placeholder {
+  font-size: 10.5px;
+  letter-spacing: .13em;
+  color: #8090aa;
+}
+
+#authScreen .auth-password-toggle {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  margin: 6px 6px 6px 0;
+  border-radius: 12px;
+  background: rgba(247,250,255,.84);
+  border-color: rgba(181,196,219,.62);
+  box-shadow: 0 6px 14px rgba(50,70,103,.10), inset 1px 1px 0 rgba(255,255,255,.9);
+}
+
+#authScreen .auth-submit {
+  min-height: 54px;
+  margin-top: 5px;
+  border-radius: 16px;
+  background: linear-gradient(100deg, #2563eb 0%, #1677ea 52%, #0ea5e9 100%);
+  box-shadow:
+    0 15px 28px rgba(37,99,235,.22),
+    0 5px 12px rgba(14,165,233,.12),
+    inset 1px 1px 0 rgba(255,255,255,.32);
+  font-size: 11px;
+  letter-spacing: .13em;
+}
+
+#authScreen .auth-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 19px 34px rgba(37,99,235,.28),
+    0 7px 15px rgba(14,165,233,.14),
+    inset 1px 1px 0 rgba(255,255,255,.36);
+}
+
+#authScreen .auth-message {
+  min-height: 18px;
+  font-size: 11px;
+}
+
+#authScreen .auth-actions {
+  padding-top: 14px;
+  border-top-color: rgba(153,169,194,.30);
+}
+
+#authScreen .auth-secondary-btn,
+#authScreen .auth-back-btn {
+  min-height: 38px;
+  padding: 0 18px;
+  background: rgba(248,250,254,.72);
+  border-color: rgba(181,196,219,.58);
+  box-shadow: 0 7px 17px rgba(50,70,103,.09), inset 1px 1px 0 rgba(255,255,255,.86);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+/* MFA remains fully functional. It only appears when the server requests MFA.
+ * When displayed, make it a compact verification step rather than a dominant box.
+ */
+#authScreen .auth-field:has(#loginMfaCode) {
+  margin-top: -2px;
+}
+
+#authScreen .auth-field:has(#loginMfaCode) .auth-input-wrap {
+  min-height: 48px;
+  border-radius: 14px;
+  border-style: dashed;
+  background: rgba(241,246,253,.60);
+}
+
+#authScreen #loginMfaCode {
+  min-height: 48px;
+  text-align: center;
+  letter-spacing: .20em;
+}
+
+#authScreen .auth-field:has(#loginMfaCode) .auth-input::placeholder {
+  letter-spacing: .10em;
+  text-align: center;
+}
+
+body.dark-mode #authScreen.auth-screen,
+html.dark-mode-preload #authScreen.auth-screen {
+  background:
+    radial-gradient(circle at 15% 18%, rgba(37,99,235,.18), transparent 30%),
+    radial-gradient(circle at 86% 82%, rgba(14,165,233,.12), transparent 34%),
+    linear-gradient(135deg, #101a2d 0%, #17243b 52%, #0f1728 100%);
+}
+
+body.dark-mode #authScreen .auth-card,
+html.dark-mode-preload #authScreen .auth-card {
+  background: rgba(22, 34, 56, .82);
+  border-color: rgba(255,255,255,.10);
+  box-shadow:
+    0 30px 70px rgba(0,0,0,.32),
+    0 8px 24px rgba(37,99,235,.10),
+    inset 1px 1px 0 rgba(255,255,255,.06);
+}
+
+body.dark-mode #authScreen .auth-title,
+html.dark-mode-preload #authScreen .auth-title {
+  color: #edf4ff;
+  text-shadow: none;
+}
+
+@media (max-width: 560px) {
+  #authScreen .auth-card {
+    width: min(100%, 520px);
+    padding: 26px;
+    border-radius: 26px;
+  }
+
+  #authScreen .auth-title {
+    font-size: clamp(32px, 11vw, 42px);
+  }
+}
