@@ -363,22 +363,18 @@
 .notification-page .notification-toolbar .notification-custom-select-wrap{min-width:0}
 .notification-page .notification-toolbar .notification-select-trigger{height:36px}
 
-/* Notification custom neumorphic time picker */
+/* Notification custom neumorphic time picker - exactly 3 top-level columns: Hour | Minute | AM/PM */
 .notification-time-picker{position:relative;width:100%;}
 .notification-time-picker input{padding-right:38px!important;cursor:pointer;background:var(--surface-inset)!important;box-shadow:var(--shadow-inset)!important;border-color:var(--year-page-card-border)!important;}
 .notification-time-trigger{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;border-radius:9px;background:var(--surface-inset);box-shadow:var(--shadow-soft);color:#52709a;font:900 13px inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s ease;}
 .notification-time-trigger:hover,.notification-time-trigger.is-open{color:var(--primary);box-shadow:var(--shadow-inset);}
 .notification-time-menu[hidden]{display:none!important;}
-.notification-time-menu{position:absolute;z-index:100001;left:0!important;top:calc(100% + 7px)!important;display:grid;grid-template-columns:88px 150px 70px;gap:8px;padding:10px;border:1px solid #d7e1ee;border-radius:16px;background:#eef3f9;box-shadow:12px 12px 24px rgba(163,177,198,.28),-8px -8px 18px rgba(255,255,255,.95);overflow:visible;isolation:isolate;width:max-content;min-width:336px;}
-.notification-time-col{display:grid;gap:4px;max-height:none;overflow:visible;padding:2px;background:transparent!important;align-content:start;}
+.notification-time-menu{position:absolute;z-index:100001;left:0!important;top:calc(100% + 7px)!important;display:grid;grid-template-columns:64px 154px 58px;gap:8px;padding:10px;border:1px solid #d7e1ee;border-radius:16px;background:#eef3f9!important;box-shadow:12px 12px 24px rgba(163,177,198,.28),-8px -8px 18px rgba(255,255,255,.95)!important;overflow:visible;isolation:isolate;width:max-content;min-width:302px;}
+/* Keep the picker as three visual columns. Minute values are a compact grid inside the single Minute column. */
+.notification-time-col{display:grid;gap:3px;max-height:none;overflow:visible!important;padding:2px;background:transparent!important;align-content:start;min-width:0;}
 .notification-time-col[data-time-part="hour"]{grid-template-columns:repeat(3,1fr);}
 .notification-time-col[data-time-part="minute"]{grid-template-columns:repeat(6,1fr);}
-.notification-time-col[data-time-part="ampm"]{grid-template-columns:1fr;}
-.notification-time-col button{appearance:none;border:0;background:transparent;color:var(--text);font:800 12px "Nunito Sans",sans-serif;padding:7px 4px;border-radius:9px;cursor:pointer;min-height:30px;}
-.notification-time-col button:hover{background:var(--surface-inset);box-shadow:var(--shadow-soft);}
-.notification-time-col button.is-selected{background:#dceaff;color:var(--primary);box-shadow:var(--shadow-inset);font-weight:900;}
-/* v8: fully opaque neumorphic time picker; keep it above form fields */
-.notification-time-menu{background:#eef3f9!important;border:1px solid #d7e1ee!important;box-shadow:12px 12px 24px rgba(163,177,198,.28),-8px -8px 18px rgba(255,255,255,.95)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
-.notification-time-col{background:transparent!important;overflow:visible!important;}
-.notification-time-col button{background:transparent!important;}
-.notification-time-col button.is-selected{background:#dceaff!important;box-shadow:inset 3px 3px 7px rgba(163,177,198,.28),inset -3px -3px 7px rgba(255,255,255,.95)!important;}
+.notification-time-col[data-time-part="ampm"]{grid-template-columns:1fr;align-content:start;}
+.notification-time-col button{appearance:none;border:0;background:transparent!important;color:var(--text);font:800 11px "Nunito Sans",sans-serif;padding:5px 2px;border-radius:8px;cursor:pointer;min-height:27px;line-height:1;}
+.notification-time-col button:hover{background:var(--surface-inset)!important;box-shadow:var(--shadow-soft);}
+.notification-time-col button.is-selected{background:#dceaff!important;color:var(--primary);box-shadow:inset 3px 3px 7px rgba(163,177,198,.28),inset -3px -3px 7px rgba(255,255,255,.95)!important;font-weight:900;}
