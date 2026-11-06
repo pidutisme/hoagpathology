@@ -1,4 +1,4 @@
-/* HOAG Pathology — V14 login visual redesign.
+/* HOAG Pathology — V16 login visual redesign.
    Visual-only layer. Authentication/MFA/change-password logic remains in app.js. */
 #authScreen.auth-screen{
   --auth-blue:#1769ff;
@@ -139,101 +139,112 @@ body.dark-mode #authScreen .auth-secondary-btn,body.dark-mode #authScreen .auth-
 @media(max-width:650px){#authScreen .auth-input-icon{width:38px;min-width:38px;margin-left:9px}#authScreen .auth-input-wrap .auth-input{padding-left:2px}}
 
 
-/* HOAG Pathology — V15 reference-matched visual layer.
-   Visual-only overrides. Authentication/MFA/change-password logic is untouched. */
+/* ================================================================
+   V16 — reference-shaped login shell
+   Visual-only overrides. Authentication/MFA/change-password logic is untouched.
+   ================================================================ */
+#authScreen.auth-screen{
+  padding:24px;
+  background:
+    radial-gradient(circle at 7% 18%,rgba(53,154,255,.18),transparent 28%),
+    radial-gradient(circle at 94% 86%,rgba(0,206,255,.13),transparent 30%),
+    linear-gradient(135deg,#d9eafe 0%,#eef7ff 52%,#d9ecfb 100%);
+}
+#authScreen .auth-card{
+  width:min(100%,1456px);
+  height:min(754px,calc(100svh - 46px));
+  min-height:0;
+  padding:12px;
+  gap:0;
+  grid-template-columns:minmax(0,56%) minmax(0,44%);
+  border-radius:30px;
+  background:rgba(247,251,255,.76);
+  box-shadow:0 32px 76px rgba(32,67,107,.22),0 8px 24px rgba(37,99,235,.07),inset 1px 1px 0 #fff,inset -1px -1px 0 rgba(83,118,155,.10);
+}
 #authScreen .auth-brand-panel{
+  min-width:0;
+  padding:92px 68px 58px;
+  border-right:0;
   background-image:
-    linear-gradient(115deg,rgba(3,22,57,.94) 0%,rgba(4,58,112,.80) 56%,rgba(0,126,181,.72) 100%),
-    url("../img/login-microscope-clean.jpg");
-  background-size:cover, 62% auto;
-  background-repeat:no-repeat;
-  background-position:center, 100% 0%;
-  background-color:#063d77;
+    linear-gradient(112deg,rgba(3,22,56,.96) 0%,rgba(3,53,103,.86) 48%,rgba(0,106,159,.78) 100%),
+    url("../img/login-microscope.jpg");
+  background-size:cover;
+  background-position:center 22%;
+  /* Reference image uses a soft inward curved divider rather than a straight split. */
+  clip-path:polygon(0 0,100% 0,98% 6%,95% 13%,92% 22%,89.5% 33%,88% 44%,87.5% 50%,88% 56%,89.5% 67%,92% 78%,95% 87%,98% 94%,100% 100%,0 100%);
+  border-radius:18px 0 0 18px;
 }
 #authScreen .auth-brand-panel::before{
   background:
-    radial-gradient(circle at 76% 15%,rgba(35,190,255,.24),transparent 27%),
-    linear-gradient(180deg,rgba(0,20,50,.04),rgba(0,25,63,.24) 58%,rgba(0,175,239,.12) 100%);
+    radial-gradient(circle at 72% 18%,rgba(35,169,255,.30),transparent 28%),
+    radial-gradient(circle at 22% 86%,rgba(0,223,255,.23),transparent 32%),
+    linear-gradient(180deg,rgba(0,17,44,.05),rgba(0,22,55,.28) 66%,rgba(0,194,255,.14));
 }
 #authScreen .auth-brand-panel::after{
-  height:30%;
-  background:linear-gradient(180deg,transparent 0%,rgba(0,95,170,.18) 48%,rgba(0,175,240,.68) 100%);
-  clip-path:ellipse(78% 72% at 24% 100%);
+  left:-5%;right:-5%;height:31%;
+  background:linear-gradient(180deg,transparent 0%,rgba(4,81,151,.22) 48%,rgba(0,153,230,.78) 100%);
+  clip-path:ellipse(74% 72% at 30% 100%);
 }
+#authScreen .auth-brand-topline{gap:18px}
+#authScreen .auth-brand-icon{width:74px;height:74px}
+#authScreen .auth-brand-name{font-size:34px}
+#authScreen .auth-brand-subtitle{margin-top:34px;font-size:24px}
+#authScreen .auth-brand-line{margin:22px 0 38px}
+#authScreen .auth-brand-grid{gap:18px;max-width:640px}
+#authScreen .auth-brand-feature{min-height:96px;padding:17px 18px;border-radius:18px}
+#authScreen .auth-brand-footer{left:68px;bottom:31px}
+#authScreen .auth-brand-wave{left:-10%;width:125%}
+
 #authScreen .auth-card-inner{
-  padding:62px 74px 54px;
-  gap:14px;
-  background:
-    linear-gradient(145deg,rgba(255,255,255,.92),rgba(236,246,255,.78));
+  min-width:0;
+  align-content:start;
+  gap:0;
+  margin:0;
+  padding:174px 76px 48px 72px;
+  background:linear-gradient(145deg,rgba(255,255,255,.90),rgba(232,242,253,.72));
 }
 #authScreen #authLoginPanel::before{
-  width:108px;
-  height:5px;
-  margin-bottom:22px;
+  width:108px;height:5px;margin:0 0 28px;
+  background:linear-gradient(90deg,#216bff,#09c8ee);
+  box-shadow:0 8px 20px rgba(37,99,235,.14);
 }
-#authScreen #authLoginPanel .auth-badge,
-#authScreen #authLoginPanel .auth-title-block{
-  display:none!important;
-}
-#authScreen #authLoginPanel .auth-form{
-  margin-top:0;
-  gap:18px;
-}
-#authScreen #authLoginPanel .auth-input-wrap{
-  min-height:72px;
-  border-radius:18px;
-  background:rgba(241,247,254,.86);
-  border-color:rgba(157,190,225,.72);
-}
-#authScreen #authLoginPanel .auth-input{
-  min-height:72px;
-  font-size:15px;
-  font-weight:800;
-}
-#authScreen #authLoginPanel .auth-input::placeholder{
-  font-size:15px;
-  color:#7890b2;
-}
-#authScreen #authLoginPanel .auth-submit{
-  min-height:70px;
-  border-radius:18px;
-  font-size:15px;
-  box-shadow:0 18px 34px rgba(23,105,255,.28),0 8px 18px rgba(8,183,232,.13),inset 1px 1px 0 rgba(255,255,255,.42);
-}
-#authScreen #authLoginPanel .auth-actions{
-  padding-top:38px;
-  margin-top:4px;
-}
-#authScreen #authLoginPanel .auth-actions::after{
-  background:rgba(239,246,253,.86);
-}
-#authScreen #authLoginPanel .auth-secondary-btn{
-  min-height:58px;
-  padding:0 32px;
-  font-size:12px;
-}
+#authScreen .auth-title-block{display:none!important}
+#authScreen .auth-form{gap:18px;margin-top:0}
+#authScreen .auth-input-wrap{min-height:76px;border-radius:17px;background:rgba(241,247,253,.78)}
+#authScreen .auth-input{min-height:76px;font-size:16px}
+#authScreen .auth-input::placeholder{font-size:16px;color:#7890b1;font-weight:600}
+#authScreen .auth-input-icon{width:46px;min-width:46px;height:46px;margin-left:17px}
+#authScreen .auth-input-icon svg{width:23px;height:23px}
+#authScreen .auth-password-toggle{width:46px;min-width:46px;height:46px;margin:10px;border-radius:14px}
+#authScreen .auth-submit{min-height:78px;border-radius:17px;margin-top:1px;font-size:16px;box-shadow:0 18px 34px rgba(23,105,255,.24),0 8px 16px rgba(8,183,232,.10),inset 1px 1px 0 rgba(255,255,255,.38)}
+#authScreen .auth-submit-label{gap:13px}
+#authScreen .auth-submit-label::after{font-size:24px}
+#authScreen .auth-message{min-height:0;margin-top:-4px}
+#authScreen .auth-actions{padding-top:38px;margin-top:0}
+#authScreen .auth-actions::before{top:19px}
+#authScreen .auth-actions::after{top:9px;background:rgba(239,246,253,.92)}
+#authScreen .auth-secondary-btn{min-height:52px;padding:0 31px;font-size:11px}
 #authScreen .auth-card-inner::after{
-  opacity:.16;
-  right:-20px;
-  top:-10px;
-  width:360px;
-  height:330px;
+  right:-12px;top:-18px;width:360px;height:320px;opacity:.24;
+  background-size:108px 94px;
+}
+
+/* Keep MFA hidden until the existing auth logic explicitly reveals it. */
+#authScreen #loginMfaCode{display:block}
+#authScreen .auth-field:has(#loginMfaCode)[hidden]{display:none!important}
+
+@media(max-width:1180px) and (min-width:981px){
+  #authScreen .auth-card{grid-template-columns:54% 46%;}
+  #authScreen .auth-brand-panel{padding-left:48px;padding-right:48px}
+  #authScreen .auth-card-inner{padding-left:52px;padding-right:52px}
 }
 @media(max-width:980px){
-  #authScreen .auth-brand-panel{
-    background-size:cover,58% auto;
-    background-position:center,100% 0%;
-  }
-  #authScreen .auth-card-inner{padding:46px 42px 48px}
+  #authScreen .auth-card{grid-template-columns:1fr;padding:10px;}
+  #authScreen .auth-brand-panel{clip-path:none;border-radius:18px;min-height:320px;padding:48px 42px 54px}
+  #authScreen .auth-card-inner{padding:56px 42px 48px}
 }
 @media(max-width:650px){
-  #authScreen .auth-brand-panel{
-    background-size:cover,70% auto;
-    background-position:center,100% 0%;
-  }
-  #authScreen #authLoginPanel::before{margin-bottom:14px}
-  #authScreen #authLoginPanel .auth-form{gap:13px}
-  #authScreen #authLoginPanel .auth-input-wrap,
-  #authScreen #authLoginPanel .auth-input{min-height:58px}
-  #authScreen #authLoginPanel .auth-submit{min-height:58px}
+  #authScreen .auth-card{padding:8px}
+  #authScreen .auth-brand-panel{min-height:245px;padding:30px 24px 44px}
+  #authScreen .auth-card-inner{padding:38px 22px 30px}
 }
