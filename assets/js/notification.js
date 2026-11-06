@@ -354,266 +354,367 @@
     }
   ],
   "MICROBIOLOGY": [
-    {
-      "name": "Cerebrospinal Fluid Culture and Sensitivity",
-      "rule": "Alert / critical result: Abnormal",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Abnormal"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Cerebrospinal Fluid Antigen Detection",
-      "rule": "Alert / critical result: Positive / AFB Seen / IgG Detected / Reactive / NS1 Detected / Listeria / Culture Growth / Influenza A Detected",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Positive",
-        "AFB Seen",
-        "IgG Detected",
-        "Reactive",
-        "NS1 Detected",
-        "Listeria",
-        "Culture Growth",
-        "Influenza A Detected"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Sterile Body Fluids",
-      "rule": "Alert / critical result: Positive / IgM Detected / IgM Positive / Bacillus / Influenza B Detected",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Positive",
-        "IgM Detected",
-        "IgM Positive",
-        "Bacillus",
-        "Influenza B Detected"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Sputum AFB",
-      "rule": "Alert / critical result: AFB Seen / LeptoMAT Inconclusive / IgG Positive / Clostridium",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "AFB Seen",
-        "LeptoMAT Inconclusive",
-        "IgG Positive",
-        "Clostridium"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "BFMP",
-      "rule": "Alert / critical result: Malaria Parasite Seen / LeptoMAT Positive / Streptococcus viridans",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Malaria Parasite Seen",
-        "LeptoMAT Positive",
-        "Streptococcus viridans"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Any Culture & Sensitivity",
-      "rule": "Alert / critical result: Listeria / Bacillus / Clostridium / Streptococcus viridans / Streptococcus pneumoniae / Streptococcus agalactiae / Streptococcus pyogenes / Streptococcus bovis / Enterococcus faecalis / Enterococcus faecium / Staphylococcus aureus / Staphylococcus epidermidis / Staphylococcus saprophyticus / Citrobacter koseri / Citrobacter freundii / Klebsiella aerogenes / Enterobacter cloacae / Enterobacter amnigenus / Enterobacter intermedius / Pectobacterium carotovorum / Dickeya dadantii / Escherichia coli / Klebsiella oxytoca / Klebsiella pneumoniae / Serratia fonticola / Serratia rubidaea / Edwardsiella tarda / Erwinia cacticida / Morganella morganii / Proteus mirabilis / Proteus vulgaris / Proteus penneri / Providencia stuartii / Salmonella bongori / Salmonella enterica / Serratia marcescens / Serratia liquefaciens / Shigella spp. / Yersinia enterocolitica / Yersinia pestis / Yersinia pseudotuberculosis / Salmonella typhi / Vibrio cholerae / Bordetella pertusis / Corynebacterium diptheria / Candida albican / Pseudomonas aeruginosa",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Listeria",
-        "Bacillus",
-        "Clostridium",
-        "Streptococcus viridans",
-        "Streptococcus pneumoniae",
-        "Streptococcus agalactiae",
-        "Streptococcus pyogenes",
-        "Streptococcus bovis",
-        "Enterococcus faecalis",
-        "Enterococcus faecium",
-        "Staphylococcus aureus",
-        "Staphylococcus epidermidis",
-        "Staphylococcus saprophyticus",
-        "Citrobacter koseri",
-        "Citrobacter freundii",
-        "Klebsiella aerogenes",
-        "Enterobacter cloacae",
-        "Enterobacter amnigenus",
-        "Enterobacter intermedius",
-        "Pectobacterium carotovorum",
-        "Dickeya dadantii",
-        "Escherichia coli",
-        "Klebsiella oxytoca",
-        "Klebsiella pneumoniae",
-        "Serratia fonticola",
-        "Serratia rubidaea",
-        "Edwardsiella tarda",
-        "Erwinia cacticida",
-        "Morganella morganii",
-        "Proteus mirabilis",
-        "Proteus vulgaris",
-        "Proteus penneri",
-        "Providencia stuartii",
-        "Salmonella bongori",
-        "Salmonella enterica",
-        "Serratia marcescens",
-        "Serratia liquefaciens",
-        "Shigella spp.",
-        "Yersinia enterocolitica",
-        "Yersinia pestis",
-        "Yersinia pseudotuberculosis",
-        "Salmonella typhi",
-        "Vibrio cholerae",
-        "Bordetella pertusis",
-        "Corynebacterium diptheria",
-        "Candida albican",
-        "Pseudomonas aeruginosa"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Antigen Detection",
-      "rule": "Alert / critical result: Legionella spp / Streptococcus agalactiae",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Legionella spp",
-        "Streptococcus agalactiae"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "VDRL",
-      "rule": "Alert / critical result: Reactive / Streptococcus pyogenes",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Reactive",
-        "Streptococcus pyogenes"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Hepatitis A",
-      "rule": "Alert / critical result: Reactive / Streptococcus bovis",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Reactive",
-        "Streptococcus bovis"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Hepatitis B",
-      "rule": "Alert / critical result: Reactive / Enterococcus faecalis",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Reactive",
-        "Enterococcus faecalis"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Hepatitis C",
-      "rule": "Alert / critical result: Reactive / Enterococcus faecium",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Reactive",
-        "Enterococcus faecium"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Syphilis - RPR/TPPA",
-      "rule": "Alert / critical result: Reactive / Staphylococcus aureus",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Reactive",
-        "Staphylococcus aureus"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "MTB C&S",
-      "rule": "Alert / critical result: Culture Growth / Staphylococcus epidermidis",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Culture Growth",
-        "Staphylococcus epidermidis"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Slit Skin Smear",
-      "rule": "Alert / critical result: Positive / Staphylococcus saprophyticus",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Positive",
-        "Staphylococcus saprophyticus"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "MTB Gene Xpert",
-      "rule": "Alert / critical result: MTB Detected / Citrobacter koseri",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "MTB Detected",
-        "Citrobacter koseri"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Leptospirosis",
-      "rule": "Alert / critical result: IgG Detected / IgM Detected / LeptoMAT Inconclusive / LeptoMAT Positive / Citrobacter freundii",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "IgG Detected",
-        "IgM Detected",
-        "LeptoMAT Inconclusive",
-        "LeptoMAT Positive",
-        "Citrobacter freundii"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Dengue Combo",
-      "rule": "Alert / critical result: NS1 Detected / IgM Positive / IgG Positive / Klebsiella aerogenes",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "NS1 Detected",
-        "IgM Positive",
-        "IgG Positive",
-        "Klebsiella aerogenes"
-      ],
-      "type": "qualitative"
-    },
-    {
-      "name": "Influenza Test",
-      "rule": "Alert / critical result: Influenza A Detected / Influenza B Detected / Enterobacter cloacae",
-      "low": null,
-      "high": null,
-      "alerts": [
-        "Influenza A Detected",
-        "Influenza B Detected",
-        "Enterobacter cloacae"
-      ],
-      "type": "qualitative"
-    }
+      {
+          "name": "Cerebrospinal Fluid Culture and Sensitivity",
+          "rule": "Alert / critical result: Abnormal",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Abnormal"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Abnormal",
+              "No Growth"
+          ]
+      },
+      {
+          "name": "Cerebrospinal Fluid Antigen Detection",
+          "rule": "Alert / critical result: Positive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Positive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Positive",
+              "Negative"
+          ]
+      },
+      {
+          "name": "Sterile Body Fluids",
+          "rule": "Alert / critical result: Positive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Positive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Positive",
+              "No Growth"
+          ]
+      },
+      {
+          "name": "Sputum AFB",
+          "rule": "Alert / critical result: AFB Seen",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "AFB Seen"
+          ],
+          "type": "qualitative",
+          "options": [
+              "AFB Seen",
+              "No AFB Seen"
+          ]
+      },
+      {
+          "name": "BFMP",
+          "rule": "Alert / critical result: Malaria Parasite Seen",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Malaria Parasite Seen"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Malaria Parasite Seen",
+              "No Malaria Parasite Seen"
+          ]
+      },
+      {
+          "name": "Any Culture & Sensitivity",
+          "rule": "Alert / critical result: Listeria / Bacillus / Clostridium / Streptococcus viridans / Streptococcus pneumoniae / Streptococcus agalactiae / Streptococcus pyogenes / Streptococcus bovis / Enterococcus faecalis / Enterococcus faecium / Staphylococcus aureus / Staphylococcus epidermidis / Staphylococcus saprophyticus / Citrobacter koseri / Citrobacter freundii / Klebsiella aerogenes / Enterobacter cloacae / Enterobacter amnigenus / Enterobacter intermedius / Pectobacterium carotovorum / Dickeya dadantii / Escherichia coli / Klebsiella oxytoca / Klebsiella pneumoniae / Serratia fonticola / Serratia rubidaea / Edwardsiella tarda / Erwinia cacticida / Morganella morganii / Proteus mirabilis / Proteus vulgaris / Proteus penneri / Providencia stuartii / Salmonella bongori / Salmonella enterica / Serratia marcescens / Serratia liquefaciens / Shigella spp. / Yersinia enterocolitica / Yersinia pestis / Yersinia pseudotuberculosis / Salmonella typhi / Vibrio cholerae / Bordetella pertusis / Corynebacterium diptheria / Candida albican / Pseudomonas aeruginosa",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Listeria",
+              "Bacillus",
+              "Clostridium",
+              "Streptococcus viridans",
+              "Streptococcus pneumoniae",
+              "Streptococcus agalactiae",
+              "Streptococcus pyogenes",
+              "Streptococcus bovis",
+              "Enterococcus faecalis",
+              "Enterococcus faecium",
+              "Staphylococcus aureus",
+              "Staphylococcus epidermidis",
+              "Staphylococcus saprophyticus",
+              "Citrobacter koseri",
+              "Citrobacter freundii",
+              "Klebsiella aerogenes",
+              "Enterobacter cloacae",
+              "Enterobacter amnigenus",
+              "Enterobacter intermedius",
+              "Pectobacterium carotovorum",
+              "Dickeya dadantii",
+              "Escherichia coli",
+              "Klebsiella oxytoca",
+              "Klebsiella pneumoniae",
+              "Serratia fonticola",
+              "Serratia rubidaea",
+              "Edwardsiella tarda",
+              "Erwinia cacticida",
+              "Morganella morganii",
+              "Proteus mirabilis",
+              "Proteus vulgaris",
+              "Proteus penneri",
+              "Providencia stuartii",
+              "Salmonella bongori",
+              "Salmonella enterica",
+              "Serratia marcescens",
+              "Serratia liquefaciens",
+              "Shigella spp.",
+              "Yersinia enterocolitica",
+              "Yersinia pestis",
+              "Yersinia pseudotuberculosis",
+              "Salmonella typhi",
+              "Vibrio cholerae",
+              "Bordetella pertusis",
+              "Corynebacterium diptheria",
+              "Candida albican",
+              "Pseudomonas aeruginosa"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Listeria",
+              "Bacillus",
+              "Clostridium",
+              "Streptococcus viridans",
+              "Streptococcus pneumoniae",
+              "Streptococcus agalactiae",
+              "Streptococcus pyogenes",
+              "Streptococcus bovis",
+              "Enterococcus faecalis",
+              "Enterococcus faecium",
+              "Staphylococcus aureus",
+              "Staphylococcus epidermidis",
+              "Staphylococcus saprophyticus",
+              "Citrobacter koseri",
+              "Citrobacter freundii",
+              "Klebsiella aerogenes",
+              "Enterobacter cloacae",
+              "Enterobacter amnigenus",
+              "Enterobacter intermedius",
+              "Pectobacterium carotovorum",
+              "Dickeya dadantii",
+              "Escherichia coli",
+              "Klebsiella oxytoca",
+              "Klebsiella pneumoniae",
+              "Serratia fonticola",
+              "Serratia rubidaea",
+              "Edwardsiella tarda",
+              "Erwinia cacticida",
+              "Morganella morganii",
+              "Proteus mirabilis",
+              "Proteus vulgaris",
+              "Proteus penneri",
+              "Providencia stuartii",
+              "Salmonella bongori",
+              "Salmonella enterica",
+              "Serratia marcescens",
+              "Serratia liquefaciens",
+              "Shigella spp.",
+              "Yersinia enterocolitica",
+              "Yersinia pestis",
+              "Yersinia pseudotuberculosis",
+              "Salmonella typhi",
+              "Vibrio cholerae",
+              "Bordetella pertusis",
+              "Corynebacterium diptheria",
+              "Candida albican",
+              "Pseudomonas aeruginosa",
+              "No Significant Growth"
+          ]
+      },
+      {
+          "name": "Antigen Detection",
+          "rule": "Alert / critical result: Legionella spp",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Legionella spp"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Legionella spp",
+              "Negative"
+          ]
+      },
+      {
+          "name": "VDRL",
+          "rule": "Alert / critical result: Reactive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Reactive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Reactive",
+              "Non-reactive"
+          ]
+      },
+      {
+          "name": "Hepatitis A",
+          "rule": "Alert / critical result: Reactive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Reactive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Reactive",
+              "Non-reactive"
+          ]
+      },
+      {
+          "name": "Hepatitis B",
+          "rule": "Alert / critical result: Reactive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Reactive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Reactive",
+              "Non-reactive"
+          ]
+      },
+      {
+          "name": "Hepatitis C",
+          "rule": "Alert / critical result: Reactive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Reactive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Reactive",
+              "Non-reactive"
+          ]
+      },
+      {
+          "name": "Syphilis - RPR/TPPA",
+          "rule": "Alert / critical result: Reactive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Reactive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Reactive",
+              "Non-reactive"
+          ]
+      },
+      {
+          "name": "MTB C&S",
+          "rule": "Alert / critical result: Culture Growth",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Culture Growth"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Culture Growth",
+              "No Culture Growth"
+          ]
+      },
+      {
+          "name": "Slit Skin Smear",
+          "rule": "Alert / critical result: Positive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Positive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Positive",
+              "Negative"
+          ]
+      },
+      {
+          "name": "MTB Gene Xpert",
+          "rule": "Alert / critical result: MTB Detected",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "MTB Detected"
+          ],
+          "type": "qualitative",
+          "options": [
+              "MTB Detected",
+              "MTB Not Detected"
+          ]
+      },
+      {
+          "name": "Leptospirosis",
+          "rule": "Alert / critical result: IgG Detected / IgM Detected / LeptoMAT Inconclusive / LeptoMAT Positive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "IgG Detected",
+              "IgM Detected",
+              "LeptoMAT Inconclusive",
+              "LeptoMAT Positive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "IgG Detected",
+              "IgM Detected",
+              "LeptoMAT Inconclusive",
+              "LeptoMAT Positive",
+              "IgG Not Detected",
+              "IgM Not Detected",
+              "LeptoMAT Negative"
+          ]
+      },
+      {
+          "name": "Dengue Combo",
+          "rule": "Alert / critical result: NS1 Detected / IgM Positive / IgG Positive",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "NS1 Detected",
+              "IgM Positive",
+              "IgG Positive"
+          ],
+          "type": "qualitative",
+          "options": [
+              "NS1 Detected",
+              "IgM Positive",
+              "IgG Positive",
+              "NS1 Not Detected",
+              "IgM Negative",
+              "IgG Negative"
+          ]
+      },
+      {
+          "name": "Influenza Test",
+          "rule": "Alert / critical result: Influenza A Detected / Influenza B Detected",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "Influenza A Detected",
+              "Influenza B Detected"
+          ],
+          "type": "qualitative",
+          "options": [
+              "Influenza A Detected",
+              "Influenza B Detected",
+              "Influenza A Not Detected",
+              "Influenza B Not Detected"
+          ]
+      }
   ]
 };
   function $(id) { return document.getElementById(id); }
@@ -714,7 +815,7 @@
     input.required = !qualitative;
     if (qualitative) {
       var options = [];
-      (item.alerts || []).forEach(function (x) { if (options.indexOf(x) < 0) options.push(x); });
+      (item.options || item.alerts || []).forEach(function (x) { if (options.indexOf(x) < 0) options.push(x); });
       (qualitativeResultOptions[item.name] || []).forEach(function (x) { if (options.indexOf(x) < 0) options.push(x); });
       select.innerHTML = '<option value="">Select result</option>' + options.map(function (x) { return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('');
       select.value = selectedValue || '';
