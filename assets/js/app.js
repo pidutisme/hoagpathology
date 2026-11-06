@@ -2298,7 +2298,7 @@
           '.notification-form select,' +
           '.notification-form textarea,' +
           '.notification-form button,' +
-          '.notification-select-trigger,' +
+          '.notification-form .notification-select-trigger,' +
           '.notification-datetime-wrap .notification-neumorphic-datetime'
         ).forEach(markVisitorDisabled_);
 
