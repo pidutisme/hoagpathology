@@ -7603,7 +7603,7 @@
   border-color: var(--year-page-card-border);
 }
 
-/* Custom Select & Date Triggers inside Outsource / Transfusion */
+/* Custom Select & Date Triggers inside Outsource / Transfusion / Modals */
 .outsource-custom-select-wrap,
 .outsource-date-field,
 .outsource-filter-neo-wrap {
@@ -7613,8 +7613,15 @@
   min-width: 0 !important;
 }
 
+.outsource-custom-select-wrap[hidden],
+.outsource-custom-select-wrap:has(> select[hidden]) {
+  display: none !important;
+}
+
 .outsource-native-select,
 .outsource-filter-neo-native,
+select.outsource-native-select,
+#transfusionDetailStatus.outsource-native-select,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) select.outsource-native-select,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select.outsource-filter-neo-native,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-modal-field select.outsource-native-select {
@@ -7659,6 +7666,15 @@
   pointer-events: auto;
   outline: none;
   transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+}
+
+:is(.outsource-result-modal, .outsource-admin-modal, .outsource-report-download-modal, .inventory-modal, #adminAccessModal) .outsource-select-trigger {
+  min-height: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .outsource-select-trigger > span:first-child,
@@ -8188,7 +8204,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 .inventory-filter-menu,
 .inventory-month-menu {
   position: fixed !important;
-  z-index: 2147483000 !important;
+  z-index: 2147483647 !important;
   display: block !important;
   min-width: 180px;
   max-height: 300px;
@@ -8264,7 +8280,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 .outsource-date-popover,
 .inventory-date-popover {
   position: fixed !important;
-  z-index: 2147483000 !important;
+  z-index: 2147483647 !important;
   width: 284px;
   padding: 14px;
   border-radius: 20px;
@@ -8838,13 +8854,33 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--neo-surface-light);
   font-size: 12px;
   font-weight: 800;
+}
+
+.outsource-admin-catalog-row strong {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.outsource-admin-catalog-row span,
+.outsource-admin-catalog-row em {
+  font-size: 10px;
+  font-weight: 750;
+  color: var(--muted);
+  font-style: normal;
+}
+
+.outsource-admin-catalog-row em {
+  white-space: nowrap;
 }
 
 .outsource-admin-message {

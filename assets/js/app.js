@@ -1,7 +1,7 @@
 /* ===== ORIGINAL SCRIPT BLOCK: outsource-filter-clean-final-js ===== */
 (function(){
   'use strict';
-  var IDS=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter','outsourceReferralFilter','outsourceLabFilter','outsourceTestFilter','outsourceUnitFilter'];
+  var IDS=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter','outsourceReferralFilter','outsourceLabFilter','outsourceTestFilter','outsourceUnitFilter','trYearFilter','trMonthFilter','trStatusFilter'];
   var active={menu:null,trigger:null,select:null};
   function closeMenu(){
     if(active.menu) active.menu.remove();
@@ -61,7 +61,7 @@
   }
   function init(){
     var grid=document.getElementById('moduleYearGrid');
-    if(!grid||!grid.classList.contains('outsource-active-grid'))return;
+    if(!grid||(!grid.classList.contains('outsource-active-grid')&&!grid.classList.contains('transfusion-active-grid')))return;
     IDS.forEach(function(id){setup(document.getElementById(id));});
   }
   document.addEventListener('click',function(e){if(active.menu&&!e.target.closest('.outsource-filter-neo-menu')&&!e.target.closest('.outsource-filter-neo-trigger'))closeMenu();},true);
@@ -10520,8 +10520,11 @@ if ("serviceWorker" in navigator) {
   function sync(select){
     var wrap=select&&select.parentElement,trigger=wrap&&wrap.querySelector('.outsource-select-trigger');
     if(!trigger)return;
+    if(wrap.classList.contains('outsource-custom-select-wrap'))wrap.hidden=!!select.hidden;
     var label=trigger.querySelector('[data-outsource-select-label]'),opt=select.options[select.selectedIndex];
     if(label)label.textContent=opt?opt.textContent:'Select...';
+    trigger.setAttribute('aria-disabled',select.disabled?'true':'false');
+    trigger.classList.toggle('is-disabled',!!select.disabled);
     if(openMenu)openMenu.querySelectorAll('button').forEach(function(b){b.classList.toggle('is-selected',b.dataset.value===select.value);});
   }
   function open(trigger,select){
@@ -10536,44 +10539,45 @@ if ("serviceWorker" in navigator) {
     document.body.appendChild(menu);openMenu=menu;trigger.classList.add('is-open');trigger.setAttribute('aria-expanded','true');position();
   }
   function setup(select){
-    if(!select||select.dataset.outsourceCustom==='1')return;
+    if(!select)return;
+    if(select.dataset.outsourceCustom==='1'){sync(select);return;}
     select.dataset.outsourceCustom='1';select.classList.add('outsource-native-select');
     var wrap=document.createElement('div');wrap.className='outsource-custom-select-wrap';select.parentNode.insertBefore(wrap,select);wrap.appendChild(select);
     var trigger=document.createElement('button');trigger.type='button';trigger.className='outsource-select-trigger';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');
     if(select.disabled){trigger.setAttribute('aria-disabled','true');trigger.classList.add('is-disabled');}
     trigger.innerHTML='<span data-outsource-select-label></span><span class="outsource-select-chevron">⌄</span>';wrap.insertBefore(trigger,select);sync(select);
     trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(select.disabled)return;if(openMenu&&openTrigger===trigger)close();else open(trigger,select);});
-    select.addEventListener('change',function(){sync(select);trigger.setAttribute('aria-disabled',select.disabled?'true':'false');trigger.classList.toggle('is-disabled',!!select.disabled);});
+    select.addEventListener('change',function(){sync(select);});
   }
   function init(){
-    if(!document.body||!document.getElementById('moduleYearGrid'))return;
-    /* Registered Samples & Transfusion filters stay native; form & modal selects use the same neumorphic controls. */
-    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select, #moduleYearGrid.outsource-active-grid .outsource-modal-field select, #moduleYearGrid.transfusion-active-grid .outsource-field select, #moduleYearGrid.transfusion-active-grid .outsource-modal-field select').forEach(setup);
+    if(!document.body)return;
+    /* Form & modal selects across Outsource, Transfusion, Inventory, and Admin use the same neumorphic controls. */
+    document.querySelectorAll('#moduleYearGrid.outsource-active-grid .outsource-field select, #moduleYearGrid.outsource-active-grid .outsource-modal-field select, #moduleYearGrid.transfusion-active-grid .outsource-field select, #moduleYearGrid.transfusion-active-grid .outsource-modal-field select, .outsource-result-modal select, .outsource-admin-modal select, .outsource-report-download-modal select, .inventory-modal select:not(#inventoryItemInput), #adminAccessModal select').forEach(setup);
   }
   function delayed(){setTimeout(init,0);setTimeout(init,120);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',delayed);else delayed();
-  document.addEventListener('click',function(e){if(openMenu&&!e.target.closest('.outsource-select-menu')&&!e.target.closest('.outsource-select-trigger'))close();},true);
+  document.addEventListener('click',function(e){if(openMenu&&!e.target.closest('.outsource-select-menu')&&!e.target.closest('.outsource-select-trigger'))close();setTimeout(init,0);},true);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&openMenu)close();});
   window.addEventListener('resize',function(){if(openMenu)position();});
   window.addEventListener('scroll',function(){if(openMenu)position();},true);
-  /* Observe structural changes only; do not poll every 500ms. Ignore outsource table rows. */
+  /* Observe structural and modal state changes; do not poll every 500ms. Ignore outsource table rows. */
   if(window.MutationObserver){
     var pending=false;
     new MutationObserver(function(mutations){
       var relevant=false;
       for(var i=0;i<mutations.length;i++){
         var m=mutations[i];
-        if(m.addedNodes && m.addedNodes.length){
-          var t=m.target;
-          if(t && (t.id==='outsourceTableBody' || t.id==='trTableBody' || (t.closest && t.closest('#outsourceTableBody, #trTableBody')))) continue;
+        var t=m.target;
+        if(t && (t.id==='outsourceTableBody' || t.id==='trTableBody' || (t.closest && t.closest('#outsourceTableBody, #trTableBody')))) continue;
+        if((m.addedNodes && m.addedNodes.length) || m.type==='attributes'){
           relevant=true;
           break;
         }
       }
       if(!relevant || pending)return;
       pending=true;
-      setTimeout(function(){pending=false;init();},60);
-    }).observe(document.body,{childList:true,subtree:true});
+      setTimeout(function(){pending=false;init();},40);
+    }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','disabled']});
   }
   window.outsourceInitNeumorphicDropdowns=init;
 })();
