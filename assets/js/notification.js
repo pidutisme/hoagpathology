@@ -773,6 +773,32 @@
     return list.find(function (x) { return String(x.name) === testName; }) || null;
   }
 
+  function getResultUnit(r, item) {
+    var rawResult = String(r && r.result || '').trim();
+    if (!rawResult || !item || item.type === 'qualitative') return '';
+
+    // Prefer a unit already present in the stored result.
+    var existing = rawResult.match(/(?:^|\s)(mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%)(?:\s|$)/i);
+    if (existing) return existing[1];
+
+    // Otherwise derive the unit from the critical-limit rule in the catalogue.
+    var rule = String((item && item.rule) || (r && r.critical_limit) || '');
+    var match = rule.match(/(mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%)/i);
+    return match ? match[1] : '';
+  }
+
+  function formatNotificationResult(r) {
+    var raw = String(r && r.result || '').trim();
+    if (!raw) return '—';
+    var item = getCatalogueItemForRecord(r);
+    var unit = getResultUnit(r, item);
+    if (!unit) return raw;
+
+    // Do not duplicate the unit if it is already stored in the result.
+    var unitPattern = new RegExp('(?:^|\\s)' + unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)', 'i');
+    return unitPattern.test(raw) ? raw : raw + ' ' + unit;
+  }
+
   function calculateRecordFlag(r) {
     var item = getCatalogueItemForRecord(r);
     if (!item) return String(r && r.flag || '');
@@ -1101,7 +1127,7 @@
         '<td>' + esc(r.unit) + '</td>' +
         '<td><span class="notification-pill ' + cls + '">' + esc(r.discipline) + '</span></td>' +
         '<td>' + esc(r.test_name || '—') + '</td>' +
-        '<td class="result">' + esc(r.result) + '</td>' +
+        '<td class="result">' + esc(formatNotificationResult(r)) + '</td>' +
         '<td><span class="notification-pill flag">' + esc(r.flag) + '</span></td>' +
         '<td><span class="notification-pill status ' + statusCls + '">' + esc(r.status) + '</span></td>' +
         '<td><div class="notification-actions"><button class="notification-action" type="button" data-notification-view="' + esc(r.id) + '" title="View">◉</button><button class="notification-action" type="button" data-notification-edit="' + esc(r.id) + '" title="Edit">✎</button></div></td></tr>';
