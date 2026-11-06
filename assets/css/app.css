@@ -10441,3 +10441,20 @@ body.visitor-read-only .inventory-history-edit-cell {
 }
 
 
+
+/* Notification VISITOR mode: keep every form control visible, but read-only.
+   The existing visitor rule hides custom select/date-time triggers; override only
+   those presentation controls so the full form remains visually complete. */
+body.visitor-read-only .notification-form .notification-select-trigger {
+  display: inline-flex !important;
+  opacity: 0.56 !important;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
+
+body.visitor-read-only .notification-form .notification-datetime-wrap .notification-neumorphic-datetime {
+  display: block !important;
+  opacity: 0.56 !important;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
