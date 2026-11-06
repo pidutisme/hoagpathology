@@ -362,3 +362,14 @@
 .notification-select-menu button.is-selected{background:rgba(37,99,235,.10);color:var(--primary);font-weight:900}
 .notification-page .notification-toolbar .notification-custom-select-wrap{min-width:0}
 .notification-page .notification-toolbar .notification-select-trigger{height:36px}
+
+/* Notification custom neumorphic time picker */
+.notification-time-picker{position:relative;width:100%;}
+.notification-time-picker input{padding-right:38px!important;cursor:pointer;background:var(--surface-inset)!important;box-shadow:var(--shadow-inset)!important;border-color:var(--year-page-card-border)!important;}
+.notification-time-trigger{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;border-radius:9px;background:var(--surface-inset);box-shadow:var(--shadow-soft);color:#52709a;font:900 13px inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s ease;}
+.notification-time-trigger:hover,.notification-time-trigger.is-open{color:var(--primary);box-shadow:var(--shadow-inset);}
+.notification-time-menu{position:fixed;z-index:100001;display:grid;grid-template-columns:58px 58px 64px;gap:5px;padding:7px;border:1px solid var(--year-page-card-border);border-radius:14px;background:#eef3f9;box-shadow:0 18px 38px rgba(37,99,235,.18),var(--shadow-soft);max-height:240px;overflow:hidden;isolation:isolate;}
+.notification-time-col{display:flex;flex-direction:column;gap:3px;max-height:224px;overflow:auto;padding:2px;scrollbar-width:thin;}
+.notification-time-col button{appearance:none;border:0;background:transparent;color:var(--text);font:800 12px "Nunito Sans",sans-serif;padding:8px 4px;border-radius:9px;cursor:pointer;min-height:32px;}
+.notification-time-col button:hover{background:var(--surface-inset);box-shadow:var(--shadow-soft);}
+.notification-time-col button.is-selected{background:#dceaff;color:var(--primary);box-shadow:var(--shadow-inset);font-weight:900;}

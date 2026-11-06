@@ -729,7 +729,16 @@
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
   function timeNow() {
-    var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var d = new Date(), h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12; return pad(h) + ':' + pad(m) + ' ' + ap;
+  }
+  function format12Hour(h, m, ap) { return pad(Number(h)) + ':' + pad(Number(m)) + ' ' + ap; }
+  function parseTime12(value) {
+    var m = String(value || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!m) return null;
+    var h = Number(m[1]), min = Number(m[2]), ap = m[3].toUpperCase();
+    if (h < 1 || h > 12 || min < 0 || min > 59) return null;
+    return { hour: h, minute: min, ampm: ap };
   }
   function fmtDate(value) {
     if (!value) return '—';
@@ -737,6 +746,18 @@
     if (isNaN(d.getTime())) return esc(value);
     return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + '<br><small>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</small>';
   }
+  var STORAGE_KEY = 'hoagpathology.notification.records.v1';
+  function loadRecords() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      records = Array.isArray(parsed) ? parsed : [];
+    } catch (e) { records = []; }
+  }
+  function persistRecords() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch (e) {}
+  }
+
   function setDefaultForm() {
     var dt = $('notificationDateTime'); if (dt) dt.value = nowLocalInput();
     var ti = $('notificationInformedTime'); if (ti) ti.value = timeNow();
@@ -886,6 +907,43 @@
     if (item && item.low != null && !isNaN(n) && n < Number(item.low)) { setFlag('LOW CRITICAL', 'critical'); return; }
     if (item && item.high != null && !isNaN(n) && n > Number(item.high)) { setFlag('HIGH CRITICAL', 'critical'); return; }
     setFlag('REVIEW', 'normal');
+  }
+
+  function initNotificationTimePicker() {
+    var picker = $('notificationTimePicker'), input = $('notificationInformedTime'), trigger = $('notificationTimeTrigger'), menu = $('notificationTimeMenu');
+    if (!picker || !input || !trigger || !menu || picker.dataset.ready === '1') return;
+    picker.dataset.ready = '1';
+    var hours = Array.from({length:12}, function(_,i){ return i+1; });
+    var minutes = Array.from({length:60}, function(_,i){ return i; });
+    var ampm = ['AM','PM'];
+    var renderCol = function(part, values) {
+      var col = menu.querySelector('[data-time-part="'+part+'"]');
+      col.innerHTML = values.map(function(v){ var text=part==='minute'?pad(v):String(v); return '<button type="button" data-time-value="'+esc(String(v))+'">'+esc(text)+'</button>'; }).join('');
+    };
+    renderCol('hour',hours); renderCol('minute',minutes); renderCol('ampm',ampm);
+    function current(){ return parseTime12(input.value) || parseTime12(timeNow()); }
+    function syncSelected(){
+      var t=current();
+      menu.querySelectorAll('[data-time-part]').forEach(function(col){
+        var part=col.dataset.timePart, val=part==='hour'?String(t.hour):part==='minute'?String(t.minute):t.ampm;
+        col.querySelectorAll('button').forEach(function(b){ b.classList.toggle('is-selected', b.dataset.timeValue===val); });
+      });
+    }
+    function open(){ menu.hidden=false; input.setAttribute('aria-expanded','true'); trigger.classList.add('is-open'); var r=input.getBoundingClientRect(), mw=menu.offsetWidth||190, mh=menu.offsetHeight||240; var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-mw-8)); var top=r.bottom+6; if(top+mh>window.innerHeight-8) top=Math.max(8,r.top-mh-6); menu.style.left=left+'px'; menu.style.top=top+'px'; syncSelected(); var sel=menu.querySelector('[data-time-part="hour"] .is-selected'); if(sel) sel.scrollIntoView({block:'nearest'}); }
+    function close(){ menu.hidden=true; input.setAttribute('aria-expanded','false'); trigger.classList.remove('is-open'); }
+    function choose(part,value){
+      var t=current();
+      if(part==='hour') t.hour=Number(value); else if(part==='minute') t.minute=Number(value); else t.ampm=value;
+      input.value=format12Hour(t.hour,t.minute,t.ampm);
+      syncSelected();
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    trigger.addEventListener('click',function(e){e.stopPropagation(); menu.hidden ? open() : close();});
+    input.addEventListener('click',function(){open();});
+    menu.addEventListener('click',function(e){var b=e.target.closest('button[data-time-value]'); if(!b) return; choose(b.parentElement.dataset.timePart,b.dataset.timeValue);});
+    document.addEventListener('click',function(e){if(!picker.contains(e.target)) close();});
+    window.addEventListener('resize',close); window.addEventListener('scroll',close,true);
+    input.value=timeNow();
   }
 
   function initNotificationNeumorphicSelects() {
@@ -1060,7 +1118,8 @@
       if (!form.checkValidity()) { form.reportValidity(); return; }
       var item = collectForm();
       var idx = records.findIndex(function (r) { return String(r.id) === String(item.id); });
-      if (idx >= 0) records[idx] = item; else records.unshift(item);
+      if (idx >= 0) records[idx] = item; else { item.id = item.id || ('notif-' + Date.now() + '-' + Math.random().toString(36).slice(2,8)); records.unshift(item); }
+      persistRecords();
       clearForm(); render();
     });
     var clear = $('notificationClearBtn'); if (clear) clear.addEventListener('click', clearForm);
@@ -1077,5 +1136,6 @@
   }
 
   window.LabNotification = { open: open, render: render, getRecords: function () { return records.slice(); } };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicSelects(); }
+  loadRecords();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicSelects(); initNotificationTimePicker(); }); else { bind(); initNotificationNeumorphicSelects(); initNotificationTimePicker(); }
 })(window, document);
