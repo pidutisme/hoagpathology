@@ -911,6 +911,11 @@
     try { return typeof Auth !== 'undefined' && Auth.getUser && String((Auth.getUser() || {}).role || '').toUpperCase() === 'ADMIN'; }
     catch (e) { return false; }
   }
+  function isNotificationVisitor() {
+    if (notificationUserRole === 'VISITOR') return true;
+    try { return typeof Auth !== 'undefined' && Auth.getUser && String((Auth.getUser() || {}).role || '').toUpperCase() === 'VISITOR'; }
+    catch (e) { return false; }
+  }
   function deleteNotificationRecord(id) {
     if (!isNotificationAdmin()) return Promise.reject(new Error('Admin access is required to delete notification records.'));
     return notificationApi('deleteNotificationRecord', [id]).then(function () {
@@ -1304,6 +1309,7 @@
     var start = (currentPage - 1) * pageSize;
     var rows = filtered.slice(start, start + pageSize);
     var body = $('notificationTableBody'), empty = $('notificationEmpty');
+    var visitorOnly = isNotificationVisitor();
     if (body) body.innerHTML = rows.map(function (r) {
       var cls = r.discipline === 'BIOCHEMISTRY' ? 'bio' : r.discipline === 'HAEMATOLOGY' ? 'hema' : 'micro';
       var statusCls = String(r.status).toLowerCase();
@@ -1316,7 +1322,7 @@
         '<td class="result">' + esc(formatNotificationResult(r)) + '</td>' +
         '<td><span class="notification-pill flag">' + esc(r.flag) + '</span></td>' +
         '<td><span class="notification-pill status ' + statusCls + '">' + esc(r.status) + '</span></td>' +
-        '<td><div class="notification-actions"><button type="button" class="notification-action outsource-mini" data-notification-view="' + esc(r.id) + '" title="View full details" aria-label="View full details">&#128065;</button><button type="button" class="notification-action outsource-mini" data-notification-edit="' + esc(r.id) + '" title="Edit" aria-label="Edit">EDIT</button>' + (isNotificationAdmin() ? '<button type="button" class="notification-action outsource-mini delete" data-notification-delete="' + esc(r.id) + '" title="Delete" aria-label="Delete">DELETE</button>' : '') + '</div></td></tr>';
+        '<td><div class="notification-actions"><button type="button" class="notification-action outsource-mini" data-notification-view="' + esc(r.id) + '" title="View full details" aria-label="View full details">&#128065;</button>' + (!visitorOnly ? '<button type="button" class="notification-action outsource-mini" data-notification-edit="' + esc(r.id) + '" title="Edit" aria-label="Edit">EDIT</button>' : '') + (!visitorOnly && isNotificationAdmin() ? '<button type="button" class="notification-action outsource-mini delete" data-notification-delete="' + esc(r.id) + '" title="Delete" aria-label="Delete">DELETE</button>' : '') + '</div></td></tr>';
     }).join('');
     if (empty) empty.hidden = rows.length > 0;
     var shownStart = filtered.length ? start + 1 : 0;
@@ -1346,6 +1352,7 @@
     modal.hidden = false;
   }
   function editRecord(id) {
+    if (isNotificationVisitor()) return;
     var r = records.find(function (x) { return String(x.id) === String(id); }); if (!r) return;
     editingId = r.id;
     $('notificationDateTime').value = r.notification_datetime || '';
@@ -1384,6 +1391,7 @@
   function bind() {
     var form = $('notificationForm'); if (form) form.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (isNotificationVisitor()) return;
       if (!form.checkValidity()) { form.reportValidity(); return; }
       if (notificationSaving) return;
       var item = collectForm();
@@ -1398,7 +1406,7 @@
         })
         .finally(function () { if (submitBtn) submitBtn.disabled = false; });
     });
-    var clear = $('notificationClearBtn'); if (clear) clear.addEventListener('click', clearForm);
+    var clear = $('notificationClearBtn'); if (clear) clear.addEventListener('click', function () { if (!isNotificationVisitor()) clearForm(); });
     var ic = $('notificationIdIc'); if (ic) ic.addEventListener('input', function () { parseIc(this.value); });
     var discipline = $('notificationDiscipline'); if (discipline) discipline.addEventListener('change', function () { populateTests(); updateRuleAndFlag(); });
     var test = $('notificationTest'); if (test) test.addEventListener('change', updateRuleAndFlag);

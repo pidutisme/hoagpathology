@@ -2242,6 +2242,7 @@
           '[data-admin-item-edit],[data-admin-item-delete],' +
           '[data-action="edit"],[data-action="delete"],' +
           '[data-roster-action="edit-row"],[data-roster-action="delete-row"],' +
+          '[data-notification-edit],[data-notification-delete],' +
           '.roster-delete-btn,.roster-cancel-edit-btn,' +
           '.tr-edit,.tr-delete'
         ).forEach(function(el){ el.hidden = true; el.setAttribute('aria-hidden','true'); });
@@ -2292,7 +2293,13 @@
           '#moduleYearGrid [data-write-action],' +
           '#moduleYearGrid [data-action="edit"],' +
           '#moduleYearGrid [data-action="delete"],' +
-          '#moduleYearGrid [data-action="save"]'
+          '#moduleYearGrid [data-action="save"],' +
+          '.notification-form input:not([type=hidden]),' +
+          '.notification-form select,' +
+          '.notification-form textarea,' +
+          '.notification-form button,' +
+          '.notification-select-trigger,' +
+          '.notification-datetime-wrap .notification-neumorphic-datetime'
         ).forEach(markVisitorDisabled_);
 
         /* Disable custom dropdown triggers as well. They are buttons generated from
