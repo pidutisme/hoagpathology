@@ -1450,3 +1450,47 @@
     grid-column: auto;
   }
 }
+
+/* =========================================================
+   NOTIFICATION — INVISIBLE SCROLLBARS
+   Keep scrolling functional, hide scrollbar chrome completely.
+   ========================================================= */
+#notification,
+#notificationDetailModal,
+#notification * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#notification::-webkit-scrollbar,
+#notification *::-webkit-scrollbar,
+#notificationDetailModal::-webkit-scrollbar,
+#notificationDetailModal *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
+}
+
+#notification .notification-scroll,
+#notification .notification-record-card,
+#notification .notification-table-wrap,
+#notification .notification-time-list,
+#notification .notification-select-menu,
+#notificationDetailModal .notification-modal-dialog,
+#notification .notification-modal-dialog {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#notification .notification-scroll::-webkit-scrollbar,
+#notification .notification-record-card::-webkit-scrollbar,
+#notification .notification-table-wrap::-webkit-scrollbar,
+#notification .notification-time-list::-webkit-scrollbar,
+#notification .notification-select-menu::-webkit-scrollbar,
+#notificationDetailModal .notification-modal-dialog::-webkit-scrollbar,
+#notification .notification-modal-dialog::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
