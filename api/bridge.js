@@ -239,6 +239,85 @@ async function deleteOutsourceRow(id) {
   if (error) throw error;
 }
 
+
+async function getNotificationRows() {
+  const pageSize = 1000;
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('notification_records')
+      .select('*')
+      .order('notification_datetime', { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return rows.map(row => ({
+    id: row.id,
+    notification_datetime: row.notification_datetime,
+    barcode: row.barcode || '',
+    patient_name: row.patient_name || '',
+    patient_id: row.patient_id || '',
+    sex: row.sex || '',
+    age: row.age || '',
+    unit: row.unit || '',
+    discipline: row.discipline || '',
+    test_name: row.test_name || '',
+    critical_limit: row.critical_limit || '',
+    result: row.result || '',
+    flag: row.flag || '',
+    staff: row.staff || '',
+    inform_to: row.inform_to || '',
+    status: row.status || '',
+    notes: row.notes || '',
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  }));
+}
+
+async function upsertNotificationRow(record, existing = null, userId = '') {
+  const now = iso();
+  const id = clean(record?.id, 160);
+  if (!id) fail('Notification record ID is required.');
+  const allowed = [
+    'notification_datetime','barcode','patient_name','patient_id','sex','age','unit',
+    'discipline','test_name','critical_limit','result','flag','staff','inform_to','status','notes'
+  ];
+  const next = {};
+  allowed.forEach(key => { next[key] = clean(record?.[key], 2000); });
+  next.status = clean(record?.status || 'INFORMED', 40) || 'INFORMED';
+  const createdAt = existing?.created_at || now;
+  const { data, error } = await supabase.from('notification_records').upsert({
+    id,
+    ...next,
+    created_at: createdAt,
+    updated_at: now
+  }, { onConflict: 'id' }).select('*').single();
+  if (error) throw error;
+  return {
+    id: data.id,
+    notification_datetime: data.notification_datetime,
+    barcode: data.barcode || '',
+    patient_name: data.patient_name || '',
+    patient_id: data.patient_id || '',
+    sex: data.sex || '',
+    age: data.age || '',
+    unit: data.unit || '',
+    discipline: data.discipline || '',
+    test_name: data.test_name || '',
+    critical_limit: data.critical_limit || '',
+    result: data.result || '',
+    flag: data.flag || '',
+    staff: data.staff || '',
+    inform_to: data.inform_to || '',
+    status: data.status || '',
+    notes: data.notes || '',
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+}
+
 async function getSystemLogs(limit = 250) {
   const safeLimit = Math.min(Math.max(Number(limit) || 250, 1), 1000);
   const { data, error } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(safeLimit);
@@ -494,6 +573,42 @@ async function dispatch(db, method, a, req) {
       const deletedAt = iso();
       await log(db, s.userId, 'OUTSOURCE_RECORD_DELETED', `Permanently removed outsource record ${rid}.`);
       return { ok: true, deleted: true, deletedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
+    case 'getNotificationRecords': {
+      const s = await requireSession(db, tokenAt(0));
+      const records = await getNotificationRows();
+      return { ok: true, records, count: records.length, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
+    case 'upsertNotificationRecord': {
+      const s = await requireSession(db, tokenAt(1));
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const input = a[0];
+      if (!input || typeof input !== 'object' || Array.isArray(input)) fail('Invalid notification record.');
+      const id = clean(input.id, 160);
+      if (!id) fail('Notification record ID is required.');
+      const { data: existingRow, error: existingError } = await supabase
+        .from('notification_records').select('*').eq('id', id).maybeSingle();
+      if (existingError) throw existingError;
+      const record = await upsertNotificationRow(input, existingRow, s.userId);
+      await log(db, s.userId, existingRow ? 'NOTIFICATION_RECORD_UPDATED' : 'NOTIFICATION_RECORD_CREATED',
+        `${existingRow ? 'Updated' : 'Created'} notification record ${id}.`);
+      return { ok: true, record, updatedAt: record.updated_at, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
+    case 'deleteNotificationRecord': {
+      const s = await requireSession(db, tokenAt(1));
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const rid = clean(a[0], 160);
+      if (!rid) fail('Notification record ID is required.');
+      const { data: row, error } = await supabase.from('notification_records').select('id').eq('id', rid).maybeSingle();
+      if (error) throw error;
+      if (!row) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId };
+      const { error: deleteError } = await supabase.from('notification_records').delete().eq('id', rid);
+      if (deleteError) throw deleteError;
+      await log(db, s.userId, 'NOTIFICATION_RECORD_DELETED', `Deleted notification record ${rid}.`);
+      return { ok: true, deleted: true, recordId: rid, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 
     case 'getTransfusionRecords': {

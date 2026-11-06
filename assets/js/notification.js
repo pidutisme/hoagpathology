@@ -740,74 +740,97 @@
     if (isNaN(d.getTime())) return esc(value);
     return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + '<br><small>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</small>';
   }
-  var STORAGE_KEY = 'hoagpathology.notification.records.v2';
-  var LEGACY_STORAGE_KEY = 'hoagpathology.notification.records.v1';
-  var DB_NAME = 'hoagpathology-notification';
-  var DB_STORE = 'records';
   var recordsHydrated = false;
+  var notificationLoading = false;
+  var notificationSaving = false;
 
-  function localRead() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) raw = localStorage.getItem(LEGACY_STORAGE_KEY);
-      var parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) { return []; }
-  }
-  function localWrite() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); return true; } catch (e) { return false; }
-  }
-  function openRecordsDB() {
-    return new Promise(function(resolve, reject) {
-      if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
-      var req = indexedDB.open(DB_NAME, 1);
-      req.onupgradeneeded = function() {
-        var db = req.result;
-        if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'id' });
-      };
-      req.onsuccess = function() { resolve(req.result); };
-      req.onerror = function() { reject(req.error || new Error('IndexedDB open failed')); };
-    });
-  }
-  function idbReadAll() {
-    return openRecordsDB().then(function(db) {
-      return new Promise(function(resolve, reject) {
-        var tx = db.transaction(DB_STORE, 'readonly'), store = tx.objectStore(DB_STORE), req = store.getAll();
-        req.onsuccess = function() { resolve(Array.isArray(req.result) ? req.result : []); };
-        req.onerror = function() { reject(req.error || new Error('IndexedDB read failed')); };
-        tx.oncomplete = function() { try { db.close(); } catch (e) {} };
+  function notificationApi(method, args) {
+    return fetch('/api/bridge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      cache: 'no-store',
+      body: JSON.stringify({
+        action: 'action',
+        payload: { method: method, args: Array.isArray(args) ? args : [] }
+      })
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        var data;
+        try { data = JSON.parse(text); } catch (e) { throw new Error('API returned an invalid response.'); }
+        if (!response.ok || (data && data.ok === false)) {
+          throw new Error((data && data.error) || 'Notification API request failed.');
+        }
+        return data;
       });
     });
   }
-  function idbWriteAll(list) {
-    return openRecordsDB().then(function(db) {
-      return new Promise(function(resolve, reject) {
-        var tx = db.transaction(DB_STORE, 'readwrite'), store = tx.objectStore(DB_STORE);
-        store.clear();
-        list.forEach(function(item) { store.put(item); });
-        tx.oncomplete = function() { try { db.close(); } catch (e) {} resolve(true); };
-        tx.onerror = function() { try { db.close(); } catch (e) {} reject(tx.error || new Error('IndexedDB write failed')); };
-      });
-    });
+
+  function normalizeNotificationRecord(r) {
+    r = r && typeof r === 'object' ? r : {};
+    var dt = r.notification_datetime || '';
+    if (dt) {
+      var d = new Date(dt);
+      if (!isNaN(d.getTime())) {
+        dt = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+          'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      } else {
+        dt = String(dt).replace(' ', 'T').slice(0,16);
+      }
+    }
+    return {
+      id: String(r.id || ''),
+      notification_datetime: dt,
+      barcode: String(r.barcode || ''),
+      patient_name: String(r.patient_name || ''),
+      patient_id: String(r.patient_id || ''),
+      sex: String(r.sex || ''),
+      age: String(r.age || ''),
+      unit: String(r.unit || ''),
+      discipline: String(r.discipline || ''),
+      test_name: String(r.test_name || ''),
+      critical_limit: String(r.critical_limit || ''),
+      result: String(r.result || ''),
+      flag: String(r.flag || ''),
+      staff: String(r.staff || ''),
+      inform_to: String(r.inform_to || ''),
+      status: String(r.status || 'INFORMED'),
+      notes: String(r.notes || '')
+    };
   }
+
   function loadRecords() {
-    records = localRead();
-    recordsHydrated = false;
-    idbReadAll().then(function(saved) {
-      if (saved.length) records = saved;
-      else if (records.length) idbWriteAll(records).catch(function(){});
-      recordsHydrated = true;
-      render();
-    }).catch(function() { recordsHydrated = true; render(); });
+    notificationLoading = true;
+    notificationApi('getNotificationRecords', [])
+      .then(function (result) {
+        records = Array.isArray(result.records) ? result.records.map(normalizeNotificationRecord) : [];
+        recordsHydrated = true;
+        render();
+      })
+      .catch(function (error) {
+        recordsHydrated = true;
+        console.error('Notification records could not be loaded from Supabase:', error);
+        render();
+      })
+      .finally(function () { notificationLoading = false; });
   }
-  function persistRecords() {
-    localWrite();
-    idbWriteAll(records).catch(function(){});
+
+  function saveNotificationRecord(item) {
+    notificationSaving = true;
+    return notificationApi('upsertNotificationRecord', [item])
+      .then(function (result) {
+        var saved = normalizeNotificationRecord(result.record || item);
+        var idx = records.findIndex(function (r) { return String(r.id) === String(saved.id); });
+        if (idx >= 0) records[idx] = saved;
+        else records.unshift(saved);
+        return saved;
+      })
+      .finally(function () { notificationSaving = false; });
   }
 
   function setDefaultForm() {
     var dt = $('notificationDateTime'); if (dt) dt.value = nowLocalInput();
-    var status = $('notificationStatus'); if (status) status.value = 'PENDING';
+    var status = $('notificationStatus'); if (status) status.value = 'INFORMED';
     editingId = null;
     var mode = $('notificationFormMode'); if (mode) mode.textContent = 'NEW RECORD';
   }
@@ -1101,7 +1124,7 @@
     syncResultControl(editItem, r.result || '');
     $('notificationStaff').value = r.staff || '';
     $('notificationInformTo').value = r.inform_to || '';
-    $('notificationStatus').value = r.status || 'PENDING';
+    $('notificationStatus').value = r.status || 'INFORMED';
     $('notificationNotes').value = r.notes || '';
     var box = $('notificationCriticalLimit'); box.className = 'notification-critical-box'; box.innerHTML = '<strong>Critical Limit / Alert</strong><span>' + esc(r.critical_limit || 'Reference catalogue not loaded') + '</span>';
     setFlag(r.flag || 'REVIEW', r.flag && r.flag !== 'REVIEW' ? 'critical' : 'normal');
@@ -1117,16 +1140,24 @@
     page.classList.add('active');
     clearForm();
     render();
+    loadRecords();
   }
   function bind() {
     var form = $('notificationForm'); if (form) form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!form.checkValidity()) { form.reportValidity(); return; }
+      if (notificationSaving) return;
       var item = collectForm();
-      var idx = records.findIndex(function (r) { return String(r.id) === String(item.id); });
-      if (idx >= 0) records[idx] = item; else { item.id = item.id || ('notif-' + Date.now() + '-' + Math.random().toString(36).slice(2,8)); records.unshift(item); }
-      persistRecords();
-      clearForm(); render();
+      if (!item.id) item.id = 'notif-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+      var submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      saveNotificationRecord(item)
+        .then(function () { clearForm(); render(); })
+        .catch(function (error) {
+          console.error('Notification save failed:', error);
+          alert(error && error.message ? error.message : 'Unable to save Notification record.');
+        })
+        .finally(function () { if (submitBtn) submitBtn.disabled = false; });
     });
     var clear = $('notificationClearBtn'); if (clear) clear.addEventListener('click', clearForm);
     var ic = $('notificationIdIc'); if (ic) ic.addEventListener('input', function () { parseIc(this.value); });
