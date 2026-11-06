@@ -777,14 +777,35 @@
     var rawResult = String(r && r.result || '').trim();
     if (!rawResult || !item || item.type === 'qualitative') return '';
 
+    // Prefer an explicit unit on the catalogue item.
+    if (item.unit) return String(item.unit).trim();
+
     // Prefer a unit already present in the stored result.
-    var existing = rawResult.match(/(?:^|\s)(mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%)(?:\s|$)/i);
-    if (existing) return existing[1];
+    var existing = rawResult.match(/(?:^|\s)(X\s*10\^?3\s*\/\s*µ?L|mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%|ratio)(?:\s|$)/i);
+    if (existing) return existing[1].replace(/\s+/g, ' ').trim();
+
+    // Derive the unit from the test itself for numeric tests whose critical
+    // rule is expressed as a ratio, upper reference limit, or mixed notation.
+    var testName = String(item.name || r.test_name || '').toLowerCase();
+    var explicitByTest = {
+      'ph': 'pH',
+      'ph paeds': 'pH',
+      'inr (ratio)': 'ratio',
+      'pt': 'sec',
+      'aptt': 'sec',
+      'haematocrit': '%',
+      'haematocrit paeds': '%',
+      'haematocrit neonate': '%',
+      'platelet': 'X 10^3 /μL',
+      'platelet paeds': 'X 10^3 /μL',
+      'wbc paeds': 'X 10^3 /μL'
+    };
+    if (explicitByTest[testName]) return explicitByTest[testName];
 
     // Otherwise derive the unit from the critical-limit rule in the catalogue.
     var rule = String((item && item.rule) || (r && r.critical_limit) || '');
-    var match = rule.match(/(mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%)/i);
-    return match ? match[1] : '';
+    var match = rule.match(/(X\s*10\^?3\s*\/\s*µ?L|mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%|ratio)/i);
+    return match ? match[1].replace(/\s+/g, ' ').trim() : '';
   }
 
   function formatNotificationResult(r) {
