@@ -732,14 +732,8 @@
     var d = new Date(), h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12; return pad(h) + ':' + pad(m) + ' ' + ap;
   }
-  function format12Hour(h, m, ap) { return pad(Number(h)) + ':' + pad(Number(m)) + ' ' + ap; }
-  function parseTime12(value) {
-    var m = String(value || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (!m) return null;
-    var h = Number(m[1]), min = Number(m[2]), ap = m[3].toUpperCase();
-    if (h < 1 || h > 12 || min < 0 || min > 59) return null;
-    return { hour: h, minute: min, ampm: ap };
-  }
+
+
   function fmtDate(value) {
     if (!value) return '—';
     var d = new Date(value);
@@ -813,7 +807,6 @@
 
   function setDefaultForm() {
     var dt = $('notificationDateTime'); if (dt) dt.value = nowLocalInput();
-    var ti = $('notificationInformedTime'); if (ti) ti.value = timeNow();
     var status = $('notificationStatus'); if (status) status.value = 'PENDING';
     editingId = null;
     var mode = $('notificationFormMode'); if (mode) mode.textContent = 'NEW RECORD';
@@ -962,94 +955,6 @@
     setFlag('REVIEW', 'normal');
   }
 
-  function initNotificationTimePicker() {
-    var picker = $('notificationTimePicker'), input = $('notificationInformedTime'), trigger = $('notificationTimeTrigger'), menu = $('notificationTimeMenu');
-    if (!picker || !input || !trigger || !menu || picker.dataset.ready === '1') return;
-    picker.dataset.ready = '1';
-    menu.hidden = true;
-    input.setAttribute('aria-expanded','false');
-    trigger.classList.remove('is-open');
-
-    // Match the other Notification dropdowns: the menu lives above the page layer,
-    // stays attached to the trigger while scrolling, and closes only on outside click.
-    document.body.appendChild(menu);
-
-    var hours = Array.from({length:12}, function(_,i){ return i+1; });
-    var minutes = Array.from({length:60}, function(_,i){ return i; });
-    var ampm = ['AM','PM'];
-    var renderCol = function(part, values) {
-      var col = menu.querySelector('[data-time-part="'+part+'"]');
-      if (!col) return;
-      col.innerHTML = values.map(function(v){
-        var text = part === 'minute' ? pad(v) : String(v);
-        return '<button type="button" data-time-value="'+esc(String(v))+'">'+esc(text)+'</button>';
-      }).join('');
-    };
-    renderCol('hour',hours); renderCol('minute',minutes); renderCol('ampm',ampm);
-
-    function current(){ return parseTime12(input.value) || parseTime12(timeNow()); }
-    function syncSelected(){
-      var t=current();
-      menu.querySelectorAll('[data-time-part]').forEach(function(col){
-        var part=col.dataset.timePart, val=part==='hour'?String(t.hour):part==='minute'?String(t.minute):t.ampm;
-        var selected=null;
-        col.querySelectorAll('button').forEach(function(b){
-          var on=b.dataset.timeValue===val;
-          b.classList.toggle('is-selected', on);
-          if(on) selected=b;
-        });
-        if(selected && part!=='ampm') {
-          try { selected.scrollIntoView({block:'center', inline:'nearest'}); } catch(_) {}
-        }
-      });
-    }
-    function position(){
-      if (menu.hidden) return;
-      var r=trigger.getBoundingClientRect(), w=menu.offsetWidth || 356, h=menu.offsetHeight || 220;
-      var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-w-8));
-      var top=r.bottom+6;
-      if(top+h>window.innerHeight-8) top=Math.max(8,r.top-h-6);
-      menu.style.width=w+'px';
-      menu.style.left=left+'px';
-      menu.style.top=top+'px';
-    }
-    function open(){
-      menu.hidden=false;
-      input.setAttribute('aria-expanded','true');
-      trigger.classList.add('is-open');
-      syncSelected();
-      position();
-    }
-    function close(){
-      menu.hidden=true;
-      input.setAttribute('aria-expanded','false');
-      trigger.classList.remove('is-open');
-    }
-    function choose(part,value){
-      var t=current();
-      if(part==='hour') t.hour=Number(value); else if(part==='minute') t.minute=Number(value); else t.ampm=value;
-      input.value=format12Hour(t.hour,t.minute,t.ampm);
-      syncSelected();
-      position();
-      input.dispatchEvent(new Event('change',{bubbles:true}));
-    }
-    trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation(); menu.hidden ? open() : close();});
-    input.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();open();});
-    menu.addEventListener('click',function(e){
-      var b=e.target.closest('button[data-time-value]');
-      if(!b) return;
-      e.preventDefault(); e.stopPropagation();
-      choose(b.parentElement.dataset.timePart,b.dataset.timeValue);
-    });
-    document.addEventListener('click',function(e){
-      if(!picker.contains(e.target) && !menu.contains(e.target)) close();
-    });
-    document.addEventListener('keydown',function(e){if(e.key==='Escape') close();});
-    window.addEventListener('resize',position);
-    window.addEventListener('scroll',position,true);
-    input.value=timeNow();
-  }
-
   function initNotificationNeumorphicSelects() {
     var page = $('notification');
     if (!page) return;
@@ -1111,7 +1016,6 @@
       flag: $('notificationFlag').textContent.trim(),
       staff: $('notificationStaff').value.trim(),
       inform_to: $('notificationInformTo').value.trim(),
-      informed_time: $('notificationInformedTime').value,
       status: $('notificationStatus').value,
       notes: $('notificationNotes').value.trim()
     };
@@ -1175,7 +1079,7 @@
       modal.addEventListener('click', function (e) { if (e.target === modal || e.target.closest('[data-notification-close]')) modal.hidden = true; });
     }
     var grid = $('notificationDetailGrid');
-    var fields = [['Date / Time', fmtDate(record.notification_datetime)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(record.result)],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Time Informed',esc(record.informed_time)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
+    var fields = [['Date / Time', fmtDate(record.notification_datetime)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(record.result)],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
     if (grid) grid.innerHTML = fields.map(function (f) { return '<div class="notification-detail"><small>' + f[0] + '</small><strong>' + f[1] + '</strong></div>'; }).join('');
     modal.hidden = false;
   }
@@ -1197,7 +1101,6 @@
     syncResultControl(editItem, r.result || '');
     $('notificationStaff').value = r.staff || '';
     $('notificationInformTo').value = r.inform_to || '';
-    $('notificationInformedTime').value = r.informed_time || '';
     $('notificationStatus').value = r.status || 'PENDING';
     $('notificationNotes').value = r.notes || '';
     var box = $('notificationCriticalLimit'); box.className = 'notification-critical-box'; box.innerHTML = '<strong>Critical Limit / Alert</strong><span>' + esc(r.critical_limit || 'Reference catalogue not loaded') + '</span>';
@@ -1240,5 +1143,5 @@
 
   window.LabNotification = { open: open, render: render, getRecords: function () { return records.slice(); } };
   loadRecords();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicSelects(); initNotificationTimePicker(); }); else { bind(); initNotificationNeumorphicSelects(); initNotificationTimePicker(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicSelects(); }
 })(window, document);
