@@ -474,3 +474,25 @@
     min-height: 0;
   }
 }
+
+/* V21: Notes uses the exact same compact field surface as the other Notification inputs/selects. */
+.notification-page .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
+  width: 100%;
+  min-height: 37px;
+  height: 37px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #cfdbea;
+  border-radius: 9px;
+  background: #fff;
+  color: #182f4f;
+  font: 700 12px "Nunito Sans", sans-serif;
+  line-height: 20px;
+  resize: none;
+  box-shadow: none;
+}
+.notification-page .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:focus {
+  border-color: #5c9be9;
+  box-shadow: 0 0 0 3px rgba(61,132,222,.12);
+  outline: none;
+}
