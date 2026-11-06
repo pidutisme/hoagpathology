@@ -1,249 +1,528 @@
-/* HOAG Pathology — Login visual refresh (V9)
- * Visual/CSS only. Authentication and MFA behaviour remain unchanged.
+/* HOAG Pathology — Login visual redesign (V10)
+ * Visual/CSS only. Authentication, MFA, password-change and loading behaviour are unchanged.
  */
 
 #authScreen.auth-screen {
   --auth-blue: #2563eb;
-  --auth-cyan: #0ea5e9;
-  --auth-ink: #16233f;
-  --auth-muted: #71809b;
-  --auth-panel: rgba(247, 250, 255, 0.78);
-  --auth-panel-border: rgba(255, 255, 255, 0.78);
+  --auth-cyan: #08a7e8;
+  --auth-ink: #13213b;
+  --auth-muted: #72819b;
+  position: fixed;
+  inset: 0;
+  overflow: hidden !important;
+  display: grid;
+  place-items: center;
+  padding: 24px;
   background:
-    radial-gradient(circle at 15% 18%, rgba(37, 99, 235, .14), transparent 30%),
-    radial-gradient(circle at 86% 82%, rgba(14, 165, 233, .13), transparent 34%),
-    linear-gradient(135deg, #eef4fb 0%, #e6eef8 48%, #f6f9fd 100%);
+    radial-gradient(circle at 8% 18%, rgba(37,99,235,.16), transparent 27%),
+    radial-gradient(circle at 92% 82%, rgba(8,167,232,.14), transparent 30%),
+    linear-gradient(135deg, #edf4fc 0%, #e5edf8 48%, #f7faff 100%);
+}
+
+/* Ambient technical grid — purely decorative */
+#authScreen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .28;
+  background-image:
+    linear-gradient(rgba(64,91,128,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(64,91,128,.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.55), transparent 82%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.55), transparent 82%);
+}
+
+#authScreen::after {
+  content: "HOAG PATHOLOGY  /  LABORATORY INFORMATION SYSTEM";
+  position: absolute;
+  left: 34px;
+  bottom: 28px;
+  color: rgba(53,75,107,.46);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .22em;
+  pointer-events: none;
+}
+
+#authScreen .auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(1px);
 }
 
 #authScreen .auth-orb-one {
-  width: clamp(240px, 34vw, 520px);
-  height: clamp(240px, 34vw, 520px);
-  left: -10vw;
-  top: -16vh;
-  opacity: .72;
-  background: radial-gradient(circle, rgba(37, 99, 235, .18), transparent 66%);
+  width: 480px;
+  height: 480px;
+  left: -170px;
+  top: -190px;
+  background: radial-gradient(circle, rgba(37,99,235,.22), transparent 68%);
 }
 
 #authScreen .auth-orb-two {
-  width: clamp(220px, 30vw, 460px);
-  height: clamp(220px, 30vw, 460px);
-  right: -10vw;
-  bottom: -14vh;
-  opacity: .68;
-  background: radial-gradient(circle, rgba(14, 165, 233, .17), transparent 66%);
+  width: 420px;
+  height: 420px;
+  right: -150px;
+  bottom: -170px;
+  background: radial-gradient(circle, rgba(8,167,232,.19), transparent 68%);
 }
 
+/* Wide premium shell: visual brand area + functional login area. */
 #authScreen .auth-card {
-  width: min(100%, 520px);
-  padding: 34px;
-  border-radius: 30px;
-  background: var(--auth-panel);
-  border: 1px solid var(--auth-panel-border);
+  position: relative;
+  width: min(100%, 1040px);
+  min-height: 610px;
+  max-height: min(760px, calc(100svh - 48px));
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(390px, .98fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden !important;
+  border-radius: 34px;
+  border: 1px solid rgba(255,255,255,.92);
+  background: rgba(246,250,255,.72);
   box-shadow:
-    0 30px 70px rgba(43, 61, 91, .16),
-    0 8px 24px rgba(37, 99, 235, .08),
-    inset 1px 1px 0 rgba(255,255,255,.92),
-    inset -1px -1px 0 rgba(118, 137, 168, .10);
-  backdrop-filter: blur(22px) saturate(1.08);
-  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+    0 38px 90px rgba(36,58,91,.18),
+    0 12px 32px rgba(37,99,235,.08),
+    inset 1px 1px 0 rgba(255,255,255,.98),
+    inset -1px -1px 0 rgba(92,116,150,.10);
+  backdrop-filter: blur(26px) saturate(1.12);
+  -webkit-backdrop-filter: blur(26px) saturate(1.12);
 }
 
+/* Left visual panel is decorative; it does not touch application logic. */
 #authScreen .auth-card::before {
-  inset: 10px;
-  border-radius: 22px;
-  border-color: rgba(255,255,255,.56);
-  background: linear-gradient(145deg, rgba(255,255,255,.28), transparent 48%, rgba(87,108,142,.035));
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 52%;
+  border: 0;
+  border-right: 1px solid rgba(133,155,187,.20);
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(37,99,235,.15), transparent 31%),
+    radial-gradient(circle at 82% 78%, rgba(8,167,232,.11), transparent 34%),
+    linear-gradient(145deg, rgba(255,255,255,.68), rgba(225,235,247,.38));
+  pointer-events: none;
+}
+
+#authScreen .auth-card::after {
+  content: "CRITICAL VALUE  •  TRANSFUSION  •  OUTSOURCE\A\A SECURE LABORATORY WORKFLOW\A\A Clinical data management\A Notification & follow-up\A Quality-focused operations";
+  white-space: pre-line;
+  position: absolute;
+  z-index: 1;
+  left: 58px;
+  top: 50%;
+  transform: translateY(-47%);
+  width: 420px;
+  color: #203454;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 2.05;
+  letter-spacing: .09em;
+  opacity: .82;
+  pointer-events: none;
 }
 
 #authScreen .auth-card-inner {
-  gap: 20px;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 18px;
+  width: min(100%, 410px);
+  margin-left: auto;
+  padding: 58px 62px 56px 42px;
+  align-content: center;
+}
+
+#authScreen .auth-card-inner[hidden] {
+  display: none !important;
+}
+
+#authScreen #authLoginPanel::before {
+  content: "SECURE ACCESS / STAFF PORTAL";
+  display: inline-flex;
+  width: max-content;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--auth-blue);
+  background: rgba(255,255,255,.58);
+  border: 1px solid rgba(164,184,213,.42);
+  box-shadow: 0 8px 20px rgba(40,61,94,.08), inset 1px 1px 0 rgba(255,255,255,.92);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .16em;
 }
 
 #authScreen .auth-badge {
-  min-height: 30px;
-  padding: 5px 12px;
-  gap: 8px;
-  font-size: 9.5px;
-  letter-spacing: .14em;
-  box-shadow: 0 7px 18px rgba(46, 68, 103, .10), inset 1px 1px 0 rgba(255,255,255,.8);
-}
-
-#authScreen .auth-badge::before {
-  width: 6px;
-  height: 6px;
+  display: none;
 }
 
 #authScreen .auth-title-block {
-  gap: 14px;
+  display: grid;
+  gap: 13px;
 }
 
 #authScreen .auth-title {
-  font-size: clamp(34px, 5vw, 48px);
-  line-height: .98;
-  letter-spacing: -.045em;
-  color: #17233d;
-  text-shadow: 0 2px 0 rgba(255,255,255,.55);
+  margin: 0;
+  color: #12203a;
+  font-family: Poppins, "Nunito Sans", Inter, sans-serif;
+  font-size: clamp(34px, 4vw, 50px);
+  line-height: .94;
+  font-weight: 950;
+  letter-spacing: -.055em;
 }
 
 #authScreen .auth-title-block::after {
-  width: 76px;
-  height: 5px;
+  content: "";
+  width: 58px;
+  height: 4px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--auth-blue), var(--auth-cyan));
   box-shadow: 0 7px 16px rgba(37,99,235,.22);
 }
 
 #authScreen .auth-form {
-  gap: 13px;
-  margin-top: 4px;
+  display: grid;
+  gap: 11px;
+  margin-top: 8px;
+}
+
+#authScreen .auth-field {
+  display: grid;
+  gap: 0;
 }
 
 #authScreen .auth-input-wrap {
-  min-height: 54px;
-  border-radius: 16px;
-  background: rgba(235, 241, 249, .72);
-  border-color: rgba(183, 197, 218, .58);
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 55px;
+  border-radius: 15px;
+  background: rgba(231,239,249,.74);
+  border: 1px solid rgba(169,188,214,.54);
   box-shadow:
-    inset 4px 4px 10px rgba(142, 159, 184, .12),
+    inset 4px 4px 10px rgba(129,149,178,.10),
     inset -4px -4px 10px rgba(255,255,255,.82),
-    0 1px 0 rgba(255,255,255,.65);
+    0 1px 0 rgba(255,255,255,.72);
+  transition: .2s ease;
 }
 
 #authScreen .auth-input-wrap:hover {
-  border-color: rgba(37,99,235,.28);
-  background: rgba(238,244,252,.86);
+  border-color: rgba(37,99,235,.32);
 }
 
 #authScreen .auth-input-wrap:focus-within {
-  border-color: rgba(37,99,235,.70);
+  border-color: rgba(37,99,235,.75);
   box-shadow:
-    inset 3px 3px 8px rgba(142,159,184,.12),
-    inset -3px -3px 8px rgba(255,255,255,.80),
-    0 0 0 4px rgba(37,99,235,.10),
-    0 8px 20px rgba(37,99,235,.07);
+    inset 3px 3px 8px rgba(129,149,178,.10),
+    inset -3px -3px 8px rgba(255,255,255,.82),
+    0 0 0 4px rgba(37,99,235,.09),
+    0 9px 22px rgba(37,99,235,.07);
 }
 
 #authScreen .auth-input {
-  min-height: 54px;
-  padding: 0 18px;
+  width: 100%;
+  min-height: 55px;
+  padding: 0 17px;
+  color: var(--auth-ink);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 850;
 }
 
 #authScreen .auth-input::placeholder {
-  font-size: 10.5px;
-  letter-spacing: .13em;
   color: #8090aa;
+  opacity: .9;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .15em;
+}
+
+#authScreen .auth-input::-ms-reveal,
+#authScreen .auth-input::-ms-clear {
+  display: none;
+}
+
+#authScreen #loginUsername,
+#authScreen #changeUsername {
+  text-transform: uppercase;
 }
 
 #authScreen .auth-password-toggle {
   width: 40px;
   min-width: 40px;
   height: 40px;
-  margin: 6px 6px 6px 0;
+  margin: 6px;
   border-radius: 12px;
-  background: rgba(247,250,255,.84);
-  border-color: rgba(181,196,219,.62);
-  box-shadow: 0 6px 14px rgba(50,70,103,.10), inset 1px 1px 0 rgba(255,255,255,.9);
+  display: grid;
+  place-items: center;
+  color: #60718d;
+  background: rgba(250,252,255,.74);
+  border: 1px solid rgba(166,185,213,.56);
+  box-shadow: 0 7px 16px rgba(40,61,94,.09), inset 1px 1px 0 rgba(255,255,255,.92);
 }
 
+#authScreen .auth-password-toggle:hover {
+  color: var(--auth-blue);
+  transform: translateY(-1px);
+}
+
+#authScreen .auth-password-toggle svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+#authScreen .auth-password-toggle .eye-off { display: none; }
+#authScreen .auth-password-toggle.is-visible .eye-on { display: none; }
+#authScreen .auth-password-toggle.is-visible .eye-off { display: block; }
+
 #authScreen .auth-submit {
-  min-height: 54px;
-  margin-top: 5px;
-  border-radius: 16px;
-  background: linear-gradient(100deg, #2563eb 0%, #1677ea 52%, #0ea5e9 100%);
+  min-height: 55px;
+  margin-top: 6px;
+  border-radius: 15px;
+  color: #fff;
+  background: linear-gradient(105deg, #245ee8 0%, #1978e9 48%, #08a7e8 100%);
+  border: 1px solid rgba(255,255,255,.34);
   box-shadow:
-    0 15px 28px rgba(37,99,235,.22),
-    0 5px 12px rgba(14,165,233,.12),
-    inset 1px 1px 0 rgba(255,255,255,.32);
+    0 17px 30px rgba(37,99,235,.24),
+    0 5px 12px rgba(8,167,232,.10),
+    inset 1px 1px 0 rgba(255,255,255,.34);
   font-size: 11px;
-  letter-spacing: .13em;
+  font-weight: 950;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  transition: transform .2s ease, box-shadow .2s ease;
 }
 
 #authScreen .auth-submit:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow:
-    0 19px 34px rgba(37,99,235,.28),
-    0 7px 15px rgba(14,165,233,.14),
-    inset 1px 1px 0 rgba(255,255,255,.36);
+    0 21px 38px rgba(37,99,235,.29),
+    0 7px 16px rgba(8,167,232,.13),
+    inset 1px 1px 0 rgba(255,255,255,.38);
 }
+
+#authScreen .auth-submit:active:not(:disabled) { transform: translateY(0); }
+
+#authScreen .auth-spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,.34);
+  border-top-color: #fff;
+  animation: authSpin .75s linear infinite;
+}
+
+#authScreen .auth-submit.is-loading .auth-submit-label { display: none; }
+#authScreen .auth-submit.is-loading .auth-spinner { display: inline-block; }
 
 #authScreen .auth-message {
   min-height: 18px;
+  margin-top: -2px;
+  color: var(--auth-muted);
   font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#authScreen .auth-message:empty { min-height: 4px; }
+
+#authScreen .auth-message.is-error,
+#authScreen .auth-message.is-ok {
+  padding: 8px 10px;
+  border-radius: 11px;
 }
 
 #authScreen .auth-actions {
-  padding-top: 14px;
-  border-top-color: rgba(153,169,194,.30);
+  display: flex;
+  justify-content: center;
+  padding-top: 18px;
+  border-top: 1px solid rgba(141,162,193,.25);
 }
 
 #authScreen .auth-secondary-btn,
 #authScreen .auth-back-btn {
   min-height: 38px;
-  padding: 0 18px;
-  background: rgba(248,250,254,.72);
-  border-color: rgba(181,196,219,.58);
-  box-shadow: 0 7px 17px rgba(50,70,103,.09), inset 1px 1px 0 rgba(255,255,255,.86);
+  padding: 0 19px;
+  border-radius: 999px;
+  color: #20304b;
+  background: rgba(255,255,255,.58);
+  border: 1px solid rgba(166,185,213,.52);
+  box-shadow: 0 8px 18px rgba(40,61,94,.08), inset 1px 1px 0 rgba(255,255,255,.9);
   font-size: 10px;
+  font-weight: 950;
   letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
-/* MFA remains fully functional. It only appears when the server requests MFA.
- * When displayed, make it a compact verification step rather than a dominant box.
- */
+#authScreen .auth-secondary-btn:hover,
+#authScreen .auth-back-btn:hover {
+  color: var(--auth-blue);
+  border-color: rgba(37,99,235,.36);
+  transform: translateY(-1px);
+}
+
+/* MFA remains functional. When requested, it becomes a compact verification field. */
 #authScreen .auth-field:has(#loginMfaCode) {
-  margin-top: -2px;
+  margin-top: 1px;
 }
 
 #authScreen .auth-field:has(#loginMfaCode) .auth-input-wrap {
-  min-height: 48px;
-  border-radius: 14px;
+  min-height: 46px;
   border-style: dashed;
-  background: rgba(241,246,253,.60);
+  border-color: rgba(37,99,235,.38);
+  background: rgba(238,244,252,.64);
 }
 
 #authScreen #loginMfaCode {
-  min-height: 48px;
+  min-height: 46px;
   text-align: center;
-  letter-spacing: .20em;
+  letter-spacing: .18em;
 }
 
 #authScreen .auth-field:has(#loginMfaCode) .auth-input::placeholder {
-  letter-spacing: .10em;
   text-align: center;
+  letter-spacing: .09em;
+  font-size: 9px;
 }
+
+@keyframes authSpin { to { transform: rotate(360deg); } }
+
+/* Change-password panel gets the same premium shell treatment. */
+#authScreen #authChangePanel {
+  align-content: center;
+}
+
+#authScreen #authChangePanel .auth-badge { display: none; }
 
 body.dark-mode #authScreen.auth-screen,
 html.dark-mode-preload #authScreen.auth-screen {
   background:
-    radial-gradient(circle at 15% 18%, rgba(37,99,235,.18), transparent 30%),
-    radial-gradient(circle at 86% 82%, rgba(14,165,233,.12), transparent 34%),
-    linear-gradient(135deg, #101a2d 0%, #17243b 52%, #0f1728 100%);
+    radial-gradient(circle at 8% 18%, rgba(37,99,235,.20), transparent 27%),
+    radial-gradient(circle at 92% 82%, rgba(8,167,232,.14), transparent 30%),
+    linear-gradient(135deg, #0c1628 0%, #13233b 48%, #0e192c 100%);
 }
+
+body.dark-mode #authScreen::before,
+html.dark-mode-preload #authScreen::before { opacity: .13; }
 
 body.dark-mode #authScreen .auth-card,
 html.dark-mode-preload #authScreen .auth-card {
-  background: rgba(22, 34, 56, .82);
+  background: rgba(17,29,48,.82);
   border-color: rgba(255,255,255,.10);
-  box-shadow:
-    0 30px 70px rgba(0,0,0,.32),
-    0 8px 24px rgba(37,99,235,.10),
-    inset 1px 1px 0 rgba(255,255,255,.06);
+  box-shadow: 0 38px 90px rgba(0,0,0,.38), inset 1px 1px 0 rgba(255,255,255,.06);
 }
 
+body.dark-mode #authScreen .auth-card::before,
+html.dark-mode-preload #authScreen .auth-card::before {
+  border-right-color: rgba(255,255,255,.08);
+  background:
+    radial-gradient(circle at 18% 20%, rgba(37,99,235,.18), transparent 31%),
+    radial-gradient(circle at 82% 78%, rgba(8,167,232,.10), transparent 34%),
+    linear-gradient(145deg, rgba(255,255,255,.05), rgba(11,22,39,.16));
+}
+
+body.dark-mode #authScreen .auth-card::after,
+html.dark-mode-preload #authScreen .auth-card::after { color: rgba(226,237,255,.68); }
+
 body.dark-mode #authScreen .auth-title,
-html.dark-mode-preload #authScreen .auth-title {
-  color: #edf4ff;
-  text-shadow: none;
+html.dark-mode-preload #authScreen .auth-title { color: #f1f6ff; }
+
+body.dark-mode #authScreen .auth-input-wrap,
+html.dark-mode-preload #authScreen .auth-input-wrap {
+  background: rgba(27,43,67,.82);
+  border-color: rgba(150,174,207,.18);
+  box-shadow: inset 4px 4px 10px rgba(0,0,0,.12), inset -4px -4px 10px rgba(255,255,255,.025);
+}
+
+body.dark-mode #authScreen .auth-input,
+html.dark-mode-preload #authScreen .auth-input { color: #edf4ff; }
+
+body.dark-mode #authScreen .auth-secondary-btn,
+body.dark-mode #authScreen .auth-back-btn,
+html.dark-mode-preload #authScreen .auth-secondary-btn,
+html.dark-mode-preload #authScreen .auth-back-btn {
+  color: #e8f0ff;
+  background: rgba(30,45,68,.76);
+  border-color: rgba(150,174,207,.20);
+}
+
+body.dark-mode #authScreen #authLoginPanel::before,
+html.dark-mode-preload #authScreen #authLoginPanel::before {
+  background: rgba(30,45,68,.72);
+  border-color: rgba(150,174,207,.20);
+}
+
+@media (max-width: 820px) {
+  #authScreen .auth-card {
+    width: min(100%, 560px);
+    min-height: 0;
+    max-height: calc(100svh - 28px);
+    grid-template-columns: 1fr;
+    overflow-y: auto !important;
+  }
+
+  #authScreen .auth-card::before {
+    width: 100%;
+    height: 26%;
+    bottom: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(133,155,187,.18);
+  }
+
+  #authScreen .auth-card::after {
+    left: 34px;
+    top: 28px;
+    transform: none;
+    width: auto;
+    font-size: 8px;
+    line-height: 1.5;
+    opacity: .52;
+  }
+
+  #authScreen .auth-card-inner {
+    width: auto;
+    margin-left: 0;
+    padding: 150px 32px 34px;
+  }
 }
 
 @media (max-width: 560px) {
+  #authScreen.auth-screen { padding: 12px; }
+
   #authScreen .auth-card {
-    width: min(100%, 520px);
-    padding: 26px;
     border-radius: 26px;
+    max-height: calc(100svh - 24px);
   }
 
-  #authScreen .auth-title {
-    font-size: clamp(32px, 11vw, 42px);
+  #authScreen .auth-card-inner {
+    padding: 130px 22px 28px;
   }
+
+  #authScreen .auth-title { font-size: clamp(34px, 12vw, 44px); }
+
+  #authScreen .auth-input-wrap,
+  #authScreen .auth-input { min-height: 52px; }
+
+  #authScreen .auth-submit { min-height: 52px; }
+
+  #authScreen::after { left: 16px; bottom: 12px; font-size: 7px; }
 }
