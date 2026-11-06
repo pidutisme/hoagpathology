@@ -966,21 +966,27 @@
     var picker = $('notificationTimePicker'), input = $('notificationInformedTime'), trigger = $('notificationTimeTrigger'), menu = $('notificationTimeMenu');
     if (!picker || !input || !trigger || !menu || picker.dataset.ready === '1') return;
     picker.dataset.ready = '1';
-    // Keep the picker closed on initial page load; the HTML `hidden` attribute is authoritative.
     menu.hidden = true;
     input.setAttribute('aria-expanded','false');
     trigger.classList.remove('is-open');
+
+    // Match the other Notification dropdowns: the menu lives above the page layer,
+    // stays attached to the trigger while scrolling, and closes only on outside click.
+    document.body.appendChild(menu);
+
     var hours = Array.from({length:12}, function(_,i){ return i+1; });
     var minutes = Array.from({length:60}, function(_,i){ return i; });
     var ampm = ['AM','PM'];
     var renderCol = function(part, values) {
       var col = menu.querySelector('[data-time-part="'+part+'"]');
+      if (!col) return;
       col.innerHTML = values.map(function(v){
         var text = part === 'minute' ? pad(v) : String(v);
         return '<button type="button" data-time-value="'+esc(String(v))+'">'+esc(text)+'</button>';
       }).join('');
     };
     renderCol('hour',hours); renderCol('minute',minutes); renderCol('ampm',ampm);
+
     function current(){ return parseTime12(input.value) || parseTime12(timeNow()); }
     function syncSelected(){
       var t=current();
@@ -989,11 +995,22 @@
         col.querySelectorAll('button').forEach(function(b){ b.classList.toggle('is-selected', b.dataset.timeValue===val); });
       });
     }
+    function position(){
+      if (menu.hidden) return;
+      var r=trigger.getBoundingClientRect(), w=menu.offsetWidth || 356, h=menu.offsetHeight || 220;
+      var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-w-8));
+      var top=r.bottom+6;
+      if(top+h>window.innerHeight-8) top=Math.max(8,r.top-h-6);
+      menu.style.width=w+'px';
+      menu.style.left=left+'px';
+      menu.style.top=top+'px';
+    }
     function open(){
       menu.hidden=false;
       input.setAttribute('aria-expanded','true');
       trigger.classList.add('is-open');
       syncSelected();
+      position();
     }
     function close(){
       menu.hidden=true;
@@ -1005,18 +1022,23 @@
       if(part==='hour') t.hour=Number(value); else if(part==='minute') t.minute=Number(value); else t.ampm=value;
       input.value=format12Hour(t.hour,t.minute,t.ampm);
       syncSelected();
+      position();
       input.dispatchEvent(new Event('change',{bubbles:true}));
     }
-    trigger.addEventListener('click',function(e){e.stopPropagation(); menu.hidden ? open() : close();});
-    input.addEventListener('click',function(){open();});
+    trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation(); menu.hidden ? open() : close();});
+    input.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();open();});
     menu.addEventListener('click',function(e){
       var b=e.target.closest('button[data-time-value]');
       if(!b) return;
+      e.preventDefault(); e.stopPropagation();
       choose(b.parentElement.dataset.timePart,b.dataset.timeValue);
     });
-    document.addEventListener('click',function(e){if(!picker.contains(e.target)) close();});
-    window.addEventListener('resize',close);
-    window.addEventListener('scroll',close,true);
+    document.addEventListener('click',function(e){
+      if(!picker.contains(e.target) && !menu.contains(e.target)) close();
+    });
+    document.addEventListener('keydown',function(e){if(e.key==='Escape') close();});
+    window.addEventListener('resize',position);
+    window.addEventListener('scroll',position,true);
     input.value=timeNow();
   }
 
