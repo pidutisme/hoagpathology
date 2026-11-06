@@ -8406,7 +8406,9 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   position: fixed;
   inset: 0;
   z-index: 11500;
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   place-items: center;
   padding: 18px;
   background: rgba(15, 23, 42, 0.48);
@@ -8437,6 +8439,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 .outsource-import-dialog {
   position: relative;
   z-index: 1;
+  margin: auto;
   width: min(760px, 95vw);
   max-height: min(88vh, 780px);
   overflow-y: auto;
@@ -8741,12 +8744,6 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
 }
 
 /* Outsource Admin Modal */
-.outsource-admin-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
 .outsource-admin-section {
   display: flex;
   flex-direction: column;
@@ -8758,25 +8755,75 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   box-shadow: var(--shadow-soft);
 }
 
-.outsource-admin-add-test,
+.outsource-admin-section > label {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .outsource-admin-inline {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
   align-items: center;
 }
 
-.outsource-admin-add-test input,
-.outsource-admin-inline input {
-  flex: 1;
-  min-height: 36px;
-  padding: 0 11px;
-  border-radius: 10px;
+.outsource-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.outsource-admin-section input,
+.outsource-admin-grid input,
+.outsource-admin-inline input,
+#outsourceAdminTestInput,
+#outsourceAdminLabInput,
+#outsourceAdminRejectReasonInput {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 12px;
   border: 1px solid var(--year-page-card-border);
   background: var(--surface-inset);
   box-shadow: var(--shadow-inset);
   color: var(--text);
+  font: inherit;
   font-size: 12px;
   font-weight: 750;
+  outline: none;
+  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+}
+
+.outsource-admin-section input::placeholder,
+.outsource-admin-grid input::placeholder,
+.outsource-admin-inline input::placeholder {
+  color: var(--muted);
+  opacity: 0.72;
+  font-weight: 650;
+}
+
+.outsource-admin-section input:focus,
+.outsource-admin-grid input:focus,
+.outsource-admin-inline input:focus,
+#outsourceAdminTestInput:focus,
+#outsourceAdminLabInput:focus,
+#outsourceAdminRejectReasonInput:focus {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-inset), var(--focus-ring);
+}
+
+.outsource-admin-add-test {
+  width: 100%;
+  justify-content: center;
+  margin-top: 2px;
 }
 
 .outsource-admin-list,
@@ -9428,7 +9475,9 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   position: fixed;
   inset: 0;
   z-index: 11500;
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   place-items: center;
   padding: 18px;
 }
@@ -9450,6 +9499,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
 .inventory-record-card {
   position: relative;
   z-index: 1;
+  margin: auto;
   width: min(580px, 95vw);
   max-height: min(88vh, 780px);
   overflow-y: auto;
