@@ -748,11 +748,14 @@
   var notificationDateTimeState = '';
 
   function notificationApi(method, args) {
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, 20000) : null;
     return fetch('/api/bridge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       cache: 'no-store',
+      signal: controller ? controller.signal : undefined,
       body: JSON.stringify({
         action: 'action',
         payload: { method: method, args: Array.isArray(args) ? args : [] }
@@ -766,7 +769,10 @@
         }
         return data;
       });
-    });
+    }).catch(function (error) {
+      if (error && error.name === 'AbortError') throw new Error('Notification save timed out. Please check the server connection.');
+      throw error;
+    }).finally(function () { if (timer) clearTimeout(timer); });
   }
 
   function getCatalogueItemForRecord(r) {
@@ -897,25 +903,12 @@
   function saveNotificationRecord(item) {
     notificationSaving = true;
     var requestDateTime = String(item.notification_datetime || '').trim();
-    var savePromise = notificationApi('upsertNotificationRecord', [item])
-      .then(function (result) {
-        var saved = normalizeNotificationRecord(result.record || item);
-        if (requestDateTime && item.id) {
-          return notificationApi('updateNotificationDateTime', [item.id, requestDateTime])
-            .then(function (dateResult) { return normalizeNotificationRecord(dateResult.record || saved); });
-        }
-        return saved;
-      })
+    // One authoritative save. The backend already performs an explicit
+    // UPDATE/INSERT and verifies the persisted row. Do not issue a second
+    // Date/Time request that can leave the submit button waiting.
+    return notificationApi('upsertNotificationRecord', [item])
+      .then(function (result) { return normalizeNotificationRecord(result.record || item); })
       .then(function (saved) {
-        // Keep the returned server record as an immediate optimistic update.
-        var idx = records.findIndex(function (r) { return String(r.id) === String(saved.id); });
-        if (idx >= 0) records[idx] = saved;
-        else records.unshift(saved);
-        return saved;
-      })
-      .then(function (saved) {
-        // Re-read from Supabase after an edit. This prevents the table from
-        // showing a stale client copy when the persisted Date/Time changed.
         return notificationApi('getNotificationRecords', [])
           .then(function (result) {
             records = (result.records || []).map(normalizeNotificationRecord);
