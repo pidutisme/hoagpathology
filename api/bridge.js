@@ -288,13 +288,28 @@ async function upsertNotificationRow(record, existing = null, userId = '') {
   allowed.forEach(key => { next[key] = clean(record?.[key], 2000); });
   next.status = clean(record?.status || 'INFORMED', 40) || 'INFORMED';
   const createdAt = existing?.created_at || now;
-  const { data, error } = await supabase.from('notification_records').upsert({
-    id,
-    ...next,
-    created_at: createdAt,
-    updated_at: now
-  }, { onConflict: 'id' }).select('*').single();
+  let data;
+  let error;
+
+  // Use an explicit UPDATE for existing records instead of relying on an
+  // upsert conflict path. This makes notification edits deterministic and
+  // guarantees that notification_datetime is written to the existing row.
+  if (existing) {
+    ({ data, error } = await supabase
+      .from('notification_records')
+      .update({ ...next, updated_at: now })
+      .eq('id', id)
+      .select('*')
+      .single());
+  } else {
+    ({ data, error } = await supabase
+      .from('notification_records')
+      .insert({ id, ...next, created_at: createdAt, updated_at: now })
+      .select('*')
+      .single());
+  }
   if (error) throw error;
+  if (!data || String(data.id) !== id) fail('Notification record was not persisted correctly.');
   return {
     id: data.id,
     notification_datetime: data.notification_datetime,

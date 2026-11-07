@@ -898,10 +898,22 @@
     return notificationApi('upsertNotificationRecord', [item])
       .then(function (result) {
         var saved = normalizeNotificationRecord(result.record || item);
+        // Keep the returned server record as an immediate optimistic update.
         var idx = records.findIndex(function (r) { return String(r.id) === String(saved.id); });
         if (idx >= 0) records[idx] = saved;
         else records.unshift(saved);
         return saved;
+      })
+      .then(function (saved) {
+        // Re-read from Supabase after an edit. This prevents the table from
+        // showing a stale client copy when the persisted Date/Time changed.
+        return notificationApi('getNotificationRecords', [])
+          .then(function (result) {
+            records = (result.records || []).map(normalizeNotificationRecord);
+            var fresh = records.find(function (r) { return String(r.id) === String(saved.id); });
+            if (!fresh) throw new Error('Saved notification record could not be reloaded.');
+            return fresh;
+          });
       })
       .finally(function () { notificationSaving = false; });
   }
@@ -1407,6 +1419,12 @@
       if (notificationSaving) return;
       var item = collectForm();
       if (!item.id) item.id = 'notif-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+      // Date/Time is stored from the hidden canonical input, not the display
+      // text, so the exact value selected in the picker is what gets persisted.
+      if (!item.notification_datetime) {
+        alert('Please select a valid Date / Time.');
+        return;
+      }
       var submitBtn = form.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
       saveNotificationRecord(item)
