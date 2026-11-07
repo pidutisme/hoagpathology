@@ -978,3 +978,141 @@ table.rt-responsive-table .notification-pill,
   display: inline !important;
   white-space: nowrap !important;
 }
+
+/* =========================================================
+   V10 — NOTIFICATION: TRUE COLUMN WRAP, NO OVERLAP
+   ---------------------------------------------------------
+   Keep the native 10-column table. Multi-word values wrap at
+   spaces inside their own cell; single words remain intact.
+   Status/flag values must never use max-content width.
+   ========================================================= */
+#notification .notification-table.rt-responsive-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Give each notification column a predictable share of the available width. */
+#notification .notification-table.rt-responsive-table th:nth-child(1),
+#notification .notification-table.rt-responsive-table td:nth-child(1) { width: 8% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(2),
+#notification .notification-table.rt-responsive-table td:nth-child(2) { width: 15% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(3),
+#notification .notification-table.rt-responsive-table td:nth-child(3) { width: 11% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(4),
+#notification .notification-table.rt-responsive-table td:nth-child(4) { width: 6% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(5),
+#notification .notification-table.rt-responsive-table td:nth-child(5) { width: 10% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(6),
+#notification .notification-table.rt-responsive-table td:nth-child(6) { width: 11% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(7),
+#notification .notification-table.rt-responsive-table td:nth-child(7) { width: 11% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(8),
+#notification .notification-table.rt-responsive-table td:nth-child(8) { width: 11% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(9),
+#notification .notification-table.rt-responsive-table td:nth-child(9) { width: 9% !important; }
+#notification .notification-table.rt-responsive-table th:nth-child(10),
+#notification .notification-table.rt-responsive-table td:nth-child(10) { width: 8% !important; }
+
+#notification .notification-table.rt-responsive-table th,
+#notification .notification-table.rt-responsive-table td {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+  vertical-align: middle !important;
+}
+
+/* Discipline/flag/status are plain text: no pill geometry and no max-content sizing. */
+#notification .notification-table.rt-responsive-table .notification-pill,
+#notification .notification-table.rt-responsive-table .notification-pill.bio,
+#notification .notification-table.rt-responsive-table .notification-pill.hema,
+#notification .notification-table.rt-responsive-table .notification-pill.micro,
+#notification .notification-table.rt-responsive-table .notification-pill.flag,
+#notification .notification-table.rt-responsive-table .notification-pill.status {
+  display: inline !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  text-overflow: clip !important;
+  line-height: 1.25 !important;
+}
+
+/* A single word naturally stays intact; multi-word values wrap at spaces. */
+#notification .notification-table.rt-responsive-table td:nth-child(8) .notification-pill,
+#notification .notification-table.rt-responsive-table td:nth-child(9) .notification-pill {
+  max-width: 100% !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-actions-cell {
+  width: 8% !important;
+  min-width: 58px !important;
+  max-width: 8% !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-actions {
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  gap: 3px !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-action.outsource-mini.icon-only {
+  flex: 0 0 26px !important;
+  width: 26px !important;
+  min-width: 26px !important;
+  max-width: 26px !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-action.icon-only svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+@container notification-record-card (max-width: 760px) {
+  #notification .notification-table.rt-responsive-table th,
+  #notification .notification-table.rt-responsive-table td {
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+  }
+
+  #notification .notification-table.rt-responsive-table .notification-actions-cell {
+    min-width: 56px !important;
+  }
+}
