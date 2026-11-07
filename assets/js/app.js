@@ -9136,38 +9136,41 @@ function exportMonthlySchedulePdfs() {
              immediately, then hydrate the remaining history in the background.
              This keeps the server authoritative without making a 5k/10k+ history
              block the first visible table. */
-          var firstLimit=500, pageSize=1000, firstRows=[];
+          var firstLimit=100, pageSize=500, firstRows=[];
+          var cachedRows=Array.isArray(rows)?rows.slice():[];
           var first=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:firstLimit,offset:0}]});
           if(!first||first.ok===false)throw new Error(first&&first.error?first.error:'Unable to load outsource records.');
           firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-          rows=firstRows.slice();
+          /* Keep the cached snapshot visible. Do not replace a complete local
+             dataset with the first server page on every module entry. */
+          var seedMap={};
+          cachedRows.forEach(function(r){if(r&&r.id)seedMap[String(r.id)]=r;});
+          firstRows.forEach(function(r){if(r&&r.id)seedMap[String(r.id)]=r;});
+          rows=Object.keys(seedMap).map(function(k){return seedMap[k];});
           normalize();
           revision+=1;
-          lastUpdatedAt=String(first.updatedAt||'');
+          lastUpdatedAt=String(first.updatedAt||lastUpdatedAt||'');
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
 
           var complete=!first.hasMore || firstRows.length<firstLimit;
           var offset=firstLimit;
-          var allRows=firstRows.slice();
+          var allMap={};
+          rows.forEach(function(r){if(r&&r.id)allMap[String(r.id)]=r;});
+          var allRows=Object.keys(allMap).map(function(k){return allMap[k];});
           while(!complete){
             /* Fetch up to three pages concurrently. The first page is already
                visible, so these requests only hydrate older history. */
-            var offsets=[offset,offset+pageSize,offset+(pageSize*2)];
-            var batch=await Promise.all(offsets.map(function(pageOffset){
-              return hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:pageOffset}]});
-            }));
-            var stop=false;
-            batch.forEach(function(result){
-              if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
-              var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-              allRows=allRows.concat(pageRows);
-              if(!result.hasMore || pageRows.length<pageSize)stop=true;
-            });
+            var result=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:offset}]});
+            if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
+            var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+            pageRows.forEach(function(r){if(r&&r.id)allMap[String(r.id)]=r;});
+            allRows=Object.keys(allMap).map(function(k){return allMap[k];});
+            var stop=!result.hasMore || pageRows.length<pageSize;
             rows=allRows.slice();
             normalize();
             revision+=1;
             if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
-            offset+=pageSize*batch.length;
+            offset+=pageSize;
             complete=stop;
           }
           rows=allRows.slice();
