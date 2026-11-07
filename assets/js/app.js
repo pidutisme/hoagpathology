@@ -1149,9 +1149,13 @@
        * + getLastPage                      +
        * +----------------------------------+ */
       function getLastPage() {
-        /* Prefer the browser's history state because it survives a hard refresh
-         * even in WebView/Electron contexts where sessionStorage can be recreated.
-         * Fall back to the same-tab session marker for compatibility. */
+        /* Prefer the same-tab session marker first. It is updated on every page
+         * change and is the most reliable source for a hard refresh. Browser
+         * history can still contain the HTML bootstrap route (DASHBOARD), so
+         * preferring history here could restore the wrong page. */
+        var pageId = safeSessionGet(LAST_PAGE_KEY);
+        if (isRestorablePage(pageId)) return pageId;
+
         try {
           var routeState = window.history && window.history.state && window.history.state.labApp
             ? window.history.state : null;
@@ -1159,10 +1163,9 @@
         } catch (error) {
           console.warn('Route state read failed:', error);
         }
-        var pageId = safeSessionGet(LAST_PAGE_KEY) || 'dashboard';
-        return isRestorablePage(pageId) ? pageId : 'dashboard';
+        return 'dashboard';
       }
-  
+
       /* +----------------------------------+
        * + clearLastPage                    +
        * +----------------------------------+ */
@@ -2726,7 +2729,15 @@
         setBusy(false);
         setLoginMessage('', '');
         updateResumeSessionButton_();
-  
+
+        /* Restore the saved page BEFORE ending the verification state. This
+         * prevents the HTML bootstrap page (DASHBOARD) from ever becoming
+         * visible for a frame during refresh. */
+        if (options.restoredSession && window.LabApp && window.LabApp.Router &&
+            typeof window.LabApp.Router.restoreLastPage === 'function') {
+          window.LabApp.Router.restoreLastPage();
+        }
+
         setSessionVerifying_(false);
         startSessionControls();
         afterAuthPaint_(function () {

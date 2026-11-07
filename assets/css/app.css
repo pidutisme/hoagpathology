@@ -10180,6 +10180,13 @@ body.auth-verifying .app {
   filter: none !important;
 }
 
+/* During refresh verification, keep the app shell visible but hide the
+ * bootstrap page. The saved page is restored before this class is removed,
+ * so DASHBOARD never flashes on screen. */
+body.auth-verifying .pages {
+  visibility: hidden !important;
+}
+
 /* Refresh/session verification never flashes the login screen. */
 body.auth-verifying .auth-screen {
   opacity: 0 !important;
