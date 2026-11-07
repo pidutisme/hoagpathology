@@ -1149,6 +1149,16 @@
        * + getLastPage                      +
        * +----------------------------------+ */
       function getLastPage() {
+        /* Prefer the browser's history state because it survives a hard refresh
+         * even in WebView/Electron contexts where sessionStorage can be recreated.
+         * Fall back to the same-tab session marker for compatibility. */
+        try {
+          var routeState = window.history && window.history.state && window.history.state.labApp
+            ? window.history.state : null;
+          if (routeState && isRestorablePage(routeState.page)) return routeState.page;
+        } catch (error) {
+          console.warn('Route state read failed:', error);
+        }
         var pageId = safeSessionGet(LAST_PAGE_KEY) || 'dashboard';
         return isRestorablePage(pageId) ? pageId : 'dashboard';
       }
@@ -1206,7 +1216,28 @@
       function bindRouteHistory() {
         if (historyBound || !canUseBrowserHistory()) return;
         historyBound = true;
-        writeRouteHistory(getActiveRouterPageId(), true);
+        /* On a hard refresh the browser keeps history.state. Never overwrite the
+         * last authenticated page with the HTML default (DASHBOARD) before the
+         * session has been restored. The previous V22 initializer did exactly that,
+         * which made a refresh of NOTIFICATION/OUTSOURCE/TRANSFUSION jump to DASHBOARD. */
+        try {
+          var existingState = window.history.state && window.history.state.labApp ? window.history.state : null;
+          if (existingState && isRestorablePage(existingState.page)) {
+            suppressHistoryWrite = true;
+            try {
+              if (getActiveRouterPageId() !== existingState.page && state.authUserId) {
+                preparePageBeforeOpen(existingState.page);
+                goPage(existingState.page, getNavButtonForPage(existingState.page));
+              }
+            } finally {
+              suppressHistoryWrite = false;
+            }
+          } else {
+            writeRouteHistory(getActiveRouterPageId(), true);
+          }
+        } catch (error) {
+          console.warn('Route history restore failed:', error);
+        }
         window.addEventListener('popstate', function (event) {
           if (!state.authUserId) return;
           var routeState = event.state && event.state.labApp ? event.state : null;
