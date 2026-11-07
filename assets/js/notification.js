@@ -907,7 +907,7 @@
     recordsHydrated = hadCache;
     if (hadCache) render();
     var firstLimit = 500, offset = 0, all = [];
-    notificationApi('getNotificationRecords', [{ limit: firstLimit, offset: 0 }])
+    notificationApi('getNotificationRecords', [null, { limit: firstLimit, offset: 0 }])
       .then(function (result) {
         notificationUserRole = String(result.userRole || '').toUpperCase();
         notificationIsAdmin = result.isAdmin === true || notificationUserRole === 'ADMIN';
@@ -921,7 +921,7 @@
           if (!more) { saveLocalRecords(); return Promise.resolve(); }
           var offsets = [offset, offset + firstLimit, offset + firstLimit * 2];
           return Promise.all(offsets.map(function (pageOffset) {
-            return notificationApi('getNotificationRecords', [{ limit: firstLimit, offset: pageOffset }]);
+            return notificationApi('getNotificationRecords', [null, { limit: firstLimit, offset: pageOffset }]);
           })).then(function (batch) {
             var stop = false;
             batch.forEach(function (page) {
