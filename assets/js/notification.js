@@ -1419,46 +1419,92 @@
     if (grid) grid.innerHTML = fields.map(function (f) { return '<div class="notification-detail"><small>' + f[0] + '</small><strong>' + f[1] + '</strong></div>'; }).join('');
     modal.hidden = false;
   }
-  function editRecord(id) {
-    if (isNotificationVisitor()) return;
-    var r = records.find(function (x) { return String(x.id) === String(id); }); if (!r) return;
-    editingId = r.id;
-    // Keep both the persisted hidden value and the visible custom date/time field
-    // in sync when entering edit mode. The custom picker is readonly, so if we
-    // only update the hidden input the form can visually show the old time.
-    notificationDateTimeState = r.notification_datetime || '';
-    $('notificationDateTime').value = notificationDateTimeState;
-    var editDateTime = $('notificationDateTimeVisible');
-    if (editDateTime && editDateTime._syncNotificationDateTime) {
-      editDateTime._syncNotificationDateTime();
+  function ensureNotificationSelectValue(id, value, fallbackLabel) {
+    var el = $(id);
+    if (!el) return;
+    var v = String(value == null ? '' : value);
+    if (v && !Array.prototype.some.call(el.options || [], function (opt) { return String(opt.value) === v; })) {
+      var opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v || fallbackLabel || '';
+      el.appendChild(opt);
     }
-    // Keep the canonical hidden value authoritative when entering edit mode.
-    var editHiddenDateTime = $('notificationDateTime');
-    notificationDateTimeState = String(editHiddenDateTime ? editHiddenDateTime.value : '')
-    if (editHiddenDateTime) {
-      editHiddenDateTime.dispatchEvent(new Event('input', {bubbles:true}));
-      editHiddenDateTime.dispatchEvent(new Event('change', {bubbles:true}));
-    }
+    el.value = v;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function restoreNotificationEditFields(r) {
+    /* Restore the complete persisted record, even when the reference catalogue
+       is unavailable. Editing must never blank a field just because reference
+       data has not finished loading. */
     $('notificationBarcode').value = r.barcode || '';
     $('notificationPatientName').value = r.patient_name || '';
     $('notificationIdIc').value = r.patient_id || '';
     $('notificationSex').value = r.sex || '';
     $('notificationAge').value = r.age || '';
-    $('notificationUnit').value = r.unit || '';
-    $('notificationDiscipline').value = r.discipline || '';
-    populateTests();
-    $('notificationTest').disabled = false;
-    $('notificationTest').innerHTML = '<option value="' + esc(r.test_name || '') + '">' + esc(r.test_name || 'Current test') + '</option>';
+    ensureNotificationSelectValue('notificationUnit', r.unit, 'Current unit');
+    ensureNotificationSelectValue('notificationDiscipline', r.discipline, 'Current discipline');
+
+    var test = $('notificationTest');
+    if (test) {
+      var disciplineList = testCatalogue[String(r.discipline || '')] || [];
+      test.disabled = false;
+      test.innerHTML = '<option value="">Select test</option>' + disciplineList.map(function (item) {
+        return '<option value="' + esc(item.name) + '">' + esc(item.name) + '</option>';
+      }).join('');
+      ensureNotificationSelectValue('notificationTest', r.test_name, 'Current test');
+    }
+
     var editItem = findTestItem();
     syncResultControl(editItem, r.result || '');
-    $('notificationStaff').value = r.staff || '';
-    $('notificationInformTo').value = r.inform_to || '';
-    $('notificationStatus').value = r.status || 'INFORMED';
-    $('notificationNotes').value = r.notes || '';
-    var box = $('notificationCriticalLimit'); box.className = 'notification-critical-box'; box.innerHTML = '<strong>Critical Limit / Alert</strong><span>' + esc(r.critical_limit || 'Reference catalogue not loaded') + '</span>';
+
+    /* The saved critical_limit is authoritative for an edit. If the catalogue
+       is available we may show its rule, but never replace a persisted value
+       with "catalogue not loaded". */
+    var box = $('notificationCriticalLimit');
+    var persistedRule = String(r.critical_limit || '').trim();
+    var catalogueRule = editItem && editItem.rule ? String(editItem.rule).trim() : '';
+    var ruleToShow = persistedRule || catalogueRule;
+    if (box) {
+      box.className = ruleToShow ? 'notification-critical-box' : 'notification-critical-box is-empty';
+      box.innerHTML = '<strong>Critical Limit / Alert</strong><span>' +
+        esc(ruleToShow || 'Reference catalogue not loaded') + '</span>';
+    }
+
+    /* Preserve the exact stored flag on edit; do not force a recalculation that
+       could blank or change a historical notification when reference data is
+       missing. */
     setFlag(r.flag || 'REVIEW', r.flag && r.flag !== 'REVIEW' ? 'critical' : 'normal');
+    ensureNotificationSelectValue('notificationStaff', r.staff, 'Current staff');
+    $('notificationInformTo').value = r.inform_to || '';
+    ensureNotificationSelectValue('notificationStatus', r.status || 'INFORMED', 'Current status');
+    $('notificationNotes').value = r.notes || '';
+  }
+
+  function editRecord(id) {
+    if (isNotificationVisitor()) return;
+    var r = records.find(function (x) { return String(x.id) === String(id); }); if (!r) return;
+    editingId = r.id;
+
+    // Restore the complete record before scrolling into edit mode.
+    notificationDateTimeState = r.notification_datetime || '';
+    var hiddenDateTime = $('notificationDateTime');
+    if (hiddenDateTime) hiddenDateTime.value = notificationDateTimeState;
+    var visibleDateTime = $('notificationDateTimeVisible');
+    if (visibleDateTime && visibleDateTime._syncNotificationDateTime) visibleDateTime._syncNotificationDateTime();
+    if (hiddenDateTime) {
+      notificationDateTimeState = String(hiddenDateTime.value || '');
+      hiddenDateTime.dispatchEvent(new Event('input', { bubbles: true }));
+      hiddenDateTime.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    restoreNotificationEditFields(r);
     $('notificationFormMode').textContent = 'EDIT RECORD';
-    var page = $('notification'); if (page) page.querySelector('.notification-form-card').scrollIntoView({behavior:'smooth', block:'start'});
+    var page = $('notification');
+    if (page) {
+      var formCard = page.querySelector('.notification-form-card');
+      if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
   function open() {
     var page = $('notification');
