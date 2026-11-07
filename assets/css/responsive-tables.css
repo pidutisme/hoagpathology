@@ -1208,3 +1208,110 @@ table.rt-responsive-table .notification-pill,
 #notification .notification-table.rt-responsive-table .notification-actions-cell > * {
   text-align: center !important;
 }
+
+/* =========================================================
+   V21 — LONG-WORD SAFETY / NO COLUMN OVERLAP
+   ---------------------------------------------------------
+   Keep normal words intact. If a single token is too long for
+   its current column, allow the browser to break it only when
+   necessary so it can NEVER paint into the next column.
+
+   Examples:
+     MICROBIOLOGY       -> stays one line when it fits
+     ESCHERICHIA COLI  -> wraps at the space first
+     VERYLONGTOKEN...  -> breaks only when the column is too narrow
+
+   Rows remain normal table rows, so their height grows naturally.
+   Actions remain icon-only and never wrap.
+   ========================================================= */
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table th,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table td,
+#notification .notification-table.rt-responsive-table th,
+#notification .notification-table.rt-responsive-table td {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+  vertical-align: middle !important;
+}
+
+/* Text-bearing elements inside cells must obey the cell boundary too. */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table td > *,
+#notification .notification-table.rt-responsive-table td > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table td strong,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table td span,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table td div,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table td p,
+#notification .notification-table.rt-responsive-table td strong,
+#notification .notification-table.rt-responsive-table td span,
+#notification .notification-table.rt-responsive-table td div,
+#notification .notification-table.rt-responsive-table td p {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  white-space: normal !important;
+}
+
+/* Status/result text may stay on one line when it fits, but can break
+   at the cell boundary if the available width becomes too small. */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table .outsource-result-pill,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table .transfusion-status-pill,
+#notification .notification-table.rt-responsive-table .notification-pill {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  text-overflow: clip !important;
+}
+
+/* Actions are the exception: icons must remain together and centered. */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table .outsource-actions-cell,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table .outsource-actions,
+#notification .notification-table.rt-responsive-table .notification-actions-cell,
+#notification .notification-table.rt-responsive-table .notification-actions {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table .outsource-mini.icon-only,
+#notification .notification-table.rt-responsive-table .notification-action.icon-only {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
