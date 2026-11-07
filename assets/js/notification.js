@@ -1359,7 +1359,14 @@
     if (isNotificationVisitor()) return;
     var r = records.find(function (x) { return String(x.id) === String(id); }); if (!r) return;
     editingId = r.id;
+    // Keep both the persisted hidden value and the visible custom date/time field
+    // in sync when entering edit mode. The custom picker is readonly, so if we
+    // only update the hidden input the form can visually show the old time.
     $('notificationDateTime').value = r.notification_datetime || '';
+    var editDateTime = $('notificationDateTimeVisible');
+    if (editDateTime && editDateTime._syncNotificationDateTime) {
+      editDateTime._syncNotificationDateTime();
+    }
     $('notificationBarcode').value = r.barcode || '';
     $('notificationPatientName').value = r.patient_name || '';
     $('notificationIdIc').value = r.patient_id || '';
@@ -1403,7 +1410,14 @@
       var submitBtn = form.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
       saveNotificationRecord(item)
-        .then(function () { clearForm(); render(); })
+        .then(function (saved) {
+          // Re-render from the record returned by the API, so the table always
+          // reflects the value that was actually persisted (especially date/time).
+          var idx = records.findIndex(function (r) { return String(r.id) === String(saved.id); });
+          if (idx >= 0) records[idx] = normalizeNotificationRecord(saved);
+          clearForm();
+          render();
+        })
         .catch(function (error) {
           console.error('Notification save failed:', error);
           alert(error && error.message ? error.message : 'Unable to save Notification record.');
