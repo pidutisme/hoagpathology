@@ -622,6 +622,24 @@ async function dispatch(db, method, a, req) {
       return { ok: true, record, updatedAt: record.updated_at, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 
+    case 'updateNotificationDateTime': {
+      const s = await requireSession(db, tokenAt(1));
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const rid = clean(a[0], 160);
+      const notificationDatetime = clean(a[1], 80);
+      if (!rid) fail('Notification record ID is required.');
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})?$/.test(notificationDatetime)) fail('Invalid notification Date / Time.');
+      const now = iso();
+      const { data, error } = await supabase.from('notification_records')
+        .update({ notification_datetime: notificationDatetime, updated_at: now })
+        .eq('id', rid).select('*').single();
+      if (error) throw error;
+      if (!data || String(data.id) !== rid) fail('Notification Date / Time update was not persisted.', 500);
+      const { data: verified, error: verifyError } = await supabase.from('notification_records').select('*').eq('id', rid).single();
+      if (verifyError) throw verifyError;
+      return { ok: true, record: verified, updatedAt: verified.updated_at, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
     case 'deleteNotificationRecord': {
       const s = await requireSession(db, tokenAt(1));
       if (String(s.role || '').toUpperCase() !== 'ADMIN' && s.user?.is_super_admin !== true) fail('Admin access is required to delete notification records.', 403);

@@ -745,6 +745,7 @@
   var notificationSaving = false;
   var notificationUserRole = '';
   var notificationIsAdmin = false;
+  var notificationDateTimeState = '';
 
   function notificationApi(method, args) {
     return fetch('/api/bridge', {
@@ -895,9 +896,17 @@
 
   function saveNotificationRecord(item) {
     notificationSaving = true;
-    return notificationApi('upsertNotificationRecord', [item])
+    var requestDateTime = String(item.notification_datetime || '').trim();
+    var savePromise = notificationApi('upsertNotificationRecord', [item])
       .then(function (result) {
         var saved = normalizeNotificationRecord(result.record || item);
+        if (requestDateTime && item.id) {
+          return notificationApi('updateNotificationDateTime', [item.id, requestDateTime])
+            .then(function (dateResult) { return normalizeNotificationRecord(dateResult.record || saved); });
+        }
+        return saved;
+      })
+      .then(function (saved) {
         // Keep the returned server record as an immediate optimistic update.
         var idx = records.findIndex(function (r) { return String(r.id) === String(saved.id); });
         if (idx >= 0) records[idx] = saved;
@@ -912,6 +921,9 @@
             records = (result.records || []).map(normalizeNotificationRecord);
             var fresh = records.find(function (r) { return String(r.id) === String(saved.id); });
             if (!fresh) throw new Error('Saved notification record could not be reloaded.');
+            if (requestDateTime && String(fresh.notification_datetime || '').slice(0,16) !== requestDateTime.slice(0,16)) {
+              throw new Error('Notification Date / Time was not persisted. Requested ' + requestDateTime + ' but database returned ' + String(fresh.notification_datetime || 'empty') + '.');
+            }
             return fresh;
           });
       })
@@ -944,7 +956,7 @@
     var mode = $('notificationFormMode'); if (mode) mode.textContent = 'NEW RECORD';
   }
   function clearForm() {
-    var form = $('notificationForm'); if (form) form.reset(); var dtv = $('notificationDateTimeVisible'); if (dtv) dtv.value = '';
+    var form = $('notificationForm'); if (form) form.reset(); var dtv = $('notificationDateTimeVisible'); if (dtv) dtv.value = ''; notificationDateTimeState = '';
     var sex = $('notificationSex'); if (sex) sex.value = '';
     var age = $('notificationAge'); if (age) age.value = '';
     var test = $('notificationTest'); if (test) { test.innerHTML = '<option value="">Select discipline first</option>'; test.dispatchEvent(new Event('change',{bubbles:true})); }
@@ -1120,6 +1132,7 @@
     }
     function setValue(parts) {
       hidden.value = toValue(parts);
+      notificationDateTimeState = hidden.value;
       visible.value = display(parts);
       hidden.dispatchEvent(new Event('input', {bubbles:true}));
       hidden.dispatchEvent(new Event('change', {bubbles:true}));
@@ -1215,6 +1228,7 @@
     }
 
     visible.value = display(currentParts());
+    notificationDateTimeState = String(hidden.value || '').trim();
     visible.addEventListener('click', function(e){ e.preventDefault(); open(); });
     visible.addEventListener('focus', open);
     pop.addEventListener('click', function(e) {
@@ -1232,7 +1246,7 @@
     document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!pop.hidden)close();});
     window.addEventListener('resize',function(){if(!pop.hidden)position();});
     window.addEventListener('scroll',function(){if(!pop.hidden)position();},true);
-    visible._syncNotificationDateTime = function(){ visible.value=display(parseValue(hidden.value)); };
+    visible._syncNotificationDateTime = function(){ var p=parseValue(hidden.value); notificationDateTimeState=String(hidden.value || '').trim(); visible.value=display(p); };
   }
 
   function initNotificationNeumorphicSelects() {
@@ -1297,12 +1311,14 @@
     var hidden = $('notificationDateTime');
     var visible = $('notificationDateTimeVisible');
     if (!hidden || !visible) return '';
+    if (notificationDateTimeState) hidden.value = notificationDateTimeState;
     // The visible field is the user's actual date/time selection surface.
     // Reconcile it back to the canonical hidden value immediately before
     // collecting the payload, so an edit can never save the previous time.
     var parsed = parseNotificationDisplayDateTime(visible.value);
     if (parsed) hidden.value = parsed;
-    return String(hidden.value || '').trim();
+    notificationDateTimeState = String(hidden.value || '').trim();
+    return notificationDateTimeState;
   }
 
   function collectForm() {
@@ -1401,13 +1417,15 @@
     // Keep both the persisted hidden value and the visible custom date/time field
     // in sync when entering edit mode. The custom picker is readonly, so if we
     // only update the hidden input the form can visually show the old time.
-    $('notificationDateTime').value = r.notification_datetime || '';
+    notificationDateTimeState = r.notification_datetime || '';
+    $('notificationDateTime').value = notificationDateTimeState;
     var editDateTime = $('notificationDateTimeVisible');
     if (editDateTime && editDateTime._syncNotificationDateTime) {
       editDateTime._syncNotificationDateTime();
     }
     // Keep the canonical hidden value authoritative when entering edit mode.
     var editHiddenDateTime = $('notificationDateTime');
+    notificationDateTimeState = String(editHiddenDateTime ? editHiddenDateTime.value : '')
     if (editHiddenDateTime) {
       editHiddenDateTime.dispatchEvent(new Event('input', {bubbles:true}));
       editHiddenDateTime.dispatchEvent(new Event('change', {bubbles:true}));
