@@ -4,12 +4,41 @@
   var mounted=false, selectedRows=[], selectedFiles=[];
   var HEADER_ALIASES={
     bil:'bil',
-    'sample date':'sampleDate','bar code':'barCode','name':'name','id/ic':'idIc',sex:'sex',age:'age',unit:'unit',
-    'dispatch date':'dispatchDate',referral:'referral',lab:'lab',test:'test',result:'result','result date':'resultDate',
-    'no. rujukan':'referenceNo','reject reason (if rejected)':'rejectReason','catatan/nota':'notes'
+    'sample date':'sampleDate','date':'sampleDate',
+    'bar code':'barCode','barcode':'barCode','bar code no':'barCode',
+    'name':'name','patient name':'name',
+    'id/ic':'idIc','id / ic':'idIc','ic / id':'idIc','ic':'idIc','id':'idIc',
+    sex:'sex','gender':'sex','sex / gender':'sex',
+    age:'age','age (years)':'age','age years':'age',
+    unit:'unit',
+    'dispatch date':'dispatchDate',
+    referral:'referral',lab:'lab',
+    test:'test','investigation':'test','test / investigation':'test','test/investigation':'test','test investigation':'test',
+    result:'result','result date':'resultDate',
+    'no. rujukan':'referenceNo','reference no.':'referenceNo','reference no':'referenceNo','reference number':'referenceNo',
+    'reject reason (if rejected)':'rejectReason','reject reason':'rejectReason',
+    'catatan/nota':'notes','catatan / nota':'notes','notes':'notes','remarks':'notes'
   };
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function normHeader(v){return String(v||'').replace(/^\uFEFF/,'').replace(/\s+/g,' ').trim().toLowerCase();}
+  function calculateMalaysianIcDetails(rawIc, referenceDate){
+    var original=String(rawIc||'').trim();
+    if(/^M\d{12}(?:-\d+)?$/i.test(original)) return {sex:'TBC',age:'NB/NO IC',special:true};
+    var raw=original.replace(/[^0-9]/g,'');
+    if(!/^\d{12}$/.test(raw)) return null;
+    var yy=Number(raw.slice(0,2)), mm=Number(raw.slice(2,4)), dd=Number(raw.slice(4,6));
+    var now=referenceDate instanceof Date?referenceDate:new Date();
+    var currentYY=Number(String(now.getFullYear()).slice(-2));
+    var year=yy<=currentYY?2000+yy:1900+yy;
+    var dob=new Date(year,mm-1,dd);
+    if(dob.getFullYear()!==year||dob.getMonth()!==mm-1||dob.getDate()!==dd) return null;
+    var genderDigit=Number(raw.charAt(11));
+    var sex=(genderDigit%2===1)?'L':'P';
+    var age=now.getFullYear()-year;
+    if(now.getMonth()<(mm-1)||(now.getMonth()===(mm-1)&&now.getDate()<dd)) age--;
+    if(age<0||age>130) return null;
+    return {sex:sex,age:age,dob:year+'-'+String(mm).padStart(2,'0')+'-'+String(dd).padStart(2,'0')};
+  }
   function normDate(v){
     var s=String(v||'').trim(); if(!s)return '';
     var m=/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/.exec(s);
@@ -50,7 +79,9 @@
     var headerIndex=-1;
     for(var hi=0;hi<Math.min(raw.length,10);hi++){
       var candidate=raw[hi].map(normHeader);
-      if(candidate.indexOf('sample date')!==-1 && candidate.indexOf('bar code')!==-1 && candidate.indexOf('name')!==-1 && candidate.indexOf('test')!==-1){
+      var candidateFields={};
+      candidate.forEach(function(h){if(HEADER_ALIASES[h])candidateFields[HEADER_ALIASES[h]]=true;});
+      if(candidateFields.sampleDate && candidateFields.barCode && candidateFields.name && candidateFields.test){
         headerIndex=hi;
         break;
       }
@@ -69,6 +100,16 @@
       // Outsource field before validation is applied.
       if(!String(r.sampleDate||'').trim() && !String(r.barCode||'').trim() && !String(r.name||'').trim() && !String(r.test||'').trim()) continue;
       r.sampleDate=normDate(r.sampleDate); r.dispatchDate=normDate(r.dispatchDate); r.resultDate=normDate(r.resultDate);
+      // If the historical file leaves Sex/Age blank, derive them from the
+      // Malaysian NRIC using the sample date as the age reference date.
+      // Existing non-empty source values always win.
+      if((!r.sex||!String(r.sex).trim()) || (!r.age||!String(r.age).trim())){
+        var icDetails=calculateMalaysianIcDetails(r.idIc,r.sampleDate?new Date(r.sampleDate+'T12:00:00'):new Date());
+        if(icDetails){
+          if(!String(r.sex||'').trim())r.sex=icDetails.sex;
+          if(!String(r.age||'').trim())r.age=String(icDetails.age);
+        }
+      }
       // Historical Google Sheet uses ADA for a completed/available result.
       // Normalize only imported historical rows so the existing Outsource UI
       // consistently shows COMPLETED without changing existing records.

@@ -238,6 +238,26 @@ async function deleteOutsourceRow(id) {
 }
 
 
+function deriveImportedIc(rawIc, referenceDate) {
+  const original = String(rawIc || '').trim().toUpperCase();
+  if (/^M\d{12}(?:-\d+)?$/.test(original)) return { sex: 'TBC', age: 'NB/NO IC' };
+  const digits = original.replace(/[^0-9]/g, '');
+  if (!/^\d{12}$/.test(digits)) return { sex: '', age: '' };
+  const ref = new Date(referenceDate || new Date());
+  if (Number.isNaN(ref.getTime())) return { sex: '', age: '' };
+  const yy = Number(digits.slice(0,2));
+  const mm = Number(digits.slice(2,4));
+  const dd = Number(digits.slice(4,6));
+  const currentYY = Number(String(ref.getFullYear()).slice(-2));
+  const year = yy <= currentYY ? 2000 + yy : 1900 + yy;
+  const dob = new Date(year, mm - 1, dd);
+  if (!mm || mm > 12 || !dd || dd > 31 || dob.getFullYear() !== year || dob.getMonth() !== mm - 1 || dob.getDate() !== dd || dob > ref) return { sex: '', age: '' };
+  let age = ref.getFullYear() - year;
+  if (ref.getMonth() < mm - 1 || (ref.getMonth() === mm - 1 && ref.getDate() < dd)) age--;
+  if (age < 0 || age > 130) return { sex: '', age: '' };
+  return { sex: Number(digits.slice(-1)) % 2 ? 'M' : 'F', age: String(age) };
+}
+
 async function getNotificationRows(limit = null, offset = 0) {
   const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
   const pageSize = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
@@ -254,13 +274,13 @@ async function getNotificationRows(limit = null, offset = 0) {
       id: row.id,
       notification_datetime: row.notification_datetime,
       barcode: row.barcode || '',
-      patient_name: row.patient_name || '',
-      patient_id: row.patient_id || '',
-      sex: row.sex || '',
-      age: row.age || '',
+      patient_name: row.patient_name || row.name || '',
+      patient_id: row.patient_id || row.id_ic || row.ic || row.nric || '',
+      sex: row.sex || deriveImportedIc(row.patient_id || row.id_ic || row.ic || row.nric || '', row.notification_datetime).sex || '',
+      age: row.age || deriveImportedIc(row.patient_id || row.id_ic || row.ic || row.nric || '', row.notification_datetime).age || '',
       unit: row.unit || '',
-      discipline: row.discipline || '',
-      test_name: row.test_name || '',
+      discipline: row.discipline || row.department || '',
+      test_name: row.test_name || row.test || row.investigation || row.test_investigation || '',
       critical_limit: row.critical_limit || '',
       result: row.result || '',
       flag: row.flag || '',

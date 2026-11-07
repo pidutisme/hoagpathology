@@ -850,6 +850,24 @@
     return 'REVIEW';
   }
 
+  function calcImportedIcDetails(rawIc, referenceDate) {
+    var original = String(rawIc || '').trim().toUpperCase();
+    if (/^M\d{12}(?:-\d+)?$/.test(original)) return {sex:'TBC', age:'NB/NO IC'};
+    var digits = original.replace(/[^0-9]/g, '');
+    if (!/^\d{12}$/.test(digits)) return {sex:'', age:''};
+    var yy = Number(digits.slice(0,2)), mm = Number(digits.slice(2,4)), dd = Number(digits.slice(4,6));
+    var ref = referenceDate instanceof Date ? referenceDate : new Date(referenceDate || new Date());
+    if (isNaN(ref.getTime()) || !mm || mm > 12 || !dd || dd > 31) return {sex:'', age:''};
+    var currentYY = Number(String(ref.getFullYear()).slice(-2));
+    var year = yy <= currentYY ? 2000 + yy : 1900 + yy;
+    var dob = new Date(year, mm - 1, dd);
+    if (dob.getFullYear() !== year || dob.getMonth() !== mm - 1 || dob.getDate() !== dd || dob > ref) return {sex:'', age:''};
+    var age = ref.getFullYear() - year;
+    if (ref.getMonth() < mm - 1 || (ref.getMonth() === mm - 1 && ref.getDate() < dd)) age--;
+    if (age < 0 || age > 130) return {sex:'', age:''};
+    return {sex: Number(digits.slice(-1)) % 2 ? 'M' : 'F', age: String(age)};
+  }
+
   function normalizeNotificationRecord(r) {
     r = r && typeof r === 'object' ? r : {};
     var dt = r.notification_datetime || '';
@@ -862,17 +880,24 @@
         dt = String(dt).replace(' ', 'T').slice(0,16);
       }
     }
+    var patientId = String(r.patient_id || r.id_ic || r.ic || r.nric || '');
+    var derived = calcImportedIcDetails(patientId, dt ? new Date(dt) : new Date());
+    var sex = String(r.sex || '').trim();
+    var age = String(r.age || '').trim();
+    if (!sex) sex = derived.sex || '';
+    if (!age) age = derived.age || '';
+    var importedTest = r.test_name || r.test || r.investigation || r.test_investigation || '';
     return {
       id: String(r.id || ''),
       notification_datetime: dt,
       barcode: String(r.barcode || ''),
-      patient_name: String(r.patient_name || ''),
-      patient_id: String(r.patient_id || ''),
-      sex: String(r.sex || ''),
-      age: String(r.age || ''),
+      patient_name: String(r.patient_name || r.name || ''),
+      patient_id: patientId,
+      sex: sex,
+      age: age,
       unit: String(r.unit || ''),
-      discipline: String(r.discipline || ''),
-      test_name: String(r.test_name || ''),
+      discipline: String(r.discipline || r.department || ''),
+      test_name: String(importedTest || ''),
       critical_limit: String(r.critical_limit || ''),
       result: String(r.result || ''),
       flag: calculateRecordFlag(r),

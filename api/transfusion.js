@@ -19,6 +19,32 @@ async function logLegacyMigrationAudit(db, actorId, requestId) {
   try { await audit(db,actorId,'TRANSFUSION_DATA_MIGRATED',requestId); } catch { console.warn('Transfusion migration audit skipped'); }
 }
 
+function deriveImportedIc(rawIc, referenceDate) {
+  const original = String(rawIc || '').trim().toUpperCase();
+  if (/^M\d{12}(?:-\d+)?$/.test(original)) return { sex: 'TBC', age: 'NB/NO IC' };
+  const digits = original.replace(/[^0-9]/g, '');
+  if (!/^\d{12}$/.test(digits)) return { sex: '', age: '' };
+  const ref = new Date(referenceDate || new Date());
+  if (Number.isNaN(ref.getTime())) return { sex: '', age: '' };
+  const yy = Number(digits.slice(0,2)), mm = Number(digits.slice(2,4)), dd = Number(digits.slice(4,6));
+  const currentYY = Number(String(ref.getFullYear()).slice(-2));
+  const year = yy <= currentYY ? 2000 + yy : 1900 + yy;
+  const dob = new Date(year, mm - 1, dd);
+  if (!mm || mm > 12 || !dd || dd > 31 || dob.getFullYear() !== year || dob.getMonth() !== mm - 1 || dob.getDate() !== dd || dob > ref) return { sex: '', age: '' };
+  let age = ref.getFullYear() - year;
+  if (ref.getMonth() < mm - 1 || (ref.getMonth() === mm - 1 && ref.getDate() < dd)) age--;
+  if (age < 0 || age > 130) return { sex: '', age: '' };
+  return { sex: Number(digits.slice(-1)) % 2 ? 'L' : 'P', age: String(age) };
+}
+
+function normalizeImportedTransfusionRow(row) {
+  const next = { ...(row || {}) };
+  const derived = deriveImportedIc(next.idIc || next.patientId || next.ic || next.nric || '', next.date);
+  if (!String(next.sex || '').trim() && derived.sex) next.sex = derived.sex;
+  if (!String(next.age || '').trim() && derived.age) next.age = derived.age;
+  return next;
+}
+
 async function getTransfusionRows() {
   const pageSize = 1000;
   const rows = [];
@@ -32,7 +58,7 @@ async function getTransfusionRows() {
     rows.push(...(data || []));
     if (!data || data.length < pageSize) break;
   }
-  return rows.map(row => ({
+  return rows.map(row => normalizeImportedTransfusionRow({
     ...(row.data && typeof row.data === 'object' ? row.data : {}),
     id: row.id,
     createdAt: row.created_at,
