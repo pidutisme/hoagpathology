@@ -390,3 +390,198 @@ table.rt-responsive-table td p {
     }
   }
 }
+
+
+/* =========================================================
+   V5: WORDS STAY INTACT + COMPACT ICON-ONLY ACTIONS
+   ---------------------------------------------------------
+   - Normal text wraps at spaces, never in the middle of a word.
+   - Status/discipline/flag pills are always single-line.
+   - Notification actions use compact icon-only buttons.
+   ========================================================= */
+.rt-responsive-table th,
+.rt-responsive-table td,
+table.rt-responsive-table th,
+table.rt-responsive-table td,
+#notification .notification-table.rt-responsive-table th,
+#notification .notification-table.rt-responsive-table td {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-pill,
+#notification .notification-table.rt-responsive-table .notification-pill.status,
+#notification .notification-table.rt-responsive-table .notification-pill.flag {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  width: max-content !important;
+  max-width: none !important;
+  min-width: max-content !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+  text-overflow: clip !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-actions-cell {
+  width: 1% !important;
+  min-width: 76px !important;
+  white-space: nowrap !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  width: max-content !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-action.outsource-mini.icon-only {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-action.icon-only svg {
+  display: block !important;
+  width: 15px !important;
+  height: 15px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  pointer-events: none !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-action.icon-only.delete svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+@container notification-record-card (max-width: 620px) {
+  #notification .notification-table.rt-responsive-table .notification-actions-cell {
+    min-width: 70px !important;
+  }
+
+  #notification .notification-table.rt-responsive-table .notification-action.outsource-mini.icon-only {
+    flex-basis: 26px !important;
+    width: 26px !important;
+    min-width: 26px !important;
+    max-width: 26px !important;
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+  }
+
+  #notification .notification-table.rt-responsive-table .notification-action.icon-only svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+
+/* =========================================================
+   V6: ICON-ONLY ACTIONS FOR OUTSOURCE + TRANSFUSION
+   ---------------------------------------------------------
+   Keep all three record tables compact and consistent:
+   Eye / Edit / Delete icons only. Never wrap action text.
+   ========================================================= */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table .outsource-actions-cell {
+  width: 1% !important;
+  min-width: 92px !important;
+  white-space: nowrap !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table .outsource-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table .outsource-mini.icon-only {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 27px !important;
+  width: 27px !important;
+  min-width: 27px !important;
+  max-width: 27px !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  max-height: 27px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table .outsource-mini.icon-only svg {
+  display: block !important;
+  width: 14px !important;
+  height: 14px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  pointer-events: none !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table .outsource-mini.action-delete {
+  color: var(--danger) !important;
+  background: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+}
+
+@container outsource-record-card (max-width: 620px) {
+  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+    .outsource-table .outsource-actions-cell {
+    min-width: 86px !important;
+  }
+
+  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+    .outsource-table .outsource-mini.icon-only {
+    flex-basis: 25px !important;
+    width: 25px !important;
+    min-width: 25px !important;
+    max-width: 25px !important;
+    height: 25px !important;
+    min-height: 25px !important;
+    max-height: 25px !important;
+  }
+}

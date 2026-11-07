@@ -1322,7 +1322,11 @@
         '<td class="result">' + esc(formatNotificationResult(r)) + '</td>' +
         '<td><span class="notification-pill flag">' + esc(r.flag) + '</span></td>' +
         '<td><span class="notification-pill status ' + statusCls + '">' + esc(r.status) + '</span></td>' +
-        '<td><div class="notification-actions"><button type="button" class="notification-action outsource-mini" data-notification-view="' + esc(r.id) + '" title="View full details" aria-label="View full details">&#128065;</button>' + (!visitorOnly ? '<button type="button" class="notification-action outsource-mini" data-notification-edit="' + esc(r.id) + '" title="Edit" aria-label="Edit">EDIT</button>' : '') + (!visitorOnly && isNotificationAdmin() ? '<button type="button" class="notification-action outsource-mini delete" data-notification-delete="' + esc(r.id) + '" title="Delete" aria-label="Delete">DELETE</button>' : '') + '</div></td></tr>';
+        '<td class="notification-actions-cell"><div class="notification-actions">' +
+        '<button type="button" class="notification-action outsource-mini icon-only" data-notification-view="' + esc(r.id) + '" title="View full details" aria-label="View full details"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
+        (!visitorOnly ? '<button type="button" class="notification-action outsource-mini icon-only" data-notification-edit="' + esc(r.id) + '" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' : '') +
+        (!visitorOnly && isNotificationAdmin() ? '<button type="button" class="notification-action outsource-mini icon-only delete" data-notification-delete="' + esc(r.id) + '" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' : '') +
+        '</div></td></tr>';
     }).join('');
     if (empty) empty.hidden = rows.length > 0;
     var shownStart = filtered.length ? start + 1 : 0;
