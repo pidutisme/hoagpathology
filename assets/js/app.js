@@ -9141,11 +9141,10 @@ function exportMonthlySchedulePdfs() {
         if(loading&&refreshPromise)return refreshPromise;
         loading=true;
         refreshPromise=(async function(){
-          /* V28: fast first paint. Request only the newest page first, paint it
-             immediately, then hydrate the remaining history in the background.
-             This keeps the server authoritative without making a 5k/10k+ history
-             block the first visible table. */
-          var firstLimit=500, pageSize=1000, firstRows=[];
+          /* V33: fast first paint. Show only the newest 100 records first, then hydrate
+             the remaining history in the background. The background paging stays
+             contiguous so no historical records are skipped. */
+          var firstLimit=100, pageSize=1000, firstRows=[];
           var first=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:firstLimit,offset:0}]});
           if(!first||first.ok===false)throw new Error(first&&first.error?first.error:'Unable to load outsource records.');
           firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
@@ -9159,7 +9158,7 @@ function exportMonthlySchedulePdfs() {
           var offset=firstLimit;
           var allRows=firstRows.slice();
           while(!complete){
-            /* Fetch up to three pages concurrently. The first page is already
+            /* Fetch up to three contiguous pages concurrently. The first 100 are already
                visible, so these requests only hydrate older history. */
             var offsets=[offset,offset+pageSize,offset+(pageSize*2)];
             var batch=await Promise.all(offsets.map(function(pageOffset){
@@ -9170,7 +9169,7 @@ function exportMonthlySchedulePdfs() {
               if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
               var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
               allRows=allRows.concat(pageRows);
-              if(!result.hasMore || pageRows.length<pageSize)stop=true;
+              if(!result.hasMore)stop=true;
             });
             rows=allRows.slice();
             normalize();
