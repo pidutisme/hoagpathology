@@ -9141,10 +9141,10 @@ function exportMonthlySchedulePdfs() {
         if(loading&&refreshPromise)return refreshPromise;
         loading=true;
         refreshPromise=(async function(){
-          /* V33: fast first paint. Show only the newest 100 records first, then hydrate
-             the remaining history in the background. The background paging stays
-             contiguous so no historical records are skipped. */
-          var firstLimit=100, pageSize=1000, firstRows=[];
+          /* V34: paint only 100 newest rows first, then hydrate the full history
+             sequentially in safe 500-row pages. Sequential paging avoids a single
+             out-of-range/concurrent request aborting the whole background load. */
+          var firstLimit=100, pageSize=500, firstRows=[];
           var first=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:firstLimit,offset:0}]});
           if(!first||first.ok===false)throw new Error(first&&first.error?first.error:'Unable to load outsource records.');
           firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
@@ -9154,29 +9154,33 @@ function exportMonthlySchedulePdfs() {
           lastUpdatedAt=String(first.updatedAt||'');
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
 
-          var complete=!first.hasMore || firstRows.length<firstLimit;
-          var offset=firstLimit;
           var allRows=firstRows.slice();
+          var offset=firstLimit;
+          var complete=!first.hasMore || firstRows.length<firstLimit;
           while(!complete){
-            /* Fetch up to three contiguous pages concurrently. The first 100 are already
-               visible, so these requests only hydrate older history. */
-            var offsets=[offset,offset+pageSize,offset+(pageSize*2)];
-            var batch=await Promise.all(offsets.map(function(pageOffset){
-              return hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:pageOffset}]});
-            }));
-            var stop=false;
-            batch.forEach(function(result){
-              if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
-              var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-              allRows=allRows.concat(pageRows);
-              if(!result.hasMore)stop=true;
-            });
+            var result=null, attempts=0;
+            while(attempts<3){
+              try{
+                result=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:offset}]});
+                if(result&&result.ok!==false)break;
+                throw new Error(result&&result.error?result.error:'Unable to load outsource records.');
+              }catch(error){
+                attempts+=1;
+                if(attempts>=3)throw error;
+                await new Promise(function(resolve){setTimeout(resolve,250*attempts);});
+              }
+            }
+            var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+            allRows=allRows.concat(pageRows);
             rows=allRows.slice();
             normalize();
             revision+=1;
             if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
-            offset+=pageSize*batch.length;
-            complete=stop;
+
+            /* Advance by the actual page size requested, not by the number of
+               concurrent requests. Stop when the server says there is no more. */
+            offset+=pageSize;
+            complete=!result.hasMore || pageRows.length===0;
           }
           rows=allRows.slice();
           normalize();
