@@ -900,13 +900,29 @@
       .finally(function () { notificationLoading = false; });
   }
 
+  function localNotificationDateTimeToUtc(value) {
+    var raw = String(value || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return raw;
+    // notification_datetime is stored in Supabase as a timezone-aware
+    // timestamp. The form is intentionally local time (Malaysia/PC local).
+    // Convert the local wall-clock value to an absolute UTC instant before
+    // sending it to the database; otherwise Supabase interprets 00:30 as
+    // 00:30 UTC and it comes back as 08:30 in Malaysia.
+    var d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    return d.toISOString();
+  }
+
   function saveNotificationRecord(item) {
     notificationSaving = true;
-    var requestDateTime = String(item.notification_datetime || '').trim();
+    var requestLocalDateTime = String(item.notification_datetime || '').trim();
+    var payload = Object.assign({}, item, {
+      notification_datetime: localNotificationDateTimeToUtc(requestLocalDateTime)
+    });
     // One authoritative save. The backend already performs an explicit
-    // UPDATE/INSERT and verifies the persisted row. Do not issue a second
-    // Date/Time request that can leave the submit button waiting.
-    return notificationApi('upsertNotificationRecord', [item])
+    // UPDATE/INSERT and verifies the persisted row. The database receives
+    // the UTC instant corresponding to the user's local wall-clock time.
+    return notificationApi('upsertNotificationRecord', [payload])
       .then(function (result) { return normalizeNotificationRecord(result.record || item); })
       .then(function (saved) {
         return notificationApi('getNotificationRecords', [])
@@ -914,8 +930,8 @@
             records = (result.records || []).map(normalizeNotificationRecord);
             var fresh = records.find(function (r) { return String(r.id) === String(saved.id); });
             if (!fresh) throw new Error('Saved notification record could not be reloaded.');
-            if (requestDateTime && String(fresh.notification_datetime || '').slice(0,16) !== requestDateTime.slice(0,16)) {
-              throw new Error('Notification Date / Time was not persisted. Requested ' + requestDateTime + ' but database returned ' + String(fresh.notification_datetime || 'empty') + '.');
+            if (requestLocalDateTime && String(fresh.notification_datetime || '').slice(0,16) !== requestLocalDateTime.slice(0,16)) {
+              throw new Error('Notification Date / Time was not persisted. Requested local time ' + requestLocalDateTime + ' but database returned local time ' + String(fresh.notification_datetime || 'empty') + '.');
             }
             return fresh;
           });
