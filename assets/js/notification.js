@@ -8,6 +8,7 @@
 
   var records = [];
   var pageSize = 1000;
+  var cacheKey = 'labAppNotificationV1';
   var currentPage = 1;
   var editingId = null;
 
@@ -882,15 +883,60 @@
     };
   }
 
+  function saveLocalRecords() {
+    try {
+      safeStorageSet(cacheKey, JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), records: records }));
+    } catch (e) {}
+  }
+
+  function loadLocalRecords() {
+    try {
+      var raw = safeStorageGet(cacheKey);
+      if (!raw) return false;
+      var parsed = safeParse(raw);
+      if (!parsed || !Array.isArray(parsed.records)) return false;
+      records = parsed.records.map(normalizeNotificationRecord);
+      return true;
+    } catch (e) { return false; }
+  }
+
   function loadRecords() {
+    if (notificationLoading) return;
     notificationLoading = true;
-    notificationApi('getNotificationRecords', [])
+    var hadCache = loadLocalRecords();
+    recordsHydrated = hadCache;
+    if (hadCache) render();
+    var firstLimit = 500, offset = 0, all = [];
+    notificationApi('getNotificationRecords', [{ limit: firstLimit, offset: 0 }])
       .then(function (result) {
-        records = Array.isArray(result.records) ? result.records.map(normalizeNotificationRecord) : [];
         notificationUserRole = String(result.userRole || '').toUpperCase();
         notificationIsAdmin = result.isAdmin === true || notificationUserRole === 'ADMIN';
+        all = Array.isArray(result.records) ? result.records.map(normalizeNotificationRecord) : [];
+        records = all.slice();
         recordsHydrated = true;
         render();
+        var more = !!result.hasMore;
+        offset = firstLimit;
+        function hydrate() {
+          if (!more) { saveLocalRecords(); return Promise.resolve(); }
+          var offsets = [offset, offset + firstLimit, offset + firstLimit * 2];
+          return Promise.all(offsets.map(function (pageOffset) {
+            return notificationApi('getNotificationRecords', [{ limit: firstLimit, offset: pageOffset }]);
+          })).then(function (batch) {
+            var stop = false;
+            batch.forEach(function (page) {
+              var pageRows = Array.isArray(page.records) ? page.records.map(normalizeNotificationRecord) : [];
+              all = all.concat(pageRows);
+              if (!page.hasMore || pageRows.length < firstLimit) stop = true;
+            });
+            records = all.slice();
+            render();
+            offset += firstLimit * batch.length;
+            more = !stop;
+            return more ? hydrate() : saveLocalRecords();
+          });
+        }
+        return hydrate();
       })
       .catch(function (error) {
         recordsHydrated = true;
@@ -933,6 +979,7 @@
             if (requestLocalDateTime && String(fresh.notification_datetime || '').slice(0,16) !== requestLocalDateTime.slice(0,16)) {
               throw new Error('Notification Date / Time was not persisted. Requested local time ' + requestLocalDateTime + ' but database returned local time ' + String(fresh.notification_datetime || 'empty') + '.');
             }
+            saveLocalRecords();
             return fresh;
           });
       })
@@ -955,6 +1002,7 @@
       records = records.filter(function (r) { return String(r.id) !== String(id); });
       if (editingId && String(editingId) === String(id)) clearForm();
       render();
+      saveLocalRecords();
     });
   }
 

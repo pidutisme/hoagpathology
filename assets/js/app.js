@@ -9127,19 +9127,57 @@ function exportMonthlySchedulePdfs() {
         if(!token())return Promise.resolve(false);
         if(loading&&refreshPromise)return refreshPromise;
         loading=true;
-        refreshPromise=hoagApiRequest('action',{method:'getOutsourceSamples',args:[token()]}).then(function(result){
-          if(result&&result.ok!==false){
-            /* The API response is the authoritative OUTSOURCE snapshot. Do not merge it
-               with browser cache: merging would resurrect rows that the server has deleted. */
-            rows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+        refreshPromise=(async function(){
+          /* V28: fast first paint. Request only the newest page first, paint it
+             immediately, then hydrate the remaining history in the background.
+             This keeps the server authoritative without making a 5k/10k+ history
+             block the first visible table. */
+          var firstLimit=500, pageSize=1000, firstRows=[];
+          var first=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:firstLimit,offset:0}]});
+          if(!first||first.ok===false)throw new Error(first&&first.error?first.error:'Unable to load outsource records.');
+          firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+          rows=firstRows.slice();
+          normalize();
+          revision+=1;
+          lastUpdatedAt=String(first.updatedAt||'');
+          if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+
+          var complete=!first.hasMore || firstRows.length<firstLimit;
+          var offset=firstLimit;
+          var allRows=firstRows.slice();
+          while(!complete){
+            /* Fetch up to three pages concurrently. The first page is already
+               visible, so these requests only hydrate older history. */
+            var offsets=[offset,offset+pageSize,offset+(pageSize*2)];
+            var batch=await Promise.all(offsets.map(function(pageOffset){
+              return hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:pageOffset}]});
+            }));
+            var stop=false;
+            batch.forEach(function(result){
+              if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
+              var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+              allRows=allRows.concat(pageRows);
+              if(!result.hasMore || pageRows.length<pageSize)stop=true;
+            });
+            rows=allRows.slice();
             normalize();
             revision+=1;
-            lastUpdatedAt=String(result.updatedAt||'');
-            saveLocal();
             if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+            offset+=pageSize*batch.length;
+            complete=stop;
           }
+          rows=allRows.slice();
+          normalize();
+          revision+=1;
+          lastUpdatedAt=allRows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
+          saveLocal();
+          if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
           return true;
-        }).catch(function(error){console.warn('Independent OUTSOURCE refresh failed:',error&&error.message?error.message:error);return false;}).finally(function(){loading=false;refreshPromise=null;});
+        })().catch(function(error){
+          console.warn('Independent OUTSOURCE refresh failed:',error&&error.message?error.message:error);
+          /* Keep whatever was already visible (cache or the fast first page). */
+          return false;
+        }).finally(function(){loading=false;refreshPromise=null;});
         return refreshPromise;
       }
       function initPage(){
@@ -10060,28 +10098,32 @@ function exportMonthlySchedulePdfs() {
       async function loadTransfusionRecords(){
         if(transfusionLoadingPromise)return transfusionLoadingPromise;
         transfusionLoadingPromise=(async function(){
-          /* Keep the first request small enough for fast first paint, then fetch
-             additional pages concurrently. The old implementation requested every
-             page strictly one-by-one, which made large Transfusion histories feel slow. */
+          /* V28: cached rows are painted by open(). On a cold load, paint the
+             newest 500 records immediately, then hydrate older pages in the
+             background in concurrent batches. */
           var rows=[],limit=500;
           var first=await requestTransfusion('GET',{year:'ALL',limit:limit,offset:0});
           rows=rows.concat(Array.isArray(first.records)?first.records:[]);
+          transfusionRows=rows.slice();
+          renderYears(transfusionRows);
+          renderRows();
           var total=Number(first&&first.total||0);
-          var offset=limit, more=!!(first&&first.hasMore);
+          var offset=limit;
+          var more=!!(first&&first.hasMore);
           while(more){
-            var offsets=[offset,offset+limit,offset+(limit*2)].filter(function(pageOffset){
-              return !total || pageOffset < total;
-            });
+            var offsets=[offset,offset+limit,offset+(limit*2)].filter(function(pageOffset){return !total||pageOffset<total;});
             if(!offsets.length)break;
-            var batch=await Promise.all(offsets.map(function(pageOffset){
-              return requestTransfusion('GET',{year:'ALL',limit:limit,offset:pageOffset});
-            }));
+            var batch=await Promise.all(offsets.map(function(pageOffset){return requestTransfusion('GET',{year:'ALL',limit:limit,offset:pageOffset});}));
+            var stop=false;
             batch.forEach(function(result){
               rows=rows.concat(Array.isArray(result&&result.records)?result.records:[]);
+              if(!result||!result.hasMore)stop=true;
             });
+            transfusionRows=rows.slice();
+            renderYears(transfusionRows);
+            renderRows();
             offset+=limit*batch.length;
-            /* The highest requested page tells us whether another page exists. */
-            more=!!(batch[batch.length-1]&&batch[batch.length-1].hasMore);
+            more=!stop;
           }
           transfusionRows=rows;
           saveTransfusionCache();
@@ -10089,11 +10131,7 @@ function exportMonthlySchedulePdfs() {
           renderRows();
           return rows;
         })();
-        try{
-          return await transfusionLoadingPromise;
-        }finally{
-          transfusionLoadingPromise=null;
-        }
+        try{return await transfusionLoadingPromise;}finally{transfusionLoadingPromise=null;}
       }
       function records(){return transfusionRows;}
       function transfusionRecordPayload(row, changes){

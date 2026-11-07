@@ -180,19 +180,17 @@ async function saveInventoryRoot(inventory, userId, expectedUpdatedAt, prefetche
   return { committed: true, current: next };
 }
 
-async function getOutsourceRows() {
-  const pageSize = 1000;
-  const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from('outsource_records')
-      .select('id, data, created_at, updated_at')
-      .order('created_at', { ascending: false })
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
+async function getOutsourceRows(limit = null, offset = 0) {
+  const pageSize = Math.min(Math.max(Number(limit) || 1000, 1), 1000);
+  const from = Math.max(Number(offset) || 0, 0);
+  const to = from + pageSize - 1;
+  const { data, error } = await supabase
+    .from('outsource_records')
+    .select('id, data, created_at, updated_at')
+    .order('created_at', { ascending: false })
+    .range(from, to);
+  if (error) throw error;
+  const rows = data || [];
   return rows.map(row => {
     const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
     if (!item.id) item.id = row.id;
@@ -202,19 +200,19 @@ async function getOutsourceRows() {
   });
 }
 
-async function getTransfusionRows() {
-  const pageSize = 1000;
-  const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from('transfusion_records')
-      .select('id, data, created_at, updated_at')
-      .order('created_at', { ascending: false })
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
+async function getTransfusionRows(limit = null, offset = 0) {
+  const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
+  const pageSize = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
+  const from = Math.max(Number(offset) || 0, 0);
+  const query = supabase
+    .from('transfusion_records')
+    .select('id, data, created_at, updated_at', hasPaging ? { count: 'exact' } : undefined)
+    .order('created_at', { ascending: false });
+  const { data: firstData, error, count } = hasPaging
+    ? await query.range(from, from + pageSize - 1)
+    : await query.range(from, from + pageSize - 1);
+  if (error) throw error;
+  const rows = firstData || [];
   return rows.map(row => {
     const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
     if (!item.id) item.id = row.id;
@@ -240,106 +238,40 @@ async function deleteOutsourceRow(id) {
 }
 
 
-async function getNotificationRows() {
-  const pageSize = 1000;
-  const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from('notification_records')
-      .select('*')
-      .order('notification_datetime', { ascending: false })
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
-  return rows.map(row => ({
-    id: row.id,
-    notification_datetime: row.notification_datetime,
-    barcode: row.barcode || '',
-    patient_name: row.patient_name || '',
-    patient_id: row.patient_id || '',
-    sex: row.sex || '',
-    age: row.age || '',
-    unit: row.unit || '',
-    discipline: row.discipline || '',
-    test_name: row.test_name || '',
-    critical_limit: row.critical_limit || '',
-    result: row.result || '',
-    flag: row.flag || '',
-    staff: row.staff || '',
-    inform_to: row.inform_to || '',
-    status: row.status || '',
-    notes: row.notes || '',
-    created_at: row.created_at,
-    updated_at: row.updated_at
-  }));
-}
-
-async function upsertNotificationRow(record, existing = null, userId = '') {
-  const now = iso();
-  const id = clean(record?.id, 160);
-  if (!id) fail('Notification record ID is required.');
-  const allowed = [
-    'notification_datetime','barcode','patient_name','patient_id','sex','age','unit',
-    'discipline','test_name','critical_limit','result','flag','staff','inform_to','status','notes'
-  ];
-  const next = {};
-  allowed.forEach(key => { next[key] = clean(record?.[key], 2000); });
-  next.status = clean(record?.status || 'INFORMED', 40) || 'INFORMED';
-  const createdAt = existing?.created_at || now;
-  let data;
-  let error;
-
-  // Use an explicit UPDATE for existing records instead of relying on an
-  // upsert conflict path. This makes notification edits deterministic and
-  // guarantees that notification_datetime is written to the existing row.
-  if (existing) {
-    ({ data, error } = await supabase
-      .from('notification_records')
-      .update({ ...next, updated_at: now })
-      .eq('id', id)
-      .select('*')
-      .single());
-  } else {
-    ({ data, error } = await supabase
-      .from('notification_records')
-      .insert({ id, ...next, created_at: createdAt, updated_at: now })
-      .select('*')
-      .single());
-  }
+async function getNotificationRows(limit = null, offset = 0) {
+  const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
+  const pageSize = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
+  const from = Math.max(Number(offset) || 0, 0);
+  const query = supabase
+    .from('notification_records')
+    .select('*', hasPaging ? { count: 'exact' } : undefined)
+    .order('notification_datetime', { ascending: false });
+  const { data, error, count } = await query.range(from, from + pageSize - 1);
   if (error) throw error;
-  if (!data || String(data.id) !== id) fail('Notification record was not persisted correctly.');
-  // Re-read the exact row after UPDATE/INSERT. This guards against returning
-  // an in-memory payload that differs from what Supabase actually stored.
-  const { data: verified, error: verifyError } = await supabase
-    .from('notification_records').select('*').eq('id', id).maybeSingle();
-  if (verifyError) throw verifyError;
-  if (!verified || String(verified.id) !== id) fail('Notification record could not be verified after save.', 500);
-  if (String(verified.notification_datetime || '') !== String(data.notification_datetime || '')) {
-    // Return the database value; the client will render the verified value.
-    data = verified;
-  }
+  const rows = data || [];
   return {
-    id: data.id,
-    notification_datetime: data.notification_datetime,
-    barcode: data.barcode || '',
-    patient_name: data.patient_name || '',
-    patient_id: data.patient_id || '',
-    sex: data.sex || '',
-    age: data.age || '',
-    unit: data.unit || '',
-    discipline: data.discipline || '',
-    test_name: data.test_name || '',
-    critical_limit: data.critical_limit || '',
-    result: data.result || '',
-    flag: data.flag || '',
-    staff: data.staff || '',
-    inform_to: data.inform_to || '',
-    status: data.status || '',
-    notes: data.notes || '',
-    created_at: data.created_at,
-    updated_at: data.updated_at
+    rows: rows.map(row => ({
+      id: row.id,
+      notification_datetime: row.notification_datetime,
+      barcode: row.barcode || '',
+      patient_name: row.patient_name || '',
+      patient_id: row.patient_id || '',
+      sex: row.sex || '',
+      age: row.age || '',
+      unit: row.unit || '',
+      discipline: row.discipline || '',
+      test_name: row.test_name || '',
+      critical_limit: row.critical_limit || '',
+      result: row.result || '',
+      flag: row.flag || '',
+      staff: row.staff || '',
+      inform_to: row.inform_to || '',
+      status: row.status || '',
+      notes: row.notes || '',
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    })),
+    count: count == null ? rows.length : count
   };
 }
 
@@ -535,13 +467,28 @@ async function dispatch(db, method, a, req) {
 
     case 'getOutsourceSamples': {
       const s = await requireSession(db, tokenAt(0));
-      const rows = await getOutsourceRows();
+      const opts = a[1] && typeof a[1] === 'object' ? a[1] : {};
+      const requestedLimit = Number(opts.limit);
+      const hasPaging = Number.isFinite(requestedLimit) && requestedLimit > 0;
+      const limit = hasPaging ? Math.min(Math.max(Math.floor(requestedLimit), 1), 1000) : null;
+      const offset = hasPaging ? Math.max(Math.floor(Number(opts.offset) || 0), 0) : 0;
+      const rows = await getOutsourceRows(limit, offset);
       const activeRows = rows.filter(x => !x.deletedAt);
       const latestUpdatedAt = activeRows.reduce((max, x) => {
         const stamp = clean(x?.updatedAt || x?.createdAt || '');
         return stamp > max ? stamp : max;
       }, '');
-      return { ok: true, outsourceSamples: activeRows, updatedAt: latestUpdatedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+      return {
+        ok: true,
+        outsourceSamples: activeRows,
+        updatedAt: latestUpdatedAt,
+        offset,
+        limit: limit || activeRows.length,
+        hasMore: hasPaging ? rows.length >= limit : false,
+        version: VERSION,
+        userId: s.userId,
+        storageSource: 'supabase'
+      };
     }
 
     case 'saveOutsourceSamples': fail('Bulk outsource replacement is disabled. Use record-level create, update, or delete actions.', 409);
@@ -602,8 +549,13 @@ async function dispatch(db, method, a, req) {
 
     case 'getNotificationRecords': {
       const s = await requireSession(db, tokenAt(0));
-      const records = await getNotificationRows();
-      return { ok: true, records, count: records.length, version: VERSION, userId: s.userId, userRole: String(s.role || '').toUpperCase(), isAdmin: String(s.role || '').toUpperCase() === 'ADMIN' || s.user?.is_super_admin === true, storageSource: 'supabase' };
+      const opts = a[1] && typeof a[1] === 'object' ? a[1] : {};
+      const requestedLimit = Number(opts.limit);
+      const hasPaging = Number.isFinite(requestedLimit) && requestedLimit > 0;
+      const limit = hasPaging ? Math.min(Math.max(Math.floor(requestedLimit), 1), 1000) : null;
+      const offset = hasPaging ? Math.max(Math.floor(Number(opts.offset) || 0), 0) : 0;
+      const result = await getNotificationRows(limit, offset);
+      return { ok: true, records: result.rows, count: result.count, offset, limit: limit || result.rows.length, hasMore: hasPaging ? result.rows.length >= limit : false, version: VERSION, userId: s.userId, userRole: String(s.role || '').toUpperCase(), isAdmin: String(s.role || '').toUpperCase() === 'ADMIN' || s.user?.is_super_admin === true, storageSource: 'supabase' };
     }
 
     case 'upsertNotificationRecord': {
@@ -660,19 +612,19 @@ async function dispatch(db, method, a, req) {
       const year = clean(opts.year || 'ALL', 10).toUpperCase();
       const limit = Math.min(Math.max(Number(opts.limit) || 500, 1), 1000);
       const offset = Math.max(Number(opts.offset) || 0, 0);
-      const allRows = await getTransfusionRows();
-      const filtered = allRows
+      const rows = await getTransfusionRows(limit, offset);
+      const filtered = rows
         .filter(r => r && !r.deletedAt)
         .filter(r => year === 'ALL' || !year || String(r.date || '').slice(0, 4) === year)
         .sort((x, y) => String(y.date || '').localeCompare(String(x.date || '')) || String(y.updatedAt || '').localeCompare(String(x.updatedAt || '')));
-      const records = filtered.slice(offset, offset + limit);
+      const records = filtered.slice(0, limit);
       return {
         ok: true,
         records,
-        total: filtered.length,
+        total: count == null ? records.length : count,
         offset,
         limit,
-        hasMore: offset + limit < filtered.length,
+        hasMore: rows.length >= limit,
         version: VERSION,
         userId: s.userId
       };
