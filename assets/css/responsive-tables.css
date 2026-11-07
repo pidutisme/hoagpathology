@@ -1116,3 +1116,95 @@ table.rt-responsive-table .notification-pill,
     min-width: 56px !important;
   }
 }
+
+/* =========================================================
+   V18 — UNIFORM LEFT ALIGNMENT FOR ALL DATA TABLES
+   Keep every header and data cell left-aligned. Action icons
+   also start from the left edge of their cell for consistency.
+   ========================================================= */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table th,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td,
+#notification .notification-table.rt-responsive-table th,
+#notification .notification-table.rt-responsive-table td {
+  text-align: left !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td.patient,
+#notification .notification-table.rt-responsive-table td.patient {
+  text-align: left !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell,
+#notification .notification-table.rt-responsive-table .notification-actions,
+#notification .notification-table.rt-responsive-table .notification-actions-cell {
+  justify-content: flex-start !important;
+  align-items: center !important;
+  text-align: left !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table .outsource-result-pill,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table .transfusion-status-pill,
+#notification .notification-table.rt-responsive-table .notification-pill {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+/* =========================================================
+   V19 — CENTER HEADERS, LEFT-ALIGN ALL DATA
+   Headers remain centered for visual hierarchy. Every body
+   cell is left-aligned across Outsource, Transfusion and
+   Notification tables.
+   ========================================================= */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table th,
+#notification .notification-table.rt-responsive-table th {
+  text-align: center !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td,
+#notification .notification-table.rt-responsive-table td {
+  text-align: left !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td.patient,
+#notification .notification-table.rt-responsive-table td.patient,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell,
+#notification .notification-table.rt-responsive-table .notification-actions,
+#notification .notification-table.rt-responsive-table .notification-actions-cell {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td > *,
+#notification .notification-table.rt-responsive-table td > * {
+  text-align: left !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td .outsource-result-pill,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td .transfusion-status-pill,
+#notification .notification-table.rt-responsive-table td .notification-pill {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+/* =========================================================
+   V20 — CENTER ACTIONS ONLY
+   Table headers stay centered; normal data cells stay left.
+   Action columns are centered consistently for all tables.
+   ========================================================= */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell,
+#notification .notification-table.rt-responsive-table .notification-actions,
+#notification .notification-table.rt-responsive-table .notification-actions-cell {
+  text-align: center !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions > *,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell > *,
+#notification .notification-table.rt-responsive-table .notification-actions > *,
+#notification .notification-table.rt-responsive-table .notification-actions-cell > * {
+  text-align: center !important;
+}
