@@ -4336,9 +4336,9 @@ hoagApiRequest('logout', {
           displayAge=r._displayAge;
         }else if(r.idIc){
           var icDetails=calculateMalaysianIcDetails(r.idIc, r.sampleDate?new Date(String(r.sampleDate)+'T12:00:00'):new Date());
-          if(icDetails){
-            if(!displaySex)displaySex=icDetails.sex;
-            if(!displayAge)displayAge=String(icDetails.age);
+          if(icDetails&&icDetails.special){
+            displaySex=icDetails.sex;
+            displayAge=icDetails.age;
           }
           r._displaySex=displaySex;
           r._displayAge=displayAge;
@@ -9106,15 +9106,6 @@ function exportMonthlySchedulePdfs() {
           if(canonicalLab&&canonicalLab!==String(r.lab||'')){r.lab=canonicalLab;dirty=true;}
           if(canonicalReferral&&canonicalReferral!==String(r.referral||'')){r.referral=canonicalReferral;dirty=true;}
           if(canonicalUnit&&canonicalUnit!==String(r.unit||'')){r.unit=canonicalUnit;dirty=true;}
-          // Backfill historical imported rows that had blank Sex/Age. The
-          // Malaysian NRIC is the source of truth; use Sample Date for age.
-          if(r.idIc && ((!String(r.sex||'').trim()) || (!String(r.age||'').trim()))){
-            var icDetails=calculateMalaysianIcDetails(r.idIc,r.sampleDate?new Date(String(r.sampleDate)+'T12:00:00'):new Date());
-            if(icDetails){
-              if(!String(r.sex||'').trim()){r.sex=icDetails.sex;dirty=true;}
-              if(!String(r.age||'').trim()){r.age=String(icDetails.age);dirty=true;}
-            }
-          }
           if(dirty)changed.push(clone(r));
         });
         return changed;
@@ -9141,14 +9132,14 @@ function exportMonthlySchedulePdfs() {
         if(loading&&refreshPromise)return refreshPromise;
         loading=true;
         refreshPromise=(async function(){
-          /* V35: safe fast-first-paint. Show only the newest 100 records first,
-             then hydrate older history sequentially in the background. Never
-             clear an already visible/cache-backed table because a later page
-             request fails. */
-          var firstLimit=100, pageSize=500;
+          /* V28: fast first paint. Request only the newest page first, paint it
+             immediately, then hydrate the remaining history in the background.
+             This keeps the server authoritative without making a 5k/10k+ history
+             block the first visible table. */
+          var firstLimit=500, pageSize=1000, firstRows=[];
           var first=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:firstLimit,offset:0}]});
           if(!first||first.ok===false)throw new Error(first&&first.error?first.error:'Unable to load outsource records.');
-          var firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+          firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
           rows=firstRows.slice();
           normalize();
           revision+=1;
@@ -9159,32 +9150,25 @@ function exportMonthlySchedulePdfs() {
           var offset=firstLimit;
           var allRows=firstRows.slice();
           while(!complete){
-            var result=null;
-            var attempts=0;
-            while(attempts<3){
-              try{
-                result=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:offset}]});
-                if(result&&result.ok!==false)break;
-              }catch(e){
-                result=null;
-              }
-              attempts+=1;
-              if(attempts<3)await new Promise(function(resolve){setTimeout(resolve,350*attempts);});
-            }
-            if(!result||result.ok===false){
-              console.warn('Outsource background page failed at offset '+offset+'; keeping loaded rows.');
-              break;
-            }
-            var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-            if(pageRows.length){
+            /* Fetch up to three pages concurrently. The first page is already
+               visible, so these requests only hydrate older history. */
+            var offsets=[offset,offset+pageSize,offset+(pageSize*2)];
+            var batch=await Promise.all(offsets.map(function(pageOffset){
+              return hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:pageOffset}]});
+            }));
+            var stop=false;
+            batch.forEach(function(result){
+              if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
+              var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
               allRows=allRows.concat(pageRows);
-              rows=allRows.slice();
-              normalize();
-              revision+=1;
-              if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
-            }
-            offset+=pageSize;
-            complete=!result.hasMore || pageRows.length<pageSize;
+              if(!result.hasMore || pageRows.length<pageSize)stop=true;
+            });
+            rows=allRows.slice();
+            normalize();
+            revision+=1;
+            if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+            offset+=pageSize*batch.length;
+            complete=stop;
           }
           rows=allRows.slice();
           normalize();
@@ -9195,7 +9179,7 @@ function exportMonthlySchedulePdfs() {
           return true;
         })().catch(function(error){
           console.warn('Independent OUTSOURCE refresh failed:',error&&error.message?error.message:error);
-          /* Critical: do not replace existing cache/table rows on failure. */
+          /* Keep whatever was already visible (cache or the fast first page). */
           return false;
         }).finally(function(){loading=false;refreshPromise=null;});
         return refreshPromise;
@@ -10080,7 +10064,7 @@ function exportMonthlySchedulePdfs() {
       var transfusionRows = [];
       var transfusionCacheKey = 'labAppTransfusionV1';
       function saveTransfusionCache(){try{safeStorageSet(transfusionCacheKey,JSON.stringify({rows:transfusionRows,at:new Date().toISOString()}));}catch(e){}}
-      function loadTransfusionCache(){var raw=safeStorageGet(transfusionCacheKey);if(!raw)return false;var parsed=safeParse(raw);if(!parsed||!Array.isArray(parsed.rows))return false;transfusionRows=parsed.rows.map(normalizeImportedTransfusionRow);return true;}
+      function loadTransfusionCache(){var raw=safeStorageGet(transfusionCacheKey);if(!raw)return false;var parsed=safeParse(raw);if(!parsed||!Array.isArray(parsed.rows))return false;transfusionRows=parsed.rows;return true;}
       function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
       function id(){return 'transfusion-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);}
       function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -10098,15 +10082,6 @@ function exportMonthlySchedulePdfs() {
         if(b>now) return {sex:'',age:''};
         if(new Date(now.getFullYear(),now.getMonth(),now.getDate())<new Date(now.getFullYear(),b.getMonth(),b.getDate()))age--;
         return {sex:sexDigit%2?'L':'P',age:String(age)};
-      }
-      function normalizeImportedTransfusionRow(row){
-        row=row&&typeof row==='object'?row:{};
-        var next=Object.assign({},row);
-        var ref=String(next.date||'').trim();
-        var d=calcIc(next.idIc||next.patientId||next.ic||'',ref);
-        if(!String(next.sex||'').trim() && d.sex) next.sex=d.sex;
-        if(!String(next.age||'').trim() && d.age) next.age=d.age;
-        return next;
       }
       function bindIc(){var el=document.getElementById('trIdIc');if(!el||el.dataset.icBound==='1')return;el.dataset.icBound='1';var apply=function(){var d=calcIc(el.value,document.getElementById('trDate')&&document.getElementById('trDate').value);var sex=document.getElementById('trSex'),age=document.getElementById('trAge');if(sex)sex.value=d.sex; if(age)age.value=d.age;};el.addEventListener('input',apply);el.addEventListener('blur',apply);}
       async function requestTransfusion(method, values){
@@ -10132,7 +10107,7 @@ function exportMonthlySchedulePdfs() {
              background in concurrent batches. */
           var rows=[],limit=500;
           var first=await requestTransfusion('GET',{year:'ALL',limit:limit,offset:0});
-          rows=rows.concat(Array.isArray(first.records)?first.records.map(normalizeImportedTransfusionRow):[]);
+          rows=rows.concat(Array.isArray(first.records)?first.records:[]);
           transfusionRows=rows.slice();
           renderYears(transfusionRows);
           renderRows();
@@ -10145,7 +10120,7 @@ function exportMonthlySchedulePdfs() {
             var batch=await Promise.all(offsets.map(function(pageOffset){return requestTransfusion('GET',{year:'ALL',limit:limit,offset:pageOffset});}));
             var stop=false;
             batch.forEach(function(result){
-              rows=rows.concat(Array.isArray(result&&result.records)?result.records.map(normalizeImportedTransfusionRow):[]);
+              rows=rows.concat(Array.isArray(result&&result.records)?result.records:[]);
               if(!result||!result.hasMore)stop=true;
             });
             transfusionRows=rows.slice();
