@@ -546,6 +546,10 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* Responsive behaviour must follow the actual card width, not the browser
+     viewport. This matters in Electron/Windows when the app is resized or
+     rendered with display scaling/zoom. */
+  container: notification-record-card / inline-size;
 }
 
 #notification .notification-summary {
@@ -821,6 +825,132 @@
 
   #notification .notification-table td:last-child {
     border-bottom: 0;
+  }
+}
+
+/* Container-query fallback for real card width.
+   The notification card can be much narrower than window.innerWidth because
+   of the two-column workspace, OS display scaling, Electron zoom, or an
+   embedded/resized application window. Viewport media queries alone therefore
+   cannot guarantee that the table will switch before its columns are clipped. */
+@supports (container-type: inline-size) {
+  @container notification-record-card (max-width: 1100px) {
+    #notification .notification-table-wrap {
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    #notification .notification-table {
+      width: 100%;
+      min-width: 0;
+      display: block;
+      font-size: 11px;
+    }
+
+    #notification .notification-table thead {
+      display: none;
+    }
+
+    #notification .notification-table tbody {
+      display: grid;
+      width: 100%;
+      gap: 8px;
+    }
+
+    #notification .notification-table tbody tr {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--year-page-card-border);
+      border-radius: 14px;
+      background: var(--neo-surface-soft);
+      box-shadow: var(--shadow-soft);
+    }
+
+    #notification .notification-table tbody tr:hover {
+      background: var(--neo-surface-soft);
+    }
+
+    #notification .notification-table td {
+      min-width: 0;
+      height: auto;
+      min-height: 40px;
+      padding: 8px 10px;
+      display: grid;
+      grid-template-columns: minmax(72px, 0.42fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    #notification .notification-table td:nth-child(odd) {
+      border-right: 1px solid var(--line);
+    }
+
+    #notification .notification-table td:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    #notification .notification-table td::before {
+      color: var(--muted);
+      font-size: 8.5px;
+      font-weight: 950;
+      letter-spacing: 0.05em;
+      line-height: 1.15;
+      text-transform: uppercase;
+    }
+
+    #notification .notification-table td:nth-child(1)::before { content: 'Date / Time'; }
+    #notification .notification-table td:nth-child(2)::before { content: 'Patient'; }
+    #notification .notification-table td:nth-child(3)::before { content: 'ID / IC'; }
+    #notification .notification-table td:nth-child(4)::before { content: 'Unit'; }
+    #notification .notification-table td:nth-child(5)::before { content: 'Discipline'; }
+    #notification .notification-table td:nth-child(6)::before { content: 'Test'; }
+    #notification .notification-table td:nth-child(7)::before { content: 'Result'; }
+    #notification .notification-table td:nth-child(8)::before { content: 'Flag'; }
+    #notification .notification-table td:nth-child(9)::before { content: 'Status'; }
+    #notification .notification-table td:nth-child(10)::before { content: 'Action'; }
+
+    #notification .notification-table td .notification-pill {
+      justify-self: start;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #notification .notification-table td:nth-child(10) {
+      grid-column: 1 / -1;
+      border-right: 0;
+    }
+
+    #notification .notification-table td:nth-child(10) .notification-actions {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+  }
+
+  @container notification-record-card (max-width: 620px) {
+    #notification .notification-table tbody tr {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    #notification .notification-table td,
+    #notification .notification-table td:nth-child(odd),
+    #notification .notification-table td:nth-last-child(-n + 2) {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #notification .notification-table td:last-child {
+      border-bottom: 0;
+    }
   }
 }
 

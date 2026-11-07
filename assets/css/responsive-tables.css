@@ -1,0 +1,287 @@
+/* =========================================================
+   UNIVERSAL RESPONSIVE TABLE WRAPPING
+   ---------------------------------------------------------
+   IMPORTANT: tables NEVER turn into cards and NEVER hide columns.
+   When the available width becomes small, the table remains a real table;
+   cells wrap their content and the row automatically grows vertically.
+
+   Example:
+     JAPIDI NOIN  | LEPTOSPIROSIS MICROAGGLUTINATION TEST
+   becomes:
+     JAPIDI        | LEPTOSPIROSIS
+     NOIN          | MICROAGGLUTINATION
+                   | TEST
+   while both values remain inside their original columns.
+   ========================================================= */
+
+/* Let the browser size the table to its actual container. */
+.rt-responsive-table,
+table.rt-responsive-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  table-layout: fixed !important;
+  border-collapse: separate !important;
+}
+
+/* Every cell is allowed to shrink and wrap instead of pushing the table wider. */
+.rt-responsive-table th,
+.rt-responsive-table td,
+table.rt-responsive-table th,
+table.rt-responsive-table td {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  hyphens: auto !important;
+  vertical-align: middle !important;
+}
+
+/* Keep header text in the same columns; it may become multiple lines. */
+.rt-responsive-table th,
+table.rt-responsive-table th {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  line-height: 1.15 !important;
+}
+
+/* Long content inside buttons, pills, links, spans, flex/grid wrappers, etc. */
+.rt-responsive-table td > *,
+table.rt-responsive-table td > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.rt-responsive-table td a,
+.rt-responsive-table td button,
+.rt-responsive-table td span,
+.rt-responsive-table td div,
+.rt-responsive-table td p,
+table.rt-responsive-table td a,
+table.rt-responsive-table td button,
+table.rt-responsive-table td span,
+table.rt-responsive-table td div,
+table.rt-responsive-table td p {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+/* The table wrapper itself must never create a hidden right-hand data area. */
+.rt-responsive-table-wrap,
+[data-rt-container] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/*
+ * Narrow containers: keep the exact same table structure.
+ * Only typography/padding are reduced so all columns remain visible.
+ * Row height is intentionally AUTO — wrapping creates extra lines/height.
+ */
+@container (max-width: 1100px) {
+  .rt-responsive-table,
+  table.rt-responsive-table {
+    display: table !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .rt-responsive-table > thead,
+  .rt-responsive-table > tbody,
+  .rt-responsive-table > tfoot,
+  table.rt-responsive-table > thead,
+  table.rt-responsive-table > tbody,
+  table.rt-responsive-table > tfoot {
+    display: table-header-group !important;
+  }
+
+  .rt-responsive-table > tbody,
+  table.rt-responsive-table > tbody {
+    display: table-row-group !important;
+  }
+
+  .rt-responsive-table > tfoot,
+  table.rt-responsive-table > tfoot {
+    display: table-footer-group !important;
+  }
+
+  .rt-responsive-table > thead > tr,
+  .rt-responsive-table > tbody > tr,
+  .rt-responsive-table > tfoot > tr,
+  table.rt-responsive-table > thead > tr,
+  table.rt-responsive-table > tbody > tr,
+  table.rt-responsive-table > tfoot > tr {
+    display: table-row !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .rt-responsive-table > thead > tr > th,
+  .rt-responsive-table > tbody > tr > td,
+  .rt-responsive-table > tfoot > tr > td,
+  table.rt-responsive-table > thead > tr > th,
+  table.rt-responsive-table > tbody > tr > td,
+  table.rt-responsive-table > tfoot > tr > td {
+    display: table-cell !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 6px 5px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+
+  .rt-responsive-table td::before,
+  table.rt-responsive-table td::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  /* Colspan/spanning rows remain ordinary table rows. */
+  .rt-responsive-table .rt-spanning-row,
+  .rt-responsive-table .rt-spanning-row > td,
+  table.rt-responsive-table .rt-spanning-row,
+  table.rt-responsive-table .rt-spanning-row > td {
+    display: table-row !important;
+  }
+
+  .rt-responsive-table .rt-spanning-row > td,
+  table.rt-responsive-table .rt-spanning-row > td {
+    display: table-cell !important;
+  }
+}
+
+/* Smaller monitor: give cells a little more room for text by tightening chrome. */
+@container (max-width: 800px) {
+  .rt-responsive-table,
+  table.rt-responsive-table {
+    font-size: 10px !important;
+  }
+
+  .rt-responsive-table th,
+  .rt-responsive-table td,
+  table.rt-responsive-table th,
+  table.rt-responsive-table td {
+    padding: 5px 4px !important;
+    line-height: 1.2 !important;
+  }
+}
+
+/* Very small window: still the SAME columns, just compact. */
+@container (max-width: 620px) {
+  .rt-responsive-table,
+  table.rt-responsive-table {
+    font-size: 9px !important;
+  }
+
+  .rt-responsive-table th,
+  .rt-responsive-table td,
+  table.rt-responsive-table th,
+  table.rt-responsive-table td {
+    padding: 4px 3px !important;
+    line-height: 1.18 !important;
+  }
+}
+
+/*
+ * Notification had older card/stack rules with higher selector specificity.
+ * Explicitly restore its real table structure so it follows the universal
+ * wrapping behaviour above instead of becoming a label/value card.
+ */
+@media (max-width: 1100px) {
+  #notification .notification-table.rt-responsive-table {
+    display: table !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  #notification .notification-table.rt-responsive-table thead {
+    display: table-header-group !important;
+  }
+
+  #notification .notification-table.rt-responsive-table tbody {
+    display: table-row-group !important;
+  }
+
+  #notification .notification-table.rt-responsive-table tbody tr {
+    display: table-row !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  #notification .notification-table.rt-responsive-table th,
+  #notification .notification-table.rt-responsive-table td {
+    display: table-cell !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 6px 5px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+
+  #notification .notification-table.rt-responsive-table td::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  #notification .notification-table.rt-responsive-table td:nth-child(10) {
+    grid-column: auto !important;
+  }
+
+  #notification .notification-table.rt-responsive-table td .notification-pill,
+  #notification .notification-table.rt-responsive-table td .notification-actions {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    white-space: normal !important;
+  }
+}
+
+/* Viewport fallback for browsers without usable container queries. */
+@media (max-width: 1100px) {
+  .rt-responsive-table,
+  table.rt-responsive-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .rt-responsive-table th,
+  .rt-responsive-table td,
+  table.rt-responsive-table th,
+  table.rt-responsive-table td {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+}
