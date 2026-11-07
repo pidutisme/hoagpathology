@@ -1,8 +1,9 @@
 /*
  * UNIVERSAL RESPONSIVE DATA TABLES
- * Converts every data table into a stacked record/card layout when the
- * table's ACTUAL container is too narrow. Column labels are copied from
- * <th> into each <td>, so dynamically-rendered tables are covered too.
+ * Keeps every data table as a real table at all widths. When the actual
+ * container is narrow, CSS makes cells wrap and rows grow vertically.
+ * Column labels are copied from <th> into each <td> for compatibility, but
+ * the responsive layout never switches to a label/value card.
  */
 (function () {
   'use strict';
