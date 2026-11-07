@@ -244,7 +244,7 @@ async function getNotificationRows(limit = null, offset = 0) {
   const from = Math.max(Number(offset) || 0, 0);
   const query = supabase
     .from('notification_records')
-    .select('*', hasPaging ? { count: 'exact' } : undefined)
+    .select('*')
     .order('notification_datetime', { ascending: false });
   const { data, error, count } = await query.range(from, from + pageSize - 1);
   if (error) throw error;

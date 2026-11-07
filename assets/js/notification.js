@@ -906,7 +906,7 @@
     var hadCache = loadLocalRecords();
     recordsHydrated = hadCache;
     if (hadCache) render();
-    var firstLimit = 500, offset = 0, all = [];
+    var firstLimit = 100, offset = 0, all = [];
     notificationApi('getNotificationRecords', [null, { limit: firstLimit, offset: 0 }])
       .then(function (result) {
         notificationUserRole = String(result.userRole || '').toUpperCase();
