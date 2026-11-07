@@ -867,3 +867,114 @@ table.rt-responsive-table .notification-pill {
     max-height: 22px !important;
   }
 }
+
+/* =========================================================
+   V8 — DATA STATUS/TYPE TEXT ONLY
+   ---------------------------------------------------------
+   Colored pills/ovals are removed from table data cells.
+   Keep the semantic color on the text only so narrow tables
+   never overlap because a badge has a fixed/padded shape.
+   Action icons remain unchanged.
+   ========================================================= */
+.rt-responsive-table .outsource-result-pill,
+.rt-responsive-table .transfusion-status-pill,
+.rt-responsive-table .notification-pill,
+table.rt-responsive-table .outsource-result-pill,
+table.rt-responsive-table .transfusion-status-pill,
+table.rt-responsive-table .notification-pill,
+#notification .notification-table .notification-pill {
+  display: inline !important;
+  align-items: initial !important;
+  justify-content: initial !important;
+  min-height: 0 !important;
+  height: auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+  text-overflow: clip !important;
+  vertical-align: baseline !important;
+}
+
+/* Notification semantic colors remain as font colors only. */
+#notification .notification-pill.bio { color: var(--primary) !important; }
+#notification .notification-pill.hema { color: var(--primary-2) !important; }
+#notification .notification-pill.micro { color: var(--ok) !important; }
+#notification .notification-pill.flag { color: var(--danger) !important; }
+#notification .notification-pill.status,
+#notification .notification-pill.status.completed { color: var(--ok) !important; }
+#notification .notification-pill.status.pending { color: var(--warning) !important; }
+
+/* Outsource / transfusion semantic colors remain as font colors only. */
+.outsource-result-pill.done,
+.outsource-result-pill.status-done,
+.outsource-result.status-done .outsource-result-pill { color: var(--ok) !important; }
+.outsource-result-pill.pending,
+.outsource-result-pill.status-pending,
+.outsource-result.status-pending .outsource-result-pill { color: var(--warning) !important; }
+.outsource-result-pill.reject,
+.outsource-result-pill.status-reject,
+.outsource-result.status-reject .outsource-result-pill { color: var(--danger) !important; }
+
+/* =========================================================
+   V9 — FINAL SEMANTIC TABLE TEXT COLORS
+   ---------------------------------------------------------
+   Notification:
+     - Discipline is ALWAYS neutral text (no semantic color).
+     - Only Result, Flag and INFORMED status are colored.
+   Outsource / Transfusion:
+     - Result/status remain colored text only (no pills/ovals).
+   ========================================================= */
+#notification .notification-table.rt-responsive-table td:nth-child(5) .notification-pill,
+#notification .notification-table.rt-responsive-table .notification-pill.bio,
+#notification .notification-table.rt-responsive-table .notification-pill.hema,
+#notification .notification-table.rt-responsive-table .notification-pill.micro {
+  color: var(--text) !important;
+  font-weight: 800 !important;
+}
+
+#notification .notification-table.rt-responsive-table td.result,
+#notification .notification-table.rt-responsive-table td.result * {
+  color: var(--primary) !important;
+  font-weight: 900 !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-pill.flag {
+  color: var(--danger) !important;
+  font-weight: 900 !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-pill.status {
+  color: var(--text) !important;
+  font-weight: 900 !important;
+}
+
+#notification .notification-table.rt-responsive-table .notification-pill.status.informed,
+#notification .notification-table.rt-responsive-table .notification-pill.status.completed {
+  color: var(--ok) !important;
+}
+
+/* Keep all table status/result values as text, never colored ovals. */
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  .outsource-table.rt-responsive-table .outsource-result-pill {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  display: inline !important;
+  white-space: nowrap !important;
+}
