@@ -2146,22 +2146,12 @@
       }
 
       function sendPageCloseLogout_() {
-        if (pageLifecycleLogoutSent || !hasTabAuthenticated_()) return;
-        /* Refresh/reload must retain the current session. A genuine tab/app close
-         * is a non-reload unload and revokes the server session. */
-        if (getNavigationType_() === 'reload') return;
-        pageLifecycleLogoutSent = true;
-        clearTabAuthenticated_();
-        try {
-          fetch('/api/logout', {
-            method: 'POST',
-            credentials: 'include',
-            cache: 'no-store',
-            keepalive: true,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientInfo: { page: 'page-close', reason: 'pagehide' } })
-          }).catch(function () {});
-        } catch (error) {}
+        /* IMPORTANT: Never revoke the server session from pagehide/beforeunload.
+         * Browsers fire these events for reloads, navigations, BFCache transitions,
+         * renderer restarts and some desktop/Electron lifecycle events. Treating
+         * pagehide as a real logout is what makes a refresh unexpectedly return to
+         * the login screen. Explicit logout() is the only client-side logout path. */
+        return;
       }
 
       function bindPageLifecycle_() {
@@ -2761,17 +2751,21 @@
          * HttpOnly cookie is being checked. The server response is the only
          * authoritative source for the current user and role. */
         if (active) {
-          document.body.classList.add('auth-locked');
+          /* Keep the current application shell visible during refresh. It stays
+           * non-interactive until the HttpOnly session cookie is verified. */
+          document.body.classList.remove('auth-locked');
           document.body.classList.remove('auth-ready');
-          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'true');
-          if (nodes.screen) nodes.screen.removeAttribute('hidden');
-          if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
+          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
+          if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
+          if (nodes.greeting) nodes.greeting.textContent = 'Refreshing data…';
         }
       }
 
-      function checkStoredSession() {
-        /* New page/tab/app instance = login required. Refresh = current tab
-         * session may be restored after authoritative server verification. */
+      function checkStoredSession(retryAttempt) {
+        /* A same-tab refresh keeps the HttpOnly cookie and sessionStorage marker.
+         * Verify the cookie without navigating to login; only a definitive server
+         * response saying authenticated=false ends the session. */
+        retryAttempt = Math.max(0, Number(retryAttempt || 0));
         updateResumeSessionButton_();
         var credentialsTouched = function () {
           return !!(
@@ -2794,7 +2788,7 @@
               setSessionVerifying_(false);
               if (credentialsTouched()) return;
               clearStoredSession();
-              showLoginPanel('', '');
+              lock('Your secure session has expired. Please sign in again.', 'error');
               return;
             }
             storeSession(envelope);
@@ -2803,11 +2797,18 @@
             unlock(restoredUser, { freshLogin:false, restoredSession:true });
           })
           .catch(function (error) {
+            /* Network/API slowness is not a logout. Retry while preserving the
+             * current page and session marker. */
             console.warn('Initial session verification failed:', error);
+            if (retryAttempt < 3 && hasTabAuthenticated_()) {
+              var delay = [500, 1000, 2000][retryAttempt] || 2000;
+              window.setTimeout(function () { checkStoredSession(retryAttempt + 1); }, delay);
+              return;
+            }
             setSessionVerifying_(false);
             if (credentialsTouched()) return;
-            clearStoredSession();
-            showLoginPanel('Unable to verify the current session. Please sign in again.', 'error');
+            if (nodes.greeting) nodes.greeting.textContent = 'Session check delayed — refresh is safe.';
+            setSystemToast('Session Check Delayed', 'Your session was not signed out. Check the connection and refresh again if needed.', 6000);
           });
       }
 
@@ -3049,7 +3050,8 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
-        bindPageLifecycle_();
+        /* Refresh-safe session: explicit LOG OUT is the only client action that
+         * revokes the server session. Do not revoke it from pagehide/beforeunload. */
         if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         // Remove any credentials left by pre-HttpOnly builds.
         safeStorageRemove(TOKEN_KEY);

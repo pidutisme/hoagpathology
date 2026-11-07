@@ -10174,16 +10174,17 @@ html.dark-mode-preload .inventory-form select:not(.outsource-native-select) {
    + 7. AUTH VERIFYING & VISITOR READ-ONLY GUARDRAILS                       +
    +------------------------------------------------------------------------+ */
 body.auth-verifying .app {
-  opacity: 0.10 !important;
+  opacity: 1 !important;
   pointer-events: none !important;
-  transform: scale(0.985);
-  filter: blur(8px) saturate(0.86);
+  transform: none !important;
+  filter: none !important;
 }
 
+/* Refresh/session verification never flashes the login screen. */
 body.auth-verifying .auth-screen {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 body.auth-verifying #moduleYearGrid,
