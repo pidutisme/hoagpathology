@@ -310,6 +310,16 @@ async function upsertNotificationRow(record, existing = null, userId = '') {
   }
   if (error) throw error;
   if (!data || String(data.id) !== id) fail('Notification record was not persisted correctly.');
+  // Re-read the exact row after UPDATE/INSERT. This guards against returning
+  // an in-memory payload that differs from what Supabase actually stored.
+  const { data: verified, error: verifyError } = await supabase
+    .from('notification_records').select('*').eq('id', id).maybeSingle();
+  if (verifyError) throw verifyError;
+  if (!verified || String(verified.id) !== id) fail('Notification record could not be verified after save.', 500);
+  if (String(verified.notification_datetime || '') !== String(data.notification_datetime || '')) {
+    // Return the database value; the client will render the verified value.
+    data = verified;
+  }
   return {
     id: data.id,
     notification_datetime: data.notification_datetime,

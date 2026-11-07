@@ -1209,6 +1209,7 @@
     function chooseTime(hour12, minute, period) {
       var parts=currentParts(), h=Number(hour12)%12;
       parts.hour = period==='PM' ? h+12 : h;
+      if (parts.hour === 24) parts.hour = 12;
       parts.minute = Number(minute);
       setValue(parts); renderTime();
     }
@@ -1278,10 +1279,36 @@
     document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
     window.addEventListener('resize',position); window.addEventListener('scroll',position,true);
   }
+  function parseNotificationDisplayDateTime(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    var m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!m) return '';
+    var hour = Number(m[4]);
+    var minute = Number(m[5]);
+    var ap = String(m[6]).toUpperCase();
+    if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return '';
+    if (ap === 'PM' && hour !== 12) hour += 12;
+    if (ap === 'AM' && hour === 12) hour = 0;
+    return m[3] + '-' + m[2] + '-' + m[1] + 'T' + pad(hour) + ':' + pad(minute);
+  }
+
+  function syncNotificationDateTimeBeforeSave() {
+    var hidden = $('notificationDateTime');
+    var visible = $('notificationDateTimeVisible');
+    if (!hidden || !visible) return '';
+    // The visible field is the user's actual date/time selection surface.
+    // Reconcile it back to the canonical hidden value immediately before
+    // collecting the payload, so an edit can never save the previous time.
+    var parsed = parseNotificationDisplayDateTime(visible.value);
+    if (parsed) hidden.value = parsed;
+    return String(hidden.value || '').trim();
+  }
+
   function collectForm() {
     return {
       id: editingId || ('N' + Date.now()),
-      notification_datetime: $('notificationDateTime').value,
+      notification_datetime: syncNotificationDateTimeBeforeSave(),
       barcode: $('notificationBarcode').value.trim(),
       patient_name: $('notificationPatientName').value.trim(),
       patient_id: $('notificationIdIc').value.trim(),
@@ -1378,6 +1405,12 @@
     var editDateTime = $('notificationDateTimeVisible');
     if (editDateTime && editDateTime._syncNotificationDateTime) {
       editDateTime._syncNotificationDateTime();
+    }
+    // Keep the canonical hidden value authoritative when entering edit mode.
+    var editHiddenDateTime = $('notificationDateTime');
+    if (editHiddenDateTime) {
+      editHiddenDateTime.dispatchEvent(new Event('input', {bubbles:true}));
+      editHiddenDateTime.dispatchEvent(new Event('change', {bubbles:true}));
     }
     $('notificationBarcode').value = r.barcode || '';
     $('notificationPatientName').value = r.patient_name || '';
