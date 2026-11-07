@@ -1134,7 +1134,11 @@
        * + isRestorablePage                 +
        * +----------------------------------+ */
       function isRestorablePage(pageId) {
-        return !!(pageId && (pageId === 'notification' || $(pageId)) && (pageId === 'dashboard' || getNavButtonForPage(pageId)));
+        /* moduleYears is a virtual workspace used by Outsource, Inventory,
+         * Transfusion and the discipline modules. It has no sidebar button,
+         * but it is still a real restorable page just like the sidebar pages. */
+        return !!(pageId && (pageId === 'moduleYears' || pageId === 'notification' || $(pageId)) &&
+          (pageId === 'dashboard' || pageId === 'moduleYears' || getNavButtonForPage(pageId)));
       }
   
       /* +----------------------------------+
@@ -1262,6 +1266,15 @@
       function restoreLastPage() {
         var pageId = getLastPage();
         preparePageBeforeOpen(pageId);
+
+        /* moduleYears hosts several dashboard modules without its own sidebar
+         * button. Restore the exact module workspace before revealing the app,
+         * so refresh never shows Dashboard first. */
+        if (pageId === 'moduleYears' && window.LabApp && window.LabApp.Modules &&
+            typeof window.LabApp.Modules.restoreLastModule === 'function') {
+          window.LabApp.Modules.restoreLastModule();
+          return;
+        }
         goPage(pageId, getNavButtonForPage(pageId));
       }
   
@@ -3362,6 +3375,26 @@ hoagApiRequest('logout', {
      * + CLIENT MODULE                    +
      * +----------------------------------+ */
     var Modules = (function () {
+      var LAST_MODULE_KEY = 'labAppLastModuleV1';
+      var LAST_MODULE_YEAR_KEY = 'labAppLastModuleYearV1';
+
+      function saveLastModule(moduleName, year) {
+        var normalized = normalizeModuleName(moduleName);
+        if (!normalized) return;
+        safeSessionSet(LAST_MODULE_KEY, normalized);
+        if (year != null && year !== '') safeSessionSet(LAST_MODULE_YEAR_KEY, String(year));
+        else safeSessionRemove(LAST_MODULE_YEAR_KEY);
+      }
+
+      function getLastModule() {
+        return normalizeModuleName(safeSessionGet(LAST_MODULE_KEY) || '');
+      }
+
+      function getLastModuleYear() {
+        var value = Number(safeSessionGet(LAST_MODULE_YEAR_KEY) || '');
+        return Number.isFinite(value) && value > 0 ? value : currentYear();
+      }
+
       /* +----------------------------------+
        * + normalizeModuleName              +
        * +----------------------------------+ */
@@ -4894,6 +4927,7 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function open(cardName, activeButton) {
         var normalizedName = normalizeModuleName(cardName);
+        saveLastModule(normalizedName, normalizedName === 'TRANSFUSION' ? (state.selectedModuleYear || currentYear()) : null);
         if (normalizedName === 'INVENTORY' && typeof Inventory !== 'undefined') {
           Inventory.open();
           return;
@@ -4939,6 +4973,17 @@ hoagApiRequest('logout', {
         }
       }
   
+      function restoreLastModule() {
+        var moduleName = getLastModule();
+        if (!moduleName) {
+          if (typeof Router !== 'undefined' && Router.goPage) Router.goPage('moduleYears', null);
+          return;
+        }
+        var year = getLastModuleYear();
+        if (moduleName === 'TRANSFUSION') state.selectedModuleYear = year;
+        open(moduleName, null);
+      }
+
       /* +----------------------------------+
        * + renderLeaveCourseYearGrid        +
        * +----------------------------------+ */
@@ -4964,6 +5009,7 @@ hoagApiRequest('logout', {
         renderOutsourcePage: renderOutsourcePage,
         refreshOutsourceLive: refreshOutsourceLive,
         open: open,
+        restoreLastModule: restoreLastModule,
         renderLeavesCoursesYears: renderLeavesCoursesYears
       };
     })();
