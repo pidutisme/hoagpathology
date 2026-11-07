@@ -1176,6 +1176,16 @@
       function clearLastPage() {
         safeSessionRemove(LAST_PAGE_KEY);
       }
+
+      /* Remember a page that is opened by a dashboard/module handler rather
+       * than by a sidebar nav button. This is important for hard refreshes:
+       * those handlers used to activate their page directly, leaving the router
+       * marker on DASHBOARD. */
+      function rememberPage(pageId) {
+        if (!isRestorablePage(pageId)) return;
+        saveLastPage(pageId);
+        writeRouteHistory(pageId, false);
+      }
   
       /* +----------------------------------+
        * + preparePageBeforeOpen            +
@@ -1428,6 +1438,7 @@
         restoreLastPage: restoreLastPage,
         openDashboard: openDashboard,
         clearLastPage: clearLastPage,
+        rememberPage: rememberPage,
         renderBackButton: renderBackButton,
         bindNavButtons: bindNavButtons
       };
@@ -4929,10 +4940,12 @@ hoagApiRequest('logout', {
         var normalizedName = normalizeModuleName(cardName);
         saveLastModule(normalizedName, normalizedName === 'TRANSFUSION' ? (state.selectedModuleYear || currentYear()) : null);
         if (normalizedName === 'INVENTORY' && typeof Inventory !== 'undefined') {
+          if (typeof Router !== 'undefined' && Router.rememberPage) Router.rememberPage('inventory');
           Inventory.open();
           return;
         }
         if (normalizedName === 'TRANSFUSION' && typeof Transfusion !== 'undefined') {
+          if (typeof Router !== 'undefined' && Router.rememberPage) Router.rememberPage('moduleYears');
           Transfusion.open(state.selectedModuleYear || new Date().getFullYear());
           return;
         }
@@ -4953,6 +4966,7 @@ hoagApiRequest('logout', {
         if (modulePage) {
           modulePage.classList.add('active');
           Router.renderBackButton('moduleYears');
+          if (Router.rememberPage) Router.rememberPage('moduleYears');
         }
 
         try {
@@ -9759,7 +9773,7 @@ function exportMonthlySchedulePdfs() {
         var page=$('inventory');if(!page)return;
         if(!initialized) init();
         document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});
-        page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');
+        page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');if(Router.rememberPage)Router.rememberPage('inventory');
         var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.hidden=!inventoryAdminAllowed();
         startInventoryMonthRolloverWatcher();ensureInventoryMonthRollover(false);render();populateForm();
         requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);
@@ -10242,7 +10256,7 @@ function exportMonthlySchedulePdfs() {
       function open(year){
         var active=document.querySelector('.page.active');if(active)active.classList.remove('active');
         var nav=document.querySelector('.nav-btn.active');if(nav)nav.classList.remove('active');
-        var page=document.getElementById('moduleYears');if(page){page.classList.add('active');if(typeof Router!=='undefined'&&Router.renderBackButton)Router.renderBackButton('moduleYears');}
+        var page=document.getElementById('moduleYears');if(page){page.classList.add('active');if(typeof Router!=='undefined'&&Router.renderBackButton)Router.renderBackButton('moduleYears');if(typeof Router!=='undefined'&&Router.rememberPage)Router.rememberPage('moduleYears');}
         loadTransfusionCache();
         render(year);
         loadTransfusionRecords().catch(function(error){
