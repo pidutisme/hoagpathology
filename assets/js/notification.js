@@ -750,11 +750,36 @@
   }
 
 
+  // Notification dates are clinical wall-clock times for Malaysia.
+  // Always render them in Asia/Kuala_Lumpur instead of the browser/Electron
+  // machine timezone, so opening the same app on another machine cannot move
+  // a notification to the previous/next calendar day.
+  function malaysiaDateParts(value) {
+    if (!value) return null;
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return null;
+    try {
+      var parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Kuala_Lumpur',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+      }).formatToParts(d);
+      var out = {};
+      parts.forEach(function (p) { if (p.type !== 'literal') out[p.type] = p.value; });
+      return {
+        year: Number(out.year), month: Number(out.month), day: Number(out.day),
+        hour: Number(out.hour), minute: Number(out.minute)
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
   function fmtDate(value) {
     if (!value) return '—';
-    var d = new Date(value);
-    if (isNaN(d.getTime())) return esc(value);
-    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + '<br><small>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</small>';
+    var p = malaysiaDateParts(value);
+    if (!p) return esc(value);
+    return pad(p.day) + '/' + pad(p.month) + '/' + p.year + '<br><small>' + pad(p.hour) + ':' + pad(p.minute) + '</small>';
   }
   var recordsHydrated = false;
   var notificationLoading = false;
@@ -869,10 +894,10 @@
     r = r && typeof r === 'object' ? r : {};
     var dt = r.notification_datetime || '';
     if (dt) {
-      var d = new Date(dt);
-      if (!isNaN(d.getTime())) {
-        dt = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
-          'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      var localParts = malaysiaDateParts(dt);
+      if (localParts) {
+        dt = localParts.year + '-' + pad(localParts.month) + '-' + pad(localParts.day) +
+          'T' + pad(localParts.hour) + ':' + pad(localParts.minute);
       } else {
         dt = String(dt).replace(' ', 'T').slice(0,16);
       }
@@ -964,12 +989,10 @@
   function localNotificationDateTimeToUtc(value) {
     var raw = String(value || '').trim();
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return raw;
-    // notification_datetime is stored in Supabase as a timezone-aware
-    // timestamp. The form is intentionally local time (Malaysia/PC local).
-    // Convert the local wall-clock value to an absolute UTC instant before
-    // sending it to the database; otherwise Supabase interprets 00:30 as
-    // 00:30 UTC and it comes back as 08:30 in Malaysia.
-    var d = new Date(raw);
+    // The Notification form is explicitly a Malaysia wall-clock value.
+    // Attach +08:00 directly instead of relying on the machine/browser
+    // timezone, then store the equivalent UTC instant in timestamptz.
+    var d = new Date(raw + ':00+08:00');
     if (isNaN(d.getTime())) return raw;
     return d.toISOString();
   }
