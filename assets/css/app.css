@@ -10173,25 +10173,24 @@ html.dark-mode-preload .inventory-form select:not(.outsource-native-select) {
 /* +------------------------------------------------------------------------+
    + 7. AUTH VERIFYING & VISITOR READ-ONLY GUARDRAILS                       +
    +------------------------------------------------------------------------+ */
+/* Startup/session verification must never reveal the application shell.
+ * Keep the login screen visible until the server confirms the session. */
 body.auth-verifying .app {
-  opacity: 1 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
   pointer-events: none !important;
   transform: none !important;
   filter: none !important;
 }
 
-/* During refresh verification, keep the app shell visible but hide the
- * bootstrap page. The saved page is restored before this class is removed,
- * so DASHBOARD never flashes on screen. */
 body.auth-verifying .pages {
   visibility: hidden !important;
 }
 
-/* Refresh/session verification never flashes the login screen. */
 body.auth-verifying .auth-screen {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 body.auth-verifying #moduleYearGrid,

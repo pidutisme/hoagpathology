@@ -2817,13 +2817,15 @@
          * HttpOnly cookie is being checked. The server response is the only
          * authoritative source for the current user and role. */
         if (active) {
-          /* Keep the current application shell visible during refresh. It stays
-           * non-interactive until the HttpOnly session cookie is verified. */
-          document.body.classList.remove('auth-locked');
+          /* IMPORTANT: never expose the application page while startup/session
+           * verification is running. The login screen must remain the first
+           * visible screen; only a confirmed authenticated response may reveal
+           * the app. */
+          document.body.classList.add('auth-locked');
           document.body.classList.remove('auth-ready');
-          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
-          if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
-          if (nodes.greeting) nodes.greeting.textContent = 'Refreshing data…';
+          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'true');
+          if (nodes.screen) nodes.screen.removeAttribute('hidden');
+          if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
         }
       }
 
