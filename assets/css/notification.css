@@ -122,7 +122,7 @@
   height: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(340px, 0.72fr) minmax(560px, 1.55fr);
+  grid-template-columns: minmax(320px, 0.75fr) minmax(0, 1.75fr);
   gap: 14px;
   align-items: stretch;
   overflow: hidden;
@@ -474,8 +474,12 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 0;
-  padding-top: 6px;
+  margin-top: auto;
+  padding: 10px 0 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: linear-gradient(to bottom, rgba(238,244,252,0), var(--neo-surface-soft) 28%);
 }
 
 #notification .notification-btn {
@@ -2175,4 +2179,27 @@
     padding: 6px 4px !important;
     font-size: 10px !important;
   }
+}
+
+
+/* =========================================================
+   V61: NOTIFICATION MUST USE THE SAME REAL-TABLE GEOMETRY AS
+   OUTSOURCE / TRANSFUSION.
+   This block intentionally lives at the end of notification.css.
+   The stronger companion override is in responsive-tables.css because
+   responsive-tables.css is loaded after this stylesheet.
+   ========================================================= */
+#notification .notification-table-wrap {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+#notification .notification-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
 }
