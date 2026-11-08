@@ -715,6 +715,21 @@
               "Influenza A Not Detected",
               "Influenza B Not Detected"
           ]
+      },
+      {
+          "name": "Herpes Simplex Virus (HSV 1/2 PCR [Vesicles])",
+          "rule": "Alert / critical result: HSV-1 DNA Detected / HSV-2 DNA Detected",
+          "low": null,
+          "high": null,
+          "alerts": [
+              "HSV-1 DNA Detected",
+              "HSV-2 DNA Detected"
+          ],
+          "type": "qualitative",
+          "options": [
+              "HSV-1 DNA Detected",
+              "HSV-2 DNA Detected"
+          ]
       }
   ]
 };
