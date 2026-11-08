@@ -9132,49 +9132,48 @@ function exportMonthlySchedulePdfs() {
         if(loading&&refreshPromise)return refreshPromise;
         loading=true;
         refreshPromise=(async function(){
-          /* V28: fast first paint. Request only the newest page first, paint it
-             immediately, then hydrate the remaining history in the background.
-             This keeps the server authoritative without making a 5k/10k+ history
-             block the first visible table. */
-          var firstLimit=100, pageSize=500, firstRows=[];
-          var cachedRows=Array.isArray(rows)?rows.slice():[];
+          /* Fast first paint: show 500 newest records, then hydrate older history
+             in batches. Each completed batch is merged into the live store and
+             rendered immediately so the user sees progress instead of waiting for
+             the entire history to finish. */
+          var firstLimit=500, pageSize=1000, firstRows=[];
           var first=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:firstLimit,offset:0}]});
           if(!first||first.ok===false)throw new Error(first&&first.error?first.error:'Unable to load outsource records.');
           firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-          /* Keep the cached snapshot visible. Do not replace a complete local
-             dataset with the first server page on every module entry. */
-          var seedMap={};
-          cachedRows.forEach(function(r){if(r&&r.id)seedMap[String(r.id)]=r;});
-          firstRows.forEach(function(r){if(r&&r.id)seedMap[String(r.id)]=r;});
-          rows=Object.keys(seedMap).map(function(k){return seedMap[k];});
+          rows=firstRows.slice();
           normalize();
           revision+=1;
-          lastUpdatedAt=String(first.updatedAt||lastUpdatedAt||'');
+          lastUpdatedAt=String(first.updatedAt||'');
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
 
           var complete=!first.hasMore || firstRows.length<firstLimit;
           var offset=firstLimit;
-          var allMap={};
-          rows.forEach(function(r){if(r&&r.id)allMap[String(r.id)]=r;});
-          var allRows=Object.keys(allMap).map(function(k){return allMap[k];});
-          /* The background hydrator deliberately does NOT re-filter/re-sort/re-render
-             the 6k+ row table after every 500-row response. That was the main source
-             of progressive slowdown: each page caused another full O(n) pass plus DOM
-             work. Keep the first page/cache visible, merge silently, and paint once
-             after hydration is complete. */
+          var allRows=firstRows.slice();
           while(!complete){
-            var result=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:offset}]});
-            if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
-            var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-            pageRows.forEach(function(r){if(r&&r.id)allMap[String(r.id)]=r;});
-            var stop=!result.hasMore || pageRows.length<pageSize;
-            offset+=pageSize;
+            /* Hydrate up to three older pages concurrently. The newest 500 are
+               already visible, and every completed batch is painted immediately. */
+            var offsets=[offset,offset+pageSize,offset+(pageSize*2)];
+            var batch=await Promise.all(offsets.map(function(pageOffset){
+              return hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:pageOffset}]});
+            }));
+            var stop=false;
+            batch.forEach(function(result){
+              if(!result||result.ok===false)throw new Error(result&&result.error?result.error:'Unable to load outsource records.');
+              var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
+              allRows=allRows.concat(pageRows);
+              if(!result.hasMore || pageRows.length<pageSize)stop=true;
+            });
+            rows=allRows.slice();
+            normalize();
+            revision+=1;
+            if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+            offset+=pageSize*batch.length;
             complete=stop;
           }
-          rows=Object.keys(allMap).map(function(k){return allMap[k];});
+          rows=allRows.slice();
           normalize();
           revision+=1;
-          lastUpdatedAt=rows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
+          lastUpdatedAt=allRows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
           saveLocal();
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
           return true;
