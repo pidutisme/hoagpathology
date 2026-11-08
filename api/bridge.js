@@ -238,6 +238,57 @@ async function deleteOutsourceRow(id) {
 }
 
 
+async function upsertNotificationRow(input, existing = null, userId = '') {
+  const now = iso();
+  const source = input && typeof input === 'object' ? input : {};
+  const existingRow = existing && typeof existing === 'object' ? existing : null;
+  const id = clean(source.id || existingRow?.id, 160);
+  if (!id) fail('Notification record ID is required.');
+
+  const notificationDatetime = clean(source.notification_datetime ?? existingRow?.notification_datetime, 80);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})?$/.test(notificationDatetime)) {
+    fail('Invalid notification Date / Time.');
+  }
+
+  // Keep the Notification table contract explicit. Do not pass arbitrary
+  // client fields into Supabase; this also makes Save independent from any
+  // UI-only properties added to the form object.
+  const record = {
+    id,
+    notification_datetime: notificationDatetime,
+    barcode: clean(source.barcode ?? existingRow?.barcode, 160),
+    patient_name: clean(source.patient_name ?? existingRow?.patient_name, 200),
+    patient_id: clean(source.patient_id ?? existingRow?.patient_id, 160),
+    sex: clean(source.sex ?? existingRow?.sex, 40),
+    age: clean(source.age ?? existingRow?.age, 40),
+    unit: clean(source.unit ?? existingRow?.unit, 120),
+    discipline: clean(source.discipline ?? existingRow?.discipline, 120),
+    test_name: clean(source.test_name ?? existingRow?.test_name, 200),
+    critical_limit: clean(source.critical_limit ?? existingRow?.critical_limit, 1000),
+    result: clean(source.result ?? existingRow?.result, 1000),
+    flag: clean(source.flag ?? existingRow?.flag, 200),
+    staff: clean(source.staff ?? existingRow?.staff, 160),
+    inform_to: clean(source.inform_to ?? existingRow?.inform_to, 200),
+    status: clean(source.status ?? existingRow?.status, 60) || 'INFORMED',
+    notes: clean(source.notes ?? existingRow?.notes, 3000)
+  };
+
+  // Preserve the original creation timestamp when editing. Let the database
+  // default it for new rows; explicitly set updated_at for both paths.
+  const createdAt = existingRow?.created_at || now;
+  const rowToSave = { ...record, created_at: createdAt, updated_at: now };
+
+  const { data, error } = await supabase
+    .from('notification_records')
+    .upsert(rowToSave, { onConflict: 'id' })
+    .select('*')
+    .single();
+  if (error) throw error;
+  if (!data || String(data.id) !== id) fail('Notification record was not persisted.', 500);
+
+  return data;
+}
+
 async function getNotificationRows(limit = null, offset = 0) {
   const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
   const requested = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
