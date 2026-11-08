@@ -817,10 +817,12 @@
   }
 
   function getCatalogueItemForRecord(r) {
-    var discipline = String(r && r.discipline || '');
-    var testName = String(r && r.test_name || '');
+    var discipline = String(r && r.discipline || '').trim().toUpperCase();
+    var testName = String(r && r.test_name || '').trim().toLowerCase();
     var list = testCatalogue[discipline] || [];
-    return list.find(function (x) { return String(x.name) === testName; }) || null;
+    return list.find(function (x) {
+      return String(x.name || '').trim().toLowerCase() === testName;
+    }) || null;
   }
 
   function getResultUnit(r, item) {
@@ -843,11 +845,13 @@
       'inr (ratio)': 'ratio',
       'pt': 'sec',
       'aptt': 'sec',
+      'haemoglobin': 'g/dL',
       'haematocrit': '%',
       'haematocrit paeds': '%',
       'haematocrit neonate': '%',
       'platelet': 'X 10^3 /μL',
       'platelet paeds': 'X 10^3 /μL',
+      'wbc': 'X 10^3 /μL',
       'wbc paeds': 'X 10^3 /μL'
     };
     if (explicitByTest[testName]) return explicitByTest[testName];
@@ -883,7 +887,7 @@
       return hit ? raw.toUpperCase() : 'REVIEW';
     }
 
-    var match = raw.replace(/,/g, '').match(/-?[0-9]+(?:\\.[0-9]+)?/);
+    var match = raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/);
     var n = match ? Number(match[0]) : NaN;
     if (item.low != null && !isNaN(n) && n < Number(item.low)) return 'LOW CRITICAL';
     if (item.high != null && !isNaN(n) && n > Number(item.high)) return 'HIGH CRITICAL';
@@ -940,13 +944,36 @@
     } catch (e) { return false; }
   }
 
+  function syncNotificationYearFilter() {
+    var el = $('notificationYearFilter');
+    if (!el) return;
+    var current = String(el.value || 'ALL');
+    var years = {};
+    records.forEach(function (r) {
+      var y = String(r.notification_datetime || '').slice(0, 4);
+      if (/^\d{4}$/.test(y)) years[y] = true;
+    });
+    var sorted = Object.keys(years).sort(function (a, b) { return Number(b) - Number(a); });
+    var options = ['<option value="ALL">All years</option>'];
+    sorted.forEach(function (y) { options.push('<option value="' + esc(y) + '">' + esc(y) + '</option>'); });
+    el.innerHTML = options.join('');
+    if (current !== 'ALL' && years[current]) el.value = current;
+    else el.value = 'ALL';
+    initNotificationNeumorphicSelects();
+  }
+
   function loadRecords() {
     if (notificationLoading) return;
     notificationLoading = true;
     var hadCache = loadLocalRecords();
     recordsHydrated = hadCache;
-    if (hadCache) render();
-    var firstLimit = 100, offset = 0, all = [];
+    if (hadCache) { syncNotificationYearFilter(); render(); }
+
+    // Notification currently has a small enough dataset that the first page
+    // can safely load up to 1000 rows. This prevents a year such as 2025 from
+    // disappearing simply because the newest 100 rows are all from 2026.
+    // Larger datasets still continue in background pages.
+    var firstLimit = 1000, offset = 0, all = [];
     notificationApi('getNotificationRecords', [null, { limit: firstLimit, offset: 0 }])
       .then(function (result) {
         notificationUserRole = String(result.userRole || '').toUpperCase();
@@ -954,33 +981,30 @@
         all = Array.isArray(result.records) ? result.records.map(normalizeNotificationRecord) : [];
         records = all.slice();
         recordsHydrated = true;
+        syncNotificationYearFilter();
         render();
         var more = !!result.hasMore;
         offset = firstLimit;
         function hydrate() {
           if (!more) { saveLocalRecords(); return Promise.resolve(); }
-          var offsets = [offset, offset + firstLimit, offset + firstLimit * 2];
-          return Promise.all(offsets.map(function (pageOffset) {
-            return notificationApi('getNotificationRecords', [null, { limit: firstLimit, offset: pageOffset }]);
-          })).then(function (batch) {
-            var stop = false;
-            batch.forEach(function (page) {
+          return notificationApi('getNotificationRecords', [null, { limit: firstLimit, offset: offset }])
+            .then(function (page) {
               var pageRows = Array.isArray(page.records) ? page.records.map(normalizeNotificationRecord) : [];
               all = all.concat(pageRows);
-              if (!page.hasMore || pageRows.length < firstLimit) stop = true;
+              records = all.slice();
+              syncNotificationYearFilter();
+              render();
+              more = !!page.hasMore;
+              offset += firstLimit;
+              return more ? hydrate() : saveLocalRecords();
             });
-            records = all.slice();
-            render();
-            offset += firstLimit * batch.length;
-            more = !stop;
-            return more ? hydrate() : saveLocalRecords();
-          });
         }
         return hydrate();
       })
       .catch(function (error) {
         recordsHydrated = true;
         console.error('Notification records could not be loaded from Supabase:', error);
+        syncNotificationYearFilter();
         render();
       })
       .finally(function () { notificationLoading = false; });

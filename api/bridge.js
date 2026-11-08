@@ -240,15 +240,38 @@ async function deleteOutsourceRow(id) {
 
 async function getNotificationRows(limit = null, offset = 0) {
   const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
-  const pageSize = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
+  const requested = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
   const from = Math.max(Number(offset) || 0, 0);
-  const query = supabase
-    .from('notification_records')
-    .select('*')
-    .order('notification_datetime', { ascending: false });
-  const { data, error, count } = await query.range(from, from + pageSize - 1);
-  if (error) throw error;
-  const rows = data || [];
+
+  // Supabase projects can enforce a server-side max-row setting (commonly 100).
+  // Do not mistake a short page for end-of-data when the caller requested 1000.
+  // Fetch in 100-row ranges and combine them until the requested page is filled
+  // or a genuinely short range is returned. This keeps Notification history
+  // complete even when the REST/API max rows is lower than our app page size.
+  const chunkSize = 100;
+  const collected = [];
+  let cursor = from;
+  let hasMore = false;
+
+  while (collected.length < requested) {
+    const take = Math.min(chunkSize, requested - collected.length);
+    const query = supabase
+      .from('notification_records')
+      .select('*')
+      .order('notification_datetime', { ascending: false });
+    const { data, error } = await query.range(cursor, cursor + take - 1);
+    if (error) throw error;
+    const rows = data || [];
+    collected.push(...rows);
+    cursor += rows.length;
+    if (rows.length < take) {
+      hasMore = false;
+      break;
+    }
+    hasMore = true;
+  }
+
+  const rows = collected.slice(0, requested);
   return {
     rows: rows.map(row => ({
       id: row.id,
@@ -271,7 +294,7 @@ async function getNotificationRows(limit = null, offset = 0) {
       created_at: row.created_at,
       updated_at: row.updated_at
     })),
-    count: count == null ? rows.length : count
+    count: rows.length
   };
 }
 
