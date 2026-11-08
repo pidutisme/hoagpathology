@@ -169,9 +169,9 @@
     },
     {
       "name": "pO2 Paeds",
-      "rule": "<2.85 kPa / >16.0 kPa",
-      "low": 2.85,
-      "high": 16.0,
+      "rule": "<5.85 kPa / >16.2 kPa",
+      "low": 5.85,
+      "high": 16.2,
       "alerts": [],
       "type": "numeric"
     },
@@ -251,9 +251,9 @@
     },
     {
       "name": "Haematocrit",
-      "rule": "<0.20 / 20% / >0.40 / 60%",
+      "rule": "<0.20 (20%) / >0.60 (60%)",
       "low": 0.2,
-      "high": 0.4,
+      "high": 0.6,
       "alerts": [],
       "type": "numeric"
     },
@@ -887,8 +887,31 @@
       return hit ? raw.toUpperCase() : 'REVIEW';
     }
 
+    var itemName = String(item.name || '').trim().toLowerCase();
+    // PT/APTT require a patient/reference-range comparison that is not stored
+    // in this record. Do not falsely flag against an absolute number.
+    if (itemName === 'pt' || itemName === 'aptt') return 'REVIEW';
+
     var match = raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/);
     var n = match ? Number(match[0]) : NaN;
+
+    // Bilirubin Paeds: neonate >513 µmol/L; children >428 µmol/L.
+    if (itemName === 'bilirubin paeds') {
+      var ageNum = Number(String(r.age || '').match(/\d+(?:\.\d+)?/)?.[0] || '');
+      if (isNaN(ageNum)) return 'REVIEW';
+      return n > (ageNum < 1 ? 513 : 428) ? 'HIGH CRITICAL' : 'REVIEW';
+    }
+
+    // Haematocrit supports both fraction (0.20/0.60) and percentage (20/60)
+    // representations because historical reports use both formats.
+    if (itemName === 'haematocrit' || itemName === 'haematocrit paeds' || itemName === 'haematocrit neonate') {
+      var hLow = Number(item.low), hHigh = Number(item.high);
+      if (Math.abs(n) > 1) { hLow *= 100; hHigh *= 100; }
+      if (!isNaN(n) && n < hLow) return 'LOW CRITICAL';
+      if (!isNaN(n) && n > hHigh) return 'HIGH CRITICAL';
+      return 'REVIEW';
+    }
+
     if (item.low != null && !isNaN(n) && n < Number(item.low)) return 'LOW CRITICAL';
     if (item.high != null && !isNaN(n) && n > Number(item.high)) return 'HIGH CRITICAL';
     return 'REVIEW';
@@ -932,7 +955,7 @@
       test_name: testName,
       critical_limit: String(r.critical_limit || ''),
       result: rawResult,
-      flag: calculateRecordFlag({ discipline: discipline, test_name: testName, result: rawResult, critical_limit: r.critical_limit, flag: r.flag }),
+      flag: calculateRecordFlag({ discipline: discipline, test_name: testName, result: rawResult, age: String(r.age || ''), critical_limit: r.critical_limit, flag: r.flag }),
       staff: String(r.staff || ''),
       inform_to: String(r.inform_to || ''),
       status: String(r.status || 'INFORMED'),
@@ -1212,9 +1235,51 @@
     box.className = 'notification-critical-box';
     box.innerHTML = '<strong>Critical Limit (' + esc(item.name) + ')</strong><span>' + esc(item.rule || 'See reference catalogue') + '</span>';
     syncResultControl(item, resultValue);
-    evaluateResult(item, resultValue);
+    evaluateResult(item, resultValue, $('notificationAge') ? $('notificationAge').value : '');
   }
-  function evaluateResult(item, value) {
+  function evaluateAgeSensitiveResult(item, value, age) {
+    var name = String(item && item.name || '').trim().toLowerCase();
+    var raw = String(value || '').trim();
+    var n = Number(raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/)?.[0] || '');
+    var years = Number(String(age == null ? '' : age).replace(/,/g, '').match(/\d+(?:\.\d+)?/)?.[0] || '');
+    if (!raw || isNaN(n)) return false;
+
+    // PT/APTT limits are relative to the laboratory reference range.
+    // A patient result alone cannot calculate these limits.
+    if (name === 'pt') {
+      setFlag('REVIEW', 'normal');
+      return true;
+    }
+    if (name === 'aptt') {
+      if (n >= 80) setFlag('HIGH CRITICAL', 'critical');
+      else setFlag('REVIEW', 'normal');
+      return true;
+    }
+
+    // Bilirubin Paeds: neonate >513 µmol/L; children >428 µmol/L.
+    if (name === 'bilirubin paeds') {
+      if (isNaN(years)) { setFlag('REVIEW', 'normal'); return true; }
+      var bilirubinLimit = years < 1 ? 513 : 428;
+      if (n > bilirubinLimit) setFlag('HIGH CRITICAL', 'critical');
+      else setFlag('REVIEW', 'normal');
+      return true;
+    }
+
+    // Haematocrit is shown as a fraction (0.20/0.60), but some reports store
+    // it as a percentage (20/60). Support both representations.
+    if (name === 'haematocrit' || name === 'haematocrit paeds' || name === 'haematocrit neonate') {
+      var low = Number(item.low), high = Number(item.high);
+      if (Math.abs(n) > 1) { low *= 100; high *= 100; }
+      if (n < low) setFlag('LOW CRITICAL', 'critical');
+      else if (n > high) setFlag('HIGH CRITICAL', 'critical');
+      else setFlag('REVIEW', 'normal');
+      return true;
+    }
+    return false;
+  }
+
+  function evaluateResult(item, value, age) {
+    if (evaluateAgeSensitiveResult(item, value, age)) return;
     var raw = String(value || '').trim();
     var n = Number(raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/)?.[0] || '');
     if (!raw) { setFlag('Awaiting result', ''); return; }
