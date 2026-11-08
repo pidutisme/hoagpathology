@@ -9140,15 +9140,29 @@ function exportMonthlySchedulePdfs() {
           var first=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:firstLimit,offset:0}]});
           if(!first||first.ok===false)throw new Error(first&&first.error?first.error:'Unable to load outsource records.');
           firstRows=Array.isArray(first.outsourceSamples)?first.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-          rows=firstRows.slice();
+          /* Never shrink an already-loaded local snapshot back to the first page.
+             The server's first page is merged into the current cache, so revisiting
+             OUTSOURCE keeps the full dataset visible while the authoritative history
+             is refreshed in the background. */
+          var cachedRows=Array.isArray(rows)?rows.slice():[];
+          var displayMap={};
+          cachedRows.forEach(function(r){if(r&&r.id)displayMap[String(r.id)]=r;});
+          firstRows.forEach(function(r){
+            if(!r||!r.id)return;
+            var id=String(r.id), old=displayMap[id];
+            var rt=Date.parse(String(r.updatedAt||r.createdAt||''))||0;
+            var ot=Date.parse(String(old&&old.updatedAt||old&&old.createdAt||''))||0;
+            if(!old||rt>=ot)displayMap[id]=r;
+          });
+          rows=Object.keys(displayMap).map(function(k){return displayMap[k];});
           normalize();
           revision+=1;
-          lastUpdatedAt=String(first.updatedAt||'');
+          lastUpdatedAt=String(first.updatedAt||lastUpdatedAt||'');
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
 
           var complete=!first.hasMore || firstRows.length<firstLimit;
           var offset=firstLimit;
-          var allRows=firstRows.slice();
+          var serverRows=firstRows.slice();
           while(!complete){
             /* Hydrate up to three older pages concurrently. The newest 500 are
                already visible, and every completed batch is painted immediately. */
@@ -9160,20 +9174,29 @@ function exportMonthlySchedulePdfs() {
             batch.forEach(function(result){
               if(!result||result.ok===false)throw new Error(result&&result.error?result.error:'Unable to load outsource records.');
               var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
-              allRows=allRows.concat(pageRows);
+              serverRows=serverRows.concat(pageRows);
+              pageRows.forEach(function(r){
+                if(!r||!r.id)return;
+                var id=String(r.id), old=displayMap[id];
+                var rt=Date.parse(String(r.updatedAt||r.createdAt||''))||0;
+                var ot=Date.parse(String(old&&old.updatedAt||old&&old.createdAt||''))||0;
+                if(!old||rt>=ot)displayMap[id]=r;
+              });
               if(!result.hasMore || pageRows.length<pageSize)stop=true;
             });
-            rows=allRows.slice();
+            rows=Object.keys(displayMap).map(function(k){return displayMap[k];});
             normalize();
             revision+=1;
             if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
             offset+=pageSize*batch.length;
             complete=stop;
           }
-          rows=allRows.slice();
+          /* Once the complete server snapshot has arrived, switch from the
+             cache+server display back to the authoritative server dataset. */
+          rows=serverRows.slice();
           normalize();
           revision+=1;
-          lastUpdatedAt=allRows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
+          lastUpdatedAt=serverRows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
           saveLocal();
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
           return true;
