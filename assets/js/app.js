@@ -9157,26 +9157,24 @@ function exportMonthlySchedulePdfs() {
           var allMap={};
           rows.forEach(function(r){if(r&&r.id)allMap[String(r.id)]=r;});
           var allRows=Object.keys(allMap).map(function(k){return allMap[k];});
+          /* The background hydrator deliberately does NOT re-filter/re-sort/re-render
+             the 6k+ row table after every 500-row response. That was the main source
+             of progressive slowdown: each page caused another full O(n) pass plus DOM
+             work. Keep the first page/cache visible, merge silently, and paint once
+             after hydration is complete. */
           while(!complete){
-            /* Fetch up to three pages concurrently. The first page is already
-               visible, so these requests only hydrate older history. */
             var result=await hoagApiRequest('action',{method:'getOutsourceSamples',args:[token(),{limit:pageSize,offset:offset}]});
             if(!result||result.ok===false){throw new Error(result&&result.error?result.error:'Unable to load outsource records.');}
             var pageRows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.filter(function(r){return r&&typeof r==='object'&&!r.deletedAt;}):[];
             pageRows.forEach(function(r){if(r&&r.id)allMap[String(r.id)]=r;});
-            allRows=Object.keys(allMap).map(function(k){return allMap[k];});
             var stop=!result.hasMore || pageRows.length<pageSize;
-            rows=allRows.slice();
-            normalize();
-            revision+=1;
-            if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
             offset+=pageSize;
             complete=stop;
           }
-          rows=allRows.slice();
+          rows=Object.keys(allMap).map(function(k){return allMap[k];});
           normalize();
           revision+=1;
-          lastUpdatedAt=allRows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
+          lastUpdatedAt=rows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
           saveLocal();
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
           return true;
@@ -9245,18 +9243,21 @@ function exportMonthlySchedulePdfs() {
         var input=Array.isArray(list)?list.filter(function(row){return row&&row.id;}):[];
         if(!input.length)return 0;
         var totalAdded=0, addedRecords=[];
+        /* Use an id map for the local merge. The old findIndex-per-record path
+           became O(existingRows × importedRows) and was painfully slow for
+           historical imports once Outsource reached several thousand rows. */
+        var rowMap={};
+        rows.forEach(function(r){if(r&&r.id)rowMap[String(r.id)]=r;});
         for(var start=0;start<input.length;start+=500){
           var chunk=input.slice(start,start+500);
           var result=await hoagApiRequest('action',{method:'bulkCreateOutsourceSamples',args:[chunk,token()]});
           if(!result||result.ok===false)throw new Error(result&&result.error?result.error:'Bulk Outsource import was not confirmed by the server.');
           var created=Array.isArray(result.records)?result.records:[];
-          created.forEach(function(record){
-            var id=String(record.id||''), idx=rows.findIndex(function(r){return String(r.id)===id;});
-            if(idx>=0)rows[idx]=record;else rows.push(record);
-          });
+          created.forEach(function(record){if(record&&record.id)rowMap[String(record.id)]=record;});
           totalAdded+=Number(result.created||created.length||0);
           addedRecords=addedRecords.concat(created);
         }
+        rows=Object.keys(rowMap).map(function(k){return rowMap[k];});
         normalize(); revision+=1;
         lastUpdatedAt=addedRecords.reduce(function(max,r){var stamp=String(r&&r.updatedAt||r&&r.createdAt||'');return stamp>max?stamp:max;},lastUpdatedAt);
         saveLocal();
