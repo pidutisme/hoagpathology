@@ -906,7 +906,20 @@
         dt = String(dt).replace(' ', 'T').slice(0,16);
       }
     }
-    return {
+
+    // Canonicalise imported historical values to the same vocabulary used by
+    // current Notification records. This is intentionally UI-side only: the
+    // original Supabase values are not modified.
+    var rawDiscipline = String(r.discipline || '').trim();
+    var discipline = rawDiscipline.toUpperCase();
+    var rawTestName = String(r.test_name || '').trim();
+    var catalogueItem = getCatalogueItemForRecord({ discipline: discipline, test_name: rawTestName });
+    var testName = catalogueItem ? String(catalogueItem.name || rawTestName) : rawTestName;
+    var rawResult = String(r.result || '').trim();
+    var unit = String(r.unit || '').trim();
+    if (!unit && catalogueItem && rawResult) unit = getResultUnit({ result: rawResult, test_name: testName, discipline: discipline, critical_limit: r.critical_limit }, catalogueItem);
+
+    var normalized = {
       id: String(r.id || ''),
       notification_datetime: dt,
       barcode: String(r.barcode || ''),
@@ -914,17 +927,18 @@
       patient_id: String(r.patient_id || ''),
       sex: String(r.sex || ''),
       age: String(r.age || ''),
-      unit: String(r.unit || ''),
-      discipline: String(r.discipline || ''),
-      test_name: String(r.test_name || ''),
+      unit: unit,
+      discipline: discipline,
+      test_name: testName,
       critical_limit: String(r.critical_limit || ''),
-      result: String(r.result || ''),
-      flag: calculateRecordFlag(r),
+      result: rawResult,
+      flag: calculateRecordFlag({ discipline: discipline, test_name: testName, result: rawResult, critical_limit: r.critical_limit, flag: r.flag }),
       staff: String(r.staff || ''),
       inform_to: String(r.inform_to || ''),
       status: String(r.status || 'INFORMED'),
       notes: String(r.notes || '')
     };
+    return normalized;
   }
 
   function saveLocalRecords() {
