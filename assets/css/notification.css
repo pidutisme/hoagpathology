@@ -474,7 +474,7 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: auto;
+  margin-top: 0;
   padding-top: 6px;
 }
 
