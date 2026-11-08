@@ -473,21 +473,21 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
-  margin-top: auto;
-  padding-top: 12px;
+  margin-top: 0;
+  padding-top: 0;
   flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  z-index: 3;
-  background: var(--neo-surface-light);
+  position: static;
+  z-index: auto;
+  background: transparent;
 }
 
 #notification .notification-btn {
   appearance: none;
   -webkit-appearance: none;
-  min-height: 36px;
-  padding: 0 16px;
+  min-height: 34px;
+  padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--year-page-card-border);
   background: var(--neo-surface-soft);
