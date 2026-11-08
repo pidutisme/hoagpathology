@@ -9240,7 +9240,29 @@ function exportMonthlySchedulePdfs() {
           return true;
         });
       }
-      function bulkUpsert(list){(Array.isArray(list)?list:[]).forEach(function(row){upsertSample(row);});return Array.isArray(list)?list.length:0;}
+      async function bulkUpsert(list){
+        ensureReady();
+        var input=Array.isArray(list)?list.filter(function(row){return row&&row.id;}):[];
+        if(!input.length)return 0;
+        var totalAdded=0, addedRecords=[];
+        for(var start=0;start<input.length;start+=500){
+          var chunk=input.slice(start,start+500);
+          var result=await hoagApiRequest('action',{method:'bulkCreateOutsourceSamples',args:[chunk,token()]});
+          if(!result||result.ok===false)throw new Error(result&&result.error?result.error:'Bulk Outsource import was not confirmed by the server.');
+          var created=Array.isArray(result.records)?result.records:[];
+          created.forEach(function(record){
+            var id=String(record.id||''), idx=rows.findIndex(function(r){return String(r.id)===id;});
+            if(idx>=0)rows[idx]=record;else rows.push(record);
+          });
+          totalAdded+=Number(result.created||created.length||0);
+          addedRecords=addedRecords.concat(created);
+        }
+        normalize(); revision+=1;
+        lastUpdatedAt=addedRecords.reduce(function(max,r){var stamp=String(r&&r.updatedAt||r&&r.createdAt||'');return stamp>max?stamp:max;},lastUpdatedAt);
+        saveLocal();
+        if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+        return totalAdded;
+      }
       function loadCatalog(){
         if(catalogLoading)return; catalogLoading=true;
         hoagApiRequest('action',{method:'getOutsourceCatalog',args:[token()]}).then(function(result){

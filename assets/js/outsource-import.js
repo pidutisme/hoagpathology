@@ -163,21 +163,30 @@
     var result=buildPreview(); if(preview)preview.innerHTML=result.html;
     var go=document.getElementById('outsourceImportRun');if(go)go.disabled=!result.valid.length;
   }
-  function runImport(){
+  async function runImport(){
     var result=buildPreview(), rows=result.valid;
     if(!rows.length){alert('No new valid records to import.');return;}
+    var go=document.getElementById('outsourceImportRun');
+    if(go){go.disabled=true;go.textContent='IMPORTING…';}
     var osApi=(window.LabApp&&window.LabApp.OutSource)||window.OutSource;
-    if(osApi&&typeof osApi.bulkUpsert==='function'){
-      var addedCount=osApi.bulkUpsert(rows);
-      alert(addedCount+' historical Outsource record(s) imported. Existing records were kept unchanged.');
+    try{
+      if(osApi&&typeof osApi.bulkUpsert==='function'){
+        var addedCount=await osApi.bulkUpsert(rows);
+        alert(addedCount+' historical Outsource record(s) imported. Existing records were kept unchanged.');
+        closeModal();
+        return;
+      }
+      var inventoryApi=window.LabApp&&window.LabApp.Inventory;
+      if(!inventoryApi||typeof inventoryApi.bulkUpsertOutsourceSamples!=='function')throw new Error('Import function is unavailable. Please reload the app and try again.');
+      var added=await inventoryApi.bulkUpsertOutsourceSamples(rows);
+      alert(added+' historical Outsource record(s) imported. Existing records were kept unchanged.');
       closeModal();
-      return;
+    }catch(error){
+      console.error('OUTSOURCE bulk import failed:',error);
+      alert(error&&error.message?error.message:'Outsource import failed. No existing records were changed.');
+    }finally{
+      if(go){go.disabled=false;go.textContent='IMPORT NEW RECORDS';}
     }
-    var inventoryApi=window.LabApp&&window.LabApp.Inventory;
-    if(!inventoryApi||typeof inventoryApi.bulkUpsertOutsourceSamples!=='function'){alert('Import function is unavailable. Please reload the app and try again.');return;}
-    var added=inventoryApi.bulkUpsertOutsourceSamples(rows);
-    alert(added+' historical Outsource record(s) imported. Existing records were kept unchanged.');
-    closeModal();
   }
   function ensureModal(){
     if(document.getElementById('outsourceImportModal'))return;

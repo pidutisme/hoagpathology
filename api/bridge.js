@@ -493,6 +493,63 @@ async function dispatch(db, method, a, req) {
 
     case 'saveOutsourceSamples': fail('Bulk outsource replacement is disabled. Use record-level create, update, or delete actions.', 409);
 
+    case 'bulkCreateOutsourceSamples': {
+      const s = await requireSession(db, tokenAt(1));
+      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const input = Array.isArray(a[0]) ? a[0] : [];
+      if (!input.length) return { ok: true, created: 0, records: [], updatedAt: '', version: VERSION, userId: s.userId, storageSource: 'supabase' };
+      if (input.length > 500) fail('Bulk create is limited to 500 records per request.', 413);
+
+      const fields = Object.keys(outsourceRecordSchema.shape);
+      const metadata = new Set(['createdAt','updatedAt','createdBy','updatedBy','version','deletedAt','deletedBy','createdByUserId','ownerId','ownerUserId','_haystack','_displaySex','_displayAge']);
+      const records = input.map((raw, index) => {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) fail(`Invalid outsource record at row ${index + 1}.`);
+        if (Object.keys(raw).some(key => !fields.includes(key) && !metadata.has(key))) fail(`Unsupported request field at row ${index + 1}.`);
+        const candidate = Object.fromEntries(fields.map(key => [key, raw[key] ?? '']));
+        const rawAge = clean(candidate.age, 20);
+        if (/^nb\/no ic$/i.test(rawAge)) candidate.age = 'NB/NO IC';
+        else if (rawAge && !/^\d{0,3}$/.test(rawAge)) candidate.age = rawAge.replace(/\D+/g, '').slice(0, 3);
+        return parseRequest(outsourceRecordSchema, candidate);
+      });
+
+      const ids = records.map(record => String(record.id));
+      const existingIds = new Set();
+      for (let i = 0; i < ids.length; i += 500) {
+        const chunk = ids.slice(i, i + 500);
+        const { data, error } = await supabase.from('outsource_records').select('id').in('id', chunk);
+        if (error) throw error;
+        (data || []).forEach(row => existingIds.add(String(row.id)));
+      }
+      const now = iso();
+      const newRecords = records.filter(record => !existingIds.has(String(record.id))).map(record => ({
+        ...record,
+        createdAt: record.createdAt || now,
+        updatedAt: now,
+        createdBy: record.createdBy || s.userId,
+        updatedBy: s.userId,
+        version: 1
+      }));
+      if (!newRecords.length) return { ok: true, created: 0, records: [], updatedAt: now, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+
+      const dbRows = newRecords.map(record => ({
+        id: record.id, data: record, created_at: record.createdAt, updated_at: record.updatedAt
+      }));
+      const { data: inserted, error } = await supabase
+        .from('outsource_records')
+        .upsert(dbRows, { onConflict: 'id', ignoreDuplicates: true })
+        .select('id, data, created_at, updated_at');
+      if (error) throw error;
+      const createdRows = (inserted || []).map(row => {
+        const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
+        if (!item.id) item.id = row.id;
+        item.createdAt = row.created_at || item.createdAt || now;
+        item.updatedAt = row.updated_at || item.updatedAt || now;
+        return item;
+      });
+      await log(db, s.userId, 'OUTSOURCE_RECORDS_IMPORTED', `Imported ${createdRows.length} outsource records in bulk.`);
+      return { ok: true, created: createdRows.length, records: createdRows, updatedAt: now, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
     case 'upsertOutsourceSample': {
       const s = await requireSession(db, tokenAt(1));
       const input = a[0];
