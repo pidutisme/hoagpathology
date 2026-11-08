@@ -1956,3 +1956,35 @@
   overflow-wrap: break-word !important;
   word-break: normal !important;
 }
+
+/* V58: Notification table must fill the records card on desktop.
+   Only use the wider fixed canvas when the actual card is narrower than the
+   minimum readable table width. This matches Outsource/Transfusion behaviour. */
+#notification .notification-table-wrap {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+#notification .notification-table {
+  display: table !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  table-layout: fixed !important;
+}
+#notification .notification-table th,
+#notification .notification-table td {
+  box-sizing: border-box !important;
+}
+
+@supports (container-type: inline-size) {
+  @container notification-record-card (max-width: 1180px) {
+    #notification .notification-table {
+      width: 1180px !important;
+      min-width: 1180px !important;
+      max-width: none !important;
+    }
+  }
+}
