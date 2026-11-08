@@ -2049,3 +2049,130 @@
     }
   }
 }
+
+
+/* V60 FINAL OVERRIDE: fit the Notification real table to the actual Electron record card.
+   Keep all 10 columns as a real table. Do not convert to cards and do not
+   force an 860/1180px canvas inside the split Notification workspace. */
+#notification .notification-table-wrap {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+#notification .notification-table {
+  display: table !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+#notification .notification-table thead {
+  display: table-header-group !important;
+}
+
+#notification .notification-table tbody {
+  display: table-row-group !important;
+  width: auto !important;
+}
+
+#notification .notification-table tbody tr {
+  display: table-row !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+#notification .notification-table th,
+#notification .notification-table td {
+  display: table-cell !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  hyphens: none !important;
+}
+
+/* Balanced 10-column layout. Percentages sum to 100%. */
+#notification .notification-table th:nth-child(1),
+#notification .notification-table td:nth-child(1) { width: 9% !important; }
+#notification .notification-table th:nth-child(2),
+#notification .notification-table td:nth-child(2) { width: 15% !important; }
+#notification .notification-table th:nth-child(3),
+#notification .notification-table td:nth-child(3) { width: 12% !important; white-space: nowrap !important; }
+#notification .notification-table th:nth-child(4),
+#notification .notification-table td:nth-child(4) { width: 7% !important; }
+#notification .notification-table th:nth-child(5),
+#notification .notification-table td:nth-child(5) { width: 12% !important; }
+#notification .notification-table th:nth-child(6),
+#notification .notification-table td:nth-child(6) { width: 12% !important; }
+#notification .notification-table th:nth-child(7),
+#notification .notification-table td:nth-child(7) { width: 10% !important; }
+#notification .notification-table th:nth-child(8),
+#notification .notification-table td:nth-child(8) { width: 9% !important; }
+#notification .notification-table th:nth-child(9),
+#notification .notification-table td:nth-child(9) { width: 6% !important; white-space: nowrap !important; }
+#notification .notification-table th:nth-child(10),
+#notification .notification-table td:nth-child(10) { width: 8% !important; }
+
+#notification .notification-table th {
+  text-align: center !important;
+  white-space: normal !important;
+  padding: 8px 5px !important;
+}
+
+#notification .notification-table td {
+  text-align: left !important;
+  padding: 6px 5px !important;
+  height: 36px !important;
+  line-height: 1.18 !important;
+}
+
+#notification .notification-table td:nth-child(10),
+#notification .notification-table td:nth-child(10) .notification-actions {
+  text-align: center !important;
+}
+
+#notification .notification-table td:nth-child(10) .notification-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  gap: 5px !important;
+  width: 100% !important;
+}
+
+#notification .notification-table td::before {
+  display: none !important;
+}
+
+#notification .notification-table .notification-pill {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  width: auto !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+}
+
+/* At the compact Electron width, reduce only typography/padding so all real
+   columns remain visible. IDs/ICs stay on one line. */
+@media (max-width: 1200px) {
+  #notification .notification-table {
+    font-size: 10px !important;
+  }
+  #notification .notification-table th {
+    padding: 7px 4px !important;
+    font-size: 8.5px !important;
+  }
+  #notification .notification-table td {
+    padding: 6px 4px !important;
+    font-size: 10px !important;
+  }
+}
