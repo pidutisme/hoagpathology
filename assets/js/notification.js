@@ -717,7 +717,7 @@
           ]
       },
       {
-          "name": "Herpes Simplex Virus (HSV 1/2 PCR [Vesicles])",
+          "name": "Herpes Simplex Virus (HSV 1/2 PCR)",
           "rule": "Alert / critical result: HSV-1 DNA Detected / HSV-2 DNA Detected",
           "low": null,
           "high": null,
