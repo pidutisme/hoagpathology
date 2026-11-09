@@ -132,7 +132,7 @@
       return;
     }
   
-    var currentYear = new Date().getFullYear();
+    var currentYear = (window.LabAppTime && window.LabAppTime.nowParts ? window.LabAppTime.nowParts().year : new Date().getFullYear());
   
     var config = Object.freeze({
       shortMonthNames: Object.freeze(['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']),
@@ -179,7 +179,6 @@
       clockDateKey: '',
       serverClockOffsetMs: 0,
       serverTimeSynced: false,
-      timeZoneFormatter: null,
       calendarNeedsRefresh: false,
       rosterInputSaveTimer: null,
       rosterCloudSaveTimer: null,
@@ -318,70 +317,13 @@
     }
   
     /* +----------------------------------+
-     * + getTimeZoneFormatter             +
-     * +----------------------------------+ */
-    function getTimeZoneFormatter() {
-      if (state.timeZoneFormatter) return state.timeZoneFormatter;
-      if (!window.Intl || !window.Intl.DateTimeFormat) return null;
-      try {
-        state.timeZoneFormatter = new Intl.DateTimeFormat('en-GB', {
-          timeZone: config.timeZone,
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        });
-        return state.timeZoneFormatter;
-      } catch (error) {
-        console.warn('Timezone formatter unavailable, using fixed MYT offset fallback:', error);
-        return null;
-      }
-    }
-  
-    /* +----------------------------------+
-     * + normalizeFormattedHour           +
-     * +----------------------------------+ */
-    function normalizeFormattedHour(hourValue) {
-      var hour = Number(hourValue);
-      if (!isFiniteNumber(hour)) return 0;
-      return hour === 24 ? 0 : hour;
-    }
-  
-    /* +----------------------------------+
      * + getMalaysiaTimeParts             +
      * +----------------------------------+ */
     function getMalaysiaTimeParts(instantDate) {
-      var dateObj = instantDate instanceof Date ? instantDate : new Date();
-      var formatter = getTimeZoneFormatter();
-      if (formatter && typeof formatter.formatToParts === 'function') {
-        var map = {};
-        formatter.formatToParts(dateObj).forEach(function (part) {
-          if (part && part.type && part.type !== 'literal') map[part.type] = part.value;
-        });
-        if (map.year && map.month && map.day && map.hour && map.minute && map.second) {
-          return {
-            year: Number(map.year),
-            month: Number(map.month),
-            day: Number(map.day),
-            hour: normalizeFormattedHour(map.hour),
-            minute: Number(map.minute),
-            second: Number(map.second)
-          };
-        }
+      if (window.LabAppTime && typeof window.LabAppTime.parts === 'function') {
+        return window.LabAppTime.parts(instantDate);
       }
-  
-      var shifted = new Date(dateObj.getTime() + (8 * 60 * 60 * 1000));
-      return {
-        year: shifted.getUTCFullYear(),
-        month: shifted.getUTCMonth() + 1,
-        day: shifted.getUTCDate(),
-        hour: shifted.getUTCHours(),
-        minute: shifted.getUTCMinutes(),
-        second: shifted.getUTCSeconds()
-      };
+      return null;
     }
   
     /* +----------------------------------+
@@ -4834,7 +4776,7 @@ hoagApiRequest('logout', {
         var displayName = normalizeModuleName(moduleName);
         /* Modules with dedicated workspaces never render Year Cards. */
         if(displayName==='INVENTORY' && typeof Inventory!=='undefined' && Inventory.open){ Inventory.open(); return; }
-        if(displayName==='TRANSFUSION' && typeof Transfusion!=='undefined' && Transfusion.open){ Transfusion.open(state.selectedModuleYear || new Date().getFullYear()); return; }
+        if(displayName==='TRANSFUSION' && typeof Transfusion!=='undefined' && Transfusion.open){ Transfusion.open(state.selectedModuleYear || (window.LabAppTime ? window.LabAppTime.nowParts().year : new Date().getFullYear())); return; }
         /* Clear special full-workspace classes when returning to ordinary year cards.
            Transfusion applies this class to the shared grid; if it is left behind,
            its display:block rules force every later module year card into one column. */
@@ -4952,7 +4894,7 @@ hoagApiRequest('logout', {
         }
         if (normalizedName === 'TRANSFUSION' && typeof Transfusion !== 'undefined') {
           if (typeof Router !== 'undefined' && Router.rememberPage) Router.rememberPage('moduleYears');
-          Transfusion.open(state.selectedModuleYear || new Date().getFullYear());
+          Transfusion.open(state.selectedModuleYear || (window.LabAppTime ? window.LabAppTime.nowParts().year : new Date().getFullYear()));
           return;
         }
         if (normalizedName === 'NOTIFICATION' && typeof LabNotification !== 'undefined' && LabNotification && LabNotification.open) {
@@ -8541,16 +8483,6 @@ function exportMonthlySchedulePdfs() {
       }
   
       /* +----------------------------------+
-       * + formatDateTime                   +
-       * +----------------------------------+ */
-      function formatDateTime(value) {
-        if (!value) return 'Never';
-        var date = new Date(value);
-        if (isNaN(date.getTime())) return value;
-        return date.toLocaleString([], { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-      }
-  
-      /* +----------------------------------+
        * + clearNode                        +
        * +----------------------------------+ */
       function clearNode(node) {
@@ -8601,7 +8533,7 @@ function exportMonthlySchedulePdfs() {
           var name = document.createElement('strong');
           name.textContent = user.name || user.id;
           var meta = document.createElement('span');
-          meta.textContent = user.id + ' · Last login: ' + formatDateTime(user.lastLoginAt);
+          meta.textContent = user.id + ' · Last login: ' + window.LabAppTime.formatDateTime(user.lastLoginAt);
           main.appendChild(name);
           main.appendChild(meta);
   
@@ -8684,7 +8616,7 @@ function exportMonthlySchedulePdfs() {
           title.textContent = (log.action || 'ACTIVITY') + ' · ' + (log.actor || 'SYSTEM');
           var time = document.createElement('span');
           time.className = 'admin-log-time';
-          time.textContent = formatDateTime(log.at);
+          time.textContent = window.LabAppTime.formatDateTime(log.at);
           top.appendChild(title);
           top.appendChild(time);
   
@@ -9403,7 +9335,7 @@ function exportMonthlySchedulePdfs() {
       }
       function monthLabel(key){
         var parts=String(key||'').split('-');
-        var d=new Date(Number(parts[0])||new Date().getFullYear(),(Number(parts[1])||1)-1,1);
+        var d=new Date(Number(parts[0])||(window.LabAppTime ? window.LabAppTime.nowParts().year : new Date().getFullYear()),(Number(parts[1])||1)-1,1);
         return d.toLocaleDateString('en-MY',{month:'long',year:'numeric'});
       }
       function saveLocal(){try{safeStorageSet(STORAGE_KEY,JSON.stringify(data));}catch(e){}}
@@ -9649,7 +9581,7 @@ function exportMonthlySchedulePdfs() {
       function renderHistory(){
         var q=(cleanText(($('inventorySearch')||{}).value)||'').toLowerCase();var cat=($('inventoryCategoryFilter')||{}).value||'ALL';var status=($('inventoryStatusFilter')||{}).value||'ALL';var rows=data.transactions.slice().sort(function(a,b){return String(b.at).localeCompare(String(a.at));}).filter(function(t){var item=getItem(t.itemId);if(!item)return false;if(cat!=='ALL'&&item.category!==cat)return false;var st=itemStatus(item);if(status==='LOW'&&st!=='LOW')return false;if(status==='OUT'&&st!=='OUT')return false;if(status==='EXPIRING'&&!lotsForItem(item.id).some(function(l){return expiryStatus(l.expiry)==='EXPIRING';}))return false;if(status==='EXPIRED'&&!lotsForItem(item.id).some(function(l){return expiryStatus(l.expiry)==='EXPIRED';}))return false;return !q||[item.name,item.category,t.lotNo,t.staff,t.type,t.notes].join(' ').toLowerCase().indexOf(q)!==-1;});
         var html='<table class="inventory-table"><thead><tr><th>DATE / TIME</th><th>ITEM</th><th>MOVEMENT</th><th>LOT NO.</th><th>QTY</th><th>EXPIRY</th><th>STAFF</th><th>NOTES</th><th class="inventory-history-edit-head">ACTIONS</th></tr></thead><tbody>';
-        rows.slice(0,500).forEach(function(t){var item=getItem(t.itemId);var actions=inventoryAdminAllowed()?'<td class="inventory-history-edit-cell"><div class="inventory-history-actions"><button type="button" class="inventory-history-edit-btn" data-inventory-edit-id="'+esc(t.id)+'" title="Edit '+esc(t.type==='IN'?'Stock In':'Stock Out')+'">EDIT</button><button type="button" class="inventory-history-delete-btn" data-inventory-delete-id="'+esc(t.id)+'" title="Delete '+esc(t.type==='IN'?'Stock In':'Stock Out')+'">DELETE</button></div></td>':'<td class="inventory-history-edit-cell"><span class="inventory-muted">ADMIN ONLY</span></td>';html+='<tr><td>'+new Date(t.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'})+'</td><td class="inventory-item-name">'+esc(item?item.name:'Unknown')+'</td><td><span class="inventory-badge '+(t.type==='IN'?'ok':'low')+'">'+t.type+'</span></td><td>'+esc(t.lotNo||'OPENING / NO LOT')+'</td><td class="inventory-num">'+(t.type==='OUT'?'-':'')+Number(t.qty||0)+'</td><td>'+esc(t.expiry||'—')+'</td><td>'+esc(t.staff||'—')+'</td><td class="inventory-muted">'+esc(t.notes||'')+'</td>'+actions+'</tr>';});
+        rows.slice(0,500).forEach(function(t){var item=getItem(t.itemId);var actions=inventoryAdminAllowed()?'<td class="inventory-history-edit-cell"><div class="inventory-history-actions"><button type="button" class="inventory-history-edit-btn" data-inventory-edit-id="'+esc(t.id)+'" title="Edit '+esc(t.type==='IN'?'Stock In':'Stock Out')+'">EDIT</button><button type="button" class="inventory-history-delete-btn" data-inventory-delete-id="'+esc(t.id)+'" title="Delete '+esc(t.type==='IN'?'Stock In':'Stock Out')+'">DELETE</button></div></td>':'<td class="inventory-history-edit-cell"><span class="inventory-muted">ADMIN ONLY</span></td>';html+='<tr><td>'+window.LabAppTime.formatDateTime(t.at)+'</td><td class="inventory-item-name">'+esc(item?item.name:'Unknown')+'</td><td><span class="inventory-badge '+(t.type==='IN'?'ok':'low')+'">'+t.type+'</span></td><td>'+esc(t.lotNo||'OPENING / NO LOT')+'</td><td class="inventory-num">'+(t.type==='OUT'?'-':'')+Number(t.qty||0)+'</td><td>'+esc(t.expiry||'—')+'</td><td>'+esc(t.staff||'—')+'</td><td class="inventory-muted">'+esc(t.notes||'')+'</td>'+actions+'</tr>';});
         html+='</tbody></table>';if(!rows.length)html='<div class="inventory-empty">No stock movements recorded yet.</div>';($('inventoryTableWrap')||{}).innerHTML=html;
       }
 
@@ -9844,7 +9776,7 @@ function exportMonthlySchedulePdfs() {
           if(!rows.length){host.innerHTML='<div class="inventory-record-empty">No Stock In / Stock Out records for this item yet.</div>';}
           else {
             var html='<table class="inventory-record-table"><thead><tr><th>DATE</th><th>MOVEMENT</th><th>QTY</th><th>LOT NO.</th><th>EXPIRY</th><th>STAFF</th><th>NOTES</th><th class="inventory-history-edit-head">ACTIONS</th></tr></thead><tbody>';
-            rows.forEach(function(t){var d=t.at?new Date(t.at).toLocaleDateString('en-MY',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';var actions=inventoryAdminAllowed()?'<td class="inventory-history-edit-cell"><div class="inventory-history-actions"><button type="button" class="inventory-history-edit-btn" data-inventory-edit-id="'+esc(t.id)+'">EDIT</button><button type="button" class="inventory-history-delete-btn" data-inventory-delete-id="'+esc(t.id)+'">DELETE</button></div></td>':'<td class="inventory-history-edit-cell"><span class="inventory-muted">ADMIN ONLY</span></td>';html+='<tr><td>'+esc(d)+'</td><td class="'+(t.type==='IN'?'movement-in':'movement-out')+'">'+esc(t.type==='IN'?'STOCK IN':'STOCK OUT')+'</td><td class="inventory-num">'+(t.type==='OUT'?'-':'')+Number(t.qty||0)+'</td><td>'+esc(t.lotNo||'OPENING / NO LOT')+'</td><td>'+esc(t.expiry||'—')+'</td><td>'+esc(t.staff||'—')+'</td><td>'+esc(t.notes||'')+'</td>'+actions+'</tr>';});
+            rows.forEach(function(t){var d=t.at?window.LabAppTime.formatDate(t.at):'—';var actions=inventoryAdminAllowed()?'<td class="inventory-history-edit-cell"><div class="inventory-history-actions"><button type="button" class="inventory-history-edit-btn" data-inventory-edit-id="'+esc(t.id)+'">EDIT</button><button type="button" class="inventory-history-delete-btn" data-inventory-delete-id="'+esc(t.id)+'">DELETE</button></div></td>':'<td class="inventory-history-edit-cell"><span class="inventory-muted">ADMIN ONLY</span></td>';html+='<tr><td>'+esc(d)+'</td><td class="'+(t.type==='IN'?'movement-in':'movement-out')+'">'+esc(t.type==='IN'?'STOCK IN':'STOCK OUT')+'</td><td class="inventory-num">'+(t.type==='OUT'?'-':'')+Number(t.qty||0)+'</td><td>'+esc(t.lotNo||'OPENING / NO LOT')+'</td><td>'+esc(t.expiry||'—')+'</td><td>'+esc(t.staff||'—')+'</td><td>'+esc(t.notes||'')+'</td>'+actions+'</tr>';});
             html+='</tbody></table>';host.innerHTML=html;
           }
         }
@@ -10108,7 +10040,7 @@ function exportMonthlySchedulePdfs() {
      * + Internal live registration page  +
      * +----------------------------------+ */
     var Transfusion = (function () {
-      var currentYear = new Date().getFullYear();
+      var currentYear = (window.LabAppTime && window.LabAppTime.nowParts ? window.LabAppTime.nowParts().year : new Date().getFullYear());
       var currentEditId = '';
       var selectedYear = currentYear;
       var transfusionRows = [];
@@ -10117,7 +10049,7 @@ function exportMonthlySchedulePdfs() {
       function loadTransfusionCache(){var raw=safeStorageGet(transfusionCacheKey);if(!raw)return false;var parsed=safeParse(raw);if(!parsed||!Array.isArray(parsed.rows))return false;transfusionRows=parsed.rows;return true;}
       function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
       function id(){return 'transfusion-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);}
-      function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+      function today(){return window.LabAppTime ? window.LabAppTime.todayKey() : new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0');}
       function displayDate(v){var p=String(v||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:String(v||'');}
       function calcIc(raw, ref){
         var s=String(raw||'').trim().toUpperCase();
@@ -10538,14 +10470,14 @@ if ("serviceWorker" in navigator) {
       pop.querySelector('.inventory-date-month').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
       var grid=pop.querySelector('.inventory-date-grid'); grid.innerHTML='';
       var first=new Date(view.getFullYear(),view.getMonth(),1); var start=(first.getDay()+6)%7; var days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
-      var prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(); var today=key(new Date());
+      var prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(); var today=(window.LabAppTime ? window.LabAppTime.todayKey() : key(new Date()));
       for(var i=0;i<42;i++){var n=i-start+1, d=new Date(view.getFullYear(),view.getMonth(),n), muted=false; if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);muted=true;} else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);muted=true;} var b=document.createElement('button');b.type='button';b.className='inventory-date-day'+(muted?' muted':'')+(key(d)===today?' today':'')+(key(d)===h.value?' selected':'');b.textContent=d.getDate();b.dataset.date=key(d);grid.appendChild(b);}
     }
     function open(){view=parse(h.value)||new Date();render();pop.hidden=false;position();}
     function close(){pop.hidden=true;}
     function choose(k){h.value=k;v.value=fmt(k);h.dispatchEvent(new Event('input',{bubbles:true}));h.dispatchEvent(new Event('change',{bubbles:true}));close();}
     v.value=fmt(h.value); v.addEventListener('click',open); v.addEventListener('focus',open);
-    pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-prev')){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position();}else if(b.hasAttribute('data-next')){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position();}else if(b.dataset.date){choose(b.dataset.date);}else if(b.hasAttribute('data-today')){choose(key(new Date()));}else if(b.hasAttribute('data-clear')){choose('');}});
+    pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-prev')){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position();}else if(b.hasAttribute('data-next')){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position();}else if(b.dataset.date){choose(b.dataset.date);}else if(b.hasAttribute('data-today')){choose(window.LabAppTime ? window.LabAppTime.todayKey() : key(new Date()));}else if(b.hasAttribute('data-clear')){choose('');}});
     document.addEventListener('mousedown',function(e){if(!pop.contains(e.target)&&e.target!==v)close();});
     window.addEventListener('resize',function(){if(!pop.hidden)position();}); window.addEventListener('scroll',function(){if(!pop.hidden)position();},true);
     var form=v.closest('form'); if(form)form.addEventListener('reset',function(){setTimeout(function(){v.value=fmt(h.value);},0);});

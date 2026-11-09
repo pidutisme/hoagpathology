@@ -739,47 +739,14 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  function pad(n) { return String(n).padStart(2, '0'); }
-  function nowLocalInput() {
-    var d = new Date();
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-  }
-  function timeNow() {
-    var d = new Date(), h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12; return pad(h) + ':' + pad(m) + ' ' + ap;
-  }
-
-
-  // Notification dates are clinical wall-clock times for Malaysia.
-  // Always render them in Asia/Kuala_Lumpur instead of the browser/Electron
-  // machine timezone, so opening the same app on another machine cannot move
-  // a notification to the previous/next calendar day.
-  function malaysiaDateParts(value) {
-    if (!value) return null;
-    var d = new Date(value);
-    if (isNaN(d.getTime())) return null;
-    try {
-      var parts = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Asia/Kuala_Lumpur',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-      }).formatToParts(d);
-      var out = {};
-      parts.forEach(function (p) { if (p.type !== 'literal') out[p.type] = p.value; });
-      return {
-        year: Number(out.year), month: Number(out.month), day: Number(out.day),
-        hour: Number(out.hour), minute: Number(out.minute)
-      };
-    } catch (e) {
-      return null;
-    }
-  }
+  function nowLocalInput() { return window.LabAppTime.localInputNow(); }
+  function timeNow() { return window.LabAppTime.timeNow(); }
 
   function fmtDate(value) {
     if (!value) return '—';
-    var p = malaysiaDateParts(value);
+    var p = window.LabAppTime.parts(value);
     if (!p) return esc(value);
-    return pad(p.day) + '/' + pad(p.month) + '/' + p.year + '<br><small>' + pad(p.hour) + ':' + pad(p.minute) + '</small>';
+    return window.LabAppTime.pad2(p.day) + '/' + window.LabAppTime.pad2(p.month) + '/' + p.year + '<br><small>' + window.LabAppTime.pad2(p.hour) + ':' + window.LabAppTime.pad2(p.minute) + '</small>';
   }
   var recordsHydrated = false;
   var notificationLoading = false;
@@ -921,10 +888,12 @@
     r = r && typeof r === 'object' ? r : {};
     var dt = r.notification_datetime || '';
     if (dt) {
-      var localParts = malaysiaDateParts(dt);
+      var localParts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2}))?$/.test(String(dt)) && !/[zZ]|[+-]\d{2}:\d{2}$/.test(String(dt))
+        ? window.LabAppTime.localWallClockParts(dt)
+        : window.LabAppTime.parts(dt);
       if (localParts) {
-        dt = localParts.year + '-' + pad(localParts.month) + '-' + pad(localParts.day) +
-          'T' + pad(localParts.hour) + ':' + pad(localParts.minute);
+        dt = localParts.year + '-' + window.LabAppTime.pad2(localParts.month) + '-' + window.LabAppTime.pad2(localParts.day) +
+          'T' + window.LabAppTime.pad2(localParts.hour) + ':' + window.LabAppTime.pad2(localParts.minute);
       } else {
         dt = String(dt).replace(' ', 'T').slice(0,16);
       }
@@ -1048,14 +1017,7 @@
   }
 
   function localNotificationDateTimeToUtc(value) {
-    var raw = String(value || '').trim();
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return raw;
-    // The Notification form is explicitly a Malaysia wall-clock value.
-    // Attach +08:00 directly instead of relying on the machine/browser
-    // timezone, then store the equivalent UTC instant in timestamptz.
-    var d = new Date(raw + ':00+08:00');
-    if (isNaN(d.getTime())) return raw;
-    return d.toISOString();
+    return window.LabAppTime.localWallClockToUtc(value);
   }
 
   function saveNotificationRecord(item) {
@@ -1130,12 +1092,12 @@
     var s = String(value || '').replace(/[^0-9]/g, '');
     if (s.length < 6) return;
     var yy = Number(s.slice(0,2)), mm = Number(s.slice(2,4)), dd = Number(s.slice(4,6));
-    var now = new Date(), currentYY = now.getFullYear() % 100;
+    var nowParts = window.LabAppTime.nowParts(), currentYY = nowParts.year % 100;
     var year = yy <= currentYY ? 2000 + yy : 1900 + yy;
     var dob = new Date(year, mm - 1, dd);
     if (dob.getFullYear() !== year || dob.getMonth() !== mm - 1 || dob.getDate() !== dd) return;
-    var age = now.getFullYear() - year;
-    if (now.getMonth() < mm - 1 || (now.getMonth() === mm - 1 && now.getDate() < dd)) age--;
+    var age = nowParts.year - year;
+    if (nowParts.month < mm || (nowParts.month === mm && nowParts.day < dd)) age--;
     var sex = '';
     if (s.length >= 12) sex = Number(s.slice(-1)) % 2 ? 'M' : 'F';
     if ($('notificationAge')) $('notificationAge').value = Math.max(0, age);
@@ -1302,31 +1264,29 @@
     if (!hidden || !visible || visible._notificationDateTimeReady) return;
     visible._notificationDateTimeReady = true;
 
-    function pad(n) { return String(n).padStart(2, '0'); }
     function parseValue(value) {
       var raw = String(value || '').trim();
       if (!raw) return null;
       var m = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
       if (m) return { year:Number(m[1]), month:Number(m[2])-1, day:Number(m[3]), hour:Number(m[4]), minute:Number(m[5]) };
-      var d = new Date(raw);
-      if (isNaN(d.getTime())) return null;
-      return { year:d.getFullYear(), month:d.getMonth(), day:d.getDate(), hour:d.getHours(), minute:d.getMinutes() };
+      var p = window.LabAppTime && window.LabAppTime.formatDateTimeInput(raw);
+      return p || null;
     }
     function toValue(parts) {
-      return parts.year + '-' + pad(parts.month + 1) + '-' + pad(parts.day) + 'T' + pad(parts.hour) + ':' + pad(parts.minute);
+      return parts.year + '-' + window.LabAppTime.pad2(parts.month + 1) + '-' + window.LabAppTime.pad2(parts.day) + 'T' + window.LabAppTime.pad2(parts.hour) + ':' + window.LabAppTime.pad2(parts.minute);
     }
     function display(parts) {
       if (!parts) return '';
       var d = new Date(parts.year, parts.month, parts.day);
       var h = parts.hour % 12 || 12, ap = parts.hour >= 12 ? 'PM' : 'AM';
-      return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear() + ' ' + pad(h) + ':' + pad(parts.minute) + ' ' + ap;
+      return window.LabAppTime.pad2(d.getDate()) + '/' + window.LabAppTime.pad2(d.getMonth()+1) + '/' + d.getFullYear() + ' ' + window.LabAppTime.pad2(h) + ':' + window.LabAppTime.pad2(parts.minute) + ' ' + ap;
     }
     function cloneParts(p) { return {year:p.year, month:p.month, day:p.day, hour:p.hour, minute:p.minute}; }
     function currentParts() {
       var p = parseValue(hidden.value);
       if (p) return p;
-      var d = new Date();
-      return {year:d.getFullYear(), month:d.getMonth(), day:d.getDate(), hour:d.getHours(), minute:d.getMinutes()};
+      var nowParts = window.LabAppTime.nowParts();
+      return {year:nowParts.year, month:nowParts.month - 1, day:nowParts.day, hour:nowParts.hour, minute:nowParts.minute};
     }
     function setValue(parts) {
       hidden.value = toValue(parts);
@@ -1360,7 +1320,7 @@
 
     var view = currentParts();
 
-    function key(parts) { return parts.year + '-' + pad(parts.month+1) + '-' + pad(parts.day); }
+    function key(parts) { return parts.year + '-' + window.LabAppTime.pad2(parts.month+1) + '-' + window.LabAppTime.pad2(parts.day); }
     function position() {
       var r = visible.getBoundingClientRect(), w = pop.offsetWidth || 470, h = pop.offsetHeight || 360;
       var left = Math.min(Math.max(10, r.left), Math.max(10, window.innerWidth - w - 10));
@@ -1377,12 +1337,12 @@
       var hours = pop.querySelector('[data-hours]'), mins = pop.querySelector('[data-minutes]'), periods = pop.querySelector('[data-period]');
       hours.innerHTML = ''; mins.innerHTML = ''; periods.innerHTML = '';
       for (var h=1; h<=12; h++) {
-        var hb=document.createElement('button'); hb.type='button'; hb.textContent=pad(h); hb.dataset.hour=String(h);
+        var hb=document.createElement('button'); hb.type='button'; hb.textContent=window.LabAppTime.pad2(h); hb.dataset.hour=String(h);
         if ((parts.hour % 12 || 12)===h) hb.classList.add('selected');
         hours.appendChild(hb);
       }
       for (var m=0; m<60; m++) {
-        var mb=document.createElement('button'); mb.type='button'; mb.textContent=pad(m); mb.dataset.minute=String(m);
+        var mb=document.createElement('button'); mb.type='button'; mb.textContent=window.LabAppTime.pad2(m); mb.dataset.minute=String(m);
         if (parts.minute===m) mb.classList.add('selected');
         mins.appendChild(mb);
       }
@@ -1401,8 +1361,7 @@
       var first = new Date(view.year, view.month, 1), start = (first.getDay()+6)%7;
       var days = new Date(view.year, view.month+1, 0).getDate();
       var prevDays = new Date(view.year, view.month, 0).getDate();
-      var today = new Date();
-      var todayKey = key({year:today.getFullYear(),month:today.getMonth(),day:today.getDate()});
+      var todayKey = window.LabAppTime.todayKey();
       for (var i=0;i<42;i++) {
         var n=i-start+1, d=new Date(view.year,view.month,n), muted=false;
         if(n<1){d=new Date(view.year,view.month-1,prevDays+n);muted=true;}
@@ -1437,7 +1396,7 @@
       else if(b.dataset.hour) { var p=currentParts(); chooseTime(Number(b.dataset.hour),p.minute,p.hour>=12?'PM':'AM'); }
       else if(b.dataset.minute) { var p2=currentParts(); chooseTime(p2.hour%12||12,Number(b.dataset.minute),p2.hour>=12?'PM':'AM'); }
       else if(b.dataset.period) { var p3=currentParts(); chooseTime(p3.hour%12||12,p3.minute,b.dataset.period); }
-      else if(b.hasAttribute('data-now')) { var d=new Date(); setValue({year:d.getFullYear(),month:d.getMonth(),day:d.getDate(),hour:d.getHours(),minute:d.getMinutes()}); render(); }
+      else if(b.hasAttribute('data-now')) { var nowParts=window.LabAppTime.nowParts(); setValue({year:nowParts.year,month:nowParts.month-1,day:nowParts.day,hour:nowParts.hour,minute:nowParts.minute}); render(); }
       else if(b.hasAttribute('data-clear')) { hidden.value=''; visible.value=''; hidden.dispatchEvent(new Event('change',{bubbles:true})); visible.focus(); close(); }
     });
     document.addEventListener('mousedown',function(e){if(!pop.hidden&&!pop.contains(e.target)&&e.target!==visible)close();});
@@ -1502,7 +1461,7 @@
     if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return '';
     if (ap === 'PM' && hour !== 12) hour += 12;
     if (ap === 'AM' && hour === 12) hour = 0;
-    return m[3] + '-' + m[2] + '-' + m[1] + 'T' + pad(hour) + ':' + pad(minute);
+    return m[3] + '-' + m[2] + '-' + m[1] + 'T' + window.LabAppTime.pad2(hour) + ':' + window.LabAppTime.pad2(minute);
   }
 
   function syncNotificationDateTimeBeforeSave() {
