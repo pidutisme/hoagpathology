@@ -88,8 +88,9 @@ async function log(_db, userId, action, detail = '', clientInfo = {}) {
     const info = clientInfo && typeof clientInfo === 'object' ? clientInfo : {};
     const actor = normalizeUserId(userId) || 'SYSTEM';
     const details = clean(detail || info.details || '', 1000);
+    const eventAt = clean(info.at, 80) || iso();
     await appendSystemLog(null, {
-      id: randomUUID(), at: iso(), actor, userId: actor,
+      id: randomUUID(), at: eventAt, actor, userId: actor,
       action: clean(action, 60).toUpperCase(), details, detail: details,
       deviceType: clean(info.deviceType, 40), deviceLabel: clean(info.deviceLabel, 80),
       appMode: clean(info.appMode, 80), browser: clean(info.browser, 80), os: clean(info.os, 80),
@@ -701,7 +702,7 @@ async function dispatch(db, method, a, req) {
       if (existingError) throw existingError;
       const record = await upsertNotificationRow(input, existingRow, s.userId);
       await log(db, s.userId, existingRow ? 'NOTIFICATION_RECORD_UPDATED' : 'NOTIFICATION_RECORD_CREATED',
-        `${existingRow ? 'Updated' : 'Created'} notification record ${id}.`);
+        `${existingRow ? 'Updated' : 'Created'} notification record ${id}.`, { at: record.updated_at });
       return { ok: true, record, updatedAt: record.updated_at, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 
@@ -720,6 +721,7 @@ async function dispatch(db, method, a, req) {
       if (!data || String(data.id) !== rid) fail('Notification Date / Time update was not persisted.', 500);
       const { data: verified, error: verifyError } = await supabase.from('notification_records').select('*').eq('id', rid).single();
       if (verifyError) throw verifyError;
+      await log(db, s.userId, 'NOTIFICATION_RECORD_UPDATED', `Updated notification record ${rid}.`, { at: verified.updated_at });
       return { ok: true, record: verified, updatedAt: verified.updated_at, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 

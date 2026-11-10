@@ -914,6 +914,8 @@
     var normalized = {
       id: String(r.id || ''),
       notification_datetime: dt,
+      created_at: String(r.created_at || ''),
+      updated_at: String(r.updated_at || ''),
       barcode: String(r.barcode || ''),
       patient_name: String(r.patient_name || ''),
       patient_id: String(r.patient_id || ''),
@@ -1525,7 +1527,7 @@
     if (body) body.innerHTML = rows.map(function (r) {
       var cls = r.discipline === 'BIOCHEMISTRY' ? 'bio' : r.discipline === 'HAEMATOLOGY' ? 'hema' : 'micro';
       var statusCls = String(r.status).toLowerCase();
-      return '<tr><td>' + fmtDate(r.notification_datetime) + '</td>' +
+      return '<tr><td>' + fmtDate(r.updated_at || r.created_at || r.notification_datetime) + '</td>' +
         '<td class="patient">' + esc(r.patient_name) + '</td>' +
         '<td>' + esc(r.patient_id) + '</td>' +
         '<td>' + esc(r.unit) + '</td>' +
@@ -1563,7 +1565,7 @@
       modal.addEventListener('click', function (e) { if (e.target === modal || e.target.closest('[data-notification-close]')) modal.hidden = true; });
     }
     var grid = $('notificationDetailGrid');
-    var fields = [['Date / Time', fmtDate(record.notification_datetime)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(record.result)],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
+    var fields = [['Date / Time', fmtDate(record.updated_at || record.created_at || record.notification_datetime)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(record.result)],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
     if (grid) grid.innerHTML = fields.map(function (f) { return '<div class="notification-detail"><small>' + f[0] + '</small><strong>' + f[1] + '</strong></div>'; }).join('');
     modal.hidden = false;
   }
