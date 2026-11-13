@@ -1113,16 +1113,42 @@
         });
       }
 
+      /* Visitor module shells are read-only entry pages. They must remain
+       * open so a Visitor can reach the Year Selector; the individual Year
+       * Cards are locked separately by createYearCard(). Inventory is also a
+       * read-only module shell and must not become a dead clickable card when
+       * its assignment is present in a different legacy casing/label form. */
+      var visitorModuleShells = {
+        'OUTSOURCE': true,
+        'INVENTORY': true,
+        'TRANSFUSION': true,
+        'POCT': true,
+        'CHEMICAL PATHOLOGY': true,
+        'HEMATOLOGY': true,
+        'MICROBIOLOGY': true,
+        'URINE/STOOL ANALYSIS': true,
+        'LEAVE & COURSES': true,
+        'LEAVE': true,
+        'COURSES': true
+      };
+
       function canAccessModule(moduleName) {
         var normalized = String(moduleName || '').trim();
         if (!normalized) return false;
         if (!isVisitorAccessRestricted()) return true;
+        var canonical = normalizeModuleName(normalized).trim().toUpperCase();
+        /* Module/year-selector pages are intentionally reachable for Visitors.
+         * Access control is enforced at the Year Card level, not by blocking
+         * the shell page itself. This also fixes Inventory: its dashboard card
+         * must open when assigned, never silently no-op while appearing active. */
+        if (visitorModuleShells[canonical]) return true;
         return visitorCanAccess(normalized);
       }
 
       function canAccessPage(pageId) {
         if (!isVisitorAccessRestricted()) return true;
         var id = String(pageId || '');
+        if (id === 'inventory') return canAccessModule('INVENTORY');
         if (id === 'moduleYears') {
           var currentModule = window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.getLastModule === 'function'
             ? window.LabApp.Modules.getLastModule()
