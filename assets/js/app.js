@@ -1105,6 +1105,9 @@
         if (!isVisitorAccessRestricted()) return true;
         var target = String(id || '').trim().toLowerCase();
         if (!target) return false;
+        /* LEAVE & COURSES is a year-selector page. Visitors may enter the page
+         * itself; its individual year cards remain locked by createYearCard(). */
+        if (target === 'leavescourses') return true;
         return state.authPageAccess.some(function (allowedId) {
           return String(allowedId || '').trim().toLowerCase() === target;
         });
