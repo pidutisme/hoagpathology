@@ -10469,22 +10469,25 @@ body.visitor-read-only .notification-form .notification-datetime-wrap .notificat
    + VISITOR PAGE ACCESS ADMIN CONTROL                                      +
    +------------------------------------------------------------------------+ */
 .admin-visitor-access-card {
-  gap: 12px;
+  gap: 8px;
 }
 
 .admin-visitor-access-card .admin-form-grid {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr);
+  gap: 8px;
+  align-items: stretch;
 }
 
 .admin-multi-select {
-  min-height: 180px;
-  height: auto;
-  padding: 8px 10px;
+  min-height: 96px;
+  height: 96px;
+  padding: 5px 8px;
+  overflow-y: auto;
 }
 
 .admin-multi-select option {
-  padding: 8px 10px;
-  border-radius: 7px;
+  padding: 4px 8px;
+  border-radius: 6px;
   font-weight: 700;
 }
 
@@ -10492,9 +10495,31 @@ body.visitor-read-only .notification-form .notification-datetime-wrap .notificat
   display: block;
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 10px;
+  line-height: 1.35;
   font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#settings .admin-visitor-access-card > .admin-action-btn {
+  min-height: 34px;
+}
+
+@media (max-width: 760px) {
+  .admin-visitor-access-card .admin-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-multi-select {
+    min-height: 112px;
+    height: 112px;
+  }
+
+  .admin-form-hint {
+    white-space: normal;
+  }
 }
 
 body.visitor-page-access-restricted .nav-btn[aria-hidden="true"] {
