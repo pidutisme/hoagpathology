@@ -10529,3 +10529,26 @@ body.visitor-page-access-restricted .nav-btn[aria-hidden="true"] {
 body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] {
   display: none !important;
 }
+
+
+/* Visitor page access: show all pages/modules, but visibly disable
+ * anything that has not been assigned by an administrator. */
+.nav-btn.visitor-page-access-disabled,
+[data-dashboard-module].visitor-page-access-disabled {
+  opacity: 0.42;
+  cursor: not-allowed !important;
+  filter: grayscale(0.18);
+}
+
+.nav-btn.visitor-page-access-disabled:hover,
+.nav-btn.visitor-page-access-disabled:focus,
+[data-dashboard-module].visitor-page-access-disabled:hover,
+[data-dashboard-module].visitor-page-access-disabled:focus {
+  transform: none !important;
+  box-shadow: inherit;
+}
+
+[data-dashboard-module].visitor-page-access-disabled {
+  pointer-events: none;
+  user-select: none;
+}

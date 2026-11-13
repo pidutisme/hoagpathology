@@ -1141,25 +1141,51 @@
           forEachNode(getNavButtons(), function (button) {
             button.hidden = false;
             button.removeAttribute('aria-hidden');
+            button.removeAttribute('aria-disabled');
+            button.classList.remove('visitor-page-access-disabled');
+            button.removeAttribute('tabindex');
           });
           forEachNode(document.querySelectorAll('[data-dashboard-module]'), function (card) {
             card.hidden = false;
             card.removeAttribute('aria-hidden');
+            card.removeAttribute('aria-disabled');
+            card.classList.remove('visitor-page-access-disabled');
+            card.removeAttribute('tabindex');
           });
           return;
         }
 
         document.body.classList.add('visitor-page-access-restricted');
+
+        /* Visitor navigation is intentionally always visible. Assigned pages
+         * stay clickable; unassigned pages remain visible but are disabled. */
         forEachNode(getNavButtons(), function (button) {
           var allowed = visitorCanAccess(button.dataset.page);
-          button.hidden = !allowed;
-          button.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+          button.hidden = false;
+          button.setAttribute('aria-hidden', 'false');
+          button.setAttribute('aria-disabled', allowed ? 'false' : 'true');
+          button.classList.toggle('visitor-page-access-disabled', !allowed);
+          if (allowed) {
+            button.removeAttribute('tabindex');
+          } else {
+            button.setAttribute('tabindex', '-1');
+          }
         });
+
+        /* Dashboard modules follow the same rule: show every module, but
+         * prevent visitors from opening modules that were not assigned. */
         forEachNode(document.querySelectorAll('[data-dashboard-module]'), function (card) {
           var moduleName = card.getAttribute('data-dashboard-module') || '';
           var allowed = canAccessModule(moduleName);
-          card.hidden = !allowed;
-          card.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+          card.hidden = false;
+          card.setAttribute('aria-hidden', 'false');
+          card.setAttribute('aria-disabled', allowed ? 'false' : 'true');
+          card.classList.toggle('visitor-page-access-disabled', !allowed);
+          if (allowed) {
+            card.removeAttribute('tabindex');
+          } else {
+            card.setAttribute('tabindex', '-1');
+          }
         });
 
         var active = document.querySelector('.page.active');
@@ -1692,6 +1718,9 @@
               event.preventDefault();
               event.stopPropagation();
             }
+            /* Keep unassigned visitor modules visible, but never allow them
+             * to open through the dashboard card handler. */
+            if (!canAccessModule(moduleName)) return;
             if (window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.open === 'function') {
               window.LabApp.Modules.open(moduleName);
             }
@@ -4951,8 +4980,13 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function createYearCard(moduleName, year, isFuture, isCurrent, baseClass) {
         var isLeaveCourses = baseClass === 'leave-course-mini-year';
-        var externalUrl = getModuleYearExternalLink(moduleName, year);
-        var card = (!isFuture && externalUrl) ? document.createElement('a') : document.createElement('button');
+        /* Visitor access stops at the Year Selector. The module itself may be
+         * assigned/opened, but every year remains locked for visitors. This
+         * prevents entering a year record or following an external year link. */
+        var visitorYearLocked = isVisitorAccessRestricted();
+        var locked = isFuture || visitorYearLocked;
+        var externalUrl = visitorYearLocked ? '' : getModuleYearExternalLink(moduleName, year);
+        var card = (!locked && externalUrl) ? document.createElement('a') : document.createElement('button');
         var iconShell = document.createElement('div');
         var icon = document.createElement('div');
         var yearText = document.createElement('div');
@@ -4961,31 +4995,31 @@ hoagApiRequest('logout', {
   
         if (card.tagName === 'BUTTON') {
           card.type = 'button';
-          if (isFuture) card.disabled = true;
+          if (locked) card.disabled = true;
         } else {
           card.href = externalUrl;
           card.target = '_blank';
           card.rel = 'noopener noreferrer';
         }
   
-        card.className = baseClass + (isFuture ? ' locked' : '') + (isCurrent ? ' current-year' : '') + (!isFuture && externalUrl ? ' external-link' : '');
+        card.className = baseClass + (locked ? ' locked' : '') + (isCurrent && !visitorYearLocked ? ' current-year' : '') + (!locked && externalUrl ? ' external-link' : '');
         card.dataset.year = String(year);
         if (externalUrl) card.dataset.externalUrl = externalUrl;
-        card.setAttribute('aria-label', moduleName + ' ' + year + (isFuture ? ' locked' : (externalUrl ? ' external link' : ' open')));
-        card.setAttribute('aria-disabled', isFuture ? 'true' : 'false');
-        if (isFuture) card.setAttribute('title', '🚫 Locked');
+        card.setAttribute('aria-label', moduleName + ' ' + year + (locked ? ' locked' : (externalUrl ? ' external link' : ' open')));
+        card.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        if (locked) card.setAttribute('title', visitorYearLocked ? '🚫 Locked for visitor access' : '🚫 Locked');
         else if (externalUrl) card.setAttribute('title', 'Open external link');
   
         iconShell.className = isLeaveCourses ? 'leave-course-mini-icon-shell' : 'year-card-icon-shell';
         icon.className = isLeaveCourses ? 'leave-course-mini-icon' : 'year-card-icon';
-        icon.textContent = isFuture ? '🔐' : (isCurrent ? '🗂️' : '📁');
+        icon.textContent = locked ? '🔐' : (isCurrent ? '🗂️' : '📁');
         iconShell.appendChild(icon);
   
         yearText.className = isLeaveCourses ? 'leave-course-mini-year-text' : 'year-card-year';
         yearText.textContent = String(year);
   
-        status.className = (isLeaveCourses ? 'leave-course-mini-status' : 'year-card-status') + (isFuture ? ' is-locked' : (isCurrent ? ' is-current' : ''));
-        status.textContent = getYearCardStatus(isFuture, isCurrent);
+        status.className = (isLeaveCourses ? 'leave-course-mini-status' : 'year-card-status') + (locked ? ' is-locked' : (isCurrent ? ' is-current' : ''));
+        status.textContent = visitorYearLocked ? 'Locked for visitor' : getYearCardStatus(isFuture, isCurrent);
   
         card.appendChild(iconShell);
         card.appendChild(yearText);
@@ -4993,7 +5027,7 @@ hoagApiRequest('logout', {
         card.appendChild(status);
   
         card.addEventListener('click', function () {
-          if (isFuture) return;
+          if (locked) return;
           if (typeof ActivityTracker !== 'undefined' && ActivityTracker.track) {
             ActivityTracker.track('OPEN_YEAR', 'Opened ' + moduleName + ' ' + year + '.', { page: 'moduleYears', module: moduleName, year: year }, { dedupeMs: 2000 });
           }
