@@ -1103,7 +1103,11 @@
 
       function visitorCanAccess(id) {
         if (!isVisitorAccessRestricted()) return true;
-        return state.authPageAccess.indexOf(id) >= 0;
+        var target = String(id || '').trim().toLowerCase();
+        if (!target) return false;
+        return state.authPageAccess.some(function (allowedId) {
+          return String(allowedId || '').trim().toLowerCase() === target;
+        });
       }
 
       function canAccessModule(moduleName) {
