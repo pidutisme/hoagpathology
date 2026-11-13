@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
 import { consumeRecoveryCode, consumeTotpCode } from '../lib/mfa.js';
-import { appendSystemLog } from '../lib/session.js';
+import { appendSystemLog, visitorPageAccessForUser } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { loginRequestSchema } from '../lib/schemas/api.js';
@@ -416,6 +416,8 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
     );
   }
 
+  const pageAccess = role === 'VISITOR' ? visitorPageAccessForUser(settings, canonicalUserId) : null;
+
   return {
     ok: true,
     authenticated: true,
@@ -425,8 +427,10 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
     user: {
       id: canonicalUserId,
       name,
-      role
+      role,
+      pageAccess
     },
+    pageAccess,
     version: VERSION
   };
 }

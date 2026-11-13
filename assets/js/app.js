@@ -202,6 +202,7 @@
   	    authUserDisplayName: '',
   	    authUserId: '',
       authRole: '',
+      authPageAccess: null,
       todayFloatingCardPosition: null,
       todayFloatingCardDrag: null,
       todayFloatingCardBound: false
@@ -1071,6 +1072,105 @@
         }
         return null;
       }
+
+      /* +----------------------------------+
+       * + visitor page access              +
+       * +----------------------------------+
+       * Visitor assignments are page/module-level UI routing rules. ADMIN and
+       * USER retain the existing unrestricted navigation. */
+      var visitorAccessCatalog = [
+        { id: 'dashboard', label: 'DASHBOARD' },
+        { id: 'profile', label: 'PROFILE' },
+        { id: 'access', label: 'ACCESS' },
+        { id: 'calendar', label: 'CALENDAR' },
+        { id: 'notification', label: 'NOTIFICATION' },
+        { id: 'leavesCourses', label: 'LEAVE & COURSES' },
+        { id: 'quickLinks', label: 'QUICK LINKS' },
+        { id: 'settings', label: 'SETTING' },
+        { id: 'OUTSOURCE', label: 'OUTSOURCE' },
+        { id: 'INVENTORY', label: 'INVENTORY' },
+        { id: 'TRANSFUSION', label: 'TRANSFUSION' },
+        { id: 'POCT', label: 'POCT' },
+        { id: 'Chemical Pathology', label: 'CHEMICAL PATHOLOGY' },
+        { id: 'Hematology', label: 'HEMATOLOGY' },
+        { id: 'Microbiology', label: 'MICROBIOLOGY' },
+        { id: 'Urine/Stool Analysis', label: 'URINE/STOOL ANALYSIS' }
+      ];
+
+      function isVisitorAccessRestricted() {
+        return String(state.authRole || '').toUpperCase() === 'VISITOR' && Array.isArray(state.authPageAccess);
+      }
+
+      function visitorCanAccess(id) {
+        if (!isVisitorAccessRestricted()) return true;
+        return state.authPageAccess.indexOf(id) >= 0;
+      }
+
+      function canAccessModule(moduleName) {
+        var normalized = String(moduleName || '').trim();
+        if (!normalized) return false;
+        if (!isVisitorAccessRestricted()) return true;
+        return visitorCanAccess(normalized);
+      }
+
+      function canAccessPage(pageId) {
+        if (!isVisitorAccessRestricted()) return true;
+        var id = String(pageId || '');
+        if (id === 'moduleYears') {
+          var currentModule = window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.getLastModule === 'function'
+            ? window.LabApp.Modules.getLastModule()
+            : '';
+          return !!currentModule && canAccessModule(currentModule);
+        }
+        return visitorCanAccess(id);
+      }
+
+      function getDefaultAllowedPage() {
+        if (!isVisitorAccessRestricted()) return 'dashboard';
+        for (var index = 0; index < visitorAccessCatalog.length; index += 1) {
+          var id = visitorAccessCatalog[index].id;
+          if (visitorCanAccess(id) && (document.getElementById(id) || getNavButtonForPage(id))) return id;
+        }
+        /* Dashboard is the safe shell fallback for legacy/empty assignments. */
+        return 'dashboard';
+      }
+
+      function refreshAccessControl() {
+        if (!isVisitorAccessRestricted()) {
+          document.body.classList.remove('visitor-page-access-restricted');
+          forEachNode(getNavButtons(), function (button) {
+            button.hidden = false;
+            button.removeAttribute('aria-hidden');
+          });
+          forEachNode(document.querySelectorAll('[data-dashboard-module]'), function (card) {
+            card.hidden = false;
+            card.removeAttribute('aria-hidden');
+          });
+          return;
+        }
+
+        document.body.classList.add('visitor-page-access-restricted');
+        forEachNode(getNavButtons(), function (button) {
+          var allowed = visitorCanAccess(button.dataset.page);
+          button.hidden = !allowed;
+          button.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+        });
+        forEachNode(document.querySelectorAll('[data-dashboard-module]'), function (card) {
+          var moduleName = card.getAttribute('data-dashboard-module') || '';
+          var allowed = canAccessModule(moduleName);
+          card.hidden = !allowed;
+          card.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+        });
+
+        var active = document.querySelector('.page.active');
+        if (active && active.id && !canAccessPage(active.id)) {
+          var fallback = getDefaultAllowedPage();
+          if (fallback && fallback !== active.id) {
+            preparePageBeforeOpen(fallback);
+            goPage(fallback, getNavButtonForPage(fallback));
+          }
+        }
+      }
   
       /* +----------------------------------+
        * + isRestorablePage                 +
@@ -1217,6 +1317,7 @@
        * +----------------------------------+ */
       function restoreLastPage() {
         var pageId = getLastPage();
+        if (!canAccessPage(pageId)) pageId = getDefaultAllowedPage();
         preparePageBeforeOpen(pageId);
 
         /* moduleYears hosts several dashboard modules without its own sidebar
@@ -1235,8 +1336,9 @@
        * +----------------------------------+ */
       function openDashboard() {
         clearLastPage();
-        preparePageBeforeOpen('dashboard');
-        goPage('dashboard', getNavButtonForPage('dashboard'));
+        var pageId = canAccessPage('dashboard') ? 'dashboard' : getDefaultAllowedPage();
+        preparePageBeforeOpen(pageId);
+        goPage(pageId, getNavButtonForPage(pageId));
       }
   
       /* +----------------------------------+
@@ -1255,7 +1357,8 @@
           event.preventDefault();
           event.stopPropagation();
         }
-        goPage('dashboard', document.querySelector('[data-page="dashboard"]'));
+        var fallback = canAccessPage('dashboard') ? 'dashboard' : getDefaultAllowedPage();
+        goPage(fallback, getNavButtonForPage(fallback));
       }
   
       /* +----------------------------------+
@@ -1306,6 +1409,14 @@
        * + goPage                           +
        * +----------------------------------+ */
       function goPage(pageId, btn) {
+        if (!canAccessPage(pageId)) {
+          var fallback = getDefaultAllowedPage();
+          if (fallback && fallback !== pageId) {
+            preparePageBeforeOpen(fallback);
+            return goPage(fallback, getNavButtonForPage(fallback));
+          }
+          return;
+        }
         if (pageId !== 'calendar' && typeof Calendar !== 'undefined' && Calendar && Calendar.flushPendingInputSave) {
           Calendar.flushPendingInputSave();
         }
@@ -1382,7 +1493,11 @@
         clearLastPage: clearLastPage,
         rememberPage: rememberPage,
         renderBackButton: renderBackButton,
-        bindNavButtons: bindNavButtons
+        bindNavButtons: bindNavButtons,
+        canAccessPage: canAccessPage,
+        canAccessModule: canAccessModule,
+        getDefaultAllowedPage: getDefaultAllowedPage,
+        refreshAccessControl: refreshAccessControl
       };
     })();
   
@@ -2072,7 +2187,10 @@
         return {
           id: userId,
           name: cleanText(user.name || user.displayName || userId) || userId,
-          role: cleanText(user.role || 'USER') || 'USER'
+          role: cleanText(user.role || 'USER') || 'USER',
+          pageAccess: Array.isArray(user.pageAccess)
+            ? user.pageAccess.map(function (item) { return cleanText(item); }).filter(Boolean)
+            : null
         };
       }
 
@@ -2193,6 +2311,10 @@
         state.authUserId = cleanText(user.id);
         state.authUserDisplayName = cleanText(user.name || user.id || 'Team Member') || 'Team Member';
         state.authRole = cleanText(user.role || 'USER') || 'USER';
+        state.authPageAccess = Array.isArray(user.pageAccess) ? user.pageAccess.slice() : null;
+        if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.refreshAccessControl === 'function') {
+          window.LabApp.Router.refreshAccessControl();
+        }
   
       }
 
@@ -2483,6 +2605,7 @@
             return;
           }
           storePublicAuthUser_(envelope);
+          if (envelope.user) applyUser(envelope.user);
         } catch (error) {
           console.warn('Session verification failed:', error);
         } finally {
@@ -2670,6 +2793,7 @@
         state.authUserId = '';
         state.authUserDisplayName = '';
         state.authRole = '';
+        state.authPageAccess = null;
         document.body.classList.remove('visitor-read-only');
   
         if (!preserveActiveLogin) resetAuthForms();
@@ -4886,6 +5010,11 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function open(cardName, activeButton) {
         var normalizedName = normalizeModuleName(cardName);
+        if (typeof Router !== 'undefined' && Router && typeof Router.canAccessModule === 'function' && !Router.canAccessModule(normalizedName)) {
+          var fallback = typeof Router.getDefaultAllowedPage === 'function' ? Router.getDefaultAllowedPage() : 'dashboard';
+          if (typeof Router.goPage === 'function') Router.goPage(fallback, document.querySelector('[data-page="' + fallback + '"]'));
+          return;
+        }
         saveLastModule(normalizedName, normalizedName === 'TRANSFUSION' ? (state.selectedModuleYear || currentYear()) : null);
         if (normalizedName === 'INVENTORY' && typeof Inventory !== 'undefined') {
           if (typeof Router !== 'undefined' && Router.rememberPage) Router.rememberPage('inventory');
@@ -4971,6 +5100,7 @@ hoagApiRequest('logout', {
         renderOutsourcePage: renderOutsourcePage,
         refreshOutsourceLive: refreshOutsourceLive,
         open: open,
+        getLastModule: getLastModule,
         restoreLastModule: restoreLastModule,
         renderLeavesCoursesYears: renderLeavesCoursesYears
       };
@@ -8389,6 +8519,9 @@ function exportMonthlySchedulePdfs() {
         nodes.maintenanceEnabled = $('adminMaintenanceEnabled');
         nodes.maintenanceMessage = $('adminMaintenanceMessage');
   	      nodes.userList = $('adminUserList');
+  	      nodes.visitorAccessForm = $('adminVisitorAccessForm');
+  	      nodes.visitorAccessUser = $('adminVisitorAccessUser');
+  	      nodes.visitorPageAccess = $('adminVisitorPageAccess');
   	      nodes.systemLog = $('adminSystemLog');
   	      nodes.systemLogRetentionLabel = $('adminSystemLogRetentionLabel');
   	      nodes.noticeToast = $('systemNoticeToast');
@@ -8592,6 +8725,118 @@ function exportMonthlySchedulePdfs() {
       }
   
       /* +----------------------------------+
+       * + renderVisitorAccessControls      +
+       * +----------------------------------+ */
+      function renderVisitorAccessControls(users, catalog) {
+        if (!nodes.visitorAccessUser || !nodes.visitorPageAccess) return;
+        var visitorUsers = (users || []).filter(function (user) {
+          return String(user.role || '').toUpperCase() === 'VISITOR' && user.active !== false;
+        });
+        var previousUser = nodes.visitorAccessUser.value;
+        clearNode(nodes.visitorAccessUser);
+        clearNode(nodes.visitorPageAccess);
+
+        if (!visitorUsers.length) {
+          var emptyUser = document.createElement('option');
+          emptyUser.value = '';
+          emptyUser.textContent = 'NO ACTIVE VISITOR USERS';
+          nodes.visitorAccessUser.appendChild(emptyUser);
+          nodes.visitorAccessUser.disabled = true;
+          nodes.visitorPageAccess.disabled = true;
+          return;
+        }
+
+        nodes.visitorAccessUser.disabled = false;
+        nodes.visitorPageAccess.disabled = false;
+
+        visitorUsers.forEach(function (user) {
+          var option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = user.id + ' — ' + user.name;
+          nodes.visitorAccessUser.appendChild(option);
+        });
+
+        var pageCatalog = Array.isArray(catalog) && catalog.length ? catalog : [
+          { id: 'dashboard', label: 'DASHBOARD' },
+          { id: 'profile', label: 'PROFILE' },
+          { id: 'access', label: 'ACCESS' },
+          { id: 'calendar', label: 'CALENDAR' },
+          { id: 'notification', label: 'NOTIFICATION' },
+          { id: 'leavesCourses', label: 'LEAVE & COURSES' },
+          { id: 'quickLinks', label: 'QUICK LINKS' },
+          { id: 'settings', label: 'SETTING' },
+          { id: 'OUTSOURCE', label: 'OUTSOURCE' },
+          { id: 'INVENTORY', label: 'INVENTORY' },
+          { id: 'TRANSFUSION', label: 'TRANSFUSION' },
+          { id: 'POCT', label: 'POCT' },
+          { id: 'Chemical Pathology', label: 'CHEMICAL PATHOLOGY' },
+          { id: 'Hematology', label: 'HEMATOLOGY' },
+          { id: 'Microbiology', label: 'MICROBIOLOGY' },
+          { id: 'Urine/Stool Analysis', label: 'URINE/STOOL ANALYSIS' }
+        ];
+        pageCatalog.forEach(function (item) {
+          var option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.label || item.id;
+          nodes.visitorPageAccess.appendChild(option);
+        });
+
+        var target = visitorUsers.filter(function (user) { return user.id === previousUser; })[0] || visitorUsers[0];
+        nodes.visitorAccessUser.value = target.id;
+        setVisitorPageSelection(target);
+      }
+
+      function setVisitorPageSelection(user) {
+        if (!nodes.visitorPageAccess) return;
+        var selected = user && Array.isArray(user.pageAccess) ? user.pageAccess : [];
+        forEachNode(nodes.visitorPageAccess.options, function (option) {
+          option.selected = selected.indexOf(option.value) >= 0;
+        });
+      }
+
+      function handleVisitorAccessUserChange() {
+        var userId = nodes.visitorAccessUser ? nodes.visitorAccessUser.value : '';
+        var users = lastAdminData && Array.isArray(lastAdminData.users) ? lastAdminData.users : [];
+        var user = users.filter(function (item) { return item.id === userId; })[0] || null;
+        setVisitorPageSelection(user);
+      }
+
+      function saveVisitorPageAccess(event) {
+        event.preventDefault();
+        if (adminBusy) return;
+        var userId = nodes.visitorAccessUser ? nodes.visitorAccessUser.value : '';
+        var selected = nodes.visitorPageAccess
+          ? Array.prototype.map.call(nodes.visitorPageAccess.selectedOptions || [], function (option) { return option.value; })
+          : [];
+        if (!userId) {
+          setStatus('Select an active Visitor user.', 'error');
+          return;
+        }
+        if (!selected.length) {
+          setStatus('Select at least one page/module for the Visitor.', 'error');
+          return;
+        }
+        setAdminBusy(true);
+        setStatus('Saving Visitor page access...', '');
+        hoagApi.run
+          .withSuccessHandler(function (envelope) {
+            handleAdminEnvelope(envelope, 'Visitor page access saved.');
+          })
+          .withFailureHandler(function (error) {
+            setAdminBusy(false);
+            setStatus(error && error.message ? error.message : 'Visitor page access save failed.', 'error');
+          })
+          .adminSetVisitorPageAccess(
+            Auth.getToken(),
+            userId,
+            selected,
+            typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo
+              ? ActivityTracker.getClientInfo({ page: 'settings' })
+              : {}
+          );
+      }
+
+      /* +----------------------------------+
        * + renderLogs                       +
        * +----------------------------------+ */
       function renderLogs(logs) {
@@ -8669,6 +8914,7 @@ function exportMonthlySchedulePdfs() {
         lastAdminData = envelope;
         renderResetOptions(envelope.users || []);
         renderUserList(envelope.users || []);
+        renderVisitorAccessControls(envelope.users || [], envelope.visitorPageCatalog || []);
         renderLogs(envelope.logs || []);
   
         if (nodes.broadcastMessage) nodes.broadcastMessage.value = envelope.broadcast && envelope.broadcast.message ? envelope.broadcast.message : '';
@@ -8907,6 +9153,8 @@ function exportMonthlySchedulePdfs() {
         if (nodes.broadcastForm) nodes.broadcastForm.addEventListener('submit', saveBroadcast);
         if (nodes.maintenanceForm) nodes.maintenanceForm.addEventListener('submit', saveMaintenance);
         if (nodes.userList) nodes.userList.addEventListener('click', handleUserAction);
+        if (nodes.visitorAccessForm) nodes.visitorAccessForm.addEventListener('submit', saveVisitorPageAccess);
+        if (nodes.visitorAccessUser) nodes.visitorAccessUser.addEventListener('change', handleVisitorAccessUserChange);
         document.addEventListener('visibilitychange', function () {
           if (document.hidden) stopAdminPolling();
           else if (isSettingsPageActive()) requestAdminRefresh(0);

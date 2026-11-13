@@ -129,8 +129,10 @@ export default async function handler(req, res) {
           session.session.name ||
           session.userId
         ),
-        role: session.role
+        role: session.role,
+        pageAccess: session.pageAccess
       },
+      pageAccess: session.pageAccess,
       expiresAt: session.session.expiresAt,
       version: VERSION,
       requestId: req.requestId

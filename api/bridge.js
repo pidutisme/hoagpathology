@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, buildPasswordRecord, verifyPassword } from '../lib/auth.js';
-import { sessionFor, appendSystemLog } from '../lib/session.js';
+import { sessionFor, appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser, normalizeVisitorPageAccess } from '../lib/session.js';
 import { inventoryView } from '../lib/inventory-view.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { assertSafePayload, parseRequest } from '../lib/schemas/common.js';
@@ -482,7 +482,19 @@ export default async function handler(req, res) {
 async function loginState(db, token) {
   const auth = await sessionFor(db, token);
   if (!auth) return { ok: true, authenticated: false, version: VERSION };
-  return { ok: true, authenticated: true, user: { id: auth.userId, name: clean(auth.user.displayName || auth.session.name || auth.userId), role: auth.role }, expiresAt: auth.session.expiresAt, version: VERSION };
+  return {
+    ok: true,
+    authenticated: true,
+    user: {
+      id: auth.userId,
+      name: clean(auth.user.displayName || auth.session.name || auth.userId),
+      role: auth.role,
+      pageAccess: auth.pageAccess
+    },
+    pageAccess: auth.pageAccess,
+    expiresAt: auth.session.expiresAt,
+    version: VERSION
+  };
 }
 
 async function dispatch(db, method, a, req) {
@@ -959,12 +971,16 @@ async function dispatch(db, method, a, req) {
             active: u.active !== false,
             deleted: u.deleted === true,
             isSuperAdmin: u.is_super_admin === true,
+            pageAccess: normalizeUserId(u.role) === 'VISITOR'
+              ? visitorPageAccessForUser(settings, u.user_id)
+              : null,
             lastLoginAt: u.last_login_at || '',
             lastLogoutAt: u.last_logout_at || '',
             lastSeenAt: u.last_seen_at || '',
             lastSeenDevice: clean(u.last_seen_device, 120),
             lastSeenPage: clean(u.last_seen_page, 300)
           })),
+        visitorPageCatalog: VISITOR_PAGE_CATALOG,
         broadcast: settings.broadcast || { enabled: false, message: '' },
         maintenance: settings.maintenance || { enabled: false, message: '' },
         chatControl: { locked: true, disabled: true },
@@ -1043,6 +1059,39 @@ async function dispatch(db, method, a, req) {
       await supabase.from('app_sessions').delete().eq('user_id', id);
       await log(db, s.userId, 'ADMIN_SET_USER_ROLE', `${id}: ${role}`, a[3]);
       return { ok: true, role, version: VERSION };
+    }
+
+    case 'adminSetVisitorPageAccess': {
+      const s = await requireAdmin(db, tokenAt(0));
+      const id = normalizeUserId(a[1]);
+      if (!id) fail('User ID is required.');
+      const requested = normalizeVisitorPageAccess(a[2]);
+      const { data: target, error: targetError } = await supabase
+        .from('app_users')
+        .select('user_id, role, deleted')
+        .eq('user_id', id)
+        .maybeSingle();
+      if (targetError) throw targetError;
+      if (!target || target.deleted === true) fail('User was not found.', 404);
+      if (normalizeUserId(target.role) !== 'VISITOR') {
+        fail('Page access can only be assigned to Visitor users.', 400);
+      }
+      if (!requested.length) fail('Select at least one page for the Visitor.');
+      const settings = await getSettings();
+      const mapping = settings.visitorPageAccess && typeof settings.visitorPageAccess === 'object'
+        ? { ...settings.visitorPageAccess }
+        : {};
+      if (!requested.includes('dashboard') && requested.some(item => ![
+        'profile', 'access', 'calendar', 'notification',
+        'leavesCourses', 'quickLinks', 'settings'
+      ].includes(item))) {
+        requested.unshift('dashboard');
+      }
+      mapping[id] = Array.from(new Set(requested));
+      settings.visitorPageAccess = mapping;
+      await saveSettings(settings);
+      await log(db, s.userId, 'ADMIN_SET_VISITOR_PAGE_ACCESS', `${id}: ${mapping[id].join(', ')}`, a[3]);
+      return { ok: true, userId: id, pageAccess: mapping[id], version: VERSION };
     }
 
     case 'adminDeleteAuthUser': {

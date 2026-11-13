@@ -10463,3 +10463,44 @@ body.visitor-read-only .notification-form .notification-datetime-wrap .notificat
   pointer-events: none !important;
   cursor: not-allowed !important;
 }
+
+
+/* +------------------------------------------------------------------------+
+   + VISITOR PAGE ACCESS ADMIN CONTROL                                      +
+   +------------------------------------------------------------------------+ */
+.admin-visitor-access-card {
+  gap: 12px;
+}
+
+.admin-visitor-access-card .admin-form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-multi-select {
+  min-height: 180px;
+  height: auto;
+  padding: 8px 10px;
+}
+
+.admin-multi-select option {
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-weight: 700;
+}
+
+.admin-form-hint {
+  display: block;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+body.visitor-page-access-restricted .nav-btn[aria-hidden="true"] {
+  display: none !important;
+}
+
+body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] {
+  display: none !important;
+}
