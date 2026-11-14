@@ -223,7 +223,15 @@
   	    COURSES: 'COURSES'
   	  };
   
-  	  var holidayRegionParserCases = Object.freeze([
+  	
+
+  /* Shared module-name normalizer. Keep this at app scope because Router
+   * access checks run outside the Modules IIFE. The Modules namespace also
+   * has a local helper for its own internal calls. */
+  function normalizeModuleName(cardName) {
+    return moduleDisplayNames[cardName] || String(cardName || '').toUpperCase();
+  }
+  var holidayRegionParserCases = Object.freeze([
   	    Object.freeze({ input: 'National', regions: Object.freeze(['National']) }),
   	    Object.freeze({ input: 'National except Sabah', regions: Object.freeze(['Selangor', 'WP Kuala Lumpur']) }),
   	    Object.freeze({ input: 'National except Selangor', regions: Object.freeze(['WP Kuala Lumpur', 'Sabah']) }),
