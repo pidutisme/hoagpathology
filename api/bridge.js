@@ -297,6 +297,99 @@ async function upsertNotificationRow(input, existing = null, userId = '') {
   return data;
 }
 
+
+async function getTbis102aRows(limit = null, offset = 0) {
+  const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
+  const requested = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
+  const from = Math.max(Number(offset) || 0, 0);
+  const { data, error } = await supabase
+    .from('tbis102a_records')
+    .select('id, data, created_at, updated_at')
+    .order('created_at', { ascending: false })
+    .range(from, from + requested - 1);
+  if (error) throw error;
+  const rows = (data || []).map(row => {
+    const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
+    if (!item.id) item.id = row.id;
+    if (!item.createdAt) item.createdAt = row.created_at;
+    item.updatedAt = row.updated_at || item.updatedAt || '';
+    return item;
+  }).filter(row => !row.deletedAt);
+  return { rows, hasMore: rows.length >= requested };
+}
+
+function tbis102aOwnerMatches(session, record) {
+  const ownerKeys = [record?.createdBy, record?.createdByUserId, record?.ownerId, record?.ownerUserId]
+    .map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
+  const userKeys = [session.userId, session.user?.userId, session.user?.id, session.user?.username, session.user?.displayName, session.user?.name]
+    .map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
+  return ownerKeys.some(v => userKeys.includes(v));
+}
+
+function requireTbis102aUpdatePermission(session, record) {
+  if (session.role === 'ADMIN' && hasPermission(session, 'tbis102a.update.all')) return session;
+  if (!hasPermission(session, 'tbis102a.update.own') || !tbis102aOwnerMatches(session, record)) {
+    fail('You can only update TBIS102A records created by your own account.', 403);
+  }
+  return session;
+}
+
+function requireTbis102aDeletePermission(session, record) {
+  if (session.role === 'ADMIN' && hasPermission(session, 'tbis102a.delete.all')) return session;
+  if (!hasPermission(session, 'tbis102a.delete.own') || !tbis102aOwnerMatches(session, record)) {
+    fail('You can only delete TBIS102A records created by your own account.', 403);
+  }
+  return session;
+}
+
+function normalizeTbis102aRecord(raw, existing, userId) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const previous = existing && typeof existing === 'object' ? existing : {};
+  const id = clean(source.id || previous.id, 160);
+  if (!id) fail('TBIS102A record ID is required.');
+  const samples = Array.isArray(source.samples) ? source.samples : [];
+  const sample = samples[0] && typeof samples[0] === 'object' ? samples[0] : {};
+  const now = iso();
+  const createdAt = previous.createdAt || source.createdAt || now;
+  const record = {
+    id,
+    date: clean(source.date, 20),
+    labNo: clean(source.labNo, 100),
+    barcode: clean(source.barcode, 160),
+    name: clean(source.name, 200),
+    idNo: clean(source.idNo, 100),
+    unit: clean(source.unit, 120),
+    patient: clean(source.patient, 60),
+    samples: [{
+      afb: clean(sample.afb || 'x1', 20),
+      sample: clean(sample.sample, 40),
+      quality: clean(sample.quality, 40),
+      result: clean(sample.result, 40),
+      observation: clean(sample.observation, 200),
+      scanty: clean(sample.scanty, 40),
+      slideResult: clean(sample.slideResult, 100),
+      patientResult: clean(sample.patientResult || sample.result, 40),
+      slide: clean(sample.slide, 100),
+      releaseDate: clean(sample.releaseDate, 20),
+      tat: clean(sample.tat, 40),
+      staff: clean(sample.staff, 120),
+      review: clean(sample.review, 120),
+      notes: clean(sample.notes, 1000)
+    }],
+    createdAt,
+    createdBy: previous.createdBy || source.createdBy || userId,
+    updatedAt: now,
+    updatedBy: userId,
+    version: Number(previous.version || source.version || 0) + 1 || 1,
+    deletedAt: ''
+  };
+  if (!record.date || !record.name) fail('Date and Name are required.');
+  const s = record.samples[0];
+  if (!s.result) fail('Result is required.');
+  if (s.result === 'SCANTY' && !s.scanty) fail('Numeric result is required when Result is SCANTY.');
+  return record;
+}
+
 async function getNotificationRows(limit = null, offset = 0) {
   const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
   const requested = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
@@ -768,6 +861,66 @@ async function dispatch(db, method, a, req) {
       const deletedAt = iso();
       await log(db, s.userId, 'OUTSOURCE_RECORD_DELETED', `Permanently removed outsource record ${rid}.`);
       return { ok: true, deleted: true, deletedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
+    case 'getTbis102aRecords': {
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'Microbiology', 'tbis102a.read');
+      const opts = a[1] && typeof a[1] === 'object' ? a[1] : {};
+      const requestedLimit = Number(opts.limit);
+      const hasPaging = Number.isFinite(requestedLimit) && requestedLimit > 0;
+      const limit = hasPaging ? Math.min(Math.max(Math.floor(requestedLimit), 1), 1000) : 1000;
+      const offset = hasPaging ? Math.max(Math.floor(Number(opts.offset) || 0), 0) : 0;
+      const result = await getTbis102aRows(limit, offset);
+      return { ok: true, records: result.rows, offset, limit, hasMore: hasPaging ? result.hasMore : false, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
+    case 'upsertTbis102aRecord': {
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'Microbiology', 'tbis102a.read');
+      const input = a[0] && typeof a[0] === 'object' ? a[0] : {};
+      const rid = clean(input.id, 160);
+      if (!rid) fail('TBIS102A record ID is required.');
+      const { data: existingRow, error: existingError } = await supabase.from('tbis102a_records').select('*').eq('id', rid).maybeSingle();
+      if (existingError) throw existingError;
+      const existing = existingRow?.data && typeof existingRow.data === 'object'
+        ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at }
+        : null;
+      if (existing) requireTbis102aUpdatePermission(s, existing);
+      else if (!hasPermission(s, 'tbis102a.create')) fail('You are not authorized to create TBIS102A records.', 403);
+      if (existing && input.expectedVersion !== undefined && Number(existing.version || 1) !== Number(input.expectedVersion)) {
+        fail('TBIS102A record changed. Reload before editing.', 409);
+      }
+      const record = normalizeTbis102aRecord(input, existing, s.userId);
+      const { error: upsertError } = await supabase.from('tbis102a_records').upsert({
+        id: record.id,
+        data: record,
+        created_at: record.createdAt,
+        updated_at: record.updatedAt
+      }, { onConflict: 'id' });
+      if (upsertError) throw upsertError;
+      const { data: verified, error: verifyError } = await supabase.from('tbis102a_records').select('*').eq('id', record.id).single();
+      if (verifyError) throw verifyError;
+      const saved = verified?.data && typeof verified.data === 'object'
+        ? { ...verified.data, id: verified.id, createdAt: verified.created_at, updatedAt: verified.updated_at }
+        : record;
+      await log(db, s.userId, existing ? 'TBIS102A_RECORD_UPDATED' : 'TBIS102A_RECORD_CREATED', `${existing ? 'Updated' : 'Created'} TBIS102A record ${record.id}.`, { page: 'Microbiology', role: s.role });
+      return { ok: true, record: saved, updatedAt: verified.updated_at || record.updatedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+    }
+
+    case 'deleteTbis102aRecord': {
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'Microbiology', ['tbis102a.delete.own', 'tbis102a.delete.all']);
+      const rid = clean(a[0], 160);
+      if (!rid) fail('TBIS102A record ID is required.');
+      const { data: existingRow, error: existingError } = await supabase.from('tbis102a_records').select('*').eq('id', rid).maybeSingle();
+      if (existingError) throw existingError;
+      if (!existingRow) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+      const current = existingRow.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id } : { id: rid };
+      requireTbis102aDeletePermission(s, current);
+      const now = iso();
+      const deleted = { ...current, deletedAt: now, deletedBy: s.userId, updatedAt: now, updatedBy: s.userId, version: Number(current.version || 0) + 1 || 1 };
+      const { error: deleteError } = await supabase.from('tbis102a_records').update({ data: deleted, updated_at: now }).eq('id', rid);
+      if (deleteError) throw deleteError;
+      await log(db, s.userId, 'TBIS102A_RECORD_DELETED', `Deleted TBIS102A record ${rid}.`, { page: 'Microbiology', role: s.role });
+      return { ok: true, deleted: true, recordId: rid, deletedAt: now, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 
     case 'getNotificationRecords': {

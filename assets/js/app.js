@@ -5376,29 +5376,37 @@ hoagApiRequest('logout', {
         }
       }
 
-      var TBIS102A_STORAGE_KEY = 'hoag.tbis102a.records.v2';
       var TBIS102A_PAGE_SIZE = 12;
-
       var TBIS102A = (function () {
         var editId = null;
         var page = 1;
 
-        function records() {
-          try {
-            var raw = localStorage.getItem(TBIS102A_STORAGE_KEY);
-            var rows = raw ? JSON.parse(raw) : [];
-            return Array.isArray(rows) ? rows : [];
-          } catch (e) { return []; }
-        }
+        var rows = [];
+        var loading = false;
+        var saving = false;
 
-        function saveRecords(rows) {
-          try {
-            localStorage.setItem(TBIS102A_STORAGE_KEY, JSON.stringify(rows));
-            return true;
-          } catch (e) {
-            console.error('TBIS102A: unable to save records.', e);
-            return false;
-          }
+        function records() { return rows.slice(); }
+
+        function apiToken() { return getStoredToken(); }
+
+        function loadRecords() {
+          if (loading) return Promise.resolve(rows.slice());
+          loading = true;
+          return hoagApiRequest('action', { method: 'getTbis102aRecords', args: [apiToken(), { limit: 1000, offset: 0 }] })
+            .then(function (result) {
+              if (!result || result.ok === false) throw new Error(result && result.error ? result.error : 'Unable to load TBIS102A records.');
+              rows = Array.isArray(result.records) ? result.records.slice() : [];
+              page = 1;
+              renderRows();
+              return rows.slice();
+            })
+            .catch(function (error) {
+              console.error('TBIS102A records could not be loaded from Supabase:', error);
+              var empty = document.getElementById('tbisEmpty');
+              if (empty) { empty.hidden = false; empty.textContent = error && error.message ? error.message : 'Unable to load TBIS102A records.'; }
+              throw error;
+            })
+            .finally(function () { loading = false; });
         }
 
         function uid() {
@@ -5626,8 +5634,21 @@ hoagApiRequest('logout', {
           body.querySelectorAll('.tbis-delete').forEach(function (b) {
             b.addEventListener('click', function () {
               if (!window.confirm('Delete this TBIS102A record?')) return;
-              saveRecords(records().filter(function (x) { return String(x.id) !== String(b.dataset.id); }));
-              renderRows();
+              var rid = String(b.dataset.id || '');
+              if (!rid) return;
+              b.disabled = true;
+              hoagApiRequest('action', { method: 'deleteTbis102aRecord', args: [rid, apiToken()] })
+                .then(function (result) {
+                  if (!result || result.ok === false || result.deleted !== true) throw new Error(result && result.error ? result.error : 'TBIS102A delete was not committed.');
+                  rows = rows.filter(function (x) { return String(x.id) !== rid; });
+                  renderRows();
+                  if (typeof setSystemToast === 'function') setSystemToast('TBIS102A DELETED', 'The record was removed successfully.', 2200);
+                })
+                .catch(function (error) {
+                  console.error('TBIS102A delete failed:', error);
+                  window.alert(error && error.message ? error.message : 'Unable to delete TBIS102A record.');
+                  b.disabled = false;
+                });
             });
           });
         }
@@ -5718,22 +5739,36 @@ hoagApiRequest('logout', {
             createdAt: new Date().toISOString()
           };
 
-          var rows = records();
-          var index = rows.findIndex(function (x) { return String(x.id) === String(row.id); });
-          if (index >= 0) rows[index] = row;
-          else rows.unshift(row);
+          if (saving) return;
+          saving = true;
+          var saveButton = document.getElementById('tbis102aSave');
+          var originalLabel = saveButton ? saveButton.textContent : 'REGISTER TBIS102A';
+          if (saveButton) { saveButton.disabled = true; saveButton.textContent = editId ? 'SAVING...' : 'REGISTERING...'; }
 
-          if (!saveRecords(rows)) {
-            window.alert('TBIS102A record could not be saved in this browser. Please check browser storage permissions.');
-            return;
-          }
+          var existing = rows.find(function (x) { return String(x.id) === String(row.id); });
+          var expectedVersion = existing ? Number(existing.version || 1) : undefined;
+          var argsRecord = Object.assign({}, row, expectedVersion ? { expectedVersion: expectedVersion } : {});
 
-          clearForm();
-          page = 1;
-          renderRows();
-          if (typeof setSystemToast === 'function') {
-            setSystemToast('TBIS102A SAVED', 'The TBIS102A record has been registered successfully.', 2800);
-          }
+          return hoagApiRequest('action', { method: 'upsertTbis102aRecord', args: [argsRecord, apiToken()] })
+            .then(function (result) {
+              if (!result || result.ok === false || !result.record) throw new Error(result && result.error ? result.error : 'TBIS102A save was not confirmed by Supabase.');
+              var index = rows.findIndex(function (x) { return String(x.id) === String(result.record.id); });
+              if (index >= 0) rows[index] = result.record; else rows.unshift(result.record);
+              clearForm();
+              page = 1;
+              renderRows();
+              if (typeof setSystemToast === 'function') setSystemToast('TBIS102A SAVED', 'The record has been saved to Supabase successfully.', 2800);
+              return result.record;
+            })
+            .catch(function (error) {
+              console.error('TBIS102A save failed:', error);
+              window.alert(error && error.message ? error.message : 'Unable to save TBIS102A record to Supabase.');
+              throw error;
+            })
+            .finally(function () {
+              saving = false;
+              if (saveButton) { saveButton.disabled = false; saveButton.textContent = originalLabel || 'REGISTER TBIS102A'; }
+            });
         }
 
         function render() {
@@ -5825,6 +5860,7 @@ hoagApiRequest('logout', {
           });
 
           renderRows();
+          loadRecords().catch(function () { /* error is surfaced in the table empty state */ });
         }
 
         function open() { render(); }
