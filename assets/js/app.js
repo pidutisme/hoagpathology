@@ -450,8 +450,8 @@
         throw new Error('API returned an invalid response.');
       }
 
-      /* Keep the HTTP result attached to the login envelope so the login
-       * screen can show an exact diagnostic instead of appearing to vanish. */
+      /* Keep HTTP diagnostics internal to the login flow. The Login UI must
+       * never expose status codes or request IDs to end users. */
       if (authAction === 'login') {
         if (data && typeof data === 'object') {
           data._httpStatus = response.status;
@@ -2269,6 +2269,32 @@
       }
   
       /* +----------------------------------+
+       * + getSafeLoginErrorMessage_        +
+       * +----------------------------------+ */
+      function getSafeLoginErrorMessage_(envelope, fallback) {
+        var status = Number(envelope && (envelope._httpStatus || envelope.httpStatus));
+        if (envelope && envelope.mfaRequired) {
+          return 'Enter your authenticator code.';
+        }
+        if (status === 401) {
+          return 'Invalid username or password.';
+        }
+        if (status === 429) {
+          return 'Too many failed attempts. Please try again in a few minutes.';
+        }
+        if (status === 503) {
+          return 'System is temporarily under maintenance. Please try again later.';
+        }
+        if (status >= 500) {
+          return 'Unable to sign in right now. Please try again.';
+        }
+        if (status === 400) {
+          return 'Please enter your username and password.';
+        }
+        return String(fallback || 'Unable to sign in. Please try again.');
+      }
+
+      /* +----------------------------------+
        * + setLoginMessage                  +
        * +----------------------------------+ */
       function setLoginMessage(message, type) {
@@ -3279,18 +3305,15 @@
                   nodes.mfaCode.value = '';
                   nodes.mfaCode.focus();
                 }
-                setLoginMessage(envelope.error || 'Enter your authenticator code.', 'error');
+                setLoginMessage(getSafeLoginErrorMessage_(envelope, 'Enter your authenticator code.'), 'error');
                 return;
               }
               loginMfaRequired = false;
               if (nodes.mfaField) nodes.mfaField.hidden = true;
               clearStoredSession();
-              /* Diagnostic mode: NEVER clear the password here. Keep both fields
-               * visible so a failed request cannot look like the form disappeared. */
-              var loginError = envelope && envelope.error ? envelope.error : 'Invalid username or password.';
-              var httpInfo = envelope && envelope._httpStatus ? ' (HTTP ' + envelope._httpStatus + ')' : '';
-              var reqInfo = envelope && envelope._requestId ? ' [Request ID: ' + envelope._requestId + ']' : '';
-              setLoginMessage(loginError + httpInfo + reqInfo, 'error');
+              /* Keep credentials visible after a failed request, but expose only
+               * a safe user-facing message. HTTP status/request IDs remain internal. */
+              setLoginMessage(getSafeLoginErrorMessage_(envelope, 'Invalid username or password.'), 'error');
               if (nodes.password) nodes.password.focus();
               return;
             }
@@ -3307,8 +3330,8 @@
             if (requestId !== loginRequestId) return;
             clearLoginTimeout_();
             setBusy(false);
-            var networkMessage = error && error.message ? error.message : 'Login failed. Please try again.';
-            setLoginMessage(networkMessage, 'error');
+            /* Never expose raw fetch/parser/backend errors in the Login UI. */
+            setLoginMessage('Unable to connect. Please check your connection and try again.', 'error');
           });
       }
 

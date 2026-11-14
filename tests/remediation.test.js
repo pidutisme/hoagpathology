@@ -95,6 +95,19 @@ test('Visitor-configurable APIs enforce the assigned page before operation permi
   assert.match(blob, /requireModuleAccess\([\s\S]*?'TRANSFUSION',[\s\S]*?operation === 'put'[\s\S]*?'transfusion\.read\.all'/);
 });
 
+test('Login UI hides HTTP status, request IDs, and raw technical errors', () => {
+  const app = read('assets/js/app.js');
+  assert.match(app, /function getSafeLoginErrorMessage_\(envelope, fallback\)/);
+  assert.match(app, /if \(status === 401\) \{\s*return 'Invalid username or password\.';/);
+  assert.match(app, /if \(status === 429\) \{\s*return 'Too many failed attempts\. Please try again in a few minutes\.';/);
+  assert.match(app, /if \(status >= 500\) \{\s*return 'Unable to sign in right now\. Please try again\.';/);
+  assert.match(app, /setLoginMessage\(getSafeLoginErrorMessage_\(envelope/);
+  assert.match(app, /Never expose raw fetch\/parser\/backend errors in the Login UI/);
+  assert.doesNotMatch(app, /var httpInfo = envelope && envelope\._httpStatus/);
+  assert.doesNotMatch(app, /var reqInfo = envelope && envelope\._requestId/);
+  assert.doesNotMatch(app, /setLoginMessage\(networkMessage, 'error'\)/);
+});
+
 test('Visitor cards stay visible, fresh login opens Dashboard, and pathology year links stay locked', () => {
   const app = read('assets/js/app.js');
 
