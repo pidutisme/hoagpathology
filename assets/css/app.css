@@ -10173,42 +10173,29 @@ html.dark-mode-preload .inventory-form select:not(.outsource-native-select) {
 /* +------------------------------------------------------------------------+
    + 7. AUTH VERIFYING & VISITOR READ-ONLY GUARDRAILS                       +
    +------------------------------------------------------------------------+ */
-/* Startup/session verification must never reveal the application shell.
- * Keep the login screen visible until the server confirms the session. */
+/* Session verification is a background integrity check after a same-tab
+ * identity has restored the app shell. It must never hide or disable the app. */
 body.auth-verifying .app {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
   transform: none !important;
   filter: none !important;
 }
 
 body.auth-verifying .pages {
-  visibility: hidden !important;
+  visibility: visible !important;
 }
 
 body.auth-verifying .auth-screen {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 body.auth-verifying #moduleYearGrid,
 body.auth-verifying #dailyRosterList {
-  pointer-events: none !important;
-}
-
-body.auth-verifying #moduleYearGrid input,
-body.auth-verifying #moduleYearGrid select,
-body.auth-verifying #moduleYearGrid textarea,
-body.auth-verifying #moduleYearGrid button,
-body.auth-verifying #dailyRosterList input,
-body.auth-verifying #dailyRosterList select,
-body.auth-verifying #dailyRosterList textarea,
-body.auth-verifying #dailyRosterList button {
-  background: #d9dee7 !important;
-  color: #7b8492 !important;
-  cursor: wait !important;
+  pointer-events: auto !important;
 }
 
 body.auth-ready #dashboard [data-dashboard-module] {

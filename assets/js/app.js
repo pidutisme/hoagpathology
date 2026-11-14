@@ -2955,12 +2955,16 @@
 
         var cachedRestoreUser = getStoredPublicUser_();
         if (cachedRestoreUser && !state.authUserId) {
+          // Restore the last server-issued public identity immediately. This is
+          // UI state only; the HttpOnly session below remains authoritative.
           unlock(cachedRestoreUser, {
             freshLogin: false,
             restoredSession: true,
             deferredSessionVerification: true
           });
         }
+        // Verification is deliberately non-blocking. auth-ready stays active while
+        // login-state verifies the HttpOnly cookie in the background.
         setSessionVerifying_(true);
 
         hoagApiRequest('loginState', { freshSession: false })
@@ -3238,9 +3242,11 @@ hoagApiRequest('logout', {
         /* Refresh-safe session: explicit LOG OUT is the only client action that
          * revokes the server session. Do not revoke it from pagehide/beforeunload. */
         if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
-        // Remove any credentials left by pre-HttpOnly builds.
+        // Remove only legacy credential material. The public same-tab identity is
+        // intentionally preserved so an already-authenticated user can render the
+        // dashboard immediately while the HttpOnly session is verified in the
+        // background.
         safeStorageRemove(TOKEN_KEY);
-        safeStorageRemove(USER_KEY);
         Theme.suspendForLogin();
   
         if (nodes.form) {
