@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const VERSION = require("../package.json").version || "0.0.0";
+const VERSION = require("../package.json").version;
 
 
 export default async function handler(req, res) {

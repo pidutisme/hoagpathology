@@ -77,3 +77,94 @@ test('normal user notification form controls are re-enabled after visitor read-o
   assert.match(notificationJs, /function syncInteractiveState\(\)/);
   assert.match(notificationCss, /#notification \.notification-result-control\.is-quantitative \.notification-custom-select-wrap\s*\{\s*display:\s*none\s*!important;/);
 });
+
+test('Visitor-configurable APIs enforce the assigned page before operation permissions', () => {
+  const bridge = read('api/bridge.js');
+  const transfusion = read('api/transfusion.js');
+  const blob = read('api/transfusion-blob-url.js');
+
+  assert.match(bridge, /case 'getSharedInventory':\s*\{\s*const s = requireModuleAccess\(await requireSession\(db, tokenAt\(0\)\), 'INVENTORY', 'inventory\.read'\)/);
+  assert.match(bridge, /case 'getSharedInventoryMeta':\s*\{\s*const s = requireModuleAccess\(await requireSession\(db, tokenAt\(0\)\), 'INVENTORY', 'inventory\.read'\)/);
+  assert.match(bridge, /case 'getOutsourceSamples':\s*\{\s*const s = requireModuleAccess\(await requireSession\(db, tokenAt\(0\)\), 'OUTSOURCE', 'outsource\.read'\)/);
+  assert.match(bridge, /case 'getNotificationRecords':\s*\{\s*const s = requireModuleAccess\(await requireSession\(db, tokenAt\(0\)\), 'notification', 'notification\.read'\)/);
+  assert.match(bridge, /case 'getUserRosterEnvelope':\s*\{\s*const s = requireModuleAccess\(await requireSession\(db, tokenAt\(0\)\), 'calendar', 'roster\.read'\)/);
+  assert.match(bridge, /case 'getTransfusionRecords':\s*\{\s*const s = requireModuleAccess\(await requireSession\(db, tokenAt\(0\)\), 'TRANSFUSION', \['transfusion\.read\.own', 'transfusion\.read\.all'\]\)/);
+  assert.match(bridge, /\.filter\(r => canReadTransfusionRecord\(s, r\) \|\| canReadLegacyTransfusionRecord\(s, r\)\)/);
+  assert.match(transfusion, /req\.method==='GET'[\s\S]*?requireModuleAccess\(session, 'TRANSFUSION', \['transfusion\.read\.own', 'transfusion\.read\.all'\]\)/);
+  assert.match(blob, /requireModuleAccess\([\s\S]*?'TRANSFUSION',[\s\S]*?operation === 'put'[\s\S]*?'transfusion\.read\.all'/);
+});
+
+test('Visitor cards stay visible, fresh login opens Dashboard, and pathology year links stay locked', () => {
+  const app = read('assets/js/app.js');
+
+  assert.match(app, /function getDefaultAllowedPage\(\)\s*\{\s*return 'dashboard';/);
+  assert.match(app, /if \(options\.freshLogin && typeof window\.LabApp\.Router\.openDashboard === 'function'\)\s*\{\s*window\.LabApp\.Router\.openDashboard\(\);/);
+  assert.match(app, /button\.hidden = false;[\s\S]*?card\.hidden = false;/);
+  assert.match(app, /if \(!canAccessPage\(pageId\)\)\s*\{\s*denyVisitorPageAccess\(pageId\);\s*return;/);
+  assert.match(app, /var visitorYearLocked = isVisitorAccessRestricted\(\);\s*var locked = isFuture \|\| visitorYearLocked;\s*var externalUrl = visitorYearLocked \? '' : getModuleYearExternalLink\(moduleName, year\);/);
+  assert.match(app, /if \(locked\) card\.disabled = true;/);
+  assert.doesNotMatch(app, /var visitorAccessCatalog\s*=\s*\[\s*\{/);
+});
+
+test('changing Visitor page assignment refreshes access without revoking active sessions', () => {
+  const bridge = read('api/bridge.js');
+  const start = bridge.indexOf("case 'adminSetVisitorPageAccess':");
+  const end = bridge.indexOf("case 'adminDeleteAuthUser':", start);
+  assert.ok(start >= 0 && end > start);
+  const action = bridge.slice(start, end);
+  assert.match(action, /saveSettings\(settings\)/);
+  assert.match(action, /clearSessionCache\(id\)/);
+  assert.doesNotMatch(action, /sessions_revoked_at|app_sessions/);
+});
+
+test('system log writes share bounded server-side retention and one authoritative login event', () => {
+  const session = read('lib/session.js');
+  const login = read('api/login.js');
+  const bridge = read('api/bridge.js');
+
+  assert.match(session, /SYSTEM_LOG_RETENTION_DAYS = 14/);
+  assert.match(session, /\.lt\('created_at', cutoff\)[\s\S]*?\.limit\(SYSTEM_LOG_RETENTION_BATCH_SIZE\)/);
+  assert.match(session, /\.delete\(\)\s*\.in\('id', expiredIds\)/);
+  assert.match(session, /await applySystemLogRetention\(\)/);
+  assert.match(login, /action: 'LOGIN'/);
+  assert.match(bridge, /case 'recordSuccessfulLogin': \{ const s = await requireSession\(db, tokenAt\(0\)\); return \{ ok: true, authenticated: true/);
+  assert.match(bridge, /'CLIENT_ACTIVITY'\);/);
+});
+
+test('system log retention uses a strict 14-day cutoff and a bounded idempotent batch', async () => {
+  const { expiredSystemLogIds } = await import('../lib/session.js');
+  const now = Date.UTC(2026, 10, 14, 0, 0, 0);
+  const cutoff = now - 14 * 24 * 60 * 60 * 1000;
+  const rows = [
+    { id: 'at-cutoff', created_at: new Date(cutoff).toISOString() },
+    { id: 'newer', created_at: new Date(cutoff + 1).toISOString() },
+    { id: 'old-1', created_at: new Date(cutoff - 1).toISOString() },
+    ...Array.from({ length: 260 }, (_, index) => ({
+      id: `old-${index + 2}`,
+      created_at: new Date(cutoff - 1000 - index).toISOString()
+    }))
+  ];
+
+  const expired = expiredSystemLogIds(rows, now);
+  assert.equal(expired.length, 250);
+  assert.equal(expired[0], 'old-1');
+  assert.equal(expired.includes('at-cutoff'), false);
+  assert.equal(expired.includes('newer'), false);
+  assert.equal(new Set(expired).size, expired.length);
+  assert.deepEqual(expiredSystemLogIds(rows, now), expired);
+  assert.throws(() => expiredSystemLogIds(rows, Number.NaN), /valid retention timestamp/);
+});
+
+test('application version is served from package metadata without a service-worker duplicate', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const dashboard = read('api/dashboard.js');
+  const bridge = read('api/bridge.js');
+  const login = read('api/login.js');
+  const loginState = read('api/login-state.js');
+  const serviceWorker = read('sw.js');
+  assert.equal(JSON.parse(read('package-lock.json')).packages[''].version, pkg.version);
+  for (const source of [dashboard, bridge, login, loginState]) {
+    assert.match(source, /require\(["'][^"']*package\.json["']\)\.version/);
+  }
+  assert.doesNotMatch(serviceWorker, /hoagpathology-v\d+\.\d+\.\d+/i);
+});

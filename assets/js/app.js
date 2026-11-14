@@ -145,11 +145,7 @@
   	    timeZone: 'Asia/Kuala_Lumpur',
   	    moduleYearStart: Math.max(2026, currentYear - 1),
   	    moduleYearEnd: currentYear + 4,
-  	    appVersion: '2.1.4',
   	    liveChatMaxTextLength: 400,
-  	    systemLogRetentionDays: 14,
-  	    systemLogRetentionLabel: '14-day retention',
-  	    systemLogAutoClearText: 'Logs auto-clear after 14 days.',
   	    defaultUnits: Object.freeze(['']),
         legacyDailyRosterRotation: Object.freeze({
           anchorMonth: 5,
@@ -1065,24 +1061,17 @@
      * + Authentication, Role & Page      +
      * + Permissions across all modules   +
      * +----------------------------------+ */
-    var visitorAccessCatalog = [
-      { id: 'dashboard', label: 'DASHBOARD' },
-      { id: 'profile', label: 'PROFILE' },
-      { id: 'access', label: 'ACCESS' },
-      { id: 'calendar', label: 'CALENDAR' },
-      { id: 'notification', label: 'NOTIFICATION' },
-      { id: 'leavesCourses', label: 'LEAVE & COURSES' },
-      { id: 'quickLinks', label: 'QUICK LINKS' },
-      { id: 'settings', label: 'SETTING' },
-      { id: 'OUTSOURCE', label: 'OUTSOURCE' },
-      { id: 'INVENTORY', label: 'INVENTORY' },
-      { id: 'TRANSFUSION', label: 'TRANSFUSION' },
-      { id: 'POCT', label: 'POCT' },
-      { id: 'Chemical Pathology', label: 'CHEMICAL PATHOLOGY' },
-      { id: 'Hematology', label: 'HEMATOLOGY' },
-      { id: 'Microbiology', label: 'MICROBIOLOGY' },
-      { id: 'Urine/Stool Analysis', label: 'URINE/STOOL ANALYSIS' }
-    ];
+    var visitorAccessCatalog = [];
+
+    function setVisitorAccessCatalog(catalog) {
+      if (!Array.isArray(catalog)) return;
+      visitorAccessCatalog.length = 0;
+      catalog.forEach(function (item) {
+        var id = item && String(item.id || '').trim();
+        if (!id || visitorAccessCatalog.some(function (existing) { return existing.id.toLowerCase() === id.toLowerCase(); })) return;
+        visitorAccessCatalog.push({ id: id, label: String(item.label || id).trim() || id });
+      });
+    }
 
     function normalizeRoleValue(role) {
       var raw = String(role == null ? '' : role).trim().toUpperCase();
@@ -1768,7 +1757,7 @@
       function renderDashboard(data) {
         if (!domNodes.clock || !domNodes.aboutAppVersion) cacheDomNodes();
         setTextIfChanged(domNodes.clock, (data && data.boardTitle) || 'HOAG PATHOLOGY');
-        var appVersion = (data && data.version) || config.appVersion;
+        var appVersion = (data && data.version) || '—';
         if (document.documentElement.getAttribute('data-labapp-version') !== appVersion) {
           document.documentElement.setAttribute('data-labapp-version', appVersion);
         }
@@ -2399,6 +2388,7 @@
           id: userId,
           name: cleanText(user.name || user.displayName || userId) || userId,
           role: cleanText(user.role || 'USER') || 'USER',
+          visitorPageCatalog: Array.isArray(user.visitorPageCatalog) ? user.visitorPageCatalog : null,
           pageAccess: Array.isArray(rawAccess)
             ? rawAccess.map(function (item) { return cleanText(item); }).filter(Boolean)
             : null
@@ -2522,6 +2512,7 @@
        * +----------------------------------+ */
       function applyUser(user) {
         user = normalizePublicAuthUser_(user) || {};
+        if (Array.isArray(user.visitorPageCatalog)) setVisitorAccessCatalog(user.visitorPageCatalog);
         state.authUserId = cleanText(user.id);
         state.authUserDisplayName = cleanText(user.name || user.id || 'Team Member') || 'Team Member';
         state.authRole = normalizeRoleValue(user.role || 'USER');
@@ -8897,9 +8888,7 @@ function exportMonthlySchedulePdfs() {
         nodes.noticeToast = $('systemNoticeToast');
         nodes.noticeTitle = $('systemNoticeTitle');
         nodes.noticeText = $('systemNoticeText');
-        if (nodes.systemLogRetentionLabel) {
-          nodes.systemLogRetentionLabel.textContent = 'User logins, session events, access denied attempts, and admin updates · ' + config.systemLogRetentionLabel;
-        }
+        if (nodes.systemLogRetentionLabel) nodes.systemLogRetentionLabel.textContent = 'User logins, session events, access denied attempts, and admin updates';
       }
   
       /* +----------------------------------+
@@ -9131,7 +9120,7 @@ function exportMonthlySchedulePdfs() {
         if (!nodes.accessOverviewBody) return;
         clearNode(nodes.accessOverviewBody);
         users = users || [];
-        var pageCatalog = Array.isArray(catalog) && catalog.length ? catalog : visitorAccessCatalog;
+        var pageCatalog = Array.isArray(catalog) ? catalog : visitorAccessCatalog;
         var labelMap = {};
         pageCatalog.forEach(function (item) {
           labelMap[String(item.id).toLowerCase()] = item.label || item.id;
@@ -9258,7 +9247,7 @@ function exportMonthlySchedulePdfs() {
         clearNode(nodes.visitorPageAccess);
         if (nodes.visitorCheckboxGrid) clearNode(nodes.visitorCheckboxGrid);
 
-        var pageCatalog = Array.isArray(catalog) && catalog.length ? catalog : visitorAccessCatalog;
+        var pageCatalog = Array.isArray(catalog) ? catalog : visitorAccessCatalog;
 
         if (!visitorUsers.length) {
           var emptyUser = document.createElement('option');
@@ -9416,6 +9405,7 @@ function exportMonthlySchedulePdfs() {
               lastAdminData.users.forEach(function (u) {
                 if (u.id === userId) u.pageAccess = updatedPages.slice();
               });
+              setVisitorAccessCatalog(lastAdminData.visitorPageCatalog);
               renderVisitorAccessControls(lastAdminData.users, lastAdminData.visitorPageCatalog || visitorAccessCatalog);
               renderAccessOverviewTable(lastAdminData.users, lastAdminData.visitorPageCatalog || visitorAccessCatalog);
               if (state.authUserId && state.authUserId.toUpperCase() === String(userId).toUpperCase()) {
@@ -9590,6 +9580,12 @@ function exportMonthlySchedulePdfs() {
         }
   
         lastAdminData = envelope;
+        setVisitorAccessCatalog(envelope.visitorPageCatalog);
+        if (nodes.systemLogRetentionLabel) {
+          var retentionDays = Number(envelope.systemLogRetentionDays);
+          nodes.systemLogRetentionLabel.textContent = 'User logins, session events, access denied attempts, and admin updates' +
+            (Number.isFinite(retentionDays) && retentionDays > 0 ? ' · ' + retentionDays + '-day retention' : '');
+        }
         renderResetOptions(envelope.users || []);
         renderUserList(envelope.users || []);
         renderVisitorAccessControls(envelope.users || [], envelope.visitorPageCatalog || visitorAccessCatalog);

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, buildPasswordRecord, verifyPassword } from '../lib/auth.js';
-import { sessionFor, appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser, normalizeVisitorPageAccess, clearSessionCache } from '../lib/session.js';
+import { sessionFor, appendSystemLog, applySystemLogRetention, SYSTEM_LOG_RETENTION_DAYS, VISITOR_PAGE_CATALOG, visitorPageAccessForUser, normalizeVisitorPageAccess, requireModuleAccess, clearSessionCache } from '../lib/session.js';
 import { inventoryView } from '../lib/inventory-view.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { assertSafePayload, parseRequest } from '../lib/schemas/common.js';
@@ -10,10 +10,10 @@ import { bridgeRequestSchema, loginRequestSchema, outsourceRecordSchema } from '
 import { inventoryMovementSchema } from '../lib/schemas/inventory.js';
 import { loginWithPassword } from './login.js';
 import { hasPermission } from '../lib/permissions.js';
-import { canDeleteTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
+import { canDeleteTransfusionRecord, canReadLegacyTransfusionRecord, canReadTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
 
 const require = createRequire(import.meta.url);
-const VERSION = require('../package.json').version || '2.1.4';
+const VERSION = require('../package.json').version;
 const TZ = 'Asia/Kuala_Lumpur';
 const iso = () => new Date().toISOString();
 const clean = (v, max = 3000) => String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max);
@@ -84,7 +84,7 @@ function requireOutsourceDeletePermission(session, record) {
   fail('You can only delete outsource records created by your own account.', 403);
 }
 
-async function log(_db, userId, action, detail = '', clientInfo = {}) {
+async function log(_db, userId, action, detail = '', clientInfo = {}, source = 'SERVER') {
   try {
     const info = clientInfo && typeof clientInfo === 'object' ? clientInfo : { extra: {} };
     const extraObj = info.extra && typeof info.extra === 'object' ? { ...info.extra } : {};
@@ -96,7 +96,7 @@ async function log(_db, userId, action, detail = '', clientInfo = {}) {
     const page = clean(info.page || extraObj.page || extraObj.module || '', 80);
     const status = clean(info.status || extraObj.status || extraObj.result || (/DENIED|FAIL|REJECT|BLOCK|LOCK|REVOK|DELETE/i.test(cleanAction + ' ' + details) ? 'DENIED' : 'ALLOWED'), 40);
     await appendSystemLog(null, {
-      id: randomUUID(), at: eventAt, actor, userId: actor, role, status,
+      id: randomUUID(), at: eventAt, actor, userId: actor, role, status, source,
       action: cleanAction, details, detail: details,
       deviceType: clean(info.deviceType, 40), deviceLabel: clean(info.deviceLabel, 80),
       appMode: clean(info.appMode, 80), browser: clean(info.browser, 80), os: clean(info.os, 80),
@@ -358,6 +358,7 @@ async function getNotificationRows(limit = null, offset = 0) {
 }
 
 async function getSystemLogs(limit = 250) {
+  await applySystemLogRetention();
   const safeLimit = Math.min(Math.max(Number(limit) || 250, 1), 1000);
   const { data, error } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(safeLimit);
   if (error) throw error;
@@ -499,7 +500,8 @@ async function loginState(db, token) {
       id: auth.userId,
       name: clean(auth.user.displayName || auth.session.name || auth.userId),
       role: auth.role,
-      pageAccess: auth.pageAccess
+      pageAccess: auth.pageAccess,
+      visitorPageCatalog: auth.role === 'VISITOR' ? VISITOR_PAGE_CATALOG : null
     },
     pageAccess: auth.pageAccess,
     expiresAt: auth.session.expiresAt,
@@ -511,8 +513,16 @@ async function dispatch(db, method, a, req) {
   const tokenAt = i => { const supplied = clean(a[i], 300); return supplied === '__HTTPONLY_SESSION__' || !supplied ? cookieValue(req, 'labapp_session') : supplied; };
   switch (method) {
     case 'getDashboardData': return handlerDashboard();
-    case 'recordSuccessfulLogin': { const s = await requireSession(db, tokenAt(0)); await log(db, s.userId, 'LOGIN', 'Signed in successfully.', { ...(a[1] && typeof a[1] === 'object' ? a[1] : {}), role: s.role }); return { ok: true, authenticated: true, version: VERSION }; }
-    case 'logClientActivity': { const s = await requireSession(db, tokenAt(0)); await log(db, s.userId, a[1], a[2], { ...(a[3] && typeof a[3] === 'object' ? a[3] : {}), role: s.role }); return { ok: true, version: VERSION }; }
+    case 'recordSuccessfulLogin': { const s = await requireSession(db, tokenAt(0)); return { ok: true, authenticated: true, userId: s.userId, version: VERSION }; }
+    case 'logClientActivity': {
+      const s = await requireSession(db, tokenAt(0));
+      const action = clean(a[1], 60).toUpperCase();
+      if (/^(?:LOGIN|LOGOUT|AUTH|MFA|PASSWORD|ADMIN|SESSION|BACKUP|SYSTEM_LOG)(?:_|$)/.test(action)) {
+        fail('This event can only be recorded by the server.', 403);
+      }
+      await log(db, s.userId, action, a[2], { ...(a[3] && typeof a[3] === 'object' ? a[3] : {}), role: s.role }, 'CLIENT_ACTIVITY');
+      return { ok: true, version: VERSION };
+    }
 
     case 'getSystemNotice': {
       const s = await requireSession(db, tokenAt(0));
@@ -521,7 +531,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getOutsourceCatalog': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'OUTSOURCE', 'outsource.read');
       const settings = await getSettings();
       const raw = settings.outsourceCatalog || {};
       const labs = Array.isArray(raw.labs) ? raw.labs.map(v => clean(v, 100)).filter(Boolean) : [];
@@ -533,6 +543,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getMalaysiaHolidayData': {
+      requireModuleAccess(await requireSession(db, cookieValue(req, 'labapp_session')), 'calendar', 'calendar.read');
       const year = Number(a[0] || new Date().getFullYear());
       const r = await fetch(`https://malaysia-holiday.dydxsoft.my/api/v1/holidays?year=${year}`, { headers: { Accept: 'application/json' } });
       if (!r.ok) throw Error('Malaysia holiday source unavailable.');
@@ -541,15 +552,14 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getUserRosterEnvelope': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'calendar', 'roster.read');
       const v = await getRoster();
       const roster = v?.roster || {};
       return { ok: true, roster, userId: s.userId, scope: 'team', savedKeys: Object.keys(roster).length, updatedAt: v?.updated_at || '', source: 'supabase-team', version: VERSION, rosterVersion: v?.version || 0 };
     }
 
     case 'saveUserRoster': {
-      const s = await requireSession(db, tokenAt(1));
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'calendar', 'roster.write');
       const roster = a[0] && typeof a[0] === 'object' ? a[0] : {};
       const result = await saveRoster(roster, s.userId, a[2], a[3]);
       if (!result.committed) return { ok: false, conflict: true, roster: result.current?.roster || {}, updatedAt: result.current?.updated_at || '', error: 'Roster was changed by another user. The latest roster has been reloaded; please review and save again.', version: VERSION };
@@ -557,13 +567,13 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getSharedInventoryMeta': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'INVENTORY', 'inventory.read');
       const root = await getInventoryRoot();
       return { ok: true, updatedAt: clean(root.updated_at), version: VERSION, userId: s.userId };
     }
 
     case 'getOutsourceSamples': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'OUTSOURCE', 'outsource.read');
       const opts = a[1] && typeof a[1] === 'object' ? a[1] : {};
       const requestedLimit = Number(opts.limit);
       const hasPaging = Number.isFinite(requestedLimit) && requestedLimit > 0;
@@ -591,8 +601,7 @@ async function dispatch(db, method, a, req) {
     case 'saveOutsourceSamples': fail('Bulk outsource replacement is disabled. Use record-level create, update, or delete actions.', 409);
 
     case 'bulkCreateOutsourceSamples': {
-      const s = await requireSession(db, tokenAt(1));
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'OUTSOURCE', 'outsource.create');
       const input = Array.isArray(a[0]) ? a[0] : [];
       if (!input.length) return { ok: true, created: 0, records: [], updatedAt: '', version: VERSION, userId: s.userId, storageSource: 'supabase' };
       if (input.length > 500) fail('Bulk create is limited to 500 records per request.', 413);
@@ -648,7 +657,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'upsertOutsourceSample': {
-      const s = await requireSession(db, tokenAt(1));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'OUTSOURCE', 'outsource.create');
       const input = a[0];
       if (!input || typeof input !== 'object' || Array.isArray(input)) fail('Invalid outsource record.');
       const fields = Object.keys(outsourceRecordSchema.shape);
@@ -671,7 +680,6 @@ async function dispatch(db, method, a, req) {
       const { data: existingRow, error: existingError } = await supabase.from('outsource_records').select('*').eq('id', record.id).maybeSingle();
       if (existingError) throw existingError;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       if (existing?.deletedAt && s.role !== 'ADMIN') fail('Administrator access is required to update an outsource record.', 403);
       if (existing && expectedUpdatedAt && String(existing.updatedAt || '') !== expectedUpdatedAt) return { ok: false, conflict: true, error: 'Outsource record changed. Reload before saving.', version: VERSION };
       const payloadToSave = existing
@@ -683,7 +691,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'deleteOutsourceSample': {
-      const s = await requireSession(db, tokenAt(1));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'OUTSOURCE', ['outsource.delete', 'outsource.delete.own']);
       const rid = clean(a[0], 120), expectedUpdatedAt = clean(a[2], 80);
       if (!rid) fail('Outsource record ID is required.');
       const { data: row, error } = await supabase.from('outsource_records').select('*').eq('id', rid).maybeSingle();
@@ -702,7 +710,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getNotificationRecords': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'notification', 'notification.read');
       const opts = a[1] && typeof a[1] === 'object' ? a[1] : {};
       const requestedLimit = Number(opts.limit);
       const hasPaging = Number.isFinite(requestedLimit) && requestedLimit > 0;
@@ -713,8 +721,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'upsertNotificationRecord': {
-      const s = await requireSession(db, tokenAt(1));
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'notification', 'notification.write');
       const input = a[0];
       if (!input || typeof input !== 'object' || Array.isArray(input)) fail('Invalid notification record.');
       const id = clean(input.id, 160);
@@ -729,8 +736,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'updateNotificationDateTime': {
-      const s = await requireSession(db, tokenAt(1));
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'notification', 'notification.write');
       const rid = clean(a[0], 160);
       const notificationDatetime = clean(a[1], 80);
       if (!rid) fail('Notification record ID is required.');
@@ -748,8 +754,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'deleteNotificationRecord': {
-      const s = await requireSession(db, tokenAt(1));
-      if (String(s.role || '').toUpperCase() !== 'ADMIN' && s.user?.is_super_admin !== true) fail('Admin access is required to delete notification records.', 403);
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'notification', 'notification.delete');
       const rid = clean(a[0], 160);
       if (!rid) fail('Notification record ID is required.');
       const { data: row, error } = await supabase.from('notification_records').select('id').eq('id', rid).maybeSingle();
@@ -762,24 +767,25 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getTransfusionRecords': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'TRANSFUSION', ['transfusion.read.own', 'transfusion.read.all']);
       const opts = a[1] && typeof a[1] === 'object' ? a[1] : {};
       const year = clean(opts.year || 'ALL', 10).toUpperCase();
       const limit = Math.min(Math.max(Number(opts.limit) || 500, 1), 1000);
       const offset = Math.max(Number(opts.offset) || 0, 0);
-      const rows = await getTransfusionRows(limit, offset);
+      const rows = await getTransfusionRows();
       const filtered = rows
         .filter(r => r && !r.deletedAt)
+        .filter(r => canReadTransfusionRecord(s, r) || canReadLegacyTransfusionRecord(s, r))
         .filter(r => year === 'ALL' || !year || String(r.date || '').slice(0, 4) === year)
         .sort((x, y) => String(y.date || '').localeCompare(String(x.date || '')) || String(y.updatedAt || '').localeCompare(String(x.updatedAt || '')));
-      const records = filtered.slice(0, limit);
+      const records = filtered.slice(offset, offset + limit);
       return {
         ok: true,
         records,
         total: filtered.length,
         offset,
         limit,
-        hasMore: rows.length >= limit,
+        hasMore: offset + records.length < filtered.length,
         version: VERSION,
         userId: s.userId
       };
@@ -787,7 +793,7 @@ async function dispatch(db, method, a, req) {
 
     case 'saveTransfusionRecord':
     case 'updateTransfusionRecord': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'TRANSFUSION', ['transfusion.create', 'transfusion.update.own', 'transfusion.update.all']);
       const rawPayload = a[1] && typeof a[1] === 'object' ? a[1] : {};
       const rawRecord = rawPayload.record && typeof rawPayload.record === 'object' ? rawPayload.record : rawPayload;
       const rid = clean(rawRecord.id, 120);
@@ -795,7 +801,6 @@ async function dispatch(db, method, a, req) {
       const { data: existingRow, error: existingErr } = await supabase.from('transfusion_records').select('*').eq('id', rid).maybeSingle();
       if (existingErr) throw existingErr;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       if (!existing && !hasPermission(s, 'transfusion.create')) fail('You are not authorized to save this transfusion record.', 403);
       if (existing && !canWriteTransfusionRecord(s, existing) && !canWriteLegacyTransfusionRecord(s, existing)) fail('You cannot update this transfusion record.', 403);
       if (existing && rawPayload.expectedVersion !== undefined && Number(existing.version || 1) !== Number(rawPayload.expectedVersion)) {
@@ -839,14 +844,13 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'deleteTransfusionRecord': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'TRANSFUSION', ['transfusion.delete.own', 'transfusion.delete.all']);
       const opts = a[1] && typeof a[1] === 'object' ? a[1] : { recordId: a[1] };
       const rid = clean(opts.recordId || opts.id, 120);
       if (!rid) fail('Transfusion record ID is required.');
       const { data: existingRow, error: existingErr } = await supabase.from('transfusion_records').select('*').eq('id', rid).maybeSingle();
       if (existingErr) throw existingErr;
       if (!existingRow) return { ok: true, deleted: true, recordId: rid, version: VERSION };
-      if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
       const current = existingRow.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id } : { id: rid };
       if (!canDeleteTransfusionRecord(s, current) && !canWriteLegacyTransfusionRecord(s, current)) fail('You cannot delete this transfusion record.', 403);
       const now = iso();
@@ -865,14 +869,13 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getSharedInventory': {
-      const s = await requireSession(db, tokenAt(0));
+      const s = requireModuleAccess(await requireSession(db, tokenAt(0)), 'INVENTORY', 'inventory.read');
       const { root, inventory } = await inventoryFromTables();
       return { ok: true, inventory: inventoryView(inventory), updatedAt: clean(root.updated_at), scope: 'team', storageSource: 'supabase', version: VERSION, userId: s.userId };
     }
 
     case 'saveSharedInventory': {
-      const s = await requireSession(db, tokenAt(1));
-      if (!hasPermission(s, 'inventory.movement.create')) fail('You are not authorized to modify inventory.', 403);
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'INVENTORY', 'inventory.movement.create');
       const requestedInventory = a[0] && typeof a[0] === 'object' && !Array.isArray(a[0]) ? { ...a[0] } : {};
       delete requestedInventory.transfusionRecords;
       delete requestedInventory.deletedTransfusionRecordIds;
@@ -995,6 +998,7 @@ async function dispatch(db, method, a, req) {
         maintenance: settings.maintenance || { enabled: false, message: '' },
         chatControl: { locked: true, disabled: true },
         logs: normalizedLogs,
+        systemLogRetentionDays: SYSTEM_LOG_RETENTION_DAYS,
         version: VERSION,
         admin: { id: s.userId, name: clean(s.user.displayName || s.userId), role: s.role }
       };

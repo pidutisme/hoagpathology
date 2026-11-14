@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasPermission, permissionsForRole, requirePermission } from '../lib/permissions.js';
+import { hasVisitorPageAccess, requireModuleAccess } from '../lib/session.js';
 
 const user = { userId: 'USER-1', role: 'USER' };
 const admin = { userId: 'ADMIN-1', role: 'ADMIN' };
@@ -55,4 +56,22 @@ test('unknown roles and unauthenticated sessions fail closed', () => {
   assert.throws(() => requirePermission(user, 'admin.access'), { status: 403 });
   assert.ok(permissionsForRole('ADMIN').includes('admin.access'));
   assert.deepEqual(permissionsForRole('UNMAPPED'), []);
+});
+
+test('Visitor page access and operation permissions are enforced as separate layers', () => {
+  const newVisitor = { userId: 'VISITOR-NEW', role: 'VISITOR', pageAccess: ['dashboard'] };
+  const inventoryVisitor = { ...newVisitor, pageAccess: ['dashboard', 'INVENTORY'] };
+  const normalUser = { userId: 'USER-1', role: 'USER' };
+
+  assert.equal(hasVisitorPageAccess(newVisitor, 'dashboard'), true);
+  assert.equal(hasVisitorPageAccess(newVisitor, 'INVENTORY'), false);
+  assert.throws(() => requireModuleAccess(newVisitor, 'INVENTORY', 'inventory.read'), { status: 403 });
+
+  assert.equal(hasPermission(inventoryVisitor, 'inventory.read'), true);
+  assert.equal(requireModuleAccess(inventoryVisitor, 'inventory', 'inventory.read'), inventoryVisitor);
+  assert.throws(() => requireModuleAccess(inventoryVisitor, 'INVENTORY', 'inventory.movement.create'), { status: 403 });
+
+  assert.equal(requireModuleAccess(normalUser, 'INVENTORY', 'inventory.read'), normalUser);
+  assert.equal(requireModuleAccess(admin, 'INVENTORY', 'inventory.read'), admin);
+  assert.throws(() => requireModuleAccess(null, 'INVENTORY', 'inventory.read'), { status: 401 });
 });

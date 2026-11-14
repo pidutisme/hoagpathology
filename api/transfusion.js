@@ -1,10 +1,9 @@
 import { createHash } from 'node:crypto';
 import { supabase } from '../lib/supabase-admin.js';
-import { sessionFor, appendSystemLog } from '../lib/session.js';
+import { sessionFor, appendSystemLog, requireModuleAccess } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { transfusionDeleteQuerySchema, transfusionPatchSchema, transfusionQuerySchema, transfusionRecordSchema } from '../lib/schemas/transfusion.js';
-import { hasPermission } from '../lib/permissions.js';
 import { canDeleteTransfusionRecord, canReadLegacyTransfusionRecord, canReadTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
 
 const ROOT = 'labapp/transfusion/records';
@@ -56,6 +55,7 @@ export default async function handler(req,res) {
     const session=await authorizedSession(req,res);
     if(!session)return;
     if(req.method==='GET'){
+      requireModuleAccess(session, 'TRANSFUSION', ['transfusion.read.own', 'transfusion.read.all']);
       const query=parseRequest(transfusionQuerySchema,req.query||{});
       const limit=Math.min(Number(query.limit||500),500);
       const offset=Number(query.offset||0);
@@ -65,9 +65,7 @@ export default async function handler(req,res) {
       return res.status(200).json({ok:true,records,total:filtered.length,offset,limit,hasMore:offset+records.length<filtered.length,requestId:req.requestId});
     }
     if(req.method==='POST'){
-      if(!hasPermission(session,'transfusion.create')){
-        return res.status(403).json({ok:false,error:'You cannot create transfusion records.',requestId:req.requestId});
-      }
+      requireModuleAccess(session, 'TRANSFUSION', 'transfusion.create');
       const record=parseRequest(transfusionRecordSchema,req.body);
       const now = new Date().toISOString();
 const created = {
@@ -118,6 +116,7 @@ if (insertError) {
     }
 
     if(req.method==='PATCH'){
+      requireModuleAccess(session, 'TRANSFUSION', ['transfusion.update.own', 'transfusion.update.all']);
       const input=parseRequest(transfusionPatchSchema,req.body);
       const { data: row, error: readError } = await supabase.from('transfusion_records').select('*').eq('id',input.record.id).maybeSingle();
       if(readError)throw readError;
@@ -159,6 +158,7 @@ if (insertError) {
     }
 
     if(req.method==='DELETE'){
+      requireModuleAccess(session, 'TRANSFUSION', ['transfusion.delete.own', 'transfusion.delete.all']);
       const query=parseRequest(transfusionDeleteQuerySchema,req.query||{});
       const {data:row,error:readError}=await supabase.from('transfusion_records').select('*').eq('id',query.recordId).maybeSingle();
       if(readError)throw readError;

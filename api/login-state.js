@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { sessionFor } from '../lib/session.js';
+import { sessionFor, VISITOR_PAGE_CATALOG } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { loginStateRequestSchema } from '../lib/schemas/api.js';
 
 const require = createRequire(import.meta.url);
-const VERSION = require('../package.json').version || '0.0.0';
+const VERSION = require('../package.json').version;
 
 const COOKIE_NAME = 'labapp_session';
 
@@ -130,7 +130,8 @@ export default async function handler(req, res) {
           session.userId
         ),
         role: session.role,
-        pageAccess: session.pageAccess
+        pageAccess: session.pageAccess,
+        visitorPageCatalog: session.role === 'VISITOR' ? VISITOR_PAGE_CATALOG : null
       },
       pageAccess: session.pageAccess,
       expiresAt: session.session.expiresAt,

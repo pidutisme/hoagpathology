@@ -3,13 +3,13 @@ import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
 import { consumeRecoveryCode, consumeTotpCode } from '../lib/mfa.js';
-import { appendSystemLog, visitorPageAccessForUser } from '../lib/session.js';
+import { appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { loginRequestSchema } from '../lib/schemas/api.js';
 
 const require = createRequire(import.meta.url);
-const VERSION = require('../package.json').version || '0.0.0';
+const VERSION = require('../package.json').version;
 const SESSION_SECONDS = 6 * 60 * 60;
 const clean = (v, max = 3000) =>
   String(v ?? '')
@@ -428,7 +428,8 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
       id: canonicalUserId,
       name,
       role,
-      pageAccess
+      pageAccess,
+      visitorPageCatalog: role === 'VISITOR' ? VISITOR_PAGE_CATALOG : null
     },
     pageAccess,
     version: VERSION

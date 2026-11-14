@@ -1,7 +1,7 @@
 
 import { issueSignedToken, presignUrl } from '@vercel/blob';
 import { handleUploadPresigned } from '@vercel/blob/client';
-import { sessionFor } from '../lib/session.js';
+import { sessionFor, requireModuleAccess } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { transfusionBlobRequestSchema } from '../lib/schemas/files.js';
@@ -19,11 +19,18 @@ export default async function handler(req, res) {
     const session = await sessionFor(null, sessionToken);
     if (!session) throw Object.assign(new Error('Your secure session has expired. Please sign in again.'), { status: 401 });
     const body = parseRequest(transfusionBlobRequestSchema,req.body||{});
+    const operation = body.operation || 'put';
+    requireModuleAccess(
+      session,
+      'TRANSFUSION',
+      operation === 'put'
+        ? ['transfusion.create', 'transfusion.update.own', 'transfusion.update.all']
+        : ['transfusion.read.own', 'transfusion.read.all']
+    );
     const pathnameInput = clean(body.pathname, 500).replace(/^\/+/, '');
     const safeUser = clean(session.userId, 120).replace(/[^a-zA-Z0-9._-]+/g, '_');
     const recordId = clean(body.recordId, 120).replace(/[^a-zA-Z0-9._-]+/g, '_');
     const filename = clean(body.filename, 160).replace(/[^a-zA-Z0-9._-]+/g, '_');
-    const operation = body.operation || 'put';
     const maxSize = body.maxSize || 10485760;
     const pathname = pathnameInput || (recordId && filename ? `transfusion/${safeUser}/${recordId}/${Date.now()}-${filename}` : '');
     if (!pathname || !pathname.startsWith(`transfusion/${safeUser}/`)) {
