@@ -11071,3 +11071,40 @@ body.auth-resolving #authResolvingPanel {
   }
 }
 
+
+/* MICROBIOLOGY STRUCTURE — keep cards directly under the page header. */
+#moduleYears .module-years-inner {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: start;
+}
+
+#moduleYears #moduleYearGrid.microbiology-structure-grid,
+#moduleYears #moduleYearGrid.year-cards-independent.year-cards-module--microbiology-external-quality-assurance {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  align-self: start;
+  align-content: start;
+  overflow: visible;
+}
+
+#moduleYears #moduleYearGrid.microbiology-structure-grid {
+  grid-auto-rows: minmax(112px, auto);
+}
+
+#moduleYears #moduleYearGrid.year-cards-independent.year-cards-module--microbiology-external-quality-assurance {
+  grid-auto-rows: 112px;
+}
+
+@media (max-width: 760px) {
+  #moduleYears .module-years-inner {
+    grid-template-rows: auto auto auto;
+  }
+
+  #moduleYears #moduleYearGrid.microbiology-structure-grid,
+  #moduleYears #moduleYearGrid.year-cards-independent.year-cards-module--microbiology-external-quality-assurance {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
