@@ -10531,26 +10531,13 @@ body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] 
 }
 
 
-/* Visitor page access: show all pages/modules, but visibly disable
- * anything that has not been assigned by an administrator. */
+/* Visitor page access: keep the full UI visible and clickable. Unassigned
+ * items are rejected by the router/module handlers with a NO ACCESS message. */
 .nav-btn.visitor-page-access-disabled,
 [data-dashboard-module].visitor-page-access-disabled {
-  opacity: 0.42;
-  cursor: not-allowed !important;
-  filter: grayscale(0.18);
-  pointer-events: none;
-  user-select: none;
-}
-
-.nav-btn.visitor-page-access-disabled:hover,
-.nav-btn.visitor-page-access-disabled:focus,
-[data-dashboard-module].visitor-page-access-disabled:hover,
-[data-dashboard-module].visitor-page-access-disabled:focus {
-  transform: none !important;
-  box-shadow: inherit;
-}
-
-[data-dashboard-module].visitor-page-access-disabled {
-  pointer-events: none;
+  opacity: 1;
+  cursor: pointer !important;
+  filter: none;
+  pointer-events: auto;
   user-select: none;
 }

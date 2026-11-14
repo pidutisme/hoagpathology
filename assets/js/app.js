@@ -1174,47 +1174,27 @@
 
         document.body.classList.add('visitor-page-access-restricted');
 
-        /* Visitor navigation is intentionally always visible. Assigned pages
-         * stay clickable; unassigned pages remain visible but are disabled. */
+        /* Visitors must see the complete application shell. Do not grey-out,
+         * hide, remove focus, or disable unassigned pages/modules. Access is
+         * enforced only when the user attempts to open the item, where the
+         * router/modules layer shows the standard NO ACCESS message. */
         forEachNode(getNavButtons(), function (button) {
-          var allowed = visitorCanAccess(button.dataset.page);
           button.hidden = false;
           button.setAttribute('aria-hidden', 'false');
-          button.setAttribute('aria-disabled', allowed ? 'false' : 'true');
-          button.classList.toggle('visitor-page-access-disabled', !allowed);
-          if (allowed) {
-            button.removeAttribute('tabindex');
-          } else {
-            button.setAttribute('tabindex', '-1');
-          }
+          button.setAttribute('aria-disabled', 'false');
+          button.classList.remove('visitor-page-access-disabled');
+          button.removeAttribute('tabindex');
         });
 
-        /* Dashboard modules follow the same rule: show every module, but
-         * prevent visitors from opening modules that were not assigned. */
         forEachNode(document.querySelectorAll('[data-dashboard-module]'), function (card) {
-          var moduleName = card.getAttribute('data-dashboard-module') || '';
-          var allowed = canAccessModule(moduleName);
           card.hidden = false;
           card.setAttribute('aria-hidden', 'false');
-          card.setAttribute('aria-disabled', allowed ? 'false' : 'true');
-          card.classList.toggle('visitor-page-access-disabled', !allowed);
-          if (allowed) {
-            card.removeAttribute('tabindex');
-          } else {
-            card.setAttribute('tabindex', '-1');
-          }
+          card.setAttribute('aria-disabled', 'false');
+          card.classList.remove('visitor-page-access-disabled');
+          if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
         });
-
-        var active = document.querySelector('.page.active');
-        if (active && active.id && !canAccessPage(active.id)) {
-          var fallback = getDefaultAllowedPage();
-          if (fallback && fallback !== active.id) {
-            preparePageBeforeOpen(fallback);
-            goPage(fallback, getNavButtonForPage(fallback));
-          }
-        }
       }
-  
+
       /* +----------------------------------+
        * + isRestorablePage                 +
        * +----------------------------------+ */
@@ -1453,10 +1433,8 @@
        * +----------------------------------+ */
       function goPage(pageId, btn) {
         if (!canAccessPage(pageId)) {
-          var fallback = getDefaultAllowedPage();
-          if (fallback && fallback !== pageId) {
-            preparePageBeforeOpen(fallback);
-            return goPage(fallback, getNavButtonForPage(fallback));
+          if (isVisitorAccessRestricted()) {
+            setSystemToast('NO ACCESS', 'You do not have access to this page. Please contact an administrator.', 3200);
           }
           return;
         }
@@ -1735,9 +1713,14 @@
               event.preventDefault();
               event.stopPropagation();
             }
-            /* Keep unassigned visitor modules visible, but never allow them
-             * to open through the dashboard card handler. */
-            if (!canAccessModule(moduleName)) return;
+            /* Keep every visitor module visible. Access is enforced at click
+             * time so unassigned modules show NO ACCESS instead of looking dead. */
+            if (!canAccessModule(moduleName)) {
+              if (isVisitorAccessRestricted()) {
+                setSystemToast('NO ACCESS', 'You do not have access to ' + moduleName + '. Please contact an administrator.', 3200);
+              }
+              return;
+            }
             if (window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.open === 'function') {
               window.LabApp.Modules.open(moduleName);
             }
@@ -2874,6 +2857,11 @@
         setBusy(false);
         setLoginMessage('', '');
         updateResumeSessionButton_();
+        if (nodes.greeting) {
+          var hour = Number(getAppNowParts().hour);
+          var greeting = hour < 12 ? 'Good Morning' : (hour < 18 ? 'Good Afternoon' : 'Good Evening');
+          nodes.greeting.textContent = greeting + ', ' + (state.authUserDisplayName || 'Team Member') + ' 👋';
+        }
 
         /* Restore the saved page BEFORE ending the verification state. This
          * prevents the HTML bootstrap page (DASHBOARD) from ever becoming
@@ -5090,8 +5078,9 @@ hoagApiRequest('logout', {
       function open(cardName, activeButton) {
         var normalizedName = normalizeModuleName(cardName);
         if (typeof Router !== 'undefined' && Router && typeof Router.canAccessModule === 'function' && !Router.canAccessModule(normalizedName)) {
-          var fallback = typeof Router.getDefaultAllowedPage === 'function' ? Router.getDefaultAllowedPage() : 'dashboard';
-          if (typeof Router.goPage === 'function') Router.goPage(fallback, document.querySelector('[data-page="' + fallback + '"]'));
+          if (typeof setSystemToast === 'function' && isVisitorAccessRestricted()) {
+            setSystemToast('NO ACCESS', 'You do not have access to ' + normalizedName + '. Please contact an administrator.', 3200);
+          }
           return;
         }
         saveLastModule(normalizedName, normalizedName === 'TRANSFUSION' ? (state.selectedModuleYear || currentYear()) : null);
