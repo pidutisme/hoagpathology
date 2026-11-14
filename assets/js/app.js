@@ -1113,44 +1113,20 @@
         if (!isVisitorAccessRestricted()) return true;
         var target = String(id || '').trim().toLowerCase();
         if (!target) return false;
-        /* LEAVE & COURSES is a year-selector page. Visitors may enter the page
-         * itself; its individual year cards remain locked by createYearCard(). */
-        if (target === 'leavescourses') return true;
         return state.authPageAccess.some(function (allowedId) {
           return String(allowedId || '').trim().toLowerCase() === target;
         });
       }
 
-      /* Visitor module shells are read-only entry pages. They must remain
-       * open so a Visitor can reach the Year Selector; the individual Year
-       * Cards are locked separately by createYearCard(). Inventory is also a
-       * read-only module shell and must not become a dead clickable card when
-       * its assignment is present in a different legacy casing/label form. */
-      var visitorModuleShells = {
-        'OUTSOURCE': true,
-        'INVENTORY': true,
-        'TRANSFUSION': true,
-        'POCT': true,
-        'CHEMICAL PATHOLOGY': true,
-        'HEMATOLOGY': true,
-        'MICROBIOLOGY': true,
-        'URINE/STOOL ANALYSIS': true,
-        'LEAVE & COURSES': true,
-        'LEAVE': true,
-        'COURSES': true
-      };
-
+      /* Visitor module shells are only entry points to their Year Selector.
+       * They must still obey the administrator's per-user assignment. Once a
+       * module is assigned, the shell opens read-only and its Year Cards remain
+       * locked separately by createYearCard(). */
       function canAccessModule(moduleName) {
         var normalized = String(moduleName || '').trim();
         if (!normalized) return false;
         if (!isVisitorAccessRestricted()) return true;
-        var canonical = normalizeModuleName(normalized).trim().toUpperCase();
-        /* Module/year-selector pages are intentionally reachable for Visitors.
-         * Access control is enforced at the Year Card level, not by blocking
-         * the shell page itself. This also fixes Inventory: its dashboard card
-         * must open when assigned, never silently no-op while appearing active. */
-        if (visitorModuleShells[canonical]) return true;
-        return visitorCanAccess(normalized);
+        return visitorCanAccess(normalizeModuleName(normalized));
       }
 
       function canAccessPage(pageId) {

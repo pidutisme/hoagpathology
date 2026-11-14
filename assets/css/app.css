@@ -10538,6 +10538,8 @@ body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] 
   opacity: 0.42;
   cursor: not-allowed !important;
   filter: grayscale(0.18);
+  pointer-events: none;
+  user-select: none;
 }
 
 .nav-btn.visitor-page-access-disabled:hover,
