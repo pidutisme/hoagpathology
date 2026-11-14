@@ -11266,3 +11266,46 @@ body.auth-resolving #authResolvingPanel {
   #moduleYearGrid.tbis102a-active-grid .outsource-summary,
   #moduleYearGrid.tbis102a-active-grid .outsource-search { grid-template-columns: 1fr; }
 }
+
+/* ===== TBIS102A V15 — 2-column registration form like NOTIFICATION ===== */
+#moduleYearGrid.tbis102a-active-grid .tbis102a-card:first-child { overflow:hidden!important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-grid-layout {
+  grid-template-columns:minmax(560px,44%) minmax(0,1fr)!important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-form.tbis102a-registration-form {
+  display:block!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:14px!important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-grid {
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px 14px!important;
+  align-content:start!important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-field {
+  grid-column:auto!important;
+  min-width:0!important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-field input,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-field select,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-field textarea {
+  width:100%!important;
+  min-height:38px!important;
+  box-sizing:border-box!important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-form-actions {
+  display:flex!important;
+  justify-content:flex-end!important;
+  align-items:center!important;
+  gap:8px!important;
+  padding-top:14px!important;
+}
+@media (max-width:1100px) {
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-grid-layout { grid-template-columns:minmax(0,1fr)!important; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-card:first-child { max-height:none!important; }
+}
+@media (max-width:640px) {
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-grid { grid-template-columns:1fr!important; }
+}
