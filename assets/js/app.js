@@ -5659,7 +5659,23 @@ hoagApiRequest('logout', {
           grid.innerHTML = buildForm();
 
           setVal('tbDate', today());
-          document.getElementById('tbis102aForm').addEventListener('submit', submit);
+          var tbForm = document.getElementById('tbis102aForm');
+          if (tbForm) {
+            /* TBIS102A must never allow ENTER to bubble into the global auth/login form.
+             * In some layouts the app shell contains legacy form handlers; stopping the
+             * keyboard event here prevents an accidental login submit/session transition. */
+            tbForm.addEventListener('keydown', function (event) {
+              if (event.key !== 'Enter') return;
+              event.preventDefault();
+              event.stopPropagation();
+              if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+              if (event.ctrlKey || event.metaKey) {
+                if (typeof tbForm.requestSubmit === 'function') tbForm.requestSubmit();
+                else tbForm.dispatchEvent(new Event('submit', { bubbles: false, cancelable: true }));
+              }
+            }, true);
+            tbForm.addEventListener('submit', submit);
+          }
           document.getElementById('tbis102aClear').addEventListener('click', clearForm);
 
           ['tbisSearch', 'tbisYearFilter', 'tbisMonthFilter'].forEach(function (id) {
