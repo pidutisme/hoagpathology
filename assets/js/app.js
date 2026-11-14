@@ -1,3 +1,62 @@
+/* ===== TBIS102A KEYBOARD/SAVE GUARD (EARLY CAPTURE) ===== */
+(function(){
+  'use strict';
+  function getRoot(target){
+    if(!target || !target.closest) return null;
+    return target.closest('#tbis102aForm');
+  }
+  function getFields(root){
+    if(!root) return [];
+    return Array.prototype.slice.call(root.querySelectorAll(
+      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
+    ));
+  }
+  function focusNext(field, fields, index){
+    var next = fields[index + 1];
+    if(next){
+      try { next.focus({preventScroll:true}); } catch(_){ next.focus(); }
+      window.setTimeout(function(){
+        try { if(document.activeElement !== next){ next.focus(); } } catch(_){ }
+      }, 0);
+      if(next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number' && typeof next.select === 'function'){
+        try { next.select(); } catch(_){ }
+      }
+      return;
+    }
+    var save = document.getElementById('tbis102aSave');
+    if(save){
+      try { save.focus({preventScroll:true}); } catch(_){ save.focus(); }
+    }
+  }
+  document.addEventListener('keydown', function(event){
+    var root = getRoot(event.target);
+    if(!root) return;
+    if(event.key !== 'Enter' && event.code !== 'Enter' && event.code !== 'NumpadEnter') return;
+    var fields = getFields(root);
+    var index = fields.indexOf(event.target);
+    if(index < 0) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if(event.stopImmediatePropagation) event.stopImmediatePropagation();
+
+    if(event.ctrlKey || event.metaKey){
+      if(typeof window.__TBIS102A_SUBMIT === 'function') window.__TBIS102A_SUBMIT(event);
+      return;
+    }
+    focusNext(event.target, fields, index);
+  }, true);
+
+  document.addEventListener('click', function(event){
+    var button = event.target && event.target.closest ? event.target.closest('#tbis102aSave') : null;
+    if(!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if(event.stopImmediatePropagation) event.stopImmediatePropagation();
+    if(typeof window.__TBIS102A_SUBMIT === 'function') window.__TBIS102A_SUBMIT(event);
+  }, true);
+})();
+
 /* ===== ORIGINAL SCRIPT BLOCK: outsource-filter-clean-final-js ===== */
 (function(){
   'use strict';
@@ -5737,7 +5796,11 @@ hoagApiRequest('logout', {
 
         function open() { render(); }
 
-        return { open: open, render: render };
+        window.__TBIS102A_SUBMIT = function (event) {
+          submit(event || { preventDefault: function () {} });
+        };
+
+        return { open: open, render: render, submit: submit };
       })();
 
       function renderMicrobiologyTbis() {
