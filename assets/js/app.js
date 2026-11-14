@@ -5446,10 +5446,8 @@ hoagApiRequest('logout', {
           if (form) form.reset();
           setVal('tbDate', today());
           setVal('tbScanty', '');
-          var scantyField = document.getElementById('tbScantyField');
           var scantyInput = document.getElementById('tbScanty');
-          if (scantyField) scantyField.hidden = true;
-          if (scantyInput) scantyInput.disabled = true;
+          if (scantyInput) { scantyInput.hidden = true; scantyInput.disabled = true; scantyInput.required = false; }
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'NEW RECORD';
           var save = document.getElementById('tbis102aSave');
@@ -5480,6 +5478,8 @@ hoagApiRequest('logout', {
           setVal('tbTat', s.tat);
           setVal('tbValidatedBy', s.staff || r.validatedBy);
           setVal('tbReviewedBy', s.review || r.reviewedBy);
+          var resultControl = document.getElementById('tbResult');
+          if (resultControl) resultControl.dispatchEvent(new Event('change', { bubbles: true }));
 
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'EDITING RECORD';
@@ -5506,8 +5506,7 @@ hoagApiRequest('logout', {
             '<div class="tbis102a-field"><label>PATIENT</label><select id="tbPatient"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>KONTAK</option><option>ULANGAN</option></select></div>' +
             '<div class="tbis102a-field"><label>SAMPLE</label><select id="tbSample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option></select></div>' +
             '<div class="tbis102a-field"><label>SAMPLE QUALITY</label><select id="tbQuality"><option value="">Select sample quality</option><option>SALIVA</option><option>SPUTUM</option></select></div>' +
-            '<div class="tbis102a-field"><label for="tbResult">RESULT <span class="tbis-required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control is-quantitative tbis102a-result-control"><select id="tbResult" aria-label="TBIS102A result"><option value="">Select result</option><option>NO AFB SEEN</option><option>SCANTY</option><option>1+</option><option>2+</option><option>3+</option></select></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
-            '<div class="tbis102a-field tbis102a-scanty-field" id="tbScantyField" hidden><label>NUMERIC RESULT</label><input id="tbScanty" type="number" min="1" step="1" placeholder="Enter numeric result" disabled></div>' +
+            '<div class="tbis102a-field"><label for="tbResult">RESULT <span class="tbis-required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control is-quantitative tbis102a-result-control"><select id="tbResult" aria-label="TBIS102A result"><option value="">Select result</option><option value="NO AFB SEEN">NO AFB SEEN</option><option value="SCANTY">SCANTY</option><option value="1+">1+</option><option value="2+">2+</option><option value="3+">3+</option></select><input id="tbScanty" type="number" min="1" step="1" placeholder="Enter numeric result" hidden disabled></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
             '<div class="tbis102a-field"><label>RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
             '<div class="tbis102a-field"><label>TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
             '<div class="tbis102a-field"><label>VALIDATED BY</label><select id="tbValidatedBy"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
@@ -5856,24 +5855,25 @@ hoagApiRequest('logout', {
           });
 
           var tbResult = document.getElementById('tbResult');
-          var tbScantyField = document.getElementById('tbScantyField');
           var tbScanty = document.getElementById('tbScanty');
           function syncScantyField() {
             var isScanty = tbResult && String(tbResult.value || '').toUpperCase() === 'SCANTY';
-
-            /* Do not rely on the HTML hidden attribute alone. Explicitly toggle
-             * display/disabled state so the numeric box is visibly rendered in
-             * every browser/theme and is immediately available to ENTER flow. */
-            if (tbScantyField) {
-              tbScantyField.hidden = !isScanty;
-              tbScantyField.style.display = isScanty ? 'flex' : 'none';
+            if (tbResult) {
+              var wrap = document.getElementById('tbResultSelectWrap');
+              if (wrap) {
+                wrap.classList.toggle('is-scanty', isScanty);
+                wrap.classList.toggle('is-quantitative', !isScanty);
+              }
             }
             if (tbScanty) {
+              tbScanty.hidden = !isScanty;
               tbScanty.disabled = !isScanty;
               tbScanty.required = isScanty;
               tbScanty.setAttribute('aria-hidden', isScanty ? 'false' : 'true');
               if (!isScanty) tbScanty.value = '';
             }
+            var hint = document.getElementById('tbResultHint');
+            if (hint) hint.textContent = isScanty ? 'Enter the numeric AFB count for SCANTY.' : 'Select result.';
           }
           if (tbResult) {
             tbResult.addEventListener('change', syncScantyField);

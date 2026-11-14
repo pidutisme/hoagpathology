@@ -11316,3 +11316,26 @@ body.auth-resolving #authResolvingPanel {
 .tbis102a-scanty-field[hidden]{display:none!important;}
 .tbis102a-scanty-input{width:100%;box-sizing:border-box;}
 .tbis-required{color:var(--danger,#c62828);font-weight:700;}
+
+/* TBIS102A V23: SCANTY numeric result lives inside the same RESULT control as Notification. */
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control select,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control input {
+  width:100%;
+  min-height:38px;
+  box-sizing:border-box;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control input[hidden] {
+  display:none!important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control.is-scanty input {
+  display:block!important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control.is-scanty input:disabled {
+  opacity:.58;
+}
