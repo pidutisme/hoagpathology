@@ -1,4 +1,4 @@
-/* ===== TBIS102A V21 SAVE/REGISTER FIX ===== */
+/* ===== TBIS102A V22 SAVE/REGISTER FIX ===== */
 /* ===== TBIS102A KEYBOARD/SAVE GUARD (EARLY CAPTURE) ===== */
 (function(){
   'use strict';
@@ -5506,7 +5506,7 @@ hoagApiRequest('logout', {
             '<div class="tbis102a-field"><label>PATIENT</label><select id="tbPatient"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>KONTAK</option><option>ULANGAN</option></select></div>' +
             '<div class="tbis102a-field"><label>SAMPLE</label><select id="tbSample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option></select></div>' +
             '<div class="tbis102a-field"><label>SAMPLE QUALITY</label><select id="tbQuality"><option value="">Select sample quality</option><option>SALIVA</option><option>SPUTUM</option></select></div>' +
-            '<div class="tbis102a-field"><label>RESULT</label><select id="tbResult"><option value="">Select result</option><option>NO AFB SEEN</option><option>SCANTY</option><option>1+</option><option>2+</option><option>3+</option></select></div>' +
+            '<div class="tbis102a-field"><label for="tbResult">RESULT <span class="tbis-required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control is-quantitative tbis102a-result-control"><select id="tbResult" aria-label="TBIS102A result"><option value="">Select result</option><option>NO AFB SEEN</option><option>SCANTY</option><option>1+</option><option>2+</option><option>3+</option></select></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
             '<div class="tbis102a-field tbis102a-scanty-field" id="tbScantyField" hidden><label>NUMERIC RESULT</label><input id="tbScanty" type="number" min="1" step="1" placeholder="Enter numeric result" disabled></div>' +
             '<div class="tbis102a-field"><label>RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
             '<div class="tbis102a-field"><label>TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
@@ -5768,7 +5768,7 @@ hoagApiRequest('logout', {
           var expectedVersion = existing ? Number(existing.version || 1) : undefined;
           var argsRecord = Object.assign({}, row, expectedVersion ? { expectedVersion: expectedVersion } : {});
 
-          return hoagApiRequest('action', { method: 'upsertTbis102aRecord', args: [argsRecord, apiToken()] })
+          return hoagApiRequest('action', { method: 'upsertTbis102aRecord', args: [argsRecord] })
             .then(function (result) {
               if (!result || result.ok === false || !result.record) throw new Error(result && result.error ? result.error : 'TBIS102A save was not confirmed by Supabase.');
               var index = rows.findIndex(function (x) { return String(x.id) === String(result.record.id); });

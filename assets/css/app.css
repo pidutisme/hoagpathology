@@ -11310,3 +11310,9 @@ body.auth-resolving #authResolvingPanel {
 @media (max-width:640px) {
   #moduleYearGrid.tbis102a-active-grid .tbis102a-registration-form .tbis102a-grid { grid-template-columns:1fr!important; }
 }
+/* TBIS102A V22: Notification result-control treatment. */
+.tbis102a-result-control{width:100%;}
+.tbis102a-result-control select{width:100%;}
+.tbis102a-scanty-field[hidden]{display:none!important;}
+.tbis102a-scanty-input{width:100%;box-sizing:border-box;}
+.tbis-required{color:var(--danger,#c62828);font-weight:700;}
