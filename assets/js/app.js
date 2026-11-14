@@ -5449,7 +5449,6 @@ hoagApiRequest('logout', {
           setVal('tbTat', s.tat);
           setVal('tbValidatedBy', s.staff || r.validatedBy);
           setVal('tbReviewedBy', s.review || r.reviewedBy);
-          setVal('tbFinalResult', s.patientResult || r.finalResult);
 
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'EDITING RECORD';
@@ -5472,16 +5471,16 @@ hoagApiRequest('logout', {
             '<div class="tbis102a-field"><label>BARCODE</label><input id="tbBarcode" placeholder="Barcode"></div>' +
             '<div class="tbis102a-field"><label>NAME *</label><input id="tbName" required placeholder="Patient name"></div>' +
             '<div class="tbis102a-field"><label>IC / ID NO.</label><input id="tbIdNo" placeholder="IC / ID number"></div>' +
-            '<div class="tbis102a-field"><label>UNIT</label><input id="tbUnit" placeholder="Unit / ward"></div>' +
-            '<div class="tbis102a-field"><label>PATIENT</label><input id="tbPatient" placeholder="Patient category"></div>' +
-            '<div class="tbis102a-field"><label>SAMPLE</label><input id="tbSample" placeholder="e.g. MORNING"></div>' +
-            '<div class="tbis102a-field"><label>SAMPLE QUALITY</label><input id="tbQuality" placeholder="e.g. SPUTUM"></div>' +
+            '<div class="tbis102a-field"><label>UNIT</label><select id="tbUnit"><option value="">Select unit</option><option>WAD 1</option><option>WAD 2</option><option>WAD 3</option><option>WAD 4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>UNIT KA</option></select></div>' +
+            '<div class="tbis102a-field"><label>PATIENT</label><select id="tbPatient"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>KONTAK</option><option>ULANGAN</option></select></div>' +
+            '<div class="tbis102a-field"><label>SAMPLE</label><select id="tbSample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option></select></div>' +
+            '<div class="tbis102a-field"><label>SAMPLE QUALITY</label><select id="tbQuality"><option value="">Select sample quality</option><option>SALIVA</option><option>SPUTUM</option></select></div>' +
             '<div class="tbis102a-field"><label>RESULT</label><input id="tbResult" placeholder="Laboratory result"></div>' +
             '<div class="tbis102a-field"><label>RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
             '<div class="tbis102a-field"><label>TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
             '<div class="tbis102a-field"><label>VALIDATED BY</label><input id="tbValidatedBy" placeholder="Staff"></div>' +
             '<div class="tbis102a-field"><label>REVIEWED BY</label><input id="tbReviewedBy" placeholder="Reviewer"></div>' +
-            '<div class="tbis102a-field"><label>RESULT</label><input id="tbFinalResult" placeholder="Final / patient result"></div>' +
+            
             '</div>' +
             '<div class="tbis102a-form-actions"><button class="outsource-btn secondary" type="button" id="tbis102aClear">CLEAR</button><button class="outsource-btn primary" type="button" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
             '</div></section>' +
@@ -5680,7 +5679,7 @@ hoagApiRequest('logout', {
             observation: '',
             scanty: '',
             slideResult: '',
-            patientResult: val('tbFinalResult'),
+            patientResult: val('tbResult'),
             slide: '',
             releaseDate: val('tbReleaseDate'),
             tat: val('tbTat'),
