@@ -378,19 +378,19 @@
 }
 
 #notification .notification-result-control.is-qualitative .notification-custom-select-wrap {
-  display: block;
+  display: block !important;
 }
 
 #notification .notification-result-control.is-quantitative .notification-custom-select-wrap {
-  display: none;
+  display: none !important;
 }
 
 #notification .notification-result-control.is-qualitative #notificationResult {
-  display: none;
+  display: none !important;
 }
 
 #notification .notification-result-control.is-quantitative #notificationResult {
-  display: block;
+  display: block !important;
 }
 
 /* Critical Limit Banner & Status Flag */

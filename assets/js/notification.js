@@ -992,6 +992,7 @@
         records = all.slice();
         recordsHydrated = true;
         syncNotificationYearFilter();
+        syncInteractiveState();
         render();
         var more = !!result.hasMore;
         offset = firstLimit;
@@ -1051,15 +1052,54 @@
       .finally(function () { notificationSaving = false; });
   }
 
+  function getLiveNotificationAuthUser() {
+    try {
+      if (window.LabApp && window.LabApp.Auth && typeof window.LabApp.Auth.getUser === 'function') {
+        var u = window.LabApp.Auth.getUser();
+        if (u && (u.id || u.role)) return u;
+      }
+      if (typeof Auth !== 'undefined' && Auth && typeof Auth.getUser === 'function') {
+        var u2 = Auth.getUser();
+        if (u2 && (u2.id || u2.role)) return u2;
+      }
+    } catch (e) {}
+    return null;
+  }
   function isNotificationAdmin() {
-    if (notificationIsAdmin || notificationUserRole === 'ADMIN') return true;
-    try { return typeof Auth !== 'undefined' && Auth.getUser && String((Auth.getUser() || {}).role || '').toUpperCase() === 'ADMIN'; }
-    catch (e) { return false; }
+    var liveUser = getLiveNotificationAuthUser();
+    if (liveUser && liveUser.role) {
+      return String(liveUser.role).trim().toUpperCase() === 'ADMIN';
+    }
+    return !!(notificationIsAdmin || notificationUserRole === 'ADMIN');
   }
   function isNotificationVisitor() {
-    if (notificationUserRole === 'VISITOR') return true;
-    try { return typeof Auth !== 'undefined' && Auth.getUser && String((Auth.getUser() || {}).role || '').toUpperCase() === 'VISITOR'; }
-    catch (e) { return false; }
+    var liveUser = getLiveNotificationAuthUser();
+    if (liveUser && liveUser.role) {
+      return String(liveUser.role).trim().toUpperCase() === 'VISITOR';
+    }
+    return notificationUserRole === 'VISITOR';
+  }
+  function syncInteractiveState() {
+    var form = $('notificationForm');
+    if (!form) return;
+    var visitorOnly = isNotificationVisitor();
+    if (!visitorOnly) {
+      form.querySelectorAll('input:not([type=hidden]), select, textarea, button, .notification-select-trigger, .notification-neumorphic-datetime').forEach(function (el) {
+        el.disabled = false;
+        el.removeAttribute('aria-disabled');
+        el.classList.remove('visitor-disabled-control', 'is-disabled');
+      });
+      ['notificationDateTimeVisible', 'notificationSex', 'notificationAge'].forEach(function (id) {
+        var ro = $(id);
+        if (ro) ro.readOnly = true;
+      });
+    }
+    var item = findTestItem();
+    var currentResult = item && item.type === 'qualitative'
+      ? String(($('notificationResultSelect') || {}).value || '')
+      : String(($('notificationResult') || {}).value || '');
+    syncResultControl(item, currentResult);
+    initNotificationNeumorphicSelects();
   }
   function deleteNotificationRecord(id) {
     if (!isNotificationAdmin()) return Promise.reject(new Error('Admin access is required to delete notification records.'));
@@ -1078,14 +1118,27 @@
     var mode = $('notificationFormMode'); if (mode) mode.textContent = 'NEW RECORD';
   }
   function clearForm() {
-    var form = $('notificationForm'); if (form) form.reset(); var dtv = $('notificationDateTimeVisible'); if (dtv) dtv.value = ''; notificationDateTimeState = '';
+    var form = $('notificationForm');
+    if (form && !isNotificationVisitor()) {
+      form.querySelectorAll('input:not([type=hidden]), select, textarea, button, .notification-select-trigger, .notification-neumorphic-datetime').forEach(function (el) {
+        el.disabled = false;
+        el.removeAttribute('aria-disabled');
+        el.classList.remove('visitor-disabled-control', 'is-disabled');
+      });
+      ['notificationDateTimeVisible', 'notificationSex', 'notificationAge'].forEach(function (id) {
+        var ro = $(id);
+        if (ro) ro.readOnly = true;
+      });
+    }
+    if (form) form.reset(); var dtv = $('notificationDateTimeVisible'); if (dtv) dtv.value = ''; notificationDateTimeState = '';
     var sex = $('notificationSex'); if (sex) sex.value = '';
     var age = $('notificationAge'); if (age) age.value = '';
-    var test = $('notificationTest'); if (test) { test.innerHTML = '<option value="">Select discipline first</option>'; test.dispatchEvent(new Event('change',{bubbles:true})); }
+    var test = $('notificationTest'); if (test) { test.disabled = isNotificationVisitor(); test.innerHTML = '<option value="">Select discipline first</option>'; test.dispatchEvent(new Event('change',{bubbles:true})); }
     var rule = $('notificationCriticalLimit'); if (rule) { rule.className = 'notification-critical-box is-empty'; rule.innerHTML = '<strong>Reference</strong><span>Select a test to load the critical value rule.</span>'; }
     syncResultControl(null, '');
     setFlag('Awaiting result', '');
     setDefaultForm();
+    initNotificationNeumorphicSelects();
   }
   function setFlag(text, tone) {
     var el = $('notificationFlag'); if (!el) return;
@@ -1142,10 +1195,18 @@
     var hint = $('notificationResultHint');
     if (!wrap || !input || !select) return;
     var qualitative = !!(item && item.type === 'qualitative');
+    var visitorOnly = isNotificationVisitor();
     wrap.classList.toggle('is-qualitative', qualitative);
     wrap.classList.toggle('is-quantitative', !qualitative);
+    var customWrap = select.parentElement && select.parentElement.classList.contains('notification-custom-select-wrap')
+      ? select.parentElement
+      : wrap.querySelector('.notification-custom-select-wrap');
+    if (customWrap) customWrap.hidden = !qualitative;
+    input.hidden = qualitative;
     select.required = qualitative;
     input.required = !qualitative;
+    select.disabled = visitorOnly || !qualitative;
+    input.disabled = visitorOnly || qualitative;
     if (qualitative) {
       var options = [];
       (item.options || item.alerts || []).forEach(function (x) { if (options.indexOf(x) < 0) options.push(x); });
@@ -1160,6 +1221,11 @@
       input.value = selectedValue || '';
       if (hint) hint.textContent = item ? 'Enter the quantitative result; the flag will be calculated automatically.' : 'Select a test first.';
     }
+    var triggerBtn = select.parentElement && select.parentElement.querySelector('.notification-select-trigger');
+    if (triggerBtn) {
+      triggerBtn.disabled = !!select.disabled;
+      triggerBtn.classList.toggle('is-disabled', !!select.disabled);
+    }
     var trigger = select.parentElement && select.parentElement.querySelector('.notification-select-trigger [data-notification-select-label]');
     if (trigger) { var opt = select.options[select.selectedIndex]; trigger.textContent = opt ? opt.textContent : 'Select result'; }
   }
@@ -1173,6 +1239,12 @@
     var discipline = $('notificationDiscipline');
     var test = $('notificationTest');
     if (!discipline || !test) return;
+    if (!discipline.value) {
+      test.disabled = isNotificationVisitor();
+      test.innerHTML = '<option value="">Select discipline first</option>';
+      test.dispatchEvent(new Event('change',{bubbles:true}));
+      return;
+    }
     var list = testCatalogue[discipline.value] || [];
     if (!list.length) {
       test.innerHTML = '<option value="">Test catalogue not loaded yet</option>';
@@ -1180,7 +1252,7 @@
       test.dispatchEvent(new Event('change',{bubbles:true}));
       return;
     }
-    test.disabled = false;
+    test.disabled = isNotificationVisitor();
     test.innerHTML = '<option value="">Select test</option>' + list.map(function (x) { return '<option value="' + esc(x.name) + '">' + esc(x.name) + '</option>'; }).join('');
     test.dispatchEvent(new Event('change',{bubbles:true}));
   }
@@ -1376,6 +1448,7 @@
       renderTime();
     }
     function open() {
+      if (visible.disabled || isNotificationVisitor()) return;
       var parts=currentParts(); view=cloneParts(parts); render(); pop.hidden=false; position();
       var selected=pop.querySelector('.notification-datetime-day.selected'); if(selected) selected.scrollIntoView({block:'nearest',inline:'nearest'});
     }
@@ -1659,8 +1732,9 @@
     }
   }
   function open() {
-    if (window.Router && typeof window.Router.canAccessPage === 'function' && !window.Router.canAccessPage('notification')) {
-      if (typeof window.Router.denyVisitorPageAccess === 'function') window.Router.denyVisitorPageAccess('notification');
+    var router = (window.LabApp && window.LabApp.Router) || window.Router;
+    if (router && typeof router.canAccessPage === 'function' && !router.canAccessPage('notification')) {
+      if (typeof router.denyVisitorPageAccess === 'function') router.denyVisitorPageAccess('notification');
       return;
     }
     var page = $('notification');
@@ -1670,6 +1744,7 @@
     var nav = document.querySelector('.nav-btn[data-page="notification"]'); if (nav) nav.classList.add('active');
     page.classList.add('active');
     clearForm();
+    syncInteractiveState();
     render();
     loadRecords();
   }
@@ -1738,6 +1813,6 @@
     });
   }
 
-  window.LabNotification = { open: open, render: render, loadRecords: loadRecords, getRecords: function () { return records.slice(); } };
+  window.LabNotification = { open: open, render: render, loadRecords: loadRecords, syncInteractiveState: syncInteractiveState, getRecords: function () { return records.slice(); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }
 })(window, document);

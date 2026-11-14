@@ -10470,6 +10470,11 @@ body.visitor-read-only .notification-form .notification-select-trigger {
   cursor: not-allowed !important;
 }
 
+body.visitor-read-only #notification .notification-result-control.is-quantitative .notification-custom-select-wrap,
+body.visitor-read-only #notification .notification-result-control.is-quantitative .notification-select-trigger {
+  display: none !important;
+}
+
 body.visitor-read-only .notification-form .notification-datetime-wrap .notification-neumorphic-datetime {
   display: block !important;
   opacity: 0.56 !important;

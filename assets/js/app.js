@@ -2531,6 +2531,7 @@
         if (state.authUserId) {
           setSessionState_('authorization-resolved');
         }
+        applyVisitorReadOnly_();
         if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.refreshAccessControl === 'function') {
           window.LabApp.Router.refreshAccessControl();
         }
@@ -2550,8 +2551,13 @@
       }
       function markVisitorDisabled_(el) {
         if (!el || el.matches('[data-visitor-allow]')) return;
+        if (!el.classList.contains('visitor-disabled-control')) {
+          if (el.dataset) {
+            el.dataset.visitorOrigDisabled = el.disabled ? '1' : '0';
+            el.dataset.visitorOrigReadOnly = (el.readOnly || el.hasAttribute('readonly')) ? '1' : '0';
+          }
+        }
         el.disabled = true;
-        el.readOnly = false;
         el.setAttribute('aria-disabled', 'true');
         el.classList.add('visitor-disabled-control');
       }
@@ -2559,8 +2565,49 @@
         if (!isVisitorRole_()) {
           document.body.classList.remove('visitor-read-only');
           document.querySelectorAll('.visitor-disabled-control').forEach(function(el) {
+            var wasDisabled = el.dataset && el.dataset.visitorOrigDisabled === '1';
+            var wasReadOnly = (el.dataset && el.dataset.visitorOrigReadOnly === '1') || el.hasAttribute('readonly');
+            el.disabled = !!wasDisabled;
+            if (typeof el.readOnly === 'boolean') {
+              el.readOnly = !!wasReadOnly;
+            }
+            if (!el.disabled) {
+              el.removeAttribute('aria-disabled');
+              el.classList.remove('is-disabled');
+            }
+            if (el.dataset) {
+              delete el.dataset.visitorOrigDisabled;
+              delete el.dataset.visitorOrigReadOnly;
+            }
             el.classList.remove('visitor-disabled-control');
           });
+          document.querySelectorAll(
+            '.notification-form input:not([type=hidden]),' +
+            '.notification-form select,' +
+            '.notification-form textarea,' +
+            '.notification-form button,' +
+            '.notification-form .notification-select-trigger,' +
+            '.notification-datetime-wrap .notification-neumorphic-datetime'
+          ).forEach(function(el) {
+            el.disabled = false;
+            el.removeAttribute('aria-disabled');
+            el.classList.remove('visitor-disabled-control', 'is-disabled');
+          });
+          ['notificationDateTimeVisible', 'notificationSex', 'notificationAge', 'inventoryMovementDateVisible', 'inventoryExpiryVisible'].forEach(function(id) {
+            var ro = document.getElementById(id);
+            if (ro) ro.readOnly = true;
+          });
+          document.querySelectorAll('.visitor-read-only-form').forEach(function(root) {
+            root.classList.remove('visitor-read-only-form');
+          });
+          document.querySelectorAll('.visitor-hidden-action').forEach(function(el) {
+            el.hidden = false;
+            el.removeAttribute('aria-hidden');
+            el.classList.remove('visitor-hidden-action');
+          });
+          if (window.LabNotification && typeof window.LabNotification.syncInteractiveState === 'function') {
+            window.LabNotification.syncInteractiveState();
+          }
           return;
         }
         document.body.classList.add('visitor-read-only');
@@ -2578,7 +2625,7 @@
           '[data-notification-edit],[data-notification-delete],' +
           '.roster-delete-btn,.roster-cancel-edit-btn,' +
           '.tr-edit,.tr-delete'
-        ).forEach(function(el){ el.hidden = true; el.setAttribute('aria-hidden','true'); });
+        ).forEach(function(el){ el.hidden = true; el.setAttribute('aria-hidden','true'); el.classList.add('visitor-hidden-action'); });
 
         document.querySelectorAll(
           '.outsource-form input:not([type=hidden]),' +
@@ -3000,6 +3047,7 @@
         state.authRole = '';
         state.authPageAccess = null;
         document.body.classList.remove('visitor-read-only', 'visitor-page-access-restricted');
+        applyVisitorReadOnly_();
   
         if (!preserveActiveLogin) resetAuthForms();
         showLoginPanel(message || '', type || (message ? 'error' : ''));

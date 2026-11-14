@@ -66,3 +66,14 @@ test('build script validates syntax and actual project structure', () => {
   assert.equal(pkg.scripts.build, 'node scripts/build.mjs');
   assert.ok(fs.existsSync(new URL('../scripts/build.mjs', import.meta.url)));
 });
+
+test('normal user notification form controls are re-enabled after visitor read-only mode', () => {
+  const app = read('assets/js/app.js');
+  const notificationJs = read('assets/js/notification.js');
+  const notificationCss = read('assets/css/notification.css');
+  assert.match(app, /function applyVisitorReadOnly_\(\)[\s\S]*?el\.disabled = !!wasDisabled/);
+  assert.match(app, /window\.LabNotification && typeof window\.LabNotification\.syncInteractiveState === 'function'/);
+  assert.match(notificationJs, /function getLiveNotificationAuthUser\(\)/);
+  assert.match(notificationJs, /function syncInteractiveState\(\)/);
+  assert.match(notificationCss, /#notification \.notification-result-control\.is-quantitative \.notification-custom-select-wrap\s*\{\s*display:\s*none\s*!important;/);
+});
