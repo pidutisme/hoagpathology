@@ -1038,6 +1038,27 @@
     /* +----------------------------------+
      * + CLIENT MODULE                    +
      * +----------------------------------+ */
+    /* Shared system toast. Router, Modules and Auth all use the same renderer.
+     * Keeping this at app scope avoids cross-IIFE ReferenceErrors and duplicate
+     * toast implementations. */
+    function setSystemToast(titleText, bodyText, durationMs) {
+      var toast = $('systemNoticeToast');
+      var title = $('systemNoticeTitle');
+      var text = $('systemNoticeText');
+      if (!toast || !title || !text) return;
+      title.textContent = titleText || '';
+      text.textContent = bodyText || '';
+      toast.classList.toggle('is-hidden', !bodyText);
+      if (durationMs) {
+        window.setTimeout(function () {
+          if (title.textContent === (titleText || '') && text.textContent === (bodyText || '')) {
+            toast.classList.add('is-hidden');
+            text.textContent = '';
+          }
+        }, durationMs);
+      }
+    }
+
     var Router = (function () {
       var pageNodes = [];
       var navButtons = [];
@@ -1125,11 +1146,13 @@
       function canAccessModule(moduleName) {
         var normalized = String(moduleName || '').trim();
         if (!normalized) return false;
+        if (!state.authUserId) return false;
         if (!isVisitorAccessRestricted()) return true;
         return visitorCanAccess(normalizeModuleName(normalized));
       }
 
       function canAccessPage(pageId) {
+        if (!state.authUserId) return false;
         if (!isVisitorAccessRestricted()) return true;
         var id = String(pageId || '');
         if (id === 'inventory') return canAccessModule('INVENTORY');
@@ -1432,6 +1455,12 @@
        * + goPage                           +
        * +----------------------------------+ */
       function goPage(pageId, btn) {
+        if (!state.authUserId) {
+          if (document.body.classList.contains('auth-session-pending')) {
+            setSystemToast('SESSION VERIFYING', 'Your session is still being verified in the background. Please try again in a moment.', 2200);
+          }
+          return;
+        }
         if (!canAccessPage(pageId)) {
           if (isVisitorAccessRestricted()) {
             setSystemToast('NO ACCESS', 'You do not have access to this page. Please contact an administrator.', 3200);
@@ -1715,6 +1744,12 @@
             }
             /* Keep every visitor module visible. Access is enforced at click
              * time so unassigned modules show NO ACCESS instead of looking dead. */
+            if (!state.authUserId) {
+              if (document.body.classList.contains('auth-session-pending')) {
+                setSystemToast('SESSION VERIFYING', 'Your session is still being verified in the background. Please try again in a moment.', 2200);
+              }
+              return;
+            }
             if (!canAccessModule(moduleName)) {
               if (isVisitorAccessRestricted()) {
                 setSystemToast('NO ACCESS', 'You do not have access to ' + moduleName + '. Please contact an administrator.', 3200);
@@ -2514,27 +2549,6 @@
         }
       }, true);
       /* +----------------------------------+
-       * + setSystemToast                   +
-       * +----------------------------------+ */
-      function setSystemToast(titleText, bodyText, durationMs) {
-        var toast = $('systemNoticeToast');
-        var title = $('systemNoticeTitle');
-        var text = $('systemNoticeText');
-        if (!toast || !title || !text) return;
-        title.textContent = titleText || '';
-        text.textContent = bodyText || '';
-        toast.classList.toggle('is-hidden', !bodyText);
-        if (durationMs) {
-          window.setTimeout(function () {
-            if (title.textContent === titleText && text.textContent === bodyText) {
-              toast.classList.add('is-hidden');
-              text.textContent = '';
-            }
-          }, durationMs);
-        }
-      }
-  
-      /* +----------------------------------+
        * + clearIdleWarning                 +
        * +----------------------------------+ */
       function clearIdleWarning() {
@@ -2919,6 +2933,25 @@
       /* +----------------------------------+
        * + checkStoredSession               +
        * +----------------------------------+ */
+      function setSessionBackgroundShell_(active) {
+        var enabled = !!active;
+        document.body.classList.toggle('auth-background-verifying', enabled);
+        document.body.classList.toggle('auth-session-pending', enabled && !state.authUserId);
+        if (enabled) {
+          document.body.classList.remove('auth-locked');
+          document.body.classList.add('auth-ready');
+          Theme.activateForApp();
+          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
+          if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
+          if (nodes.greeting && !state.authUserId) nodes.greeting.textContent = 'Restoring session…';
+          if (window.LabApp && !window.LabApp.__initialized) {
+            window.LabApp.init({ deferSecondary: true, secondaryDelayMs: 150 });
+          }
+        } else {
+          document.body.classList.remove('auth-background-verifying', 'auth-session-pending');
+        }
+      }
+
       function setSessionVerifying_(verifying) {
         var active = !!verifying;
         document.body.classList.toggle('auth-verifying', active);
@@ -2926,68 +2959,81 @@
           if (active) nodes.app.setAttribute('aria-busy', 'true');
           else nodes.app.removeAttribute('aria-busy');
         }
-        /* Session verification is a background integrity check. Once a same-tab
-         * session has a cached public identity, the application stays visible while
-         * the HttpOnly cookie is verified. A definitive server rejection still
-         * locks the app immediately. */
+        /* Verification is background-only. It never re-locks the application. */
+        if (!active) setSessionBackgroundShell_(false);
       }
 
       function checkStoredSession(retryAttempt) {
-        /* Same-tab refresh: restore the app immediately from the last server-issued
-         * public identity, then verify the HttpOnly session in the background. */
+        /* If this tab has already authenticated, restore the shell immediately.
+         * The HttpOnly cookie is still verified by the server in the background. */
         retryAttempt = Math.max(0, Number(retryAttempt || 0));
         updateResumeSessionButton_();
+
         var credentialsTouched = function () {
           return !!(
             (nodes.username && String(nodes.username.value || '').length) ||
             (nodes.password && String(nodes.password.value || '').length) ||
             (nodes.mfaCode && String(nodes.mfaCode.value || '').length) ||
-            busy || state.authUserId
+            busy
           );
         };
 
         if (!hasTabAuthenticated_()) {
           setSessionVerifying_(false);
           clearStoredSession();
-          showLoginPanel('', '');
+          lock('', '');
           return;
         }
 
         var cachedRestoreUser = getStoredPublicUser_();
         if (cachedRestoreUser && !state.authUserId) {
-          // Restore the last server-issued public identity immediately. This is
-          // UI state only; the HttpOnly session below remains authoritative.
           unlock(cachedRestoreUser, {
             freshLogin: false,
             restoredSession: true,
             deferredSessionVerification: true
           });
+        } else if (!state.authUserId) {
+          setSessionBackgroundShell_(true);
         }
-        // Verification is deliberately non-blocking. auth-ready stays active while
-        // login-state verifies the HttpOnly cookie in the background.
+
         setSessionVerifying_(true);
 
         hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               setSessionVerifying_(false);
-              if (credentialsTouched()) return;
-              forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
+              if (credentialsTouched() && state.authUserId) return;
+              forceLockFromServer(
+                envelope && envelope.error
+                  ? envelope.error
+                  : 'Your secure session has expired. Please sign in again.'
+              );
               return;
             }
+
             storeSession(envelope);
             var restoredUser = envelope.user || {};
             if (!Array.isArray(restoredUser.pageAccess) && Array.isArray(envelope.pageAccess)) {
               restoredUser.pageAccess = envelope.pageAccess.slice();
             }
+
+            var hadUser = !!state.authUserId;
             applyUser(restoredUser);
+            setSessionBackgroundShell_(false);
             setSessionVerifying_(false);
-            if (!state.authUserId) {
-              unlock(restoredUser, { freshLogin: false, restoredSession: true });
+
+            if (!hadUser) {
+              unlock(restoredUser, {
+                freshLogin: false,
+                restoredSession: true
+              });
+            } else if (nodes.greeting) {
+              var hour = Number(getAppNowParts().hour);
+              var greeting = hour < 12 ? 'Good Morning' : (hour < 18 ? 'Good Afternoon' : 'Good Evening');
+              nodes.greeting.textContent = greeting + ', ' + (state.authUserDisplayName || 'Team Member') + ' 👋';
             }
           })
           .catch(function (error) {
-            /* Transient API/network errors do not hide a valid cached session. */
             console.warn('Initial session verification failed:', error);
             if (retryAttempt < 3 && hasTabAuthenticated_()) {
               var delay = [1000, 3000, 5000][retryAttempt] || 5000;
@@ -2996,7 +3042,11 @@
             }
             setSessionVerifying_(false);
             if (!credentialsTouched() && state.authUserId) {
-              setSystemToast('Session Check Delayed', 'Session verification is temporarily unavailable. Your current session remains active.', 6000);
+              setSystemToast(
+                'Session Check Delayed',
+                'Session verification is temporarily unavailable. Your current session remains active.',
+                6000
+              );
             }
           });
       }
@@ -3328,7 +3378,8 @@ hoagApiRequest('logout', {
           return {
             id: state.authUserId,
             name: state.authUserDisplayName,
-            role: state.authRole
+            role: state.authRole,
+            pageAccess: Array.isArray(state.authPageAccess) ? state.authPageAccess.slice() : null
           };
         },
         getUserName: function () {

@@ -10175,6 +10175,32 @@ html.dark-mode-preload .inventory-form select:not(.outsource-native-select) {
    +------------------------------------------------------------------------+ */
 /* Session verification is a background integrity check after a same-tab
  * identity has restored the app shell. It must never hide or disable the app. */
+/* Background session verification must never leave the application in the locked
+ * visual state. The shell remains visible while the HttpOnly session is checked. */
+body.auth-background-verifying.auth-locked .app {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+body.auth-background-verifying #authScreen.auth-screen {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.auth-background-verifying .pages {
+  visibility: visible !important;
+}
+
+body.auth-session-pending #dashboard [data-dashboard-module],
+body.auth-session-pending .nav-btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
 body.auth-verifying .app {
   opacity: 1 !important;
   visibility: visible !important;
