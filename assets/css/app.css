@@ -10971,3 +10971,103 @@ body.auth-resolving #authLoginPanel > :not(#authResolvingPanel) {
 body.auth-resolving #authResolvingPanel {
   display: grid !important;
 }
+
+/* MICROBIOLOGY STRUCTURE CARDS */
+.microbiology-structure-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-content: start;
+  align-items: stretch;
+  gap: clamp(14px, 1.25vw, 22px);
+}
+
+.microbiology-structure-card {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 150px;
+  padding: clamp(18px, 1.5vw, 28px);
+  border-radius: var(--year-card-radius);
+  border: 1px solid var(--year-page-card-border);
+  background: var(--year-page-card-bg);
+  box-shadow: var(--year-page-card-shadow);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(14px, 1.2vw, 20px);
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .3s var(--ease-spring), box-shadow .3s var(--ease-smooth), border-color .2s var(--ease-smooth);
+}
+
+.microbiology-structure-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(35, 48, 75, .12);
+  border-color: rgba(95, 126, 255, .36);
+}
+
+.microbiology-structure-card:focus-visible {
+  outline: 3px solid rgba(95, 126, 255, .35);
+  outline-offset: 3px;
+}
+
+.microbiology-structure-icon-shell {
+  width: clamp(52px, 4vw, 68px);
+  height: clamp(52px, 4vw, 68px);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(237, 242, 248, .88));
+  box-shadow: var(--year-page-card-shadow);
+  flex: 0 0 auto;
+}
+
+.microbiology-structure-icon {
+  font-size: clamp(25px, 2vw, 34px);
+  line-height: 1;
+}
+
+.microbiology-structure-body {
+  min-width: 0;
+}
+
+.microbiology-structure-title {
+  font-size: clamp(15px, 1.1vw, 20px);
+  font-weight: 950;
+  line-height: 1.2;
+  letter-spacing: .01em;
+  color: var(--text);
+}
+
+.microbiology-structure-description {
+  margin-top: 7px;
+  color: #697282;
+  font-size: clamp(11px, .85vw, 14px);
+  line-height: 1.5;
+}
+
+.microbiology-structure-arrow {
+  font-size: 24px;
+  font-weight: 900;
+  color: #687487;
+}
+
+.tbis-structure-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.module-years-sub-back[hidden] {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .microbiology-structure-card {
+    min-height: 128px;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .microbiology-structure-arrow {
+    display: none;
+  }
+}
+

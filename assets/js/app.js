@@ -5189,6 +5189,166 @@ hoagApiRequest('logout', {
       }
 
       /* +----------------------------------+
+       * + MICROBIOLOGY STRUCTURE           +
+       * +----------------------------------+ */
+      var MICROBIOLOGY_CARDS = {
+        externalQuality: {
+          title: 'MICROBIOLOGY EXTERNAL QUALITY ASSURANCE',
+          icon: '🧪',
+          description: 'External quality assurance records.'
+        },
+        tbInformation: {
+          title: 'TB INFORMATION SYSTEM',
+          icon: '🫁',
+          description: 'Tuberculosis information system records.'
+        },
+        dengue: {
+          title: 'DENGUE COMBO / LEPTOSPIROSIS / INFLUENZA',
+          icon: '🦠',
+          description: 'Dengue, leptospirosis and influenza records.'
+        },
+        bfmp: {
+          title: 'BLOOD FILM MALARIA PARASITE (BFMP)',
+          icon: '🩸',
+          description: 'Blood film malaria parasite records.'
+        }
+      };
+
+      var TBIS_CARDS = [
+        { title: 'TBIS102A', icon: '📋', description: 'TBIS102A records.' },
+        { title: 'MTB CULTURE & SENSITIVITY / SPUTUM GENE XPERT / SPUTUM LPA', icon: '🧫', description: 'MTB culture, sensitivity and molecular testing records.' },
+        { title: 'IGRA', icon: '🧪', description: 'IGRA records.' }
+      ];
+
+      function showModuleNotice(title, message) {
+        var toast = $('systemNoticeToast');
+        var noticeTitle = $('systemNoticeTitle');
+        var noticeText = $('systemNoticeText');
+        if (toast && noticeTitle && noticeText && toast.classList.contains('is-hidden')) {
+          noticeTitle.textContent = title || 'Module Opened';
+          noticeText.textContent = message || '';
+          toast.classList.remove('is-hidden');
+          window.setTimeout(function () {
+            if (noticeTitle.textContent === (title || 'Module Opened') && noticeText.textContent === (message || '')) {
+              toast.classList.add('is-hidden');
+              noticeText.textContent = '';
+            }
+          }, 2200);
+        }
+      }
+
+      function createMicrobiologyCard(definition, onClick) {
+        var card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'microbiology-structure-card';
+        card.setAttribute('aria-label', 'Open ' + definition.title);
+
+        var iconShell = document.createElement('div');
+        iconShell.className = 'microbiology-structure-icon-shell';
+        var icon = document.createElement('div');
+        icon.className = 'microbiology-structure-icon';
+        icon.textContent = definition.icon || '🧫';
+        iconShell.appendChild(icon);
+
+        var body = document.createElement('div');
+        body.className = 'microbiology-structure-body';
+        var title = document.createElement('div');
+        title.className = 'microbiology-structure-title';
+        title.textContent = definition.title;
+        var description = document.createElement('div');
+        description.className = 'microbiology-structure-description';
+        description.textContent = definition.description || '';
+        body.appendChild(title);
+        body.appendChild(description);
+
+        var arrow = document.createElement('div');
+        arrow.className = 'microbiology-structure-arrow';
+        arrow.textContent = '→';
+
+        card.appendChild(iconShell);
+        card.appendChild(body);
+        card.appendChild(arrow);
+        card.addEventListener('click', function () {
+          if (typeof onClick === 'function') onClick();
+        });
+        return card;
+      }
+
+      function setMicrobiologySubBack(visible) {
+        var back = $('moduleYearsSubBackBtn');
+        if (!back) return;
+        back.hidden = !visible;
+        if (back.dataset.microbiologyBound !== '1') {
+          back.dataset.microbiologyBound = '1';
+          back.addEventListener('click', function () {
+            renderMicrobiologyHome();
+          });
+        }
+      }
+
+      function renderMicrobiologyHome() {
+        var grid = $('moduleYearGrid');
+        var title = $('moduleYearsTitle');
+        var desc = $('moduleYearsDesc');
+        if (!grid || !title || !desc) return;
+
+        grid.className = 'module-year-grid microbiology-structure-grid';
+        grid.dataset.yearModule = 'MICROBIOLOGY';
+        grid.textContent = '';
+        title.textContent = 'MICROBIOLOGY';
+        desc.textContent = 'Select a Microbiology section to continue. Content and records will be added after the structure is finalized.';
+        setMicrobiologySubBack(false);
+
+        grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.externalQuality, renderMicrobiologyEqa));
+        grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.tbInformation, renderMicrobiologyTbis));
+        grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.dengue, function () {
+          showModuleNotice('Module Opened', MICROBIOLOGY_CARDS.dengue.title + ' opened.');
+        }));
+        grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.bfmp, function () {
+          showModuleNotice('Module Opened', MICROBIOLOGY_CARDS.bfmp.title + ' opened.');
+        }));
+      }
+
+      function renderMicrobiologyEqa() {
+        var grid = $('moduleYearGrid');
+        var title = $('moduleYearsTitle');
+        var desc = $('moduleYearsDesc');
+        if (!grid || !title || !desc) return;
+
+        grid.className = 'module-year-grid year-cards-independent year-cards-module--microbiology-external-quality-assurance';
+        grid.dataset.yearModule = 'MICROBIOLOGY EXTERNAL QUALITY ASSURANCE';
+        grid.textContent = '';
+        title.textContent = 'MICROBIOLOGY EXTERNAL QUALITY ASSURANCE';
+        desc.textContent = 'Select a year. The current year is open; future years remain locked and unlock automatically when that year begins.';
+        setMicrobiologySubBack(true);
+
+        var activeYear = currentYear();
+        for (var year = config.moduleYearStart; year <= config.moduleYearEnd; year += 1) {
+          grid.appendChild(createYearCard('MICROBIOLOGY EXTERNAL QUALITY ASSURANCE', year, year > activeYear, year === activeYear, 'year-card'));
+        }
+      }
+
+      function renderMicrobiologyTbis() {
+        var grid = $('moduleYearGrid');
+        var title = $('moduleYearsTitle');
+        var desc = $('moduleYearsDesc');
+        if (!grid || !title || !desc) return;
+
+        grid.className = 'module-year-grid microbiology-structure-grid tbis-structure-grid';
+        grid.dataset.yearModule = 'TB INFORMATION SYSTEM';
+        grid.textContent = '';
+        title.textContent = 'TB INFORMATION SYSTEM';
+        desc.textContent = 'Select a TB Information System section. Content will be added after the structure is finalized.';
+        setMicrobiologySubBack(true);
+
+        TBIS_CARDS.forEach(function (definition) {
+          grid.appendChild(createMicrobiologyCard(definition, function () {
+            showModuleNotice('Module Opened', definition.title + ' opened.');
+          }));
+        });
+      }
+
+      /* +----------------------------------+
        * + renderModuleYearCards            +
        * +----------------------------------+ */
       function renderModuleYearCards(moduleName) {
@@ -5198,6 +5358,10 @@ hoagApiRequest('logout', {
         if (!grid || !title || !desc) return;
   
         var displayName = normalizeModuleName(moduleName);
+        if (displayName === 'MICROBIOLOGY') {
+          renderMicrobiologyHome();
+          return;
+        }
         /* Modules with dedicated workspaces never render Year Cards. */
         if(displayName==='INVENTORY' && typeof Inventory!=='undefined' && Inventory.open){ Inventory.open(); return; }
         if(displayName==='TRANSFUSION' && typeof Transfusion!=='undefined' && Transfusion.open){ Transfusion.open(state.selectedModuleYear || (window.LabAppTime ? window.LabAppTime.nowParts().year : new Date().getFullYear())); return; }
