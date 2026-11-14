@@ -2296,7 +2296,7 @@
     .calendar-mini-label,
     .calendar-selected-label {
       color: var(--text);
-      font-size: clamp(15px, 1.1vw, 20px);
+      font-size: clamp(14px, 1vw, 18px);
       font-weight: 950;
     }
 
@@ -10984,8 +10984,10 @@ body.auth-resolving #authResolvingPanel {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
-  min-height: 150px;
-  padding: clamp(18px, 1.5vw, 28px);
+  height: 112px;
+  min-height: 112px;
+  max-height: 112px;
+  padding: 16px 20px;
   border-radius: var(--year-card-radius);
   border: 1px solid var(--year-page-card-border);
   background: var(--year-page-card-bg);
@@ -10993,7 +10995,7 @@ body.auth-resolving #authResolvingPanel {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(14px, 1.2vw, 20px);
+  gap: 16px;
   text-align: left;
   color: var(--text);
   cursor: pointer;
@@ -11012,8 +11014,8 @@ body.auth-resolving #authResolvingPanel {
 }
 
 .microbiology-structure-icon-shell {
-  width: clamp(52px, 4vw, 68px);
-  height: clamp(52px, 4vw, 68px);
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -11023,7 +11025,7 @@ body.auth-resolving #authResolvingPanel {
 }
 
 .microbiology-structure-icon {
-  font-size: clamp(25px, 2vw, 34px);
+  font-size: 22px;
   line-height: 1;
 }
 
@@ -11032,7 +11034,7 @@ body.auth-resolving #authResolvingPanel {
 }
 
 .microbiology-structure-title {
-  font-size: clamp(15px, 1.1vw, 20px);
+  font-size: clamp(14px, 1vw, 18px);
   font-weight: 950;
   line-height: 1.2;
   letter-spacing: .01em;
@@ -11062,7 +11064,9 @@ body.auth-resolving #authResolvingPanel {
 
 @media (max-width: 640px) {
   .microbiology-structure-card {
-    min-height: 128px;
+    height: 112px;
+    min-height: 112px;
+    max-height: 112px;
     grid-template-columns: auto minmax(0, 1fr);
   }
 
