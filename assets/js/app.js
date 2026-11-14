@@ -5274,18 +5274,6 @@ hoagApiRequest('logout', {
         return card;
       }
 
-      function setMicrobiologySubBack(visible) {
-        var back = $('moduleYearsSubBackBtn');
-        if (!back) return;
-        back.hidden = !visible;
-        if (back.dataset.microbiologyBound !== '1') {
-          back.dataset.microbiologyBound = '1';
-          back.addEventListener('click', function () {
-            renderMicrobiologyHome();
-          });
-        }
-      }
-
       function renderMicrobiologyHome() {
         var grid = $('moduleYearGrid');
         var title = $('moduleYearsTitle');
@@ -5297,7 +5285,6 @@ hoagApiRequest('logout', {
         grid.textContent = '';
         title.textContent = 'MICROBIOLOGY';
         desc.textContent = 'Select a Microbiology section to continue. Content and records will be added after the structure is finalized.';
-        setMicrobiologySubBack(false);
 
         grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.externalQuality, renderMicrobiologyEqa));
         grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.tbInformation, renderMicrobiologyTbis));
@@ -5320,7 +5307,6 @@ hoagApiRequest('logout', {
         grid.textContent = '';
         title.textContent = 'MICROBIOLOGY EXTERNAL QUALITY ASSURANCE';
         desc.textContent = 'Select a year. The current year is open; future years remain locked and unlock automatically when that year begins.';
-        setMicrobiologySubBack(true);
 
         var activeYear = currentYear();
         for (var year = config.moduleYearStart; year <= config.moduleYearEnd; year += 1) {
@@ -5339,7 +5325,6 @@ hoagApiRequest('logout', {
         grid.textContent = '';
         title.textContent = 'TB INFORMATION SYSTEM';
         desc.textContent = 'Select a TB Information System section. Content will be added after the structure is finalized.';
-        setMicrobiologySubBack(true);
 
         TBIS_CARDS.forEach(function (definition) {
           grid.appendChild(createMicrobiologyCard(definition, function () {
