@@ -1,3 +1,4 @@
+/* ===== TBIS102A V21 SAVE/REGISTER FIX ===== */
 /* ===== TBIS102A KEYBOARD/SAVE GUARD (EARLY CAPTURE) ===== */
 (function(){
   'use strict';
@@ -496,13 +497,29 @@
         action: authAction,
         payload: requestBody
       });
-      const response = await fetch(authEndpoint || '/api/bridge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        cache: 'no-store',
-        body: body
-      });
+      /* V21: never leave a Save/Register button spinning forever.
+       * Login keeps the normal request behavior; application API calls get a
+       * bounded 20-second timeout and surface a real error to the caller. */
+      var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timeoutId = controller ? window.setTimeout(function(){ controller.abort(); }, 20000) : null;
+      var response;
+      try {
+        response = await fetch(authEndpoint || '/api/bridge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          cache: 'no-store',
+          body: body,
+          signal: controller ? controller.signal : undefined
+        });
+      } catch (error) {
+        if (error && error.name === 'AbortError') {
+          throw new Error(authEndpoint ? 'Login request timed out. Please try again.' : 'TBIS102A save request timed out. Please check Vercel Function Logs and Supabase, then try again.');
+        }
+        throw error;
+      } finally {
+        if (timeoutId) window.clearTimeout(timeoutId);
+      }
 
       const text = await response.text();
       let data;
@@ -5704,8 +5721,10 @@ hoagApiRequest('logout', {
             window.alert('Please select a Result.');
             return;
           }
-          if (resultValue === 'SCANTY' && !scantyValue) {
+          if (resultValue === 'SCANTY' && (!scantyValue || !/^\d+(?:\.\d+)?$/.test(scantyValue))) {
             window.alert('Please enter the numeric result for SCANTY.');
+            var scantyInput = document.getElementById('tbScanty');
+            if (scantyInput) scantyInput.focus();
             return;
           }
 

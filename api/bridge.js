@@ -891,26 +891,39 @@ async function dispatch(db, method, a, req) {
       }
       const record = normalizeTbis102aRecord(input, existing, s.userId);
 
-      // IMPORTANT: return the Supabase write result directly. The previous
-      // implementation performed a second SELECT and then awaited the system
-      // log/retention work before responding. If either secondary operation
-      // was slow, the browser stayed on "REGISTERING..." even though the
-      // record had already been written.
-      const { data: savedRow, error: upsertError } = await supabase
-        .from('tbis102a_records')
-        .upsert({
-          id: record.id,
-          data: record,
-          created_at: record.createdAt,
-          updated_at: record.updatedAt
-        }, { onConflict: 'id' })
-        .select('id, data, created_at, updated_at')
-        .single();
-      if (upsertError) throw upsertError;
+      /* V21: keep the write path deliberately simple and deterministic.
+       * Do not request a PostgREST representation after the write. The table is
+       * written by the server service-role client, so asking Supabase to return
+       * the row adds another database response/RLS/representation step that is
+       * not needed for registration and was capable of leaving the UI waiting.
+       * We already have the canonical normalized record in memory. */
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from('tbis102a_records')
+          .update({
+            data: record,
+            updated_at: record.updatedAt
+          })
+          .eq('id', record.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('tbis102a_records')
+          .insert({
+            id: record.id,
+            data: record,
+            created_at: record.createdAt,
+            updated_at: record.updatedAt
+          });
+        if (insertError) {
+          if (insertError.code === '23505') {
+            fail('TBIS102A record already exists. Please reload the list and try again.', 409);
+          }
+          throw insertError;
+        }
+      }
 
-      const saved = savedRow?.data && typeof savedRow.data === 'object'
-        ? { ...savedRow.data, id: savedRow.id, createdAt: savedRow.created_at, updatedAt: savedRow.updated_at }
-        : record;
+      const saved = record;
 
       // Logging must never block a successful TBIS102A registration.
       // Keep the audit trail, but deliberately do not await it.
