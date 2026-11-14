@@ -5667,10 +5667,36 @@ hoagApiRequest('logout', {
              * session resolution. Keep keyboard input completely local to this module. */
             tbForm.addEventListener('keydown', function (event) {
               if (event.key !== 'Enter') return;
+
+              /* TBIS102A uses ENTER as keyboard navigation, matching the
+               * data-entry workflow used by the other registration modules.
+               * Only Ctrl/Cmd+Enter submits the record. */
               event.preventDefault();
               event.stopPropagation();
               if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-              if (event.ctrlKey || event.metaKey) submit(event);
+
+              if (event.ctrlKey || event.metaKey) {
+                submit(event);
+                return;
+              }
+
+              var fields = Array.prototype.slice.call(
+                tbForm.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
+              );
+              var current = event.target;
+              var index = fields.indexOf(current);
+              if (index === -1) return;
+
+              var next = fields[index + 1];
+              if (next) {
+                next.focus({ preventScroll: true });
+                if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') {
+                  next.select();
+                }
+              } else {
+                var saveButton = document.getElementById('tbis102aSave');
+                if (saveButton) saveButton.focus({ preventScroll: true });
+              }
             }, true);
             tbForm.addEventListener('click', function (event) {
               var button = event.target && event.target.closest ? event.target.closest('#tbis102aSave') : null;
