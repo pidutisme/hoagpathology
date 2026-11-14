@@ -5400,7 +5400,7 @@ hoagApiRequest('logout', {
             '<div class="tbis102a-grid-layout">' +
             '<section class="outsource-card tbis102a-card">' +
             '<div class="outsource-card-head"><h3>REGISTRATION FORM</h3><span id="tbis102aEditHint">NEW RECORD</span></div>' +
-            '<form class="outsource-form tbis102a-form tbis102a-registration-form" id="tbis102aForm" autocomplete="off">' +
+            '<div class="outsource-form tbis102a-form tbis102a-registration-form" id="tbis102aForm" role="form" aria-label="TBIS102A Registration Form">' +
             '<div class="tbis102a-grid">' +
             '<div class="tbis102a-field"><label>DATE *</label><input id="tbDate" type="date" required></div>' +
             '<div class="tbis102a-field"><label>LAB NO.</label><input id="tbLabNo" placeholder="Lab number"></div>' +
@@ -5418,8 +5418,8 @@ hoagApiRequest('logout', {
             '<div class="tbis102a-field"><label>REVIEWED BY</label><input id="tbReviewedBy" placeholder="Reviewer"></div>' +
             '<div class="tbis102a-field"><label>RESULT</label><input id="tbFinalResult" placeholder="Final / patient result"></div>' +
             '</div>' +
-            '<div class="tbis102a-form-actions"><button class="outsource-btn secondary" type="button" id="tbis102aClear">CLEAR</button><button class="outsource-btn primary" type="submit" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
-            '</form></section>' +
+            '<div class="tbis102a-form-actions"><button class="outsource-btn secondary" type="button" id="tbis102aClear">CLEAR</button><button class="outsource-btn primary" type="button" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
+            '</div></section>' +
 
             '<section class="outsource-card tbis102a-card">' +
             '<div class="outsource-card-head"><h3>REGISTERED TBIS102A</h3><span id="tbis102aTotal">0 TOTAL</span></div>' +
@@ -5661,20 +5661,24 @@ hoagApiRequest('logout', {
           setVal('tbDate', today());
           var tbForm = document.getElementById('tbis102aForm');
           if (tbForm) {
-            /* TBIS102A must never allow ENTER to bubble into the global auth/login form.
-             * In some layouts the app shell contains legacy form handlers; stopping the
-             * keyboard event here prevents an accidental login submit/session transition. */
+            /* TBIS102A intentionally is NOT a native <form>.
+             * A native form can trigger implicit browser submission on ENTER, which is
+             * unsafe inside this SPA because a navigation/reload can re-enter auth
+             * session resolution. Keep keyboard input completely local to this module. */
             tbForm.addEventListener('keydown', function (event) {
               if (event.key !== 'Enter') return;
               event.preventDefault();
               event.stopPropagation();
               if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-              if (event.ctrlKey || event.metaKey) {
-                if (typeof tbForm.requestSubmit === 'function') tbForm.requestSubmit();
-                else tbForm.dispatchEvent(new Event('submit', { bubbles: false, cancelable: true }));
-              }
+              if (event.ctrlKey || event.metaKey) submit(event);
             }, true);
-            tbForm.addEventListener('submit', submit);
+            tbForm.addEventListener('click', function (event) {
+              var button = event.target && event.target.closest ? event.target.closest('#tbis102aSave') : null;
+              if (!button) return;
+              event.preventDefault();
+              event.stopPropagation();
+              submit(event);
+            });
           }
           document.getElementById('tbis102aClear').addEventListener('click', clearForm);
 
