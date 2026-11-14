@@ -11126,6 +11126,7 @@ body.auth-resolving #authResolvingPanel {
 .tbis102a-section-title{margin:18px 0 10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(150,165,190,.22);font-weight:800;letter-spacing:.04em;font-size:12px;color:#24324a;}
 .tbis102a-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;}
 .tbis102a-field{min-width:0;}
+.tbis102a-scanty-field[hidden]{display:none!important;}
 .tbis102a-field label{display:block;font-size:10px;font-weight:800;letter-spacing:.035em;margin:0 0 5px;color:#526078;text-transform:uppercase;}
 .tbis102a-field input,.tbis102a-field select,.tbis102a-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(145,160,185,.28);border-radius:10px;background:rgba(248,250,253,.88);padding:9px 10px;font:inherit;font-size:12px;color:#24324a;outline:none;}
 .tbis102a-field input:focus,.tbis102a-field select:focus,.tbis102a-field textarea:focus{border-color:rgba(41,123,235,.48);box-shadow:0 0 0 3px rgba(41,123,235,.08);}

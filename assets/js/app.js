@@ -5420,6 +5420,11 @@ hoagApiRequest('logout', {
           var form = document.getElementById('tbis102aForm');
           if (form) form.reset();
           setVal('tbDate', today());
+          setVal('tbScanty', '');
+          var scantyField = document.getElementById('tbScantyField');
+          var scantyInput = document.getElementById('tbScanty');
+          if (scantyField) scantyField.hidden = true;
+          if (scantyInput) scantyInput.disabled = true;
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'NEW RECORD';
           var save = document.getElementById('tbis102aSave');
@@ -5445,6 +5450,7 @@ hoagApiRequest('logout', {
           setVal('tbSample', s.sample);
           setVal('tbQuality', s.quality);
           setVal('tbResult', s.result);
+          setVal('tbScanty', s.scanty);
           setVal('tbReleaseDate', s.releaseDate);
           setVal('tbTat', s.tat);
           setVal('tbValidatedBy', s.staff || r.validatedBy);
@@ -5475,11 +5481,12 @@ hoagApiRequest('logout', {
             '<div class="tbis102a-field"><label>PATIENT</label><select id="tbPatient"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>KONTAK</option><option>ULANGAN</option></select></div>' +
             '<div class="tbis102a-field"><label>SAMPLE</label><select id="tbSample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option></select></div>' +
             '<div class="tbis102a-field"><label>SAMPLE QUALITY</label><select id="tbQuality"><option value="">Select sample quality</option><option>SALIVA</option><option>SPUTUM</option></select></div>' +
-            '<div class="tbis102a-field"><label>RESULT</label><input id="tbResult" placeholder="Laboratory result"></div>' +
+            '<div class="tbis102a-field"><label>RESULT</label><select id="tbResult"><option value="">Select result</option><option>NO AFB SEEN</option><option>SCANTY</option><option>1+</option><option>2+</option><option>3+</option></select></div>' +
+            '<div class="tbis102a-field tbis102a-scanty-field" id="tbScantyField" hidden><label>NUMERIC RESULT</label><input id="tbScanty" type="number" min="1" step="1" placeholder="Enter numeric result" disabled></div>' +
             '<div class="tbis102a-field"><label>RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
             '<div class="tbis102a-field"><label>TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
-            '<div class="tbis102a-field"><label>VALIDATED BY</label><input id="tbValidatedBy" placeholder="Staff"></div>' +
-            '<div class="tbis102a-field"><label>REVIEWED BY</label><input id="tbReviewedBy" placeholder="Reviewer"></div>' +
+            '<div class="tbis102a-field"><label>VALIDATED BY</label><select id="tbValidatedBy"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
+            '<div class="tbis102a-field"><label>REVIEWED BY</label><select id="tbReviewedBy"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
             
             '</div>' +
             '<div class="tbis102a-form-actions"><button class="outsource-btn secondary" type="button" id="tbis102aClear">CLEAR</button><button class="outsource-btn primary" type="button" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
@@ -5666,8 +5673,18 @@ hoagApiRequest('logout', {
         function submit(e) {
           e.preventDefault();
           var name = val('tbName'), date = val('tbDate');
+          var resultValue = val('tbResult');
+          var scantyValue = val('tbScanty');
           if (!name || !date) {
             window.alert('Please fill Date and Name.');
+            return;
+          }
+          if (!resultValue) {
+            window.alert('Please select a Result.');
+            return;
+          }
+          if (resultValue === 'SCANTY' && !scantyValue) {
+            window.alert('Please enter the numeric result for SCANTY.');
             return;
           }
 
@@ -5677,9 +5694,9 @@ hoagApiRequest('logout', {
             quality: val('tbQuality'),
             result: val('tbResult'),
             observation: '',
-            scanty: '',
+            scanty: val('tbScanty'),
             slideResult: '',
-            patientResult: val('tbResult'),
+            patientResult: resultValue,
             slide: '',
             releaseDate: val('tbReleaseDate'),
             tat: val('tbTat'),
@@ -5781,6 +5798,23 @@ hoagApiRequest('logout', {
             event.preventDefault();
             clearForm();
           });
+
+          var tbResult = document.getElementById('tbResult');
+          var tbScantyField = document.getElementById('tbScantyField');
+          var tbScanty = document.getElementById('tbScanty');
+          function syncScantyField() {
+            var isScanty = tbResult && String(tbResult.value || '').toUpperCase() === 'SCANTY';
+            if (tbScantyField) tbScantyField.hidden = !isScanty;
+            if (tbScanty) {
+              tbScanty.disabled = !isScanty;
+              if (!isScanty) tbScanty.value = '';
+            }
+          }
+          if (tbResult) {
+            tbResult.addEventListener('change', syncScantyField);
+            tbResult.addEventListener('input', syncScantyField);
+          }
+          syncScantyField();
 
           ['tbisSearch', 'tbisYearFilter', 'tbisMonthFilter'].forEach(function (id) {
             var el = document.getElementById(id);
