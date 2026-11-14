@@ -937,15 +937,17 @@
 
   function saveLocalRecords() {
     try {
-      safeStorageSet(cacheKey, JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), records: records }));
+      if (window.localStorage) {
+        window.localStorage.setItem(cacheKey, JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), records: records }));
+      }
     } catch (e) {}
   }
 
   function loadLocalRecords() {
     try {
-      var raw = safeStorageGet(cacheKey);
+      var raw = window.localStorage ? window.localStorage.getItem(cacheKey) : null;
       if (!raw) return false;
-      var parsed = safeParse(raw);
+      var parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.records)) return false;
       records = parsed.records.map(normalizeNotificationRecord);
       return true;
@@ -1657,6 +1659,10 @@
     }
   }
   function open() {
+    if (window.Router && typeof window.Router.canAccessPage === 'function' && !window.Router.canAccessPage('notification')) {
+      if (typeof window.Router.denyVisitorPageAccess === 'function') window.Router.denyVisitorPageAccess('notification');
+      return;
+    }
     var page = $('notification');
     if (!page) return;
     document.querySelectorAll('.page.active').forEach(function (p) { p.classList.remove('active'); });
@@ -1732,7 +1738,6 @@
     });
   }
 
-  window.LabNotification = { open: open, render: render, getRecords: function () { return records.slice(); } };
-  loadRecords();
+  window.LabNotification = { open: open, render: render, loadRecords: loadRecords, getRecords: function () { return records.slice(); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }
 })(window, document);

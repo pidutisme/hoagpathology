@@ -1059,6 +1059,174 @@
       }
     }
 
+    /* +----------------------------------+
+     * + CANONICAL ACCESS & ROLE SYSTEM   +
+     * + Single source of truth for       +
+     * + Authentication, Role & Page      +
+     * + Permissions across all modules   +
+     * +----------------------------------+ */
+    var visitorAccessCatalog = [
+      { id: 'dashboard', label: 'DASHBOARD' },
+      { id: 'profile', label: 'PROFILE' },
+      { id: 'access', label: 'ACCESS' },
+      { id: 'calendar', label: 'CALENDAR' },
+      { id: 'notification', label: 'NOTIFICATION' },
+      { id: 'leavesCourses', label: 'LEAVE & COURSES' },
+      { id: 'quickLinks', label: 'QUICK LINKS' },
+      { id: 'settings', label: 'SETTING' },
+      { id: 'OUTSOURCE', label: 'OUTSOURCE' },
+      { id: 'INVENTORY', label: 'INVENTORY' },
+      { id: 'TRANSFUSION', label: 'TRANSFUSION' },
+      { id: 'POCT', label: 'POCT' },
+      { id: 'Chemical Pathology', label: 'CHEMICAL PATHOLOGY' },
+      { id: 'Hematology', label: 'HEMATOLOGY' },
+      { id: 'Microbiology', label: 'MICROBIOLOGY' },
+      { id: 'Urine/Stool Analysis', label: 'URINE/STOOL ANALYSIS' }
+    ];
+
+    function normalizeRoleValue(role) {
+      var raw = String(role == null ? '' : role).trim().toUpperCase();
+      if (raw === 'ADMIN') return 'ADMIN';
+      if (raw === 'VISITOR') return 'VISITOR';
+      return 'USER';
+    }
+
+    function getAuthRole() {
+      return state.authUserId ? normalizeRoleValue(state.authRole) : '';
+    }
+
+    function isAdminRole() {
+      return getAuthRole() === 'ADMIN';
+    }
+
+    function isVisitorAccessRestricted() {
+      return getAuthRole() === 'VISITOR';
+    }
+
+    function normalizeAccessTargetId(rawId) {
+      var raw = String(rawId == null ? '' : rawId).trim();
+      if (!raw) return '';
+      var lower = raw.toLowerCase();
+      if (lower === 'inventory') return 'INVENTORY';
+      for (var i = 0; i < visitorAccessCatalog.length; i += 1) {
+        if (visitorAccessCatalog[i].id.toLowerCase() === lower) {
+          return visitorAccessCatalog[i].id;
+        }
+      }
+      var modName = normalizeModuleName(raw);
+      for (var j = 0; j < visitorAccessCatalog.length; j += 1) {
+        if (visitorAccessCatalog[j].id.toLowerCase() === String(modName || '').toLowerCase()) {
+          return visitorAccessCatalog[j].id;
+        }
+      }
+      return raw;
+    }
+
+    function normalizeVisitorPageAccessList(list) {
+      var result = ['dashboard'];
+      if (!Array.isArray(list)) return result;
+      list.forEach(function (item) {
+        var canonical = normalizeAccessTargetId(item);
+        if (!canonical) return;
+        var exists = result.some(function (entry) {
+          return entry.toLowerCase() === canonical.toLowerCase();
+        });
+        if (!exists) result.push(canonical);
+      });
+      return result;
+    }
+
+    function getAccessTargetLabel(rawId) {
+      var canonical = normalizeAccessTargetId(rawId);
+      for (var i = 0; i < visitorAccessCatalog.length; i += 1) {
+        if (visitorAccessCatalog[i].id.toLowerCase() === String(canonical || '').toLowerCase()) {
+          return visitorAccessCatalog[i].label;
+        }
+      }
+      if (String(rawId) === 'systemLog') return 'SYSTEM LOG';
+      return String(canonical || rawId || 'PAGE').toUpperCase();
+    }
+
+    function visitorCanAccess(id) {
+      if (!isVisitorAccessRestricted()) return true;
+      var target = normalizeAccessTargetId(id).toLowerCase();
+      if (!target) return false;
+      if (target === 'dashboard') return true;
+      var allowedList = Array.isArray(state.authPageAccess)
+        ? state.authPageAccess
+        : ['dashboard'];
+      return allowedList.some(function (allowedId) {
+        return normalizeAccessTargetId(allowedId).toLowerCase() === target;
+      });
+    }
+
+    function canAccessModule(moduleName) {
+      var normalized = String(moduleName || '').trim();
+      if (!normalized) return false;
+      if (!state.authUserId) return false;
+      if (!isVisitorAccessRestricted()) return true;
+      return visitorCanAccess(normalizeModuleName(normalized));
+    }
+
+    function canAccessPage(pageId) {
+      if (!state.authUserId) return false;
+      var id = String(pageId || '').trim();
+      if (!id) return false;
+      if (id === 'systemLog') return isAdminRole();
+      if (!isVisitorAccessRestricted()) return true;
+      if (id === 'dashboard') return true;
+      if (id === 'inventory') return canAccessModule('INVENTORY');
+      if (id === 'moduleYears') {
+        var currentModule = window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.getLastModule === 'function'
+          ? window.LabApp.Modules.getLastModule()
+          : '';
+        return !!currentModule && canAccessModule(currentModule);
+      }
+      return visitorCanAccess(id);
+    }
+
+    function closeNoAccessModal() {
+      var modal = $('noAccessModal');
+      if (modal) modal.classList.add('is-hidden');
+    }
+
+    function denyVisitorPageAccess(targetId) {
+      var label = getAccessTargetLabel(targetId);
+      var modal = $('noAccessModal');
+      var titleNode = $('noAccessTitle');
+      var textNode = $('noAccessText');
+      var targetNode = $('noAccessTargetLabel');
+      var backBtn = $('noAccessBackBtn');
+      if (titleNode) titleNode.textContent = 'NO ACCESS';
+      if (textNode) textNode.textContent = 'You do not have permission to access this page.';
+      if (targetNode) targetNode.textContent = label ? ('Restricted Page: ' + label) : '';
+      if (modal) {
+        modal.classList.remove('is-hidden');
+        if (backBtn && backBtn.dataset.noAccessBound !== '1') {
+          backBtn.dataset.noAccessBound = '1';
+          backBtn.addEventListener('click', function () {
+            closeNoAccessModal();
+            if (typeof Router !== 'undefined' && Router && typeof Router.openDashboard === 'function') {
+              Router.openDashboard();
+            }
+          });
+          modal.addEventListener('click', function (event) {
+            if (event.target === modal) closeNoAccessModal();
+          });
+        }
+      } else {
+        setSystemToast('NO ACCESS', 'You do not have permission to access this page.', 3200);
+      }
+      if (typeof ActivityTracker !== 'undefined' && ActivityTracker && typeof ActivityTracker.track === 'function') {
+        ActivityTracker.track(
+          'ACCESS_DENIED',
+          'Access denied to ' + label + '.',
+          { page: String(targetId || 'restricted'), status: 'DENIED', role: getAuthRole() },
+          { dedupeMs: 2500 }
+        );
+      }
+    }
+
     var Router = (function () {
       var pageNodes = [];
       var navButtons = [];
@@ -1102,83 +1270,26 @@
         return null;
       }
 
-      /* +----------------------------------+
-       * + visitor page access              +
-       * +----------------------------------+
-       * Visitor assignments are page/module-level UI routing rules. ADMIN and
-       * USER retain the existing unrestricted navigation. */
-      var visitorAccessCatalog = [
-        { id: 'dashboard', label: 'DASHBOARD' },
-        { id: 'profile', label: 'PROFILE' },
-        { id: 'access', label: 'ACCESS' },
-        { id: 'calendar', label: 'CALENDAR' },
-        { id: 'notification', label: 'NOTIFICATION' },
-        { id: 'leavesCourses', label: 'LEAVE & COURSES' },
-        { id: 'quickLinks', label: 'QUICK LINKS' },
-        { id: 'settings', label: 'SETTING' },
-        { id: 'OUTSOURCE', label: 'OUTSOURCE' },
-        { id: 'INVENTORY', label: 'INVENTORY' },
-        { id: 'TRANSFUSION', label: 'TRANSFUSION' },
-        { id: 'POCT', label: 'POCT' },
-        { id: 'Chemical Pathology', label: 'CHEMICAL PATHOLOGY' },
-        { id: 'Hematology', label: 'HEMATOLOGY' },
-        { id: 'Microbiology', label: 'MICROBIOLOGY' },
-        { id: 'Urine/Stool Analysis', label: 'URINE/STOOL ANALYSIS' }
-      ];
-
-      function isVisitorAccessRestricted() {
-        return String(state.authRole || '').toUpperCase() === 'VISITOR' && Array.isArray(state.authPageAccess);
-      }
-
-      function visitorCanAccess(id) {
-        if (!isVisitorAccessRestricted()) return true;
-        var target = String(id || '').trim().toLowerCase();
-        if (!target) return false;
-        return state.authPageAccess.some(function (allowedId) {
-          return String(allowedId || '').trim().toLowerCase() === target;
-        });
-      }
-
-      /* Visitor module shells are only entry points to their Year Selector.
-       * They must still obey the administrator's per-user assignment. Once a
-       * module is assigned, the shell opens read-only and its Year Cards remain
-       * locked separately by createYearCard(). */
-      function canAccessModule(moduleName) {
-        var normalized = String(moduleName || '').trim();
-        if (!normalized) return false;
-        if (!state.authUserId) return false;
-        if (!isVisitorAccessRestricted()) return true;
-        return visitorCanAccess(normalizeModuleName(normalized));
-      }
-
-      function canAccessPage(pageId) {
-        if (!state.authUserId) return false;
-        if (!isVisitorAccessRestricted()) return true;
-        var id = String(pageId || '');
-        if (id === 'inventory') return canAccessModule('INVENTORY');
-        if (id === 'moduleYears') {
-          var currentModule = window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.getLastModule === 'function'
-            ? window.LabApp.Modules.getLastModule()
-            : '';
-          return !!currentModule && canAccessModule(currentModule);
-        }
-        return visitorCanAccess(id);
-      }
-
       function getDefaultAllowedPage() {
-        if (!isVisitorAccessRestricted()) return 'dashboard';
-        for (var index = 0; index < visitorAccessCatalog.length; index += 1) {
-          var id = visitorAccessCatalog[index].id;
-          if (visitorCanAccess(id) && (document.getElementById(id) || getNavButtonForPage(id))) return id;
-        }
-        /* Dashboard is the safe shell fallback for legacy/empty assignments. */
         return 'dashboard';
       }
 
       function refreshAccessControl() {
+        var admin = isAdminRole();
+        var sysLogBtn = $('navSystemLogBtn');
+        if (sysLogBtn) {
+          sysLogBtn.hidden = !admin;
+          if (admin) sysLogBtn.removeAttribute('aria-hidden');
+          else sysLogBtn.setAttribute('aria-hidden', 'true');
+        }
+
         if (!isVisitorAccessRestricted()) {
           document.body.classList.remove('visitor-page-access-restricted');
           forEachNode(getNavButtons(), function (button) {
+            if (button.id === 'navSystemLogBtn') {
+              button.hidden = !admin;
+              return;
+            }
             button.hidden = false;
             button.removeAttribute('aria-hidden');
             button.removeAttribute('aria-disabled');
@@ -1192,41 +1303,48 @@
             card.classList.remove('visitor-page-access-disabled');
             card.removeAttribute('tabindex');
           });
-          return;
+        } else {
+          document.body.classList.add('visitor-page-access-restricted');
+
+          /* Visitors must see the complete application shell. Do not grey-out,
+           * hide, remove focus, or disable unassigned pages/modules. Access is
+           * enforced only when the user attempts to open the item, where the
+           * router/modules layer shows the standard NO ACCESS state. */
+          forEachNode(getNavButtons(), function (button) {
+            if (button.id === 'navSystemLogBtn') {
+              button.hidden = true;
+              button.setAttribute('aria-hidden', 'true');
+              return;
+            }
+            button.hidden = false;
+            button.setAttribute('aria-hidden', 'false');
+            button.setAttribute('aria-disabled', 'false');
+            button.classList.remove('visitor-page-access-disabled');
+            button.removeAttribute('tabindex');
+          });
+
+          forEachNode(document.querySelectorAll('[data-dashboard-module]'), function (card) {
+            card.hidden = false;
+            card.setAttribute('aria-hidden', 'false');
+            card.setAttribute('aria-disabled', 'false');
+            card.classList.remove('visitor-page-access-disabled');
+            if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+          });
         }
 
-        document.body.classList.add('visitor-page-access-restricted');
-
-        /* Visitors must see the complete application shell. Do not grey-out,
-         * hide, remove focus, or disable unassigned pages/modules. Access is
-         * enforced only when the user attempts to open the item, where the
-         * router/modules layer shows the standard NO ACCESS message. */
-        forEachNode(getNavButtons(), function (button) {
-          button.hidden = false;
-          button.setAttribute('aria-hidden', 'false');
-          button.setAttribute('aria-disabled', 'false');
-          button.classList.remove('visitor-page-access-disabled');
-          button.removeAttribute('tabindex');
-        });
-
-        forEachNode(document.querySelectorAll('[data-dashboard-module]'), function (card) {
-          card.hidden = false;
-          card.setAttribute('aria-hidden', 'false');
-          card.setAttribute('aria-disabled', 'false');
-          card.classList.remove('visitor-page-access-disabled');
-          if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
-        });
+        if (typeof Modules !== 'undefined' && Modules && typeof Modules.renderLeavesCoursesYears === 'function') {
+          Modules.renderLeavesCoursesYears();
+        }
       }
 
       /* +----------------------------------+
        * + isRestorablePage                 +
        * +----------------------------------+ */
       function isRestorablePage(pageId) {
-        /* moduleYears is a virtual workspace used by Outsource, Inventory,
-         * Transfusion and the discipline modules. It has no sidebar button,
-         * but it is still a real restorable page just like the sidebar pages. */
-        return !!(pageId && (pageId === 'moduleYears' || pageId === 'notification' || $(pageId)) &&
-          (pageId === 'dashboard' || pageId === 'moduleYears' || getNavButtonForPage(pageId)));
+        /* moduleYears and inventory are workspaces opened from Dashboard cards.
+         * They have no sidebar button, but are real restorable pages. */
+        return !!(pageId && (pageId === 'moduleYears' || pageId === 'inventory' || pageId === 'notification' || pageId === 'systemLog' || $(pageId)) &&
+          (pageId === 'dashboard' || pageId === 'moduleYears' || pageId === 'inventory' || pageId === 'systemLog' || getNavButtonForPage(pageId)));
       }
   
       /* +----------------------------------+
@@ -1461,14 +1579,20 @@
           }
           return;
         }
+        closeNoAccessModal();
         if (!canAccessPage(pageId)) {
-          if (isVisitorAccessRestricted()) {
-            setSystemToast('NO ACCESS', 'You do not have access to this page. Please contact an administrator.', 3200);
-          }
+          denyVisitorPageAccess(pageId);
           return;
         }
         if (pageId !== 'calendar' && typeof Calendar !== 'undefined' && Calendar && Calendar.flushPendingInputSave) {
           Calendar.flushPendingInputSave();
+        }
+        if (pageId === 'inventory' && typeof Inventory !== 'undefined' && Inventory && typeof Inventory.open === 'function') {
+          Inventory.open();
+          if (typeof ActivityTracker !== 'undefined' && ActivityTracker && ActivityTracker.track) {
+            ActivityTracker.track('PAGE_VIEW', 'Opened INVENTORY.', { page: 'inventory', status: 'ALLOWED' }, { dedupeMs: 8000 });
+          }
+          return;
         }
         if (pageId === 'notification' && typeof LabNotification !== 'undefined' && LabNotification && LabNotification.open) {
           LabNotification.open();
@@ -1476,46 +1600,42 @@
           saveLastPage(pageId);
           writeRouteHistory(pageId, false);
           if (typeof ActivityTracker !== 'undefined' && ActivityTracker && ActivityTracker.track) {
-            ActivityTracker.track('PAGE_VIEW', 'Opened ' + ActivityTracker.getPageLabel(pageId) + '.', { page: pageId }, { dedupeMs: 8000 });
+            ActivityTracker.track('PAGE_VIEW', 'Opened ' + ActivityTracker.getPageLabel(pageId) + '.', { page: pageId, status: 'ALLOWED' }, { dedupeMs: 8000 });
           }
           return;
         }
-        var targetPage = $(pageId);
+        var targetPageId = pageId === 'systemLog' ? 'settings' : pageId;
+        var targetPage = $(targetPageId);
         if (!targetPage) {
           console.warn('Page not found:', pageId);
           return;
         }
   
         var activePage = document.querySelector('.page.active');
-        if (activePage === targetPage) {
-          saveLastPage(pageId);
-          writeRouteHistory(pageId, pageId === 'dashboard');
-          return;
-        }
-        if (activePage) activePage.classList.remove('active');
-  
         var activeButton = document.querySelector('.nav-btn.active');
+        if (activePage && activePage !== targetPage) activePage.classList.remove('active');
         if (activeButton) activeButton.classList.remove('active');
   
         targetPage.classList.add('active');
-        if (btn) btn.classList.add('active');
+        var resolvedBtn = btn || getNavButtonForPage(pageId);
+        if (resolvedBtn) resolvedBtn.classList.add('active');
         saveLastPage(pageId);
         writeRouteHistory(pageId, pageId === 'dashboard');
   
-        renderBackButton(pageId);
+        renderBackButton(targetPageId);
   
         if (pageId === 'calendar' && state.calendarNeedsRefresh) {
           state.calendarNeedsRefresh = false;
           Calendar.render();
         }
         if (typeof RosterSync !== 'undefined' && RosterSync && RosterSync.handlePageChange) {
-          RosterSync.handlePageChange(pageId);
+          RosterSync.handlePageChange(targetPageId);
         }
         if (typeof Settings !== 'undefined' && Settings && Settings.handlePageChange) {
           Settings.handlePageChange(pageId);
         }
         if (typeof ActivityTracker !== 'undefined' && ActivityTracker && ActivityTracker.track) {
-          ActivityTracker.track('PAGE_VIEW', 'Opened ' + ActivityTracker.getPageLabel(pageId) + '.', { page: pageId }, { dedupeMs: 8000 });
+          ActivityTracker.track('PAGE_VIEW', 'Opened ' + ActivityTracker.getPageLabel(pageId) + '.', { page: pageId, status: 'ALLOWED' }, { dedupeMs: 8000 });
         }
       }
   
@@ -1538,6 +1658,12 @@
   
       return {
         goPage: goPage,
+        getCurrentPage: getActiveRouterPageId,
+        openModule: function (moduleName) {
+          if (typeof Modules !== 'undefined' && Modules && typeof Modules.open === 'function') {
+            Modules.open(moduleName);
+          }
+        },
         restoreLastPage: restoreLastPage,
         openDashboard: openDashboard,
         clearLastPage: clearLastPage,
@@ -1546,10 +1672,14 @@
         bindNavButtons: bindNavButtons,
         canAccessPage: canAccessPage,
         canAccessModule: canAccessModule,
+        isVisitorAccessRestricted: isVisitorAccessRestricted,
+        denyVisitorPageAccess: denyVisitorPageAccess,
+        visitorAccessCatalog: visitorAccessCatalog,
         getDefaultAllowedPage: getDefaultAllowedPage,
         refreshAccessControl: refreshAccessControl
       };
     })();
+    window.Router = Router;
   
     /* +----------------------------------+
      * + CLIENT MODULE                    +
@@ -1751,9 +1881,7 @@
               return;
             }
             if (!canAccessModule(moduleName)) {
-              if (isVisitorAccessRestricted()) {
-                setSystemToast('NO ACCESS', 'You do not have access to ' + moduleName + '. Please contact an administrator.', 3200);
-              }
+              denyVisitorPageAccess(moduleName);
               return;
             }
             if (window.LabApp && window.LabApp.Modules && typeof window.LabApp.Modules.open === 'function') {
@@ -2054,6 +2182,16 @@
       var TAB_AUTH_KEY = 'labAppTabAuthenticatedV1';
       var pageLifecycleBound = false;
       var pageLifecycleLogoutSent = false;
+      var restoredSessionFallbackTimer = null;
+      var sessionState = 'initializing';
+
+      function setSessionState_(nextState) {
+        sessionState = String(nextState || 'unauthenticated');
+        state.authStatus = sessionState;
+        if (document.body) {
+          document.body.setAttribute('data-auth-status', sessionState);
+        }
+      }
   
       /* +----------------------------------+
        * + cacheDomNodes                    +
@@ -2061,6 +2199,7 @@
       function cacheDomNodes() {
         nodes.screen = $('authScreen');
         nodes.app = document.querySelector('.app');
+        nodes.greeting = $('displayGreeting');
         nodes.loginPanel = $('authLoginPanel');
         nodes.changePanel = $('authChangePanel');
         nodes.form = $('loginForm');
@@ -2253,12 +2392,15 @@
         user = user && typeof user === 'object' ? user : {};
         var userId = cleanText(user.id || user.userId || user.username);
         if (!userId) return null;
+        var rawAccess = Array.isArray(user.pageAccess) ? user.pageAccess
+          : (Array.isArray(user.allowedPages) ? user.allowedPages
+          : (Array.isArray(user.visitorPageAccess) ? user.visitorPageAccess : null));
         return {
           id: userId,
           name: cleanText(user.name || user.displayName || userId) || userId,
           role: cleanText(user.role || 'USER') || 'USER',
-          pageAccess: Array.isArray(user.pageAccess)
-            ? user.pageAccess.map(function (item) { return cleanText(item); }).filter(Boolean)
+          pageAccess: Array.isArray(rawAccess)
+            ? rawAccess.map(function (item) { return cleanText(item); }).filter(Boolean)
             : null
         };
       }
@@ -2382,12 +2524,19 @@
         user = normalizePublicAuthUser_(user) || {};
         state.authUserId = cleanText(user.id);
         state.authUserDisplayName = cleanText(user.name || user.id || 'Team Member') || 'Team Member';
-        state.authRole = cleanText(user.role || 'USER') || 'USER';
-        state.authPageAccess = Array.isArray(user.pageAccess) ? user.pageAccess.slice() : null;
+        state.authRole = normalizeRoleValue(user.role || 'USER');
+        state.authPageAccess = state.authRole === 'VISITOR'
+          ? normalizeVisitorPageAccessList(user.pageAccess)
+          : null;
+        if (state.authUserId) {
+          setSessionState_('authorization-resolved');
+        }
         if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.refreshAccessControl === 'function') {
           window.LabApp.Router.refreshAccessControl();
         }
-  
+        if (typeof Settings !== 'undefined' && Settings && typeof Settings.handleAuthChange === 'function') {
+          Settings.handleAuthChange();
+        }
       }
 
       /* VISITOR is a hard read-only UI role. Every data-entry control is disabled
@@ -2397,7 +2546,7 @@
       var visitorReadOnlyObserver_ = null;
       var visitorReadOnlyQueued_ = false;
       function isVisitorRole_() {
-        return String(state.authRole || '').trim().toUpperCase() === 'VISITOR';
+        return isVisitorAccessRestricted();
       }
       function markVisitorDisabled_(el) {
         if (!el || el.matches('[data-visitor-allow]')) return;
@@ -2837,6 +2986,9 @@
 
         clearLoginTimeout_();
         stopSessionControls();
+        setSessionVerifying_(false);
+        setSessionState_('unauthenticated');
+        closeNoAccessModal();
         document.body.classList.add('auth-locked');
         document.body.classList.remove('auth-ready');
         Theme.suspendForLogin();
@@ -2847,7 +2999,7 @@
         state.authUserDisplayName = '';
         state.authRole = '';
         state.authPageAccess = null;
-        document.body.classList.remove('visitor-read-only');
+        document.body.classList.remove('visitor-read-only', 'visitor-page-access-restricted');
   
         if (!preserveActiveLogin) resetAuthForms();
         showLoginPanel(message || '', type || (message ? 'error' : ''));
@@ -2859,6 +3011,8 @@
       function unlock(user, options) {
         options = options && typeof options === 'object' ? options : {};
         clearLoginTimeout_();
+        setSessionState_('authenticated');
+        closeNoAccessModal();
         applyUser(user);
         Theme.activateForApp();
         document.body.classList.remove('auth-locked');
@@ -2878,10 +3032,12 @@
           nodes.greeting.textContent = greeting + ', ' + (state.authUserDisplayName || 'Team Member') + ' 👋';
         }
 
-        /* Restore the saved page BEFORE ending the verification state. This
-         * prevents the HTML bootstrap page (DASHBOARD) from ever becoming
-         * visible for a frame during refresh. */
-        if (options.restoredSession && window.LabApp && window.LabApp.Router &&
+        /* On a fresh login, always land on DASHBOARD first for every role.
+         * On a same-tab refresh, restore the saved page if still permitted. */
+        if (options.freshLogin && window.LabApp && window.LabApp.Router &&
+            typeof window.LabApp.Router.openDashboard === 'function') {
+          window.LabApp.Router.openDashboard();
+        } else if (options.restoredSession && window.LabApp && window.LabApp.Router &&
             typeof window.LabApp.Router.restoreLastPage === 'function') {
           window.LabApp.Router.restoreLastPage();
         }
@@ -2936,18 +3092,8 @@
       function setSessionBackgroundShell_(active) {
         var enabled = !!active;
         document.body.classList.toggle('auth-background-verifying', enabled);
-        document.body.classList.toggle('auth-session-pending', enabled && !state.authUserId);
-        if (enabled) {
-          document.body.classList.remove('auth-locked');
-          document.body.classList.add('auth-ready');
-          Theme.activateForApp();
-          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'false');
-          if (nodes.screen) nodes.screen.setAttribute('hidden', 'hidden');
-          if (nodes.greeting && !state.authUserId) nodes.greeting.textContent = 'Restoring session…';
-          if (window.LabApp && !window.LabApp.__initialized) {
-            window.LabApp.init({ deferSecondary: true, secondaryDelayMs: 150 });
-          }
-        } else {
+        document.body.classList.toggle('auth-session-pending', false);
+        if (!enabled) {
           document.body.classList.remove('auth-background-verifying', 'auth-session-pending');
         }
       }
@@ -2959,13 +3105,15 @@
           if (active) nodes.app.setAttribute('aria-busy', 'true');
           else nodes.app.removeAttribute('aria-busy');
         }
-        /* Verification is background-only. It never re-locks the application. */
+        /* Verification is background-only. It never blocks the application UI. */
         if (!active) setSessionBackgroundShell_(false);
       }
 
       function checkStoredSession(retryAttempt) {
-        /* If this tab has already authenticated, restore the shell immediately.
-         * The HttpOnly cookie is still verified by the server in the background. */
+        /* Deterministic non-blocking session resolution:
+         * 1. Same-tab refresh with cached public user -> unlock immediately and verify in background.
+         * 2. Cold tab or reopened browser -> stay on login screen while checking HttpOnly session cookie
+         *    with a strict timeout so the UI never freezes on "Verifying session...". */
         retryAttempt = Math.max(0, Number(retryAttempt || 0));
         updateResumeSessionButton_();
 
@@ -2978,36 +3126,62 @@
           );
         };
 
-        if (!hasTabAuthenticated_()) {
-          setSessionVerifying_(false);
-          clearStoredSession();
-          lock('', '');
-          return;
-        }
+        var tabAuthenticated = hasTabAuthenticated_();
+        var cachedRestoreUser = tabAuthenticated ? getStoredPublicUser_() : null;
 
-        var cachedRestoreUser = getStoredPublicUser_();
         if (cachedRestoreUser && !state.authUserId) {
+          setSessionState_('initializing');
           unlock(cachedRestoreUser, {
             freshLogin: false,
             restoredSession: true,
             deferredSessionVerification: true
           });
         } else if (!state.authUserId) {
-          setSessionBackgroundShell_(true);
+          lock('', '');
+          setSessionState_('initializing');
         }
+
+        if (restoredSessionFallbackTimer) {
+          window.clearTimeout(restoredSessionFallbackTimer);
+          restoredSessionFallbackTimer = null;
+        }
+        restoredSessionFallbackTimer = window.setTimeout(function () {
+          restoredSessionFallbackTimer = null;
+          setSessionVerifying_(false);
+          if (!state.authUserId) {
+            setSessionState_('unauthenticated');
+          }
+        }, 6000);
 
         setSessionVerifying_(true);
 
         hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
+            if (restoredSessionFallbackTimer) {
+              window.clearTimeout(restoredSessionFallbackTimer);
+              restoredSessionFallbackTimer = null;
+            }
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               setSessionVerifying_(false);
-              if (credentialsTouched() && state.authUserId) return;
-              forceLockFromServer(
-                envelope && envelope.error
-                  ? envelope.error
-                  : 'Your secure session has expired. Please sign in again.'
-              );
+              if (credentialsTouched() && !state.authUserId) {
+                setSessionState_('unauthenticated');
+                return;
+              }
+              if (state.authUserId) {
+                forceLockFromServer(
+                  envelope && envelope.error
+                    ? envelope.error
+                    : 'Your secure session has expired. Please sign in again.'
+                );
+              } else {
+                clearStoredSession();
+                setSessionState_('unauthenticated');
+              }
+              return;
+            }
+
+            if (credentialsTouched() && !state.authUserId) {
+              setSessionVerifying_(false);
               return;
             }
 
@@ -3024,8 +3198,8 @@
 
             if (!hadUser) {
               unlock(restoredUser, {
-                freshLogin: false,
-                restoredSession: true
+                freshLogin: !tabAuthenticated,
+                restoredSession: tabAuthenticated
               });
             } else if (nodes.greeting) {
               var hour = Number(getAppNowParts().hour);
@@ -3034,18 +3208,26 @@
             }
           })
           .catch(function (error) {
+            if (restoredSessionFallbackTimer) {
+              window.clearTimeout(restoredSessionFallbackTimer);
+              restoredSessionFallbackTimer = null;
+            }
             console.warn('Initial session verification failed:', error);
-            if (retryAttempt < 3 && hasTabAuthenticated_()) {
-              var delay = [1000, 3000, 5000][retryAttempt] || 5000;
+            if (retryAttempt < 2 && tabAuthenticated && state.authUserId) {
+              var delay = [1500, 3500][retryAttempt] || 3500;
               window.setTimeout(function () { checkStoredSession(retryAttempt + 1); }, delay);
               return;
             }
             setSessionVerifying_(false);
+            if (!state.authUserId) {
+              setSessionState_('unauthenticated');
+              return;
+            }
             if (!credentialsTouched() && state.authUserId) {
               setSystemToast(
                 'Session Check Delayed',
                 'Session verification is temporarily unavailable. Your current session remains active.',
-                6000
+                4000
               );
             }
           });
@@ -3289,9 +3471,12 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
+        setSessionState_('initializing');
         /* Refresh-safe session: explicit LOG OUT is the only client action that
          * revokes the server session. Do not revoke it from pagehide/beforeunload. */
-        if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
+        if (nodes.greeting && nodes.greeting.textContent.indexOf('Verifying') >= 0) {
+          nodes.greeting.textContent = 'HOAG PATHOLOGY';
+        }
         // Remove only legacy credential material. The public same-tab identity is
         // intentionally preserved so an already-authenticated user can render the
         // dashboard immediately while the HttpOnly session is verified in the
@@ -3387,7 +3572,11 @@ hoagApiRequest('logout', {
         },
         isVisitor: function () {
           return isVisitorRole_();
-        }
+        },
+        getSessionState: function () {
+          return sessionState;
+        },
+        refreshVisitorReadOnly: applyVisitorReadOnly_
       };
     })();
 
@@ -5116,15 +5305,13 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function open(cardName, activeButton) {
         var normalizedName = normalizeModuleName(cardName);
-        if (typeof Router !== 'undefined' && Router && typeof Router.canAccessModule === 'function' && !Router.canAccessModule(normalizedName)) {
-          if (typeof setSystemToast === 'function' && isVisitorAccessRestricted()) {
-            setSystemToast('NO ACCESS', 'You do not have access to ' + normalizedName + '. Please contact an administrator.', 3200);
-          }
+        if (!canAccessModule(normalizedName)) {
+          denyVisitorPageAccess(normalizedName);
           return;
         }
+        closeNoAccessModal();
         saveLastModule(normalizedName, normalizedName === 'TRANSFUSION' ? (state.selectedModuleYear || currentYear()) : null);
         if (normalizedName === 'INVENTORY' && typeof Inventory !== 'undefined') {
-          if (typeof Router !== 'undefined' && Router.rememberPage) Router.rememberPage('inventory');
           try {
             Inventory.open();
           } catch (error) {
@@ -5132,8 +5319,10 @@ hoagApiRequest('logout', {
             var inventoryPage = $('inventory');
             if (inventoryPage) {
               document.querySelectorAll('.page.active').forEach(function (page) { page.classList.remove('active'); });
+              document.querySelectorAll('.nav-btn.active').forEach(function (btn) { btn.classList.remove('active'); });
               inventoryPage.classList.add('active');
               if (typeof Router !== 'undefined' && Router.renderBackButton) Router.renderBackButton('inventory');
+              if (typeof Router !== 'undefined' && Router.rememberPage) Router.rememberPage('inventory');
             }
           }
           return;
@@ -8614,6 +8803,7 @@ function exportMonthlySchedulePdfs() {
       var adminLoading = false;
       var adminPollTimer = null;
       var adminPollMs = 60000;
+      var currentAdminView = 'settings';
   
       /* +----------------------------------+
        * + cacheDom                         +
@@ -8621,6 +8811,12 @@ function exportMonthlySchedulePdfs() {
       function cacheDom() {
         nodes.standardPanel = $('settingsStandardPanel');
         nodes.adminPanel = $('settingsAdminPanel');
+        nodes.workspaceTitle = $('adminWorkspaceTitle');
+        nodes.workspaceSubtitle = $('adminWorkspaceSubtitle');
+        nodes.tabSettingsBtn = $('adminTabSettingsBtn');
+        nodes.tabLogsBtn = $('adminTabLogsBtn');
+        nodes.settingsWorkspace = $('adminSettingsWorkspace');
+        nodes.systemLogWorkspace = $('adminSystemLogWorkspace');
         nodes.status = $('adminControlStatus');
         nodes.resetForm = $('adminResetForm');
         nodes.resetUser = $('adminResetUser');
@@ -8635,25 +8831,34 @@ function exportMonthlySchedulePdfs() {
         nodes.maintenanceForm = $('adminMaintenanceForm');
         nodes.maintenanceEnabled = $('adminMaintenanceEnabled');
         nodes.maintenanceMessage = $('adminMaintenanceMessage');
-  	      nodes.userList = $('adminUserList');
-  	      nodes.visitorAccessForm = $('adminVisitorAccessForm');
-  	      nodes.visitorAccessUser = $('adminVisitorAccessUser');
-  	      nodes.visitorPageAccess = $('adminVisitorPageAccess');
-  	      nodes.systemLog = $('adminSystemLog');
-  	      nodes.systemLogRetentionLabel = $('adminSystemLogRetentionLabel');
-  	      nodes.noticeToast = $('systemNoticeToast');
-  	      nodes.noticeTitle = $('systemNoticeTitle');
-  	      nodes.noticeText = $('systemNoticeText');
-  	      if (nodes.systemLogRetentionLabel) {
-  	        nodes.systemLogRetentionLabel.textContent = 'Detailed activity, device type, browser, and ' + config.systemLogRetentionLabel;
-  	      }
-  	    }
+        nodes.userList = $('adminUserList');
+        nodes.visitorAccessForm = $('adminVisitorAccessForm');
+        nodes.visitorAccessUser = $('adminVisitorAccessUser');
+        nodes.visitorPageAccess = $('adminVisitorPageAccess');
+        nodes.visitorCheckboxGrid = $('adminVisitorCheckboxGrid');
+        nodes.visitorSelectAllBtn = $('adminVisitorSelectAllBtn');
+        nodes.visitorDashboardOnlyBtn = $('adminVisitorDashboardOnlyBtn');
+        nodes.accessOverviewBody = $('adminAccessOverviewBody');
+        nodes.systemLog = $('adminSystemLog');
+        nodes.systemLogRetentionLabel = $('adminSystemLogRetentionLabel');
+        nodes.logSearchInput = $('adminLogSearchInput');
+        nodes.logRoleFilter = $('adminLogRoleFilter');
+        nodes.logActionFilter = $('adminLogActionFilter');
+        nodes.logStatusFilter = $('adminLogStatusFilter');
+        nodes.logRefreshBtn = $('adminLogRefreshBtn');
+        nodes.noticeToast = $('systemNoticeToast');
+        nodes.noticeTitle = $('systemNoticeTitle');
+        nodes.noticeText = $('systemNoticeText');
+        if (nodes.systemLogRetentionLabel) {
+          nodes.systemLogRetentionLabel.textContent = 'User logins, session events, access denied attempts, and admin updates · ' + config.systemLogRetentionLabel;
+        }
+      }
   
       /* +----------------------------------+
        * + isAdmin                          +
        * +----------------------------------+ */
       function isAdmin() {
-        return cleanText(state.authRole).toUpperCase() === 'ADMIN';
+        return isAdminRole();
       }
   
       /* +----------------------------------+
@@ -8671,19 +8876,59 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function setAdminBusy(isBusy) {
         adminBusy = !!isBusy;
-        forEachNode(document.querySelectorAll('#settings .admin-action-btn, #settings .admin-danger-btn, #settings .admin-muted-btn, #settings .admin-input, #settings .admin-select, #settings .admin-textarea, #settings .admin-toggle-row input'), function (node) {
+        forEachNode(document.querySelectorAll('#settings .admin-action-btn, #settings .admin-danger-btn, #settings .admin-muted-btn, #settings .admin-mini-btn, #settings .admin-input, #settings .admin-select, #settings .admin-textarea, #settings .admin-toggle-row input, #settings .admin-visitor-checkbox-item input'), function (node) {
+          if (node.dataset && node.dataset.lockedDashboard === '1') {
+            node.disabled = true;
+            return;
+          }
           node.disabled = adminBusy;
         });
+      }
+
+      /* +----------------------------------+
+       * + setAdminWorkspaceView            +
+       * +----------------------------------+ */
+      function setAdminWorkspaceView(view) {
+        currentAdminView = view === 'logs' ? 'logs' : 'settings';
+        var showLogs = currentAdminView === 'logs';
+        if (nodes.settingsWorkspace) nodes.settingsWorkspace.hidden = showLogs;
+        if (nodes.systemLogWorkspace) nodes.systemLogWorkspace.hidden = !showLogs;
+        if (nodes.tabSettingsBtn) {
+          nodes.tabSettingsBtn.classList.toggle('is-active', !showLogs);
+          nodes.tabSettingsBtn.setAttribute('aria-selected', showLogs ? 'false' : 'true');
+        }
+        if (nodes.tabLogsBtn) {
+          nodes.tabLogsBtn.classList.toggle('is-active', showLogs);
+          nodes.tabLogsBtn.setAttribute('aria-selected', showLogs ? 'true' : 'false');
+        }
+        if (nodes.workspaceTitle) {
+          nodes.workspaceTitle.textContent = showLogs ? 'SYSTEM LOG' : 'ADMIN SETTINGS';
+        }
+        if (nodes.workspaceSubtitle) {
+          nodes.workspaceSubtitle.textContent = showLogs
+            ? 'Application activity, user login/logout history, page access denied events, and permission audit trail.'
+            : 'Access control, Visitor page permissions, user management, and operational controls.';
+        }
+        if (isSettingsPageActive()) {
+          var settingsNavBtn = document.querySelector('.nav-btn[data-page="settings"]');
+          var sysLogNavBtn = $('navSystemLogBtn');
+          if (settingsNavBtn) settingsNavBtn.classList.toggle('active', !showLogs);
+          if (sysLogNavBtn) sysLogNavBtn.classList.toggle('active', showLogs);
+        }
       }
 
       /* +----------------------------------+
        * + renderMode                       +
        * +----------------------------------+ */
       function renderMode() {
+        if (!nodes.standardPanel && !nodes.adminPanel) cacheDom();
         var admin = isAdmin();
         if (nodes.standardPanel) nodes.standardPanel.hidden = admin;
         if (nodes.adminPanel) nodes.adminPanel.hidden = !admin;
-        if (admin && !lastAdminData) loadAdminData(false);
+        if (admin) {
+          setAdminWorkspaceView(currentAdminView);
+          if (!lastAdminData) loadAdminData(false);
+        }
       }
   
       /* +----------------------------------+
@@ -8777,6 +9022,7 @@ function exportMonthlySchedulePdfs() {
           var row = document.createElement('div');
           row.className = 'admin-user-row';
           row.dataset.userId = user.id;
+          var normalizedRole = normalizeRoleValue(user.role);
   
           var main = document.createElement('div');
           main.className = 'admin-user-main';
@@ -8787,13 +9033,25 @@ function exportMonthlySchedulePdfs() {
           main.appendChild(name);
           main.appendChild(meta);
   
-          var role = document.createElement('div');
-          role.className = 'admin-pill admin-user-role-pill';
-          role.textContent = user.role || 'USER';
+          var roleSelect = document.createElement('select');
+          roleSelect.className = 'admin-select admin-user-role-select';
+          roleSelect.setAttribute('aria-label', 'Role for ' + user.id);
+          roleSelect.dataset.adminRoleSelect = user.id;
+          [
+            { value: 'USER', label: 'NORMAL USER' },
+            { value: 'VISITOR', label: 'VISITOR' },
+            { value: 'ADMIN', label: 'ADMIN' }
+          ].forEach(function (roleOpt) {
+            var opt = document.createElement('option');
+            opt.value = roleOpt.value;
+            opt.textContent = roleOpt.label;
+            opt.selected = normalizedRole === roleOpt.value;
+            roleSelect.appendChild(opt);
+          });
   
           var active = document.createElement('div');
           active.className = 'admin-pill admin-user-state-pill' + (user.active ? '' : ' is-off');
-          active.textContent = user.active ? 'ACTIVE' : 'OFF';
+          active.textContent = user.active ? 'ACTIVE' : 'INACTIVE';
   
           var actions = document.createElement('div');
           actions.className = 'admin-row-actions';
@@ -8811,10 +9069,107 @@ function exportMonthlySchedulePdfs() {
           actions.appendChild(del);
   
           row.appendChild(main);
-          row.appendChild(role);
+          row.appendChild(roleSelect);
           row.appendChild(active);
           row.appendChild(actions);
           nodes.userList.appendChild(row);
+        });
+      }
+
+      /* +----------------------------------+
+       * + renderAccessOverviewTable        +
+       * +----------------------------------+ */
+      function renderAccessOverviewTable(users, catalog) {
+        if (!nodes.accessOverviewBody) return;
+        clearNode(nodes.accessOverviewBody);
+        users = users || [];
+        var pageCatalog = Array.isArray(catalog) && catalog.length ? catalog : visitorAccessCatalog;
+        var labelMap = {};
+        pageCatalog.forEach(function (item) {
+          labelMap[String(item.id).toLowerCase()] = item.label || item.id;
+        });
+
+        if (!users.length) {
+          var emptyRow = document.createElement('tr');
+          emptyRow.innerHTML = '<td colspan="4">No users found.</td>';
+          nodes.accessOverviewBody.appendChild(emptyRow);
+          return;
+        }
+
+        users.forEach(function (user) {
+          var tr = document.createElement('tr');
+          var role = normalizeRoleValue(user.role);
+          var isVisitor = role === 'VISITOR';
+          var isUserAdmin = role === 'ADMIN';
+
+          var tdUser = document.createElement('td');
+          var userStrong = document.createElement('strong');
+          userStrong.textContent = user.name || user.id;
+          var userSub = document.createElement('span');
+          userSub.className = 'admin-table-sub';
+          userSub.textContent = user.id;
+          tdUser.appendChild(userStrong);
+          tdUser.appendChild(userSub);
+
+          var tdRole = document.createElement('td');
+          var roleBadge = document.createElement('span');
+          roleBadge.className = 'admin-role-badge is-' + role.toLowerCase();
+          roleBadge.textContent = role === 'USER' ? 'NORMAL USER' : role;
+          tdRole.appendChild(roleBadge);
+
+          var tdStatus = document.createElement('td');
+          var statusBadge = document.createElement('span');
+          statusBadge.className = 'admin-status-badge ' + (user.active !== false ? 'is-active' : 'is-inactive');
+          if (user.active === false) {
+            statusBadge.textContent = 'INACTIVE (LOCKED)';
+          } else if (isUserAdmin) {
+            statusBadge.textContent = 'ACTIVE · FULL ADMIN';
+          } else if (isVisitor) {
+            var assignedList = normalizeVisitorPageAccessList(user.pageAccess);
+            statusBadge.textContent = 'ACTIVE · ' + assignedList.length + ' PAGE' + (assignedList.length === 1 ? '' : 'S');
+          } else {
+            statusBadge.textContent = 'ACTIVE · STANDARD';
+          }
+          tdStatus.appendChild(statusBadge);
+
+          var tdPages = document.createElement('td');
+          var pagesWrap = document.createElement('div');
+          pagesWrap.className = 'admin-allowed-pages-wrap';
+
+          if (isUserAdmin) {
+            var allAdminPill = document.createElement('span');
+            allAdminPill.className = 'admin-page-chip is-all';
+            allAdminPill.textContent = 'ALL PAGES + ADMIN SETTINGS + SYSTEM LOG';
+            pagesWrap.appendChild(allAdminPill);
+          } else if (!isVisitor) {
+            var allUserPill = document.createElement('span');
+            allUserPill.className = 'admin-page-chip is-standard';
+            allUserPill.textContent = 'ALL OPERATIONAL PAGES & MODULES';
+            pagesWrap.appendChild(allUserPill);
+          } else {
+            var visitorPages = normalizeVisitorPageAccessList(user.pageAccess);
+            visitorPages.forEach(function (pageId) {
+              var chip = document.createElement('span');
+              chip.className = 'admin-page-chip is-visitor-page';
+              chip.textContent = labelMap[String(pageId).toLowerCase()] || pageId;
+              pagesWrap.appendChild(chip);
+            });
+            if (user.active !== false) {
+              var editBtn = document.createElement('button');
+              editBtn.type = 'button';
+              editBtn.className = 'admin-mini-btn admin-configure-visitor-btn';
+              editBtn.dataset.configureVisitorId = user.id;
+              editBtn.textContent = 'Configure';
+              pagesWrap.appendChild(editBtn);
+            }
+          }
+          tdPages.appendChild(pagesWrap);
+
+          tr.appendChild(tdUser);
+          tr.appendChild(tdRole);
+          tr.appendChild(tdStatus);
+          tr.appendChild(tdPages);
+          nodes.accessOverviewBody.appendChild(tr);
         });
       }
   
@@ -8837,6 +9192,7 @@ function exportMonthlySchedulePdfs() {
       function appendLogExtraPills(host, extra) {
         extra = extra && typeof extra === 'object' ? extra : {};
         Object.keys(extra).sort().forEach(function (key) {
+          if (key === 'role' || key === 'status' || key === 'page') return;
           appendLogPill(host, key, extra[key]);
         });
       }
@@ -8847,11 +9203,14 @@ function exportMonthlySchedulePdfs() {
       function renderVisitorAccessControls(users, catalog) {
         if (!nodes.visitorAccessUser || !nodes.visitorPageAccess) return;
         var visitorUsers = (users || []).filter(function (user) {
-          return String(user.role || '').toUpperCase() === 'VISITOR' && user.active !== false;
+          return normalizeRoleValue(user.role) === 'VISITOR' && user.active !== false;
         });
         var previousUser = nodes.visitorAccessUser.value;
         clearNode(nodes.visitorAccessUser);
         clearNode(nodes.visitorPageAccess);
+        if (nodes.visitorCheckboxGrid) clearNode(nodes.visitorCheckboxGrid);
+
+        var pageCatalog = Array.isArray(catalog) && catalog.length ? catalog : visitorAccessCatalog;
 
         if (!visitorUsers.length) {
           var emptyUser = document.createElement('option');
@@ -8860,6 +9219,12 @@ function exportMonthlySchedulePdfs() {
           nodes.visitorAccessUser.appendChild(emptyUser);
           nodes.visitorAccessUser.disabled = true;
           nodes.visitorPageAccess.disabled = true;
+          if (nodes.visitorCheckboxGrid) {
+            var emptyNotice = document.createElement('div');
+            emptyNotice.className = 'admin-log-row';
+            emptyNotice.innerHTML = '<strong>No active Visitor accounts.</strong><span>Create a user with the VISITOR role or switch an existing account to VISITOR to assign page permissions.</span>';
+            nodes.visitorCheckboxGrid.appendChild(emptyNotice);
+          }
           return;
         }
 
@@ -8869,33 +9234,35 @@ function exportMonthlySchedulePdfs() {
         visitorUsers.forEach(function (user) {
           var option = document.createElement('option');
           option.value = user.id;
-          option.textContent = user.id + ' — ' + user.name;
+          option.textContent = user.id + ' — ' + (user.name || user.id);
           nodes.visitorAccessUser.appendChild(option);
         });
 
-        var pageCatalog = Array.isArray(catalog) && catalog.length ? catalog : [
-          { id: 'dashboard', label: 'DASHBOARD' },
-          { id: 'profile', label: 'PROFILE' },
-          { id: 'access', label: 'ACCESS' },
-          { id: 'calendar', label: 'CALENDAR' },
-          { id: 'notification', label: 'NOTIFICATION' },
-          { id: 'leavesCourses', label: 'LEAVE & COURSES' },
-          { id: 'quickLinks', label: 'QUICK LINKS' },
-          { id: 'settings', label: 'SETTING' },
-          { id: 'OUTSOURCE', label: 'OUTSOURCE' },
-          { id: 'INVENTORY', label: 'INVENTORY' },
-          { id: 'TRANSFUSION', label: 'TRANSFUSION' },
-          { id: 'POCT', label: 'POCT' },
-          { id: 'Chemical Pathology', label: 'CHEMICAL PATHOLOGY' },
-          { id: 'Hematology', label: 'HEMATOLOGY' },
-          { id: 'Microbiology', label: 'MICROBIOLOGY' },
-          { id: 'Urine/Stool Analysis', label: 'URINE/STOOL ANALYSIS' }
-        ];
         pageCatalog.forEach(function (item) {
           var option = document.createElement('option');
           option.value = item.id;
           option.textContent = item.label || item.id;
           nodes.visitorPageAccess.appendChild(option);
+
+          if (nodes.visitorCheckboxGrid) {
+            var label = document.createElement('label');
+            label.className = 'admin-visitor-checkbox-item';
+            var checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = item.id;
+            checkbox.dataset.visitorPageId = item.id;
+            if (String(item.id).toLowerCase() === 'dashboard') {
+              checkbox.checked = true;
+              checkbox.disabled = true;
+              checkbox.dataset.lockedDashboard = '1';
+              label.classList.add('is-checked', 'is-dashboard-default');
+            }
+            var boxText = document.createElement('span');
+            boxText.textContent = item.label || item.id;
+            label.appendChild(checkbox);
+            label.appendChild(boxText);
+            nodes.visitorCheckboxGrid.appendChild(label);
+          }
         });
 
         var target = visitorUsers.filter(function (user) { return user.id === previousUser; })[0] || visitorUsers[0];
@@ -8903,12 +9270,52 @@ function exportMonthlySchedulePdfs() {
         setVisitorPageSelection(target);
       }
 
+      function syncSelectFromVisitorCheckboxes() {
+        if (!nodes.visitorCheckboxGrid || !nodes.visitorPageAccess) return;
+        var selectedMap = { dashboard: true };
+        forEachNode(nodes.visitorCheckboxGrid.querySelectorAll('input[type="checkbox"]'), function (cb) {
+          var key = String(cb.value || '').toLowerCase();
+          if (key === 'dashboard') cb.checked = true;
+          if (cb.checked) selectedMap[key] = true;
+          if (cb.parentElement) cb.parentElement.classList.toggle('is-checked', !!cb.checked);
+        });
+        forEachNode(nodes.visitorPageAccess.options, function (option) {
+          option.selected = !!selectedMap[String(option.value || '').toLowerCase()];
+        });
+      }
+
       function setVisitorPageSelection(user) {
         if (!nodes.visitorPageAccess) return;
-        var selected = user && Array.isArray(user.pageAccess) ? user.pageAccess : [];
-        forEachNode(nodes.visitorPageAccess.options, function (option) {
-          option.selected = selected.indexOf(option.value) >= 0;
+        var normalized = normalizeVisitorPageAccessList(user && user.pageAccess);
+        var selectedMap = {};
+        normalized.forEach(function (id) {
+          selectedMap[String(id || '').toLowerCase()] = true;
         });
+        forEachNode(nodes.visitorPageAccess.options, function (option) {
+          option.selected = !!selectedMap[String(option.value || '').toLowerCase()];
+        });
+        if (nodes.visitorCheckboxGrid) {
+          forEachNode(nodes.visitorCheckboxGrid.querySelectorAll('input[type="checkbox"]'), function (cb) {
+            var isDash = String(cb.value || '').toLowerCase() === 'dashboard';
+            cb.checked = isDash || !!selectedMap[String(cb.value || '').toLowerCase()];
+            if (cb.parentElement) cb.parentElement.classList.toggle('is-checked', !!cb.checked);
+          });
+        }
+      }
+
+      function setAllVisitorCheckboxes(selectAll) {
+        if (adminBusy || !nodes.visitorPageAccess) return;
+        forEachNode(nodes.visitorPageAccess.options, function (option) {
+          var isDash = String(option.value || '').toLowerCase() === 'dashboard';
+          option.selected = isDash || !!selectAll;
+        });
+        if (nodes.visitorCheckboxGrid) {
+          forEachNode(nodes.visitorCheckboxGrid.querySelectorAll('input[type="checkbox"]'), function (cb) {
+            var isDash = String(cb.value || '').toLowerCase() === 'dashboard';
+            cb.checked = isDash || !!selectAll;
+            if (cb.parentElement) cb.parentElement.classList.toggle('is-checked', !!cb.checked);
+          });
+        }
       }
 
       function handleVisitorAccessUserChange() {
@@ -8918,13 +9325,32 @@ function exportMonthlySchedulePdfs() {
         setVisitorPageSelection(user);
       }
 
+      function getSelectedVisitorPages() {
+        var selected = ['dashboard'];
+        if (nodes.visitorCheckboxGrid && nodes.visitorCheckboxGrid.querySelectorAll('input[type="checkbox"]').length) {
+          forEachNode(nodes.visitorCheckboxGrid.querySelectorAll('input[type="checkbox"]'), function (cb) {
+            if (cb.checked && selected.indexOf(cb.value) < 0) {
+              selected.push(cb.value);
+            }
+          });
+          return selected;
+        }
+        if (nodes.visitorPageAccess) {
+          forEachNode(nodes.visitorPageAccess.options, function (option) {
+            if (option.selected && selected.indexOf(option.value) < 0) {
+              selected.push(option.value);
+            }
+          });
+        }
+        return selected;
+      }
+
       function saveVisitorPageAccess(event) {
         event.preventDefault();
         if (adminBusy) return;
+        syncSelectFromVisitorCheckboxes();
         var userId = nodes.visitorAccessUser ? nodes.visitorAccessUser.value : '';
-        var selected = nodes.visitorPageAccess
-          ? Array.prototype.map.call(nodes.visitorPageAccess.selectedOptions || [], function (option) { return option.value; })
-          : [];
+        var selected = getSelectedVisitorPages();
         if (!userId) {
           setStatus('Select an active Visitor user.', 'error');
           return;
@@ -8937,7 +9363,21 @@ function exportMonthlySchedulePdfs() {
         setStatus('Saving Visitor page access...', '');
         hoagApi.run
           .withSuccessHandler(function (envelope) {
-            handleAdminEnvelope(envelope, 'Visitor page access saved.');
+            if (envelope && envelope.ok !== false && lastAdminData && Array.isArray(lastAdminData.users)) {
+              var updatedPages = Array.isArray(envelope.pageAccess) ? envelope.pageAccess : selected;
+              lastAdminData.users.forEach(function (u) {
+                if (u.id === userId) u.pageAccess = updatedPages.slice();
+              });
+              renderVisitorAccessControls(lastAdminData.users, lastAdminData.visitorPageCatalog || visitorAccessCatalog);
+              renderAccessOverviewTable(lastAdminData.users, lastAdminData.visitorPageCatalog || visitorAccessCatalog);
+              if (state.authUserId && state.authUserId.toUpperCase() === String(userId).toUpperCase()) {
+                state.authPageAccess = normalizeVisitorPageAccessList(updatedPages);
+                if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.refreshAccessControl === 'function') {
+                  window.LabApp.Router.refreshAccessControl();
+                }
+              }
+            }
+            handleAdminEnvelope(envelope, 'Visitor page access saved for ' + userId + '.');
           })
           .withFailureHandler(function (error) {
             setAdminBusy(false);
@@ -8954,65 +9394,138 @@ function exportMonthlySchedulePdfs() {
       }
 
       /* +----------------------------------+
+       * + resolveLogMetadata               +
+       * +----------------------------------+ */
+      function resolveLogMetadata(log) {
+        var actor = cleanText(log.actor || log.userId || 'SYSTEM') || 'SYSTEM';
+        var extra = log.extra && typeof log.extra === 'object' ? log.extra : {};
+        var role = cleanText(log.role || extra.role || '');
+        if (!role && lastAdminData && Array.isArray(lastAdminData.users)) {
+          var matched = lastAdminData.users.filter(function (u) {
+            return String(u.id || '').toUpperCase() === actor.toUpperCase();
+          })[0];
+          if (matched && matched.role) role = matched.role;
+        }
+        if (!role) {
+          if (actor.toUpperCase() === 'ADMIN') role = 'ADMIN';
+          else if (actor.toUpperCase().indexOf('VISITOR') >= 0) role = 'VISITOR';
+          else role = 'USER';
+        }
+        role = normalizeRoleValue(role);
+
+        var action = cleanText(log.action || 'ACTIVITY').toUpperCase();
+        var details = cleanText(log.details || log.detail || '');
+        var page = cleanText(log.page || extra.page || extra.module || 'system');
+        var rawStatus = cleanText(log.status || extra.status || '');
+        var isDenied = rawStatus.toUpperCase() === 'DENIED' ||
+          /DENIED|FAIL|BLOCK|LOCK|REJECT|INVALID|UNAUTHORIZED/i.test(action + ' ' + details);
+        var status = isDenied ? 'DENIED' : 'ALLOWED';
+
+        var category = 'DATA';
+        if (/LOGIN|LOGOUT|SESSION|AUTH|PASSWORD/i.test(action)) category = 'AUTH';
+        else if (/ACCESS_DENIED|PAGE_VIEW|OPEN_YEAR|OPEN_MODULE|OPEN_TRANSFUSION/i.test(action)) category = 'ACCESS';
+        else if (/^ADMIN_|VISITOR_PAGE_ACCESS|SET_USER|ADD_USER|DELETE_USER|RESET_PASSWORD|MAINTENANCE|BROADCAST/i.test(action)) category = 'ADMIN';
+
+        return {
+          actor: actor,
+          role: role,
+          action: action,
+          details: details,
+          page: page,
+          status: status,
+          category: category
+        };
+      }
+
+      /* +----------------------------------+
        * + renderLogs                       +
        * +----------------------------------+ */
       function renderLogs(logs) {
         if (!nodes.systemLog) return;
         clearNode(nodes.systemLog);
   
-        if (!logs || !logs.length) {
+        var sourceLogs = Array.isArray(logs) ? logs : (lastAdminData && Array.isArray(lastAdminData.logs) ? lastAdminData.logs : []);
+        var query = nodes.logSearchInput ? String(nodes.logSearchInput.value || '').trim().toLowerCase() : '';
+        var roleFilter = nodes.logRoleFilter ? String(nodes.logRoleFilter.value || 'ALL').toUpperCase() : 'ALL';
+        var actionFilter = nodes.logActionFilter ? String(nodes.logActionFilter.value || 'ALL').toUpperCase() : 'ALL';
+        var statusFilter = nodes.logStatusFilter ? String(nodes.logStatusFilter.value || 'ALL').toUpperCase() : 'ALL';
+
+        var filtered = sourceLogs.filter(function (log) {
+          var meta = resolveLogMetadata(log);
+          if (roleFilter !== 'ALL' && meta.role !== roleFilter) return false;
+          if (actionFilter !== 'ALL' && meta.category !== actionFilter) return false;
+          if (statusFilter !== 'ALL' && meta.status !== statusFilter) return false;
+          if (query) {
+            var haystack = [
+              meta.actor,
+              meta.role,
+              meta.action,
+              meta.details,
+              meta.page,
+              meta.status,
+              window.LabAppTime.formatDateTime(log.at)
+            ].join(' ').toLowerCase();
+            if (haystack.indexOf(query) < 0) return false;
+          }
+          return true;
+        });
+
+        if (!filtered.length) {
           var empty = document.createElement('div');
           empty.className = 'admin-log-row';
-  	        empty.innerHTML = '<strong>No activity log yet.</strong><span>Login, navigation, password, chat, roster, and admin actions will appear here. ' + config.systemLogAutoClearText + '</span>';
+          empty.innerHTML = '<strong>No matching system log entries found.</strong><span>Login, logout, session restore, access denied attempts, and admin permission changes appear here.</span>';
           nodes.systemLog.appendChild(empty);
           return;
         }
   
-        logs.forEach(function (log) {
+        filtered.forEach(function (log) {
+          var meta = resolveLogMetadata(log);
           var row = document.createElement('div');
-          row.className = 'admin-log-row';
+          row.className = 'admin-log-row' + (meta.status === 'DENIED' ? ' is-denied-log' : '');
   
           var top = document.createElement('div');
           top.className = 'admin-log-top';
+
+          var leftHead = document.createElement('div');
+          leftHead.className = 'admin-log-head-badges';
           var title = document.createElement('strong');
-          title.textContent = (log.action || 'ACTIVITY') + ' · ' + (log.actor || 'SYSTEM');
+          title.textContent = meta.action + ' · ' + meta.actor;
+
+          var roleBadge = document.createElement('span');
+          roleBadge.className = 'admin-role-badge is-' + meta.role.toLowerCase();
+          roleBadge.textContent = meta.role === 'USER' ? 'NORMAL USER' : meta.role;
+
+          var statusBadge = document.createElement('span');
+          statusBadge.className = 'admin-log-status-badge ' + (meta.status === 'DENIED' ? 'is-denied' : 'is-allowed');
+          statusBadge.textContent = meta.status;
+
+          leftHead.appendChild(title);
+          leftHead.appendChild(roleBadge);
+          leftHead.appendChild(statusBadge);
+
           var time = document.createElement('span');
           time.className = 'admin-log-time';
           time.textContent = window.LabAppTime.formatDateTime(log.at);
-          top.appendChild(title);
+          top.appendChild(leftHead);
           top.appendChild(time);
   
           var detail = document.createElement('span');
           detail.className = 'admin-log-detail';
-          detail.textContent = log.details || 'No details.';
+          detail.textContent = meta.details || 'No details.';
   
           var context = document.createElement('div');
           context.className = 'admin-log-context';
-          appendLogPill(context, '', log.deviceLabel || log.deviceType || 'Unknown device');
-          appendLogPill(context, 'Mode', log.appMode);
+          appendLogPill(context, 'Page / Module', meta.page);
+          appendLogPill(context, 'Role', meta.role);
+          appendLogPill(context, 'Result', meta.status);
+          appendLogPill(context, 'Device', log.deviceLabel || log.deviceType || '');
           appendLogPill(context, 'Browser', log.browser);
           appendLogPill(context, 'OS', log.os);
-          appendLogPill(context, 'Platform', log.platform);
-          appendLogPill(context, 'Screen', log.screen);
-          appendLogPill(context, 'Online', log.online);
-          appendLogPill(context, 'Visibility', log.visibility);
-          appendLogPill(context, 'Runtime', log.runtimeMode);
-          appendLogPill(context, 'Language', log.language);
-          appendLogPill(context, 'Page', log.page);
-          appendLogPill(context, 'Path', log.path);
           appendLogExtraPills(context, log.extra);
   
           row.appendChild(top);
           row.appendChild(detail);
           if (context.childNodes.length) row.appendChild(context);
-  
-          if (log.userAgent) {
-            var agent = document.createElement('span');
-            agent.className = 'admin-log-useragent';
-            agent.textContent = 'UA: ' + log.userAgent;
-            agent.title = log.userAgent;
-            row.appendChild(agent);
-          }
   
           nodes.systemLog.appendChild(row);
         });
@@ -9024,14 +9537,15 @@ function exportMonthlySchedulePdfs() {
       function renderAdminData(envelope, okMessage, options) {
         options = options || {};
         if (!envelope || envelope.ok === false) {
-          if (!options.silent) setStatus(envelope && envelope.error ? envelope.error : 'Unable to load admin control.', 'error');
+          if (!options.silent) setStatus(envelope && envelope.error ? envelope.error : 'Unable to load admin settings.', 'error');
           return;
         }
   
         lastAdminData = envelope;
         renderResetOptions(envelope.users || []);
         renderUserList(envelope.users || []);
-        renderVisitorAccessControls(envelope.users || [], envelope.visitorPageCatalog || []);
+        renderVisitorAccessControls(envelope.users || [], envelope.visitorPageCatalog || visitorAccessCatalog);
+        renderAccessOverviewTable(envelope.users || [], envelope.visitorPageCatalog || visitorAccessCatalog);
         renderLogs(envelope.logs || []);
   
         if (nodes.broadcastMessage) nodes.broadcastMessage.value = envelope.broadcast && envelope.broadcast.message ? envelope.broadcast.message : '';
@@ -9039,7 +9553,7 @@ function exportMonthlySchedulePdfs() {
         if (nodes.maintenanceMessage) nodes.maintenanceMessage.value = envelope.maintenance && envelope.maintenance.message ? envelope.maintenance.message : '';
   
         setNotice(envelope);
-        if (!options.silent || okMessage) setStatus(okMessage || 'Admin control ready.', 'ok');
+        if (!options.silent || okMessage) setStatus(okMessage || 'Admin settings ready.', 'ok');
       }
   
       /* +----------------------------------+
@@ -9103,7 +9617,7 @@ function exportMonthlySchedulePdfs() {
         }
   
         adminLoading = true;
-        if (!silent) setStatus('Loading admin control...', '');
+        if (!silent) setStatus('Loading admin settings...', '');
         hoagApi.run
           .withSuccessHandler(function (envelope) {
             adminLoading = false;
@@ -9112,7 +9626,7 @@ function exportMonthlySchedulePdfs() {
           })
           .withFailureHandler(function (error) {
             adminLoading = false;
-            if (!silent) setStatus(error && error.message ? error.message : 'Unable to load admin control.', 'error');
+            if (!silent) setStatus(error && error.message ? error.message : 'Unable to load admin settings.', 'error');
             scheduleAdminPolling();
           })
           .getAdminControlData(Auth.getToken());
@@ -9127,8 +9641,12 @@ function exportMonthlySchedulePdfs() {
           setStatus(envelope && envelope.error ? envelope.error : 'Admin action failed.', 'error');
           return;
         }
-        renderAdminData(envelope, okMessage);
-        requestAdminRefresh(500);
+        if (Array.isArray(envelope.users)) {
+          renderAdminData(envelope, okMessage);
+        } else {
+          setStatus(okMessage || 'Changes saved.', 'ok');
+        }
+        requestAdminRefresh(150);
       }
   
       /* +----------------------------------+
@@ -9260,6 +9778,26 @@ function exportMonthlySchedulePdfs() {
             .adminSetAuthUserActive(Auth.getToken(), userId, nextActive, typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo ? ActivityTracker.getClientInfo({ page: 'settings' }) : {});
         }
       }
+
+      function handleUserRoleChange(event) {
+        var select = event.target && event.target.closest ? event.target.closest('[data-admin-role-select]') : null;
+        if (!select || adminBusy) return;
+        var userId = select.dataset.adminRoleSelect;
+        var nextRole = normalizeRoleValue(select.value);
+        if (!userId) return;
+        setAdminBusy(true);
+        setStatus('Updating role for ' + userId + '...', '');
+        hoagApi.run
+          .withSuccessHandler(function (envelope) {
+            handleAdminEnvelope(envelope, 'Updated role for ' + userId + ' to ' + nextRole + '.');
+          })
+          .withFailureHandler(function (error) {
+            setAdminBusy(false);
+            setStatus(error && error.message ? error.message : 'Role update failed.', 'error');
+            if (lastAdminData) renderUserList(lastAdminData.users || []);
+          })
+          .adminSetAuthUserRole(Auth.getToken(), userId, nextRole, typeof ActivityTracker !== 'undefined' && ActivityTracker.getClientInfo ? ActivityTracker.getClientInfo({ page: 'settings' }) : {});
+      }
   
       /* +----------------------------------+
        * + bindEvents                       +
@@ -9269,9 +9807,62 @@ function exportMonthlySchedulePdfs() {
         if (nodes.addForm) nodes.addForm.addEventListener('submit', addUser);
         if (nodes.broadcastForm) nodes.broadcastForm.addEventListener('submit', saveBroadcast);
         if (nodes.maintenanceForm) nodes.maintenanceForm.addEventListener('submit', saveMaintenance);
-        if (nodes.userList) nodes.userList.addEventListener('click', handleUserAction);
+        if (nodes.userList) {
+          nodes.userList.addEventListener('click', handleUserAction);
+          nodes.userList.addEventListener('change', handleUserRoleChange);
+        }
         if (nodes.visitorAccessForm) nodes.visitorAccessForm.addEventListener('submit', saveVisitorPageAccess);
         if (nodes.visitorAccessUser) nodes.visitorAccessUser.addEventListener('change', handleVisitorAccessUserChange);
+        if (nodes.visitorCheckboxGrid) {
+          nodes.visitorCheckboxGrid.addEventListener('change', function () {
+            syncSelectFromVisitorCheckboxes();
+          });
+        }
+        if (nodes.visitorSelectAllBtn) {
+          nodes.visitorSelectAllBtn.addEventListener('click', function () {
+            setAllVisitorCheckboxes(true);
+          });
+        }
+        if (nodes.visitorDashboardOnlyBtn) {
+          nodes.visitorDashboardOnlyBtn.addEventListener('click', function () {
+            setAllVisitorCheckboxes(false);
+          });
+        }
+        if (nodes.accessOverviewBody) {
+          nodes.accessOverviewBody.addEventListener('click', function (event) {
+            var btn = event.target && event.target.closest ? event.target.closest('[data-configure-visitor-id]') : null;
+            if (!btn || !nodes.visitorAccessUser) return;
+            var visitorId = btn.dataset.configureVisitorId;
+            nodes.visitorAccessUser.value = visitorId;
+            handleVisitorAccessUserChange();
+            if (nodes.visitorAccessForm && typeof nodes.visitorAccessForm.scrollIntoView === 'function') {
+              nodes.visitorAccessForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          });
+        }
+        if (nodes.tabSettingsBtn) {
+          nodes.tabSettingsBtn.addEventListener('click', function () {
+            setAdminWorkspaceView('settings');
+          });
+        }
+        if (nodes.tabLogsBtn) {
+          nodes.tabLogsBtn.addEventListener('click', function () {
+            setAdminWorkspaceView('logs');
+          });
+        }
+        [nodes.logSearchInput, nodes.logRoleFilter, nodes.logActionFilter, nodes.logStatusFilter].forEach(function (el) {
+          if (!el) return;
+          ['input', 'change'].forEach(function (evtName) {
+            el.addEventListener(evtName, function () {
+              renderLogs(lastAdminData && lastAdminData.logs ? lastAdminData.logs : []);
+            });
+          });
+        });
+        if (nodes.logRefreshBtn) {
+          nodes.logRefreshBtn.addEventListener('click', function () {
+            loadAdminData(false);
+          });
+        }
         document.addEventListener('visibilitychange', function () {
           if (document.hidden) stopAdminPolling();
           else if (isSettingsPageActive()) requestAdminRefresh(0);
@@ -9285,9 +9876,19 @@ function exportMonthlySchedulePdfs() {
        * + handlePageChange                 +
        * +----------------------------------+ */
       function handlePageChange(pageId) {
-        if (pageId !== 'settings') {
+        if (!initialized) {
+          initialized = true;
+          cacheDom();
+          bindEvents();
+        }
+        if (pageId !== 'settings' && pageId !== 'systemLog') {
           stopAdminPolling();
           return;
+        }
+        if (pageId === 'systemLog') {
+          currentAdminView = 'logs';
+        } else if (pageId === 'settings') {
+          currentAdminView = 'settings';
         }
         renderMode();
         if (isAdmin()) requestAdminRefresh(0);
@@ -9297,9 +9898,15 @@ function exportMonthlySchedulePdfs() {
        * + handleAuthChange                 +
        * +----------------------------------+ */
       function handleAuthChange() {
+        if (!initialized) {
+          initialized = true;
+          cacheDom();
+          bindEvents();
+        }
         stopAdminPolling();
         adminLoading = false;
         lastAdminData = null;
+        if (!isAdmin()) currentAdminView = 'settings';
         renderMode();
         refreshNotice();
         if (isSettingsPageActive() && isAdmin()) requestAdminRefresh(0);
@@ -9323,7 +9930,8 @@ function exportMonthlySchedulePdfs() {
         init: init,
         handlePageChange: handlePageChange,
         handleAuthChange: handleAuthChange,
-        refreshNotice: refreshNotice
+        refreshNotice: refreshNotice,
+        setAdminWorkspaceView: setAdminWorkspaceView
       };
     })();
   
@@ -9491,8 +10099,9 @@ function exportMonthlySchedulePdfs() {
             complete=stop;
           }
           /* Once the complete server snapshot has arrived, switch from the
-             cache+server display back to the authoritative server dataset. */
-          rows=serverRows.slice();
+             cache+server display back to the authoritative OUTSOURCE snapshot. */
+          var result={outsourceSamples:serverRows};
+          rows=Array.isArray(result.outsourceSamples)?result.outsourceSamples.slice():[];
           normalize();
           revision+=1;
           lastUpdatedAt=serverRows.reduce(function(max,r){var stamp=String(r&& (r.updatedAt||r.createdAt)||'');return stamp>max?stamp:max;},lastUpdatedAt);
@@ -10159,12 +10768,19 @@ function exportMonthlySchedulePdfs() {
       }
       function render(){ensureInventoryMonthRollover(false);normalize();ensureCurrentMonthPrices();var k=$('inventoryKpis');if(k)k.innerHTML=kpis();if(currentView==='LOTS')renderLots();else if(currentView==='HISTORY')renderHistory();else if(currentView==='MONTHLY')renderMonthlyMovement();else renderItems();}
       function open(){
+        if(!canAccessPage('inventory')){
+          denyVisitorPageAccess('INVENTORY');
+          return;
+        }
+        closeNoAccessModal();
         var page=$('inventory');if(!page)return;
         if(!initialized) init();
         document.querySelectorAll('.page.active').forEach(function(x){x.classList.remove('active');});
+        document.querySelectorAll('.nav-btn.active').forEach(function(b){b.classList.remove('active');});
         page.classList.add('active');resetInventoryPageViewport();Router.renderBackButton('inventory');if(Router.rememberPage)Router.rememberPage('inventory');
         var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.hidden=!inventoryAdminAllowed();
         startInventoryMonthRolloverWatcher();ensureInventoryMonthRollover(false);render();populateForm();
+        if(typeof Auth!=='undefined'&&Auth&&typeof Auth.refreshVisitorReadOnly==='function')Auth.refreshVisitorReadOnly();
         requestAnimationFrame(function(){resetInventoryPageViewport();});setTimeout(resetInventoryPageViewport,60);
       }
       function populateForm(){
@@ -10721,7 +11337,7 @@ function exportMonthlySchedulePdfs() {
   
     window.LabApp = LabApp;
   
-    document.addEventListener('DOMContentLoaded', function () {
+    function bootLabAppAuth() {
       try {
         Auth.init();
       } catch (error) {
@@ -10731,7 +11347,12 @@ function exportMonthlySchedulePdfs() {
         warning.innerHTML = '<strong>LabApp startup error.</strong><br/>Please reload the app. If this repeats, check the browser console or redeploy Code.gs and Index.html.';
         document.body.insertBefore(warning, document.body.firstChild);
       }
-    }, { once: true });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootLabAppAuth, { once: true });
+    } else {
+      bootLabAppAuth();
+    }
   })(window, document);
 
 

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, buildPasswordRecord, verifyPassword } from '../lib/auth.js';
-import { sessionFor, appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser, normalizeVisitorPageAccess } from '../lib/session.js';
+import { sessionFor, appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser, normalizeVisitorPageAccess, clearSessionCache } from '../lib/session.js';
 import { inventoryView } from '../lib/inventory-view.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { assertSafePayload, parseRequest } from '../lib/schemas/common.js';
@@ -58,6 +58,7 @@ async function writeUser(user) {
   const row = userRowFromLegacy(user);
   const { error } = await supabase.from('app_users').upsert(row, { onConflict: 'user_id' });
   if (error) throw error;
+  clearSessionCache(row.user_id);
 }
 
 async function requireSession(_db, token) {
@@ -85,19 +86,24 @@ function requireOutsourceDeletePermission(session, record) {
 
 async function log(_db, userId, action, detail = '', clientInfo = {}) {
   try {
-    const info = clientInfo && typeof clientInfo === 'object' ? clientInfo : {};
+    const info = clientInfo && typeof clientInfo === 'object' ? clientInfo : { extra: {} };
+    const extraObj = info.extra && typeof info.extra === 'object' ? { ...info.extra } : {};
     const actor = normalizeUserId(userId) || 'SYSTEM';
     const details = clean(detail || info.details || '', 1000);
     const eventAt = clean(info.at, 80) || iso();
+    const cleanAction = clean(action, 60).toUpperCase();
+    const role = clean(info.role || extraObj.role || (actor === 'ADMIN' ? 'ADMIN' : ''), 30);
+    const page = clean(info.page || extraObj.page || extraObj.module || '', 80);
+    const status = clean(info.status || extraObj.status || extraObj.result || (/DENIED|FAIL|REJECT|BLOCK|LOCK|REVOK|DELETE/i.test(cleanAction + ' ' + details) ? 'DENIED' : 'ALLOWED'), 40);
     await appendSystemLog(null, {
-      id: randomUUID(), at: eventAt, actor, userId: actor,
-      action: clean(action, 60).toUpperCase(), details, detail: details,
+      id: randomUUID(), at: eventAt, actor, userId: actor, role, status,
+      action: cleanAction, details, detail: details,
       deviceType: clean(info.deviceType, 40), deviceLabel: clean(info.deviceLabel, 80),
       appMode: clean(info.appMode, 80), browser: clean(info.browser, 80), os: clean(info.os, 80),
       platform: clean(info.platform, 40), screen: clean(info.screen, 40), language: clean(info.language, 40),
       online: clean(info.online, 20), visibility: clean(info.visibility, 20), runtimeMode: clean(info.runtimeMode, 80),
-      page: clean(info.page, 80), path: clean(info.path, 300), userAgent: clean(info.userAgent, 500),
-      extra: info.extra && typeof info.extra === 'object' ? info.extra : { extra: {} }.extra
+      page, path: clean(info.path, 300), userAgent: clean(info.userAgent, 500),
+      extra: { ...extraObj, ...(role ? { role } : {}), ...(page ? { page } : {}), ...(status ? { status } : {}) }
     });
   } catch (e) {
     console.warn('Audit log write skipped:', e?.message || 'Unknown error');
@@ -119,6 +125,7 @@ async function saveSettings(settings) {
   const next = settings && typeof settings === 'object' ? settings : {};
   const { error } = await supabase.from('app_settings').upsert({ id: 'true', settings: next, data: next, updated_at: iso() }, { onConflict: 'id' });
   if (error) throw error;
+  clearSessionCache();
 }
 
 async function getRoster() {
@@ -464,7 +471,10 @@ export default async function handler(req, res) {
       const token = sessionTokenFromRequest(req, payload.token);
       if (token) {
         const auth = await sessionFor(db, token);
-        if (auth) await log(db, auth.userId, 'LOGOUT', 'Signed out safely.', payload.clientInfo || {});
+        if (auth) {
+          await log(db, auth.userId, 'LOGOUT', 'Signed out safely.', { ...(payload.clientInfo || {}), role: auth.role });
+          clearSessionCache(auth.userId);
+        }
         await supabase.from('app_sessions').delete().eq('token_hash', tokenHash(token));
       }
       clearSessionCookie(res);
@@ -501,8 +511,8 @@ async function dispatch(db, method, a, req) {
   const tokenAt = i => { const supplied = clean(a[i], 300); return supplied === '__HTTPONLY_SESSION__' || !supplied ? cookieValue(req, 'labapp_session') : supplied; };
   switch (method) {
     case 'getDashboardData': return handlerDashboard();
-    case 'recordSuccessfulLogin': { const s = await requireSession(db, tokenAt(0)); await log(db, s.userId, 'LOGIN', 'Signed in successfully.', a[1]); return { ok: true, authenticated: true, version: VERSION }; }
-    case 'logClientActivity': { const s = await requireSession(db, tokenAt(0)); await log(db, s.userId, a[1], a[2], a[3]); return { ok: true, version: VERSION }; }
+    case 'recordSuccessfulLogin': { const s = await requireSession(db, tokenAt(0)); await log(db, s.userId, 'LOGIN', 'Signed in successfully.', { ...(a[1] && typeof a[1] === 'object' ? a[1] : {}), role: s.role }); return { ok: true, authenticated: true, version: VERSION }; }
+    case 'logClientActivity': { const s = await requireSession(db, tokenAt(0)); await log(db, s.userId, a[1], a[2], { ...(a[3] && typeof a[3] === 'object' ? a[3] : {}), role: s.role }); return { ok: true, version: VERSION }; }
 
     case 'getSystemNotice': {
       const s = await requireSession(db, tokenAt(0));
@@ -766,7 +776,7 @@ async function dispatch(db, method, a, req) {
       return {
         ok: true,
         records,
-        total: count == null ? records.length : count,
+        total: filtered.length,
         offset,
         limit,
         hasMore: rows.length >= limit,
@@ -786,7 +796,7 @@ async function dispatch(db, method, a, req) {
       if (existingErr) throw existingErr;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
       if (String(s.role || '').toUpperCase() === 'VISITOR') fail('Visitor access is read-only.', 403);
-      if (!hasPermission(s, existing ? 'transfusion.update' : 'transfusion.create')) fail('You are not authorized to save this transfusion record.', 403);
+      if (!existing && !hasPermission(s, 'transfusion.create')) fail('You are not authorized to save this transfusion record.', 403);
       if (existing && !canWriteTransfusionRecord(s, existing) && !canWriteLegacyTransfusionRecord(s, existing)) fail('You cannot update this transfusion record.', 403);
       if (existing && rawPayload.expectedVersion !== undefined && Number(existing.version || 1) !== Number(rawPayload.expectedVersion)) {
         fail('Transfusion record changed or was not found. Reload before editing.', 409);
@@ -1015,6 +1025,7 @@ async function dispatch(db, method, a, req) {
       };
       const { error: insertError } = await supabase.from('app_users').upsert(userRow, { onConflict: 'user_id' });
       if (insertError) throw insertError;
+      clearSessionCache(id);
       await log(db, s.userId, 'ADMIN_ADD_USER', `Added user ${id}.`, a[5]);
       return { ok: true, version: VERSION };
     }
@@ -1028,6 +1039,7 @@ async function dispatch(db, method, a, req) {
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
       await supabase.from('app_sessions').delete().eq('user_id', id);
+      clearSessionCache(id);
       await log(db, s.userId, 'ADMIN_RESET_PASSWORD', `Reset password for ${id}.`, a[3]);
       return { ok: true, version: VERSION };
     }
@@ -1041,6 +1053,7 @@ async function dispatch(db, method, a, req) {
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
       if (!a[2]) await supabase.from('app_sessions').delete().eq('user_id', id);
+      clearSessionCache(id);
       await log(db, s.userId, 'ADMIN_SET_USER_ACTIVE', `${id}: ${!!a[2]}`, a[3]);
       return { ok: true, version: VERSION };
     }
@@ -1057,6 +1070,7 @@ async function dispatch(db, method, a, req) {
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
       await supabase.from('app_sessions').delete().eq('user_id', id);
+      clearSessionCache(id);
       await log(db, s.userId, 'ADMIN_SET_USER_ROLE', `${id}: ${role}`, a[3]);
       return { ok: true, role, version: VERSION };
     }
@@ -1081,22 +1095,15 @@ async function dispatch(db, method, a, req) {
       const mapping = settings.visitorPageAccess && typeof settings.visitorPageAccess === 'object'
         ? { ...settings.visitorPageAccess }
         : {};
-      if (!requested.includes('dashboard') && requested.some(item => ![
-        'profile', 'access', 'calendar', 'notification',
-        'leavesCourses', 'quickLinks', 'settings'
-      ].includes(item))) {
+      if (!requested.includes('dashboard')) {
         requested.unshift('dashboard');
       }
       mapping[id] = Array.from(new Set(requested));
       settings.visitorPageAccess = mapping;
       await saveSettings(settings);
-      /* Page access is authorization state. Revoke existing sessions so a Visitor
-       * cannot keep an old permission snapshot after an administrator changes it.
-       * The next login receives the exact new assignment from app_settings. */
-      const { error: revokeError } = await supabase.from('app_sessions').delete().eq('user_id', id);
-      if (revokeError) throw revokeError;
+      clearSessionCache(id);
       await log(db, s.userId, 'ADMIN_SET_VISITOR_PAGE_ACCESS', `${id}: ${mapping[id].join(', ')}`, a[3]);
-      return { ok: true, userId: id, pageAccess: mapping[id], sessionRevoked: true, version: VERSION };
+      return { ok: true, userId: id, pageAccess: mapping[id], version: VERSION };
     }
 
     case 'adminDeleteAuthUser': {
@@ -1109,6 +1116,7 @@ async function dispatch(db, method, a, req) {
       if (error) throw error;
       if (!data) fail('User was not found.', 404);
       await supabase.from('app_sessions').delete().eq('user_id', id);
+      clearSessionCache(id);
       await log(db, s.userId, 'ADMIN_DELETE_USER', `Deleted user ${id}.`, a[2]);
       return { ok: true, version: VERSION };
     }

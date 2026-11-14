@@ -150,6 +150,7 @@
 <button class="nav-btn" data-page="leavesCourses" type="button">LEAVE &amp; COURSES</button>
 <button class="nav-btn" data-page="quickLinks" type="button">QUICK LINKS</button>
 <button class="nav-btn" data-page="settings" type="button">SETTING</button>
+<button class="nav-btn" data-page="systemLog" hidden="" id="navSystemLogBtn" type="button">SYSTEM LOG</button>
 </nav>
 <div class="sidebar-footer">
 <div class="display-mode-block">
@@ -174,7 +175,7 @@
 </div>
 <div aria-hidden="true" class="display-accent-line"></div>
 <div class="display-date" id="liveDate">2 JUN 2026 | TUESDAY</div>
-<div class="display-greeting" id="displayGreeting">Verifying session…</div>
+<div class="display-greeting" id="displayGreeting">HOAG PATHOLOGY</div>
 </div>
 <div class="display-daily-quote" hidden="" id="displayDailyQuote">
 <div class="display-daily-quote-text" id="displayDailyQuoteText"></div>
@@ -702,76 +703,158 @@
 <div class="settings-admin-panel" hidden="" id="settingsAdminPanel">
 <div class="admin-control-head">
 <div>
-<h3>ADMIN CONTROL</h3>
-<p>Password reset, broadcast announcement, user management, maintenance mode, and system logs.
-                        </p>
+<h3 id="adminWorkspaceTitle">ADMIN SETTINGS</h3>
+<p id="adminWorkspaceSubtitle">Access control, Visitor page permissions, user management, and operational controls.</p>
 </div>
-<div aria-live="polite" class="admin-control-status" id="adminControlStatus">Loading admin
-                        control...</div>
+<div class="admin-head-actions">
+<div class="admin-view-switcher" role="tablist" aria-label="Admin workspace mode">
+<button class="admin-view-tab is-active" id="adminTabSettingsBtn" role="tab" aria-selected="true" type="button">ADMIN SETTINGS</button>
+<button class="admin-view-tab" id="adminTabLogsBtn" role="tab" aria-selected="false" type="button">SYSTEM LOG</button>
 </div>
-<div class="admin-control-grid">
-<div class="admin-control-column is-tools">
+<div aria-live="polite" class="admin-control-status" id="adminControlStatus">Loading admin settings...</div>
+</div>
+</div>
+<div class="admin-settings-workspace" id="adminSettingsWorkspace">
+<div class="admin-section-block">
+<div class="admin-section-header">
+<div>
+<span class="admin-section-kicker">SECTION 01</span>
+<h4>ACCESS CONTROL</h4>
+</div>
+<p>Assign which pages and pathology modules each Visitor account is permitted to open.</p>
+</div>
+<div class="admin-access-layout">
+<form autocomplete="off" class="admin-control-card admin-visitor-access-card" id="adminVisitorAccessForm">
 <div class="admin-card-title">
-<strong>Admin Tools</strong><span>Users, notices, maintenance, and chat</span>
+<strong>Visitor Page Permissions</strong><span>Toggle allowed pages for selected Visitor</span>
 </div>
-<div class="admin-control-tools">
-<form autocomplete="off" class="admin-control-card" id="adminResetForm">
-<div class="admin-card-title"><strong>Password Reset</strong><span>For any user</span></div>
 <div class="admin-form-grid">
-<select aria-label="Select user to reset" class="admin-select is-full" id="adminResetUser"></select>
-<input autocomplete="new-password" class="admin-input is-full" id="adminResetPassword" maxlength="200" placeholder="NEW PASSWORD" type="password">
+<label class="admin-field-label" for="adminVisitorAccessUser">SELECT VISITOR ACCOUNT</label>
+<select aria-label="Select Visitor user" class="admin-select is-full" id="adminVisitorAccessUser"></select>
+<select aria-label="Select pages for Visitor" class="admin-select is-full admin-multi-select" hidden="" id="adminVisitorPageAccess" multiple="" size="6"></select>
 </div>
-<button class="admin-action-btn" type="submit">Reset Password</button>
+<div class="admin-visitor-quick-actions">
+<button class="admin-mini-btn" id="adminVisitorSelectAllBtn" type="button">Select All Pages</button>
+<button class="admin-mini-btn" id="adminVisitorDashboardOnlyBtn" type="button">Dashboard Only</button>
+</div>
+<div class="admin-visitor-checkbox-grid" id="adminVisitorCheckboxGrid" role="group" aria-label="Allowed pages for Visitor"></div>
+<div class="admin-form-hint">Dashboard is always enabled as the default landing page. Checked pages will open when clicked by this Visitor; unchecked pages will show NO ACCESS.</div>
+<button class="admin-action-btn" type="submit">Save Visitor Access</button>
 </form>
+<div class="admin-control-card admin-access-matrix-card">
+<div class="admin-card-title">
+<strong>Access Status &amp; Allowed Pages</strong><span>Overview of all accounts, roles, and page permissions</span>
+</div>
+<div class="admin-access-table-wrap">
+<table class="admin-access-table" aria-label="User and Visitor access overview">
+<thead>
+<tr>
+<th>USER</th>
+<th>ROLE</th>
+<th>ACCESS STATUS</th>
+<th>ALLOWED PAGES</th>
+</tr>
+</thead>
+<tbody id="adminAccessOverviewBody">
+<tr><td colspan="4">Loading access matrix...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="admin-section-block">
+<div class="admin-section-header">
+<div>
+<span class="admin-section-kicker">SECTION 02</span>
+<h4>USER MANAGEMENT</h4>
+</div>
+<p>Create accounts, assign roles (Admin, Normal User, Visitor), reset passwords, and manage active status.</p>
+</div>
+<div class="admin-user-mgmt-grid">
+<div class="admin-user-forms-col">
 <form autocomplete="off" class="admin-control-card" id="adminAddUserForm">
-<div class="admin-card-title"><strong>Add User</strong><span>Local auth store</span></div>
+<div class="admin-card-title"><strong>Create User Account</strong><span>Add Admin, Normal User, or Visitor</span></div>
 <div class="admin-form-grid">
-<input autocapitalize="characters" class="admin-input" id="adminAddUsername" maxlength="60" placeholder="USERNAME" spellcheck="false" type="text">
-<input class="admin-input" id="adminAddDisplayName" maxlength="80" placeholder="DISPLAY NAME" type="text">
-<select class="admin-select" id="adminAddRole"><option value="USER">USER</option><option value="VISITOR">VISITOR (READ ONLY)</option><option value="ADMIN">ADMIN</option></select>
-<input autocomplete="new-password" class="admin-input" id="adminAddPassword" maxlength="200" placeholder="PASSWORD" type="password">
+<input autocapitalize="characters" class="admin-input" id="adminAddUsername" maxlength="60" placeholder="USERNAME" spellcheck="false" type="text"/>
+<input class="admin-input" id="adminAddDisplayName" maxlength="80" placeholder="DISPLAY NAME" type="text"/>
+<select class="admin-select" id="adminAddRole"><option value="USER">NORMAL USER</option><option value="VISITOR">VISITOR (ASSIGNED PAGES)</option><option value="ADMIN">ADMIN</option></select>
+<input autocomplete="new-password" class="admin-input" id="adminAddPassword" maxlength="200" placeholder="PASSWORD" type="password"/>
 </div>
 <button class="admin-action-btn" type="submit">Add User</button>
 </form>
+<form autocomplete="off" class="admin-control-card" id="adminResetForm">
+<div class="admin-card-title"><strong>Password Reset</strong><span>Reset credentials for any user</span></div>
+<div class="admin-form-grid">
+<select aria-label="Select user to reset" class="admin-select is-full" id="adminResetUser"></select>
+<input autocomplete="new-password" class="admin-input is-full" id="adminResetPassword" maxlength="200" placeholder="NEW PASSWORD" type="password"/>
+</div>
+<button class="admin-action-btn" type="submit">Reset Password</button>
+</form>
+</div>
+<div class="admin-control-card admin-user-directory-card">
+<div class="admin-card-title">
+<strong>Existing User Directory</strong><span>Manage user role, account status, and removal</span>
+</div>
+<div aria-live="polite" class="admin-user-list" id="adminUserList">
+<div class="admin-log-row"><strong>Loading users...</strong></div>
+</div>
+</div>
+</div>
+</div>
+<div class="admin-section-block">
+<div class="admin-section-header">
+<div>
+<span class="admin-section-kicker">SECTION 03</span>
+<h4>APPLICATION CONTROL</h4>
+</div>
+<p>Operational controls for team-wide announcements and non-admin maintenance lock.</p>
+</div>
+<div class="admin-app-control-grid">
 <form autocomplete="off" class="admin-control-card" id="adminBroadcastForm">
 <div class="admin-card-title">
-<strong>Broadcast Announcement</strong><span>Shown to team</span>
+<strong>Broadcast Announcement</strong><span>Displayed across active sessions</span>
 </div>
 <textarea class="admin-textarea" id="adminBroadcastMessage" maxlength="600" placeholder="Type announcement. Leave blank to clear broadcast."></textarea>
 <button class="admin-action-btn" type="submit">Save Broadcast</button>
 </form>
 <form autocomplete="off" class="admin-control-card" id="adminMaintenanceForm">
 <div class="admin-card-title">
-<strong>Maintenance Mode</strong><span>Blocks non-admin login</span>
+<strong>Maintenance Mode</strong><span>Restricts non-admin access during maintenance</span>
 </div>
-<label class="admin-toggle-row"><input aria-label="Enable maintenance mode" id="adminMaintenanceEnabled" type="checkbox"> Enable maintenance mode</label>
+<label class="admin-toggle-row"><input aria-label="Enable maintenance mode" id="adminMaintenanceEnabled" type="checkbox"/> Enable maintenance mode</label>
 <textarea class="admin-textarea" id="adminMaintenanceMessage" maxlength="300" placeholder="Maintenance message for users"></textarea>
 <button class="admin-action-btn" type="submit">Save Maintenance</button>
 </form>
-<div class="admin-control-card">
+</div>
+</div>
+</div>
+<div class="admin-system-log-workspace" hidden="" id="adminSystemLogWorkspace">
+<div class="admin-control-card admin-system-log-card">
 <div class="admin-card-title">
-<strong>User Management</strong><span>Delete / active state</span>
+<strong>System Log &amp; Security Audit Trail</strong><span id="adminSystemLogRetentionLabel">User logins, session events, access denied attempts, and admin permission updates</span>
 </div>
-<div aria-live="polite" class="admin-user-list" id="adminUserList">
-<div class="admin-log-row"><strong>Loading users...</strong></div>
-</div>
-</div>
-<form autocomplete="off" class="admin-control-card admin-visitor-access-card" id="adminVisitorAccessForm">
-<div class="admin-card-title">
-<strong>Visitor Page Access</strong><span>Assign exactly which pages/modules a Visitor can open</span>
-</div>
-<div class="admin-form-grid">
-<select aria-label="Select Visitor user" class="admin-select is-full" id="adminVisitorAccessUser"></select>
-<select aria-label="Select pages for Visitor" class="admin-select is-full admin-multi-select" id="adminVisitorPageAccess" multiple="" size="6"></select>
-</div>
-<div class="admin-form-hint">Ctrl + click (Windows) / Cmd + click (Mac) untuk pilih lebih daripada satu page. Dashboard ditambah automatik untuk module.</div>
-<button class="admin-action-btn" type="submit">Save Visitor Access</button>
-</form>
-</div>
-</div>
-<div class="admin-control-column is-log">
-<div class="admin-card-title">
-<strong>Activity / System Log</strong><span id="adminSystemLogRetentionLabel">Detailed activity, device type, browser, and 14-day retention</span>
+<div class="admin-log-toolbar">
+<input aria-label="Search system logs" class="admin-input admin-log-search" id="adminLogSearchInput" placeholder="Search user, action, page, or detail..." type="search"/>
+<select aria-label="Filter logs by role" class="admin-select" id="adminLogRoleFilter">
+<option value="ALL">All Roles</option>
+<option value="ADMIN">Admin</option>
+<option value="USER">Normal User</option>
+<option value="VISITOR">Visitor</option>
+</select>
+<select aria-label="Filter logs by event category" class="admin-select" id="adminLogActionFilter">
+<option value="ALL">All Events</option>
+<option value="AUTH">Login / Logout / Session</option>
+<option value="ACCESS">Page Access / Denied</option>
+<option value="ADMIN">Admin &amp; Permission Changes</option>
+<option value="DATA">Module Operations</option>
+</select>
+<select aria-label="Filter logs by status" class="admin-select" id="adminLogStatusFilter">
+<option value="ALL">All Statuses</option>
+<option value="ALLOWED">Allowed / Success</option>
+<option value="DENIED">Denied / Blocked</option>
+</select>
+<button class="admin-mini-btn" id="adminLogRefreshBtn" type="button">Refresh Logs</button>
 </div>
 <div aria-live="polite" class="admin-log-list" id="adminSystemLog">
 <div class="admin-log-row"><strong>Loading logs...</strong></div>
@@ -803,6 +886,17 @@
 <div class="app-modal-actions">
 <button class="app-modal-action is-danger" id="appConfirmYes" type="button">YES</button>
 <button class="app-modal-action" id="appConfirmCancel" type="button">CANCEL</button>
+</div>
+</div>
+</div>
+<div aria-describedby="noAccessText" aria-labelledby="noAccessTitle" aria-modal="true" class="app-modal-overlay is-hidden" id="noAccessModal" role="alertdialog">
+<div class="app-modal no-access-modal">
+<div class="no-access-badge" aria-hidden="true">🔒</div>
+<strong id="noAccessTitle">NO ACCESS</strong>
+<span id="noAccessText">You do not have permission to access this page.</span>
+<div class="no-access-target" id="noAccessTargetLabel"></div>
+<div class="app-modal-actions">
+<button class="app-modal-action" id="noAccessBackBtn" type="button">Back to Dashboard</button>
 </div>
 </div>
 </div>
