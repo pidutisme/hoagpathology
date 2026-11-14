@@ -1,0 +1,8 @@
+V20 TBIS102A SUPABASE SETUP / V18 BASE
+
+1. Apply: supabase/migrations/2026-11-15_tbis102a_records.sql to the SAME Supabase project used by LabPortal.
+2. Deploy the V20 application/API (built from the V18 base).
+3. TBIS102A REGISTER / VIEW / EDIT / DELETE use /api/bridge and Supabase.
+4. TBIS102A save now returns immediately from the confirmed Supabase upsert result.
+5. Audit logging runs after the save response and can no longer keep the REGISTER button stuck on REGISTERING.
+6. If the migration is not applied, the API will return the Supabase error instead of pretending that a save succeeded.

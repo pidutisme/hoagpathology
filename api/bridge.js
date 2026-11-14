@@ -890,20 +890,34 @@ async function dispatch(db, method, a, req) {
         fail('TBIS102A record changed. Reload before editing.', 409);
       }
       const record = normalizeTbis102aRecord(input, existing, s.userId);
-      const { error: upsertError } = await supabase.from('tbis102a_records').upsert({
-        id: record.id,
-        data: record,
-        created_at: record.createdAt,
-        updated_at: record.updatedAt
-      }, { onConflict: 'id' });
+
+      // IMPORTANT: return the Supabase write result directly. The previous
+      // implementation performed a second SELECT and then awaited the system
+      // log/retention work before responding. If either secondary operation
+      // was slow, the browser stayed on "REGISTERING..." even though the
+      // record had already been written.
+      const { data: savedRow, error: upsertError } = await supabase
+        .from('tbis102a_records')
+        .upsert({
+          id: record.id,
+          data: record,
+          created_at: record.createdAt,
+          updated_at: record.updatedAt
+        }, { onConflict: 'id' })
+        .select('id, data, created_at, updated_at')
+        .single();
       if (upsertError) throw upsertError;
-      const { data: verified, error: verifyError } = await supabase.from('tbis102a_records').select('*').eq('id', record.id).single();
-      if (verifyError) throw verifyError;
-      const saved = verified?.data && typeof verified.data === 'object'
-        ? { ...verified.data, id: verified.id, createdAt: verified.created_at, updatedAt: verified.updated_at }
+
+      const saved = savedRow?.data && typeof savedRow.data === 'object'
+        ? { ...savedRow.data, id: savedRow.id, createdAt: savedRow.created_at, updatedAt: savedRow.updated_at }
         : record;
-      await log(db, s.userId, existing ? 'TBIS102A_RECORD_UPDATED' : 'TBIS102A_RECORD_CREATED', `${existing ? 'Updated' : 'Created'} TBIS102A record ${record.id}.`, { page: 'Microbiology', role: s.role });
-      return { ok: true, record: saved, updatedAt: verified.updated_at || record.updatedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+
+      // Logging must never block a successful TBIS102A registration.
+      // Keep the audit trail, but deliberately do not await it.
+      log(db, s.userId, existing ? 'TBIS102A_RECORD_UPDATED' : 'TBIS102A_RECORD_CREATED', `${existing ? 'Updated' : 'Created'} TBIS102A record ${record.id}.`, { page: 'Microbiology', role: s.role })
+        .catch(error => console.error('TBIS102A audit log failed:', error?.message || error));
+
+      return { ok: true, record: saved, updatedAt: saved.updatedAt || record.updatedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 
     case 'deleteTbis102aRecord': {

@@ -5786,38 +5786,40 @@ hoagApiRequest('logout', {
           var tbSave = document.getElementById('tbis102aSave');
           var tbClear = document.getElementById('tbis102aClear');
 
-          /* TBIS102A keyboard flow is bound directly to each field. This avoids
-           * competing with the portal's global keyboard/auth handlers and makes
-           * ENTER behave exactly like a data-entry form: move to the next box. */
+          /* TBIS102A keyboard flow: ENTER always advances to the next ACTIVE
+           * field. The field list is rebuilt on every ENTER so conditional fields
+           * such as SCANTY numeric result are included immediately after they
+           * become enabled. */
           if (tbForm) {
-            var tbFields = Array.prototype.slice.call(
-              tbForm.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
-            );
+            tbForm.addEventListener('keydown', function (event) {
+              if (event.key !== 'Enter') return;
 
-            tbFields.forEach(function (field, index) {
-              field.addEventListener('keydown', function (event) {
-                if (event.key !== 'Enter') return;
+              event.preventDefault();
+              event.stopPropagation();
+              if (event.stopImmediatePropagation) event.stopImmediatePropagation();
 
-                event.preventDefault();
-                event.stopPropagation();
-                if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+              if (event.ctrlKey || event.metaKey) {
+                submit(event);
+                return;
+              }
 
-                if (event.ctrlKey || event.metaKey) {
-                  submit(event);
-                  return;
+              var tbFields = Array.prototype.slice.call(
+                tbForm.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
+              ).filter(function (field) {
+                return field.offsetParent !== null && field.getClientRects().length > 0;
+              });
+              var currentIndex = tbFields.indexOf(event.target);
+              var next = currentIndex >= 0 ? tbFields[currentIndex + 1] : null;
+
+              if (next) {
+                next.focus();
+                if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') {
+                  next.select();
                 }
-
-                var next = tbFields[index + 1];
-                if (next) {
-                  next.focus();
-                  if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') {
-                    next.select();
-                  }
-                } else if (tbSave) {
-                  tbSave.focus();
-                }
-              }, true);
-            });
+              } else if (tbSave) {
+                tbSave.focus();
+              }
+            }, true);
           }
 
           /* Bind SAVE directly to the button. Do not rely on delegated form
@@ -5839,9 +5841,18 @@ hoagApiRequest('logout', {
           var tbScanty = document.getElementById('tbScanty');
           function syncScantyField() {
             var isScanty = tbResult && String(tbResult.value || '').toUpperCase() === 'SCANTY';
-            if (tbScantyField) tbScantyField.hidden = !isScanty;
+
+            /* Do not rely on the HTML hidden attribute alone. Explicitly toggle
+             * display/disabled state so the numeric box is visibly rendered in
+             * every browser/theme and is immediately available to ENTER flow. */
+            if (tbScantyField) {
+              tbScantyField.hidden = !isScanty;
+              tbScantyField.style.display = isScanty ? 'flex' : 'none';
+            }
             if (tbScanty) {
               tbScanty.disabled = !isScanty;
+              tbScanty.required = isScanty;
+              tbScanty.setAttribute('aria-hidden', isScanty ? 'false' : 'true');
               if (!isScanty) tbScanty.value = '';
             }
           }
