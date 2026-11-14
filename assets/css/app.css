@@ -11184,3 +11184,85 @@ body.auth-resolving #authResolvingPanel {
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table { min-width:1450px!important; }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table th,#moduleYearGrid.tbis102a-active-grid .tbis102a-table td { white-space:nowrap; }
 @media (max-width:1100px) { #moduleYears:has(#moduleYearGrid.tbis102a-active-grid) .module-years-panel,#moduleYearGrid.tbis102a-active-grid { height:auto!important; max-height:none!important; overflow:visible!important; } #moduleYearGrid.tbis102a-active-grid .tbis102a-grid-layout { grid-template-columns:minmax(0,1fr)!important; height:auto!important; } #moduleYearGrid.tbis102a-active-grid .tbis102a-card { height:auto!important; min-height:0!important; } #moduleYearGrid.tbis102a-active-grid .tbis102a-card:nth-child(2) .tbis102a-table-wrap { max-height:480px; } }
+
+
+/* TBIS102A V12: use the same results-pane UI language as OUTSOURCE. */
+#moduleYearGrid.tbis102a-active-grid .outsource-summary {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px 14px;
+}
+#moduleYearGrid.tbis102a-active-grid .outsource-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--neo-surface-light);
+  box-shadow: var(--shadow-soft);
+}
+#moduleYearGrid.tbis102a-active-grid .outsource-stat .num {
+  font-family: Poppins, "Nunito Sans", Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--text);
+  order: 2;
+}
+#moduleYearGrid.tbis102a-active-grid .outsource-stat .lbl {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  order: 1;
+}
+#moduleYearGrid.tbis102a-active-grid .outsource-stat:nth-child(1) .num { color: var(--primary); }
+#moduleYearGrid.tbis102a-active-grid .outsource-stat:nth-child(2) .num { color: var(--warning); }
+#moduleYearGrid.tbis102a-active-grid .outsource-stat:nth-child(3) .num { color: var(--ok); }
+#moduleYearGrid.tbis102a-active-grid .outsource-stat:nth-child(4) .num { color: var(--danger); }
+#moduleYearGrid.tbis102a-active-grid .outsource-search {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(130px, .7fr) minmax(130px, .7fr);
+  gap: 8px;
+  padding: 0 14px 10px;
+}
+#moduleYearGrid.tbis102a-active-grid .outsource-search input,
+#moduleYearGrid.tbis102a-active-grid .outsource-search select {
+  width: 100%;
+  min-width: 0;
+}
+#moduleYearGrid.tbis102a-active-grid .outsource-table-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0 14px 8px;
+  border-radius: 16px;
+  border: 1px solid var(--year-page-card-border);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+  overflow: auto;
+}
+#moduleYearGrid.tbis102a-active-grid .outsource-pager {
+  flex: 0 0 auto;
+  padding: 0 14px 10px;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-form-actions .outsource-btn {
+  min-height: 34px;
+}
+@media (max-width: 1100px) {
+  #moduleYearGrid.tbis102a-active-grid .outsource-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #moduleYearGrid.tbis102a-active-grid .outsource-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #moduleYearGrid.tbis102a-active-grid .outsource-search input { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  #moduleYearGrid.tbis102a-active-grid .outsource-summary,
+  #moduleYearGrid.tbis102a-active-grid .outsource-search { grid-template-columns: 1fr; }
+}

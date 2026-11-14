@@ -5333,7 +5333,13 @@ hoagApiRequest('logout', {
         }
 
         function saveRecords(rows) {
-          localStorage.setItem(TBIS102A_STORAGE_KEY, JSON.stringify(rows));
+          try {
+            localStorage.setItem(TBIS102A_STORAGE_KEY, JSON.stringify(rows));
+            return true;
+          } catch (e) {
+            console.error('TBIS102A: unable to save records.', e);
+            return false;
+          }
         }
 
         function uid() {
@@ -5642,10 +5648,17 @@ hoagApiRequest('logout', {
           if (index >= 0) rows[index] = row;
           else rows.unshift(row);
 
-          saveRecords(rows);
+          if (!saveRecords(rows)) {
+            window.alert('TBIS102A record could not be saved in this browser. Please check browser storage permissions.');
+            return;
+          }
+
           clearForm();
           page = 1;
           renderRows();
+          if (typeof setSystemToast === 'function') {
+            setSystemToast('TBIS102A SAVED', 'The TBIS102A record has been registered successfully.', 2800);
+          }
         }
 
         function render() {
@@ -5660,53 +5673,56 @@ hoagApiRequest('logout', {
 
           setVal('tbDate', today());
           var tbForm = document.getElementById('tbis102aForm');
+          var tbSave = document.getElementById('tbis102aSave');
+          var tbClear = document.getElementById('tbis102aClear');
+
+          /* TBIS102A keyboard flow is bound directly to each field. This avoids
+           * competing with the portal's global keyboard/auth handlers and makes
+           * ENTER behave exactly like a data-entry form: move to the next box. */
           if (tbForm) {
-            /* TBIS102A intentionally is NOT a native <form>.
-             * A native form can trigger implicit browser submission on ENTER, which is
-             * unsafe inside this SPA because a navigation/reload can re-enter auth
-             * session resolution. Keep keyboard input completely local to this module. */
-            tbForm.addEventListener('keydown', function (event) {
-              if (event.key !== 'Enter') return;
+            var tbFields = Array.prototype.slice.call(
+              tbForm.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
+            );
 
-              /* TBIS102A uses ENTER as keyboard navigation, matching the
-               * data-entry workflow used by the other registration modules.
-               * Only Ctrl/Cmd+Enter submits the record. */
-              event.preventDefault();
-              event.stopPropagation();
-              if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            tbFields.forEach(function (field, index) {
+              field.addEventListener('keydown', function (event) {
+                if (event.key !== 'Enter') return;
 
-              if (event.ctrlKey || event.metaKey) {
-                submit(event);
-                return;
-              }
+                event.preventDefault();
+                event.stopPropagation();
+                if (event.stopImmediatePropagation) event.stopImmediatePropagation();
 
-              var fields = Array.prototype.slice.call(
-                tbForm.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
-              );
-              var current = event.target;
-              var index = fields.indexOf(current);
-              if (index === -1) return;
-
-              var next = fields[index + 1];
-              if (next) {
-                next.focus({ preventScroll: true });
-                if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') {
-                  next.select();
+                if (event.ctrlKey || event.metaKey) {
+                  submit(event);
+                  return;
                 }
-              } else {
-                var saveButton = document.getElementById('tbis102aSave');
-                if (saveButton) saveButton.focus({ preventScroll: true });
-              }
-            }, true);
-            tbForm.addEventListener('click', function (event) {
-              var button = event.target && event.target.closest ? event.target.closest('#tbis102aSave') : null;
-              if (!button) return;
+
+                var next = tbFields[index + 1];
+                if (next) {
+                  next.focus();
+                  if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') {
+                    next.select();
+                  }
+                } else if (tbSave) {
+                  tbSave.focus();
+                }
+              }, true);
+            });
+          }
+
+          /* Bind SAVE directly to the button. Do not rely on delegated form
+           * submission because TBIS102A deliberately has no native <form>. */
+          if (tbSave) {
+            tbSave.addEventListener('click', function (event) {
               event.preventDefault();
               event.stopPropagation();
               submit(event);
             });
           }
-          document.getElementById('tbis102aClear').addEventListener('click', clearForm);
+          if (tbClear) tbClear.addEventListener('click', function (event) {
+            event.preventDefault();
+            clearForm();
+          });
 
           ['tbisSearch', 'tbisYearFilter', 'tbisMonthFilter'].forEach(function (id) {
             var el = document.getElementById(id);
