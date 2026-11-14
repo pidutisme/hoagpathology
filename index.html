@@ -13,7 +13,7 @@
 <link href="/favicon.ico?v=3" rel="icon" type="image/x-icon"/>
 <title>LabPortal - Laboratory Management System</title>
 <meta name="labportal-release-version" content="3.0.1"/>
-<meta name="labportal-build-id" content="12D9E835BF9C"/>
+<meta name="labportal-build-id" content="5EB87A28633C"/>
 <base target="_top"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -686,12 +686,10 @@
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 8h8v8H8z"></path></svg></div><div><strong>App Type</strong><span>Single Page Application</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="10" cy="18" r="1"></circle></svg></div><div><strong>Department</strong><span>HOAG Pathology</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="14" rx="2" width="18" x="3" y="5"></rect><path d="M8 21h8M12 19v2"></path></svg></div><div><strong>Platform</strong><span>Android + Web + Windows</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v5l3 2"></path></svg></div><div><strong>Time Zone</strong><span>Asia/Kuala_Lumpur (GMT+8)</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">3.0.1</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M8 12h8M12 8v8"></path></svg></div><div><strong>Build</strong><span id="aboutAppBuild">—</span></div></div>
 </div>
 <div class="settings-extra-grid">
-<button aria-label="Run system check" class="settings-extra-card settings-check-card" hidden="" id="settingsSystemCheckButton" type="button"><div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="m8.5 12 2.2 2.2 4.8-5"></path></svg></div><div class="settings-extra-copy"><strong>System Check</strong><span id="settingsSystemCheckSummary">Run live service checks</span></div></button>
 <div class="settings-extra-card">
 <div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"></path></svg></div>
 <div class="settings-extra-copy"><strong>Data &amp; Sync</strong><span>Supabase + Vercel</span></div>
@@ -701,7 +699,6 @@
 <div class="settings-extra-copy"><strong>About</strong><span>LabPortal - Laboratory Management System</span></div>
 </div>
 </div>
-<div aria-live="polite" class="settings-system-check-results" hidden="" id="settingsSystemCheckResults"></div>
 </div>
 </div>
 <div class="settings-admin-panel" hidden="" id="settingsAdminPanel">
@@ -711,6 +708,7 @@
 <p id="adminWorkspaceSubtitle">Access control, Visitor page permissions, user management, and operational controls.</p>
 </div>
 <div class="admin-head-actions">
+<button aria-label="Run system check" class="admin-view-tab admin-system-check-button" hidden="" id="settingsSystemCheckButton" type="button"><span> SYSTEM CHECK </span></button>
 <div class="admin-view-switcher" role="tablist" aria-label="Admin workspace mode">
 <button class="admin-view-tab is-active" id="adminTabSettingsBtn" role="tab" aria-selected="true" type="button">ADMIN SETTINGS</button>
 <button class="admin-view-tab" id="adminTabLogsBtn" role="tab" aria-selected="false" type="button">SYSTEM LOG</button>
@@ -718,6 +716,7 @@
 <div aria-live="polite" class="admin-control-status" id="adminControlStatus">Loading admin settings...</div>
 </div>
 </div>
+<div aria-live="polite" class="settings-system-check-results admin-system-check-results" hidden="" id="settingsSystemCheckResults"></div>
 <div class="admin-settings-workspace" id="adminSettingsWorkspace">
 <div class="admin-section-block">
 <div class="admin-section-header">

@@ -8940,7 +8940,7 @@ function exportMonthlySchedulePdfs() {
       function renderMode() {
         if (!nodes.standardPanel && !nodes.adminPanel) cacheDom();
         var admin = isAdmin();
-        if (nodes.standardPanel) nodes.standardPanel.hidden = false;
+        if (nodes.standardPanel) nodes.standardPanel.hidden = admin;
         if (nodes.adminPanel) nodes.adminPanel.hidden = !admin;
         syncSystemCheckAccess();
         if (admin) {
