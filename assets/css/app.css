@@ -11148,3 +11148,15 @@ body.auth-resolving #authResolvingPanel {
 .tbis102a-detail-samples h4{margin:0 0 10px;font-size:12px;color:#24324a;}
 @media (max-width:1100px){.tbis102a-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.tbis102a-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media (max-width:640px){.tbis102a-grid,.tbis102a-detail-grid{grid-template-columns:1fr;}.tbis102a-wide{grid-column:auto;}.tbis102a-form-actions{flex-direction:column;}.tbis102a-form-actions button{width:100%;}}
+
+/* ===== TBIS102A V7 registration/table refinement ===== */
+.tbis102a-registration-form .tbis102a-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 14px;}
+.tbis102a-registration-form .tbis102a-field input{min-height:38px;}
+.tbis102a-table{min-width:2200px;}
+.tbis102a-table th,.tbis102a-table td{vertical-align:middle;}
+@media (max-width:1100px){
+  .tbis102a-registration-form .tbis102a-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:640px){
+  .tbis102a-registration-form .tbis102a-grid{grid-template-columns:1fr;}
+}

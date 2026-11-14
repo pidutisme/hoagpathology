@@ -5317,7 +5317,7 @@ hoagApiRequest('logout', {
         }
       }
 
-      var TBIS102A_STORAGE_KEY = 'hoag.tbis102a.records.v1';
+      var TBIS102A_STORAGE_KEY = 'hoag.tbis102a.records.v2';
       var TBIS102A_PAGE_SIZE = 12;
 
       var TBIS102A = (function () {
@@ -5331,136 +5331,351 @@ hoagApiRequest('logout', {
             return Array.isArray(rows) ? rows : [];
           } catch (e) { return []; }
         }
+
         function saveRecords(rows) {
           localStorage.setItem(TBIS102A_STORAGE_KEY, JSON.stringify(rows));
         }
-        function uid() { return 'tbis102a_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
-        function val(id) { var el=document.getElementById(id); return el ? String(el.value||'').trim() : ''; }
-        function setVal(id, value) { var el=document.getElementById(id); if(el) el.value=value==null?'':value; }
-        function sample(i) {
-          return {
-            afb:'x'+i,
-            sample:val('tb'+i+'Sample'),
-            quality:val('tb'+i+'Quality'),
-            observation:val('tb'+i+'Observation'),
-            scanty:val('tb'+i+'Scanty'),
-            result:val('tb'+i+'Result'),
-            slideResult:val('tb'+i+'SlideResult'),
-            patientResult:val('tb'+i+'PatientResult'),
-            slide:val('tb'+i+'Slide'),
-            releaseDate:val('tb'+i+'ReleaseDate'),
-            tat:val('tb'+i+'Tat'),
-            staff:val('tb'+i+'Staff'),
-            review:val('tb'+i+'Review'),
-            notes:val('tb'+i+'Notes')
-          };
+
+        function uid() {
+          return 'tbis102a_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
         }
+
+        function val(id) {
+          var el = document.getElementById(id);
+          return el ? String(el.value || '').trim() : '';
+        }
+
+        function setVal(id, value) {
+          var el = document.getElementById(id);
+          if (el) el.value = value == null ? '' : value;
+        }
+
         function clearForm() {
-          editId=null;
-          var form=document.getElementById('tbis102aForm');
-          if(form) form.reset();
+          editId = null;
+          var form = document.getElementById('tbis102aForm');
+          if (form) form.reset();
           setVal('tbDate', today());
-          [1,2,3].forEach(function(i){ setVal('tb'+i+'Afb','x'+i); });
-          var hint=document.getElementById('tbis102aEditHint'); if(hint) hint.textContent='NEW RECORD';
-          var save=document.getElementById('tbis102aSave'); if(save) save.textContent='REGISTER TBIS102A';
+          var hint = document.getElementById('tbis102aEditHint');
+          if (hint) hint.textContent = 'NEW RECORD';
+          var save = document.getElementById('tbis102aSave');
+          if (save) save.textContent = 'REGISTER TBIS102A';
         }
+
+        function getSingleSample(r) {
+          if (r && Array.isArray(r.samples) && r.samples.length) return r.samples[0] || {};
+          return {};
+        }
+
         function fillForm(r) {
-          editId=r.id;
-          ['Date','LabNo','Barcode','Name','IdNo','Unit','Patient','Catatan'].forEach(function(k){setVal('tb'+k, r[k.charAt(0).toLowerCase()+k.slice(1)] || r[k] || '');});
-          [1,2,3].forEach(function(i){
-            var x=(r.samples||[]).find(function(s){return s.afb==='x'+i;})||{};
-            setVal('tb'+i+'Sample',x.sample); setVal('tb'+i+'Quality',x.quality); setVal('tb'+i+'Observation',x.observation); setVal('tb'+i+'Scanty',x.scanty);
-            setVal('tb'+i+'Result',x.result); setVal('tb'+i+'SlideResult',x.slideResult); setVal('tb'+i+'PatientResult',x.patientResult); setVal('tb'+i+'Slide',x.slide);
-            setVal('tb'+i+'ReleaseDate',x.releaseDate); setVal('tb'+i+'Tat',x.tat); setVal('tb'+i+'Staff',x.staff); setVal('tb'+i+'Review',x.review); setVal('tb'+i+'Notes',x.notes);
-          });
-          var hint=document.getElementById('tbis102aEditHint'); if(hint) hint.textContent='EDITING RECORD';
-          var save=document.getElementById('tbis102aSave'); if(save) save.textContent='SAVE CHANGES';
-          var form=document.getElementById('tbis102aForm'); if(form) form.scrollIntoView({behavior:'smooth',block:'start'});
+          editId = r.id;
+          var s = getSingleSample(r);
+
+          setVal('tbDate', r.date);
+          setVal('tbLabNo', r.labNo);
+          setVal('tbBarcode', r.barcode);
+          setVal('tbName', r.name);
+          setVal('tbIdNo', r.idNo);
+          setVal('tbUnit', r.unit);
+          setVal('tbPatient', r.patient);
+          setVal('tbSample', s.sample);
+          setVal('tbQuality', s.quality);
+          setVal('tbResult', s.result);
+          setVal('tbReleaseDate', s.releaseDate);
+          setVal('tbTat', s.tat);
+          setVal('tbValidatedBy', s.staff || r.validatedBy);
+          setVal('tbReviewedBy', s.review || r.reviewedBy);
+          setVal('tbFinalResult', s.patientResult || r.finalResult);
+
+          var hint = document.getElementById('tbis102aEditHint');
+          if (hint) hint.textContent = 'EDITING RECORD';
+          var save = document.getElementById('tbis102aSave');
+          if (save) save.textContent = 'SAVE CHANGES';
+
+          var form = document.getElementById('tbis102aForm');
+          if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+
         function buildForm() {
-          var sampleBlocks=[1,2,3].map(function(i){
-            return '<div class="tbis102a-sample-card"><div class="tbis102a-sample-head"><strong>SPUTUM AFB x'+i+'</strong><span>SPECIMEN '+i+'</span></div>'+
-              '<div class="tbis102a-grid">'+
-              '<div class="tbis102a-field"><label>Sample</label><select id="tb'+i+'Sample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option><option>INDUCED</option><option>OTHER</option></select></div>'+
-              '<div class="tbis102a-field"><label>Sample Quality</label><select id="tb'+i+'Quality"><option value="">Select quality</option><option>SPUTUM</option><option>SALIVA</option><option>OTHER</option></select></div>'+
-              '<div class="tbis102a-field"><label>Observation in 1L</label><input id="tb'+i+'Observation" placeholder="e.g. 0 AFB/1L"></div>'+ 
-              '<div class="tbis102a-field"><label>AFB Count (Scanty)</label><input id="tb'+i+'Scanty" placeholder="AFB count / scanty"></div>'+ 
-              '<div class="tbis102a-field"><label>Result</label><input id="tb'+i+'Result" placeholder="Result"></div>'+ 
-              '<div class="tbis102a-field"><label>Slide Result</label><input id="tb'+i+'SlideResult" placeholder="e.g. NO AFB SEEN"></div>'+ 
-              '<div class="tbis102a-field"><label>Patient Result</label><select id="tb'+i+'PatientResult"><option value="">Select result</option><option>NEGATIVE</option><option>POSITIVE</option><option>INDETERMINATE</option></select></div>'+ 
-              '<div class="tbis102a-field"><label>Slide</label><input id="tb'+i+'Slide" placeholder="Slide no."></div>'+ 
-              '<div class="tbis102a-field"><label>Release Date</label><input id="tb'+i+'ReleaseDate" type="date"></div>'+ 
-              '<div class="tbis102a-field"><label>Lab Turn Around Time (JAM)</label><input id="tb'+i+'Tat" type="number" min="0" step="0.1" placeholder="Hours"></div>'+ 
-              '<div class="tbis102a-field"><label>Staff</label><input id="tb'+i+'Staff" placeholder="MLT / staff"></div>'+ 
-              '<div class="tbis102a-field"><label>Review</label><input id="tb'+i+'Review" placeholder="Reviewer"></div>'+ 
-              '<div class="tbis102a-field tbis102a-wide"><label>Catatan</label><textarea id="tb'+i+'Notes" rows="2" placeholder="Additional notes"></textarea></div>'+ 
-              '</div></div>';
-          }).join('');
-          return '<div class="tbis102a-workspace"><div class="tbis102a-grid-layout">'+
-            '<section class="outsource-card tbis102a-card"><div class="outsource-card-head"><h3>REGISTER TBIS102A</h3><span id="tbis102aEditHint">NEW RECORD</span></div>'+ 
-            '<form class="outsource-form tbis102a-form" id="tbis102aForm" autocomplete="off">'+
-            '<div class="tbis102a-section-title">PATIENT / REQUEST INFORMATION</div><div class="tbis102a-grid">'+
-            '<div class="tbis102a-field"><label>Date *</label><input id="tbDate" type="date" required></div>'+ 
-            '<div class="tbis102a-field"><label>Lab No.</label><input id="tbLabNo" placeholder="Lab number"></div>'+ 
-            '<div class="tbis102a-field"><label>Barcode</label><input id="tbBarcode" placeholder="Barcode"></div>'+ 
-            '<div class="tbis102a-field"><label>Name *</label><input id="tbName" required placeholder="Patient name"></div>'+ 
-            '<div class="tbis102a-field"><label>ID No.</label><input id="tbIdNo" placeholder="NRIC / ID"></div>'+ 
-            '<div class="tbis102a-field"><label>Unit</label><input id="tbUnit" placeholder="e.g. OPD / WAD 4"></div>'+ 
-            '<div class="tbis102a-field"><label>Patient</label><select id="tbPatient"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>ULANGAN</option><option>CONTACT</option><option>SCREENING</option><option>OTHER</option></select></div>'+ 
-            '</div><div class="tbis102a-section-title">SPUTUM / AFB DETAILS</div>'+sampleBlocks+
-            '<div class="tbis102a-form-actions"><button class="outsource-btn secondary" type="button" id="tbis102aClear">CLEAR</button><button class="outsource-btn primary" type="submit" id="tbis102aSave">REGISTER TBIS102A</button></div></form></section>'+ 
-            '<section class="outsource-card tbis102a-card"><div class="outsource-card-head"><h3>REGISTERED TBIS102A</h3><span id="tbis102aTotal">0 TOTAL</span></div>'+ 
-            '<div class="outsource-summary"><div class="outsource-stat"><div class="num" id="tbisStatTotal">0</div><div class="lbl">Total</div></div><div class="outsource-stat"><div class="num" id="tbisStatPositive">0</div><div class="lbl">Positive</div></div><div class="outsource-stat"><div class="num" id="tbisStatNegative">0</div><div class="lbl">Negative</div></div><div class="outsource-stat"><div class="num" id="tbisStatPending">0</div><div class="lbl">Pending</div></div></div>'+ 
-            '<div class="outsource-search"><input id="tbisSearch" type="search" placeholder="Search name / ID / barcode / lab no..." aria-label="Search TBIS102A records"><select id="tbisYearFilter"><option value="ALL">All years</option></select><select id="tbisMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>'+ 
-            '<div class="outsource-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table"><thead><tr><th>No.</th><th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>ID No.</th><th>Unit</th><th>Patient</th><th>AFB x1</th><th>AFB x2</th><th>AFB x3</th><th>Patient Result</th><th>TAT</th><th>Staff</th><th>Review</th><th>Actions</th></tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div><div class="outsource-pager" id="tbisPager">Showing 0–0 of 0</div></section></div></div>';
+          return '<div class="tbis102a-workspace">' +
+            '<div class="tbis102a-grid-layout">' +
+            '<section class="outsource-card tbis102a-card">' +
+            '<div class="outsource-card-head"><h3>REGISTRATION FORM</h3><span id="tbis102aEditHint">NEW RECORD</span></div>' +
+            '<form class="outsource-form tbis102a-form tbis102a-registration-form" id="tbis102aForm" autocomplete="off">' +
+            '<div class="tbis102a-grid">' +
+            '<div class="tbis102a-field"><label>DATE *</label><input id="tbDate" type="date" required></div>' +
+            '<div class="tbis102a-field"><label>LAB NO.</label><input id="tbLabNo" placeholder="Lab number"></div>' +
+            '<div class="tbis102a-field"><label>BARCODE</label><input id="tbBarcode" placeholder="Barcode"></div>' +
+            '<div class="tbis102a-field"><label>NAME *</label><input id="tbName" required placeholder="Patient name"></div>' +
+            '<div class="tbis102a-field"><label>IC / ID NO.</label><input id="tbIdNo" placeholder="IC / ID number"></div>' +
+            '<div class="tbis102a-field"><label>UNIT</label><input id="tbUnit" placeholder="Unit / ward"></div>' +
+            '<div class="tbis102a-field"><label>PATIENT</label><input id="tbPatient" placeholder="Patient category"></div>' +
+            '<div class="tbis102a-field"><label>SAMPLE</label><input id="tbSample" placeholder="e.g. MORNING"></div>' +
+            '<div class="tbis102a-field"><label>SAMPLE QUALITY</label><input id="tbQuality" placeholder="e.g. SPUTUM"></div>' +
+            '<div class="tbis102a-field"><label>RESULT</label><input id="tbResult" placeholder="Laboratory result"></div>' +
+            '<div class="tbis102a-field"><label>RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
+            '<div class="tbis102a-field"><label>TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
+            '<div class="tbis102a-field"><label>VALIDATED BY</label><input id="tbValidatedBy" placeholder="Staff"></div>' +
+            '<div class="tbis102a-field"><label>REVIEWED BY</label><input id="tbReviewedBy" placeholder="Reviewer"></div>' +
+            '<div class="tbis102a-field"><label>RESULT</label><input id="tbFinalResult" placeholder="Final / patient result"></div>' +
+            '</div>' +
+            '<div class="tbis102a-form-actions"><button class="outsource-btn secondary" type="button" id="tbis102aClear">CLEAR</button><button class="outsource-btn primary" type="submit" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
+            '</form></section>' +
+
+            '<section class="outsource-card tbis102a-card">' +
+            '<div class="outsource-card-head"><h3>REGISTERED TBIS102A</h3><span id="tbis102aTotal">0 TOTAL</span></div>' +
+            '<div class="outsource-summary">' +
+            '<div class="outsource-stat"><div class="num" id="tbisStatTotal">0</div><div class="lbl">Total</div></div>' +
+            '<div class="outsource-stat"><div class="num" id="tbisStatPositive">0</div><div class="lbl">Positive</div></div>' +
+            '<div class="outsource-stat"><div class="num" id="tbisStatNegative">0</div><div class="lbl">Negative</div></div>' +
+            '<div class="outsource-stat"><div class="num" id="tbisStatPending">0</div><div class="lbl">Pending</div></div>' +
+            '</div>' +
+            '<div class="outsource-search"><input id="tbisSearch" type="search" placeholder="Search name / ID / barcode / lab no..." aria-label="Search TBIS102A records">' +
+            '<select id="tbisYearFilter"><option value="ALL">All years</option></select>' +
+            '<select id="tbisMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
+            '<div class="outsource-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table"><thead><tr>' +
+            '<th>No.</th><th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>ID No.</th><th>Unit</th><th>Patient</th><th>SPUTUM AFB</th><th>Sample</th><th>Sample Quality</th><th>Result</th><th>Observation in 1L</th><th>AFB Count (Scanty)</th><th>Slide Result</th><th>Patient Result</th><th>Slide</th><th>Release Date</th><th>Lab Turn Around Time (JAM)</th><th>Staff</th><th>Review</th><th>Catatan</th><th>Actions</th>' +
+            '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
+            '<div class="outsource-pager" id="tbisPager">Showing 0–0 of 0</div>' +
+            '</section></div></div>';
         }
-        function sampleSummary(r,i){var x=(r.samples||[]).find(function(s){return s.afb==='x'+i;})||{};return String(x.patientResult||x.result||'—');}
-        function matches(r, search, year, month){
-          var hay=[r.date,r.labNo,r.barcode,r.name,r.idNo,r.unit,r.patient].concat((r.samples||[]).map(function(s){return Object.keys(s).map(function(k){return s[k];}).join(' ');})).join(' ').toLowerCase();
-          if(search && hay.indexOf(search.toLowerCase())===-1) return false;
-          if(year!=='ALL' && String(r.date||'').slice(0,4)!==year) return false;
-          if(month!=='ALL' && String(r.date||'').slice(5,7)!==month) return false;
+
+        function matches(r, search, year, month) {
+          var s = getSingleSample(r);
+          var hay = [r.date, r.labNo, r.barcode, r.name, r.idNo, r.unit, r.patient, s.afb, s.sample, s.quality, s.result, s.patientResult, s.staff, s.review].join(' ').toLowerCase();
+          if (search && hay.indexOf(search.toLowerCase()) === -1) return false;
+          if (year !== 'ALL' && String(r.date || '').slice(0, 4) !== year) return false;
+          if (month !== 'ALL' && String(r.date || '').slice(5, 7) !== month) return false;
           return true;
         }
-        function renderRows(){
-          var body=document.getElementById('tbisTableBody'); if(!body)return;
-          var rows=records(); var search=val('tbisSearch'), year=val('tbisYearFilter')||'ALL', month=val('tbisMonthFilter')||'ALL';
-          var filtered=rows.filter(function(r){return matches(r,search,year,month);}).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
-          var total=rows.length, positive=rows.filter(function(r){return (r.samples||[]).some(function(s){return String(s.patientResult||'').toUpperCase()==='POSITIVE';});}).length, negative=rows.filter(function(r){return (r.samples||[]).some(function(s){return String(s.patientResult||'').toUpperCase()==='NEGATIVE';});}).length, pending=rows.filter(function(r){return !(r.samples||[]).some(function(s){return String(s.patientResult||'').trim();});}).length;
-          ['tbis102aTotal','tbisStatTotal'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=total+(id==='tbis102aTotal'?' TOTAL':'');});
-          var p=document.getElementById('tbisStatPositive');if(p)p.textContent=positive;var n=document.getElementById('tbisStatNegative');if(n)n.textContent=negative;var pe=document.getElementById('tbisStatPending');if(pe)pe.textContent=pending;
-          var yf=document.getElementById('tbisYearFilter'); if(yf){var years=Array.from(new Set(rows.map(function(r){return String(r.date||'').slice(0,4);}).filter(Boolean))).sort().reverse(); var current=yf.value||'ALL'; yf.innerHTML='<option value="ALL">All years</option>'+years.map(function(y){return '<option value="'+esc(y)+'">'+esc(y)+'</option>';}).join(''); yf.value=years.indexOf(current)>=0?current:'ALL';}
-          var pages=Math.max(1,Math.ceil(filtered.length/TBIS102A_PAGE_SIZE)); if(page>pages)page=pages; var start=(page-1)*TBIS102A_PAGE_SIZE; var visible=filtered.slice(start,start+TBIS102A_PAGE_SIZE);
-          body.innerHTML=visible.map(function(r,idx){return '<tr><td>'+(start+idx+1)+'</td><td>'+esc(r.date||'')+'</td><td>'+esc(r.labNo||'')+'</td><td>'+esc(r.barcode||'')+'</td><td><strong>'+esc(r.name||'')+'</strong></td><td>'+esc(r.idNo||'')+'</td><td>'+esc(r.unit||'')+'</td><td>'+esc(r.patient||'')+'</td><td>'+esc(sampleSummary(r,1))+'</td><td>'+esc(sampleSummary(r,2))+'</td><td>'+esc(sampleSummary(r,3))+'</td><td>'+esc((r.samples||[]).map(function(s){return s.patientResult;}).filter(Boolean).pop()||'—')+'</td><td>'+esc((r.samples||[]).map(function(s){return s.tat;}).filter(Boolean).pop()||'—')+'</td><td>'+esc((r.samples||[]).map(function(s){return s.staff;}).filter(Boolean).pop()||'')+'</td><td>'+esc((r.samples||[]).map(function(s){return s.review;}).filter(Boolean).pop()||'')+'</td><td><button class="outsource-row-action tbis-view" data-id="'+esc(r.id)+'" type="button">VIEW</button><button class="outsource-row-action tbis-edit" data-id="'+esc(r.id)+'" type="button">EDIT</button><button class="outsource-row-action danger tbis-delete" data-id="'+esc(r.id)+'" type="button">DELETE</button></td></tr>';}).join('');
-          var empty=document.getElementById('tbisEmpty'); if(empty){empty.hidden=visible.length!==0; empty.textContent=filtered.length?'No records match the current filters.':'No TBIS102A record registered yet.';}
-          var pager=document.getElementById('tbisPager');if(pager)pager.textContent=filtered.length?'Showing '+(start+1)+'–'+Math.min(start+visible.length,filtered.length)+' of '+filtered.length:'Showing 0–0 of 0';
-          body.querySelectorAll('.tbis-edit').forEach(function(b){b.addEventListener('click',function(){var r=records().find(function(x){return String(x.id)===String(b.dataset.id);});if(r)fillForm(r);});});
-          body.querySelectorAll('.tbis-view').forEach(function(b){b.addEventListener('click',function(){openDetails(b.dataset.id);});});
-          body.querySelectorAll('.tbis-delete').forEach(function(b){b.addEventListener('click',function(){if(!window.confirm('Delete this TBIS102A record?'))return;saveRecords(records().filter(function(x){return String(x.id)!==String(b.dataset.id);}));renderRows();});});
+
+        function renderRows() {
+          var body = document.getElementById('tbisTableBody');
+          if (!body) return;
+
+          var rows = records();
+          var search = val('tbisSearch');
+          var year = val('tbisYearFilter') || 'ALL';
+          var month = val('tbisMonthFilter') || 'ALL';
+
+          var filtered = rows.filter(function (r) {
+            return matches(r, search, year, month);
+          }).sort(function (a, b) {
+            return String(b.date || '').localeCompare(String(a.date || ''));
+          });
+
+          var total = rows.length;
+          var positive = rows.filter(function (r) {
+            var s = getSingleSample(r);
+            return String(s.patientResult || '').toUpperCase() === 'POSITIVE';
+          }).length;
+          var negative = rows.filter(function (r) {
+            var s = getSingleSample(r);
+            return String(s.patientResult || '').toUpperCase() === 'NEGATIVE';
+          }).length;
+          var pending = rows.filter(function (r) {
+            var s = getSingleSample(r);
+            return !String(s.patientResult || '').trim();
+          }).length;
+
+          var totalEl = document.getElementById('tbis102aTotal');
+          if (totalEl) totalEl.textContent = total + ' TOTAL';
+          ['tbisStatTotal', 'tbisStatPositive', 'tbisStatNegative', 'tbisStatPending'].forEach(function (id, i) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = [total, positive, negative, pending][i];
+          });
+
+          var yf = document.getElementById('tbisYearFilter');
+          if (yf) {
+            var years = Array.from(new Set(rows.map(function (r) {
+              return String(r.date || '').slice(0, 4);
+            }).filter(Boolean))).sort().reverse();
+            var current = yf.value || 'ALL';
+            yf.innerHTML = '<option value="ALL">All years</option>' + years.map(function (y) {
+              return '<option value="' + esc(y) + '">' + esc(y) + '</option>';
+            }).join('');
+            yf.value = years.indexOf(current) >= 0 ? current : 'ALL';
+          }
+
+          var pages = Math.max(1, Math.ceil(filtered.length / TBIS102A_PAGE_SIZE));
+          if (page > pages) page = pages;
+          var start = (page - 1) * TBIS102A_PAGE_SIZE;
+          var visible = filtered.slice(start, start + TBIS102A_PAGE_SIZE);
+
+          body.innerHTML = visible.map(function (r, idx) {
+            var s = getSingleSample(r);
+            return '<tr>' +
+              '<td>' + (start + idx + 1) + '</td>' +
+              '<td>' + esc(r.date || '') + '</td>' +
+              '<td>' + esc(r.labNo || '') + '</td>' +
+              '<td>' + esc(r.barcode || '') + '</td>' +
+              '<td><strong>' + esc(r.name || '') + '</strong></td>' +
+              '<td>' + esc(r.idNo || '') + '</td>' +
+              '<td>' + esc(r.unit || '') + '</td>' +
+              '<td>' + esc(r.patient || '') + '</td>' +
+              '<td>' + esc(s.afb || 'x1') + '</td>' +
+              '<td>' + esc(s.sample || '') + '</td>' +
+              '<td>' + esc(s.quality || '') + '</td>' +
+              '<td>' + esc(s.result || '') + '</td>' +
+              '<td>' + esc(s.observation || '') + '</td>' +
+              '<td>' + esc(s.scanty || '') + '</td>' +
+              '<td>' + esc(s.slideResult || '') + '</td>' +
+              '<td>' + esc(s.patientResult || '') + '</td>' +
+              '<td>' + esc(s.slide || '') + '</td>' +
+              '<td>' + esc(s.releaseDate || '') + '</td>' +
+              '<td>' + esc(s.tat || '') + '</td>' +
+              '<td>' + esc(s.staff || '') + '</td>' +
+              '<td>' + esc(s.review || '') + '</td>' +
+              '<td>' + esc(s.notes || '') + '</td>' +
+              '<td><button class="outsource-row-action tbis-view" data-id="' + esc(r.id) + '" type="button">VIEW</button><button class="outsource-row-action tbis-edit" data-id="' + esc(r.id) + '" type="button">EDIT</button><button class="outsource-row-action danger tbis-delete" data-id="' + esc(r.id) + '" type="button">DELETE</button></td>' +
+              '</tr>';
+          }).join('');
+
+          var empty = document.getElementById('tbisEmpty');
+          if (empty) {
+            empty.hidden = visible.length !== 0;
+            empty.textContent = filtered.length ? 'No records match the current filters.' : 'No TBIS102A record registered yet.';
+          }
+
+          var pager = document.getElementById('tbisPager');
+          if (pager) pager.textContent = filtered.length
+            ? 'Showing ' + (start + 1) + '–' + Math.min(start + visible.length, filtered.length) + ' of ' + filtered.length
+            : 'Showing 0–0 of 0';
+
+          body.querySelectorAll('.tbis-edit').forEach(function (b) {
+            b.addEventListener('click', function () {
+              var r = records().find(function (x) { return String(x.id) === String(b.dataset.id); });
+              if (r) fillForm(r);
+            });
+          });
+
+          body.querySelectorAll('.tbis-view').forEach(function (b) {
+            b.addEventListener('click', function () { openDetails(b.dataset.id); });
+          });
+
+          body.querySelectorAll('.tbis-delete').forEach(function (b) {
+            b.addEventListener('click', function () {
+              if (!window.confirm('Delete this TBIS102A record?')) return;
+              saveRecords(records().filter(function (x) { return String(x.id) !== String(b.dataset.id); }));
+              renderRows();
+            });
+          });
         }
-        function openDetails(id){
-          var r=records().find(function(x){return String(x.id)===String(id);}); if(!r)return;
-          var old=document.getElementById('tbis102aDetailsModal'); if(old)old.remove();
-          var modal=document.createElement('div'); modal.id='tbis102aDetailsModal'; modal.className='outsource-result-modal tbis102a-details-modal'; modal.innerHTML='<div class="outsource-result-dialog tbis102a-details-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">TBIS102A RECORD</div><h2>'+esc(r.name||'')+'</h2><div class="tbis102a-detail-meta">'+esc(r.date||'')+' · Lab No. '+esc(r.labNo||'')+' · Barcode '+esc(r.barcode||'')+'</div><div class="tbis102a-detail-grid">'+
-            ['ID No.','idNo','Unit','unit','Patient','patient'].map(function(x,i,a){return i%2===0?'<div><label>'+x+'</label><strong>'+esc(r[a[i+1]]||'')+'</strong></div>':'';}).join('')+'</div>'+ 
-            '<div class="tbis102a-detail-samples">'+(r.samples||[]).map(function(s){return '<section><h4>SPUTUM AFB '+esc(s.afb||'')+'</h4><div class="tbis102a-detail-grid">'+[['Sample','sample'],['Sample Quality','quality'],['Observation in 1L','observation'],['AFB Count (Scanty)','scanty'],['Result','result'],['Slide Result','slideResult'],['Patient Result','patientResult'],['Slide','slide'],['Release Date','releaseDate'],['Lab Turn Around Time (JAM)','tat'],['Staff','staff'],['Review','review'],['Catatan','notes']].map(function(pair){return '<div><label>'+pair[0]+'</label><strong>'+esc(s[pair[1]]||'')+'</strong></div>';}).join('')+'</div></section>';}).join('')+'</div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary">CLOSE</button></div></div>';
-          document.body.appendChild(modal); modal.hidden=false; var close=function(){modal.remove();}; modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('.outsource-btn.secondary'))close();});
+
+        function openDetails(id) {
+          var r = records().find(function (x) { return String(x.id) === String(id); });
+          if (!r) return;
+          var s = getSingleSample(r);
+          var old = document.getElementById('tbis102aDetailsModal');
+          if (old) old.remove();
+
+          var fields = [
+            ['DATE', r.date], ['LAB NO.', r.labNo], ['BARCODE', r.barcode], ['NAME', r.name],
+            ['IC / ID NO.', r.idNo], ['UNIT', r.unit], ['PATIENT', r.patient], ['SAMPLE', s.sample],
+            ['SAMPLE QUALITY', s.quality], ['RESULT', s.result], ['RELEASE DATE', s.releaseDate],
+            ['TAT', s.tat], ['VALIDATED BY', s.staff], ['REVIEWED BY', s.review],
+            ['RESULT', s.patientResult]
+          ];
+
+          var modal = document.createElement('div');
+          modal.id = 'tbis102aDetailsModal';
+          modal.className = 'outsource-result-modal tbis102a-details-modal';
+          modal.innerHTML = '<div class="outsource-result-dialog tbis102a-details-dialog">' +
+            '<button type="button" class="outsource-result-close" aria-label="Close">×</button>' +
+            '<div class="outsource-modal-kicker">TBIS102A RECORD</div>' +
+            '<h2>' + esc(r.name || '') + '</h2>' +
+            '<div class="tbis102a-detail-grid">' +
+            fields.map(function (pair) {
+              return '<div><label>' + pair[0] + '</label><strong>' + esc(pair[1] || '') + '</strong></div>';
+            }).join('') +
+            '</div>' +
+            '<div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary">CLOSE</button></div>' +
+            '</div>';
+
+          document.body.appendChild(modal);
+          modal.hidden = false;
+          var close = function () { modal.remove(); };
+          modal.addEventListener('click', function (e) {
+            if (e.target === modal || e.target.closest('.outsource-result-close') || e.target.closest('.outsource-btn.secondary')) close();
+          });
         }
-        function submit(e){
-          e.preventDefault(); var name=val('tbName'), date=val('tbDate'); if(!name||!date){window.alert('Please fill Date and Name.');return;}
-          var row={id:editId||uid(),date:date,labNo:val('tbLabNo'),barcode:val('tbBarcode'),name:name,idNo:val('tbIdNo'),unit:val('tbUnit'),patient:val('tbPatient'),samples:[sample(1),sample(2),sample(3)],createdAt:new Date().toISOString()};
-          var rows=records(), index=rows.findIndex(function(x){return String(x.id)===String(row.id);}); if(index>=0)rows[index]=row; else rows.unshift(row); saveRecords(rows); clearForm(); page=1; renderRows();
-        }
-        function render(){
-          var grid=$('moduleYearGrid'), title=$('moduleYearsTitle'), desc=$('moduleYearsDesc'); if(!grid||!title||!desc)return;
-          grid.className='module-year-grid tbis102a-active-grid'; grid.dataset.yearModule='TBIS102A'; title.textContent='TBIS102A'; desc.textContent='Register, review and maintain TBIS102A fluorescence microscopy screening records.'; grid.innerHTML=buildForm();
-          setVal('tbDate',today());
-          document.getElementById('tbis102aForm').addEventListener('submit',submit); document.getElementById('tbis102aClear').addEventListener('click',clearForm);
-          ['tbisSearch','tbisYearFilter','tbisMonthFilter'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener(id==='tbisSearch'?'input':'change',function(){page=1;renderRows();});});
+
+        function submit(e) {
+          e.preventDefault();
+          var name = val('tbName'), date = val('tbDate');
+          if (!name || !date) {
+            window.alert('Please fill Date and Name.');
+            return;
+          }
+
+          var sample = {
+            afb: 'x1',
+            sample: val('tbSample'),
+            quality: val('tbQuality'),
+            result: val('tbResult'),
+            observation: '',
+            scanty: '',
+            slideResult: '',
+            patientResult: val('tbFinalResult'),
+            slide: '',
+            releaseDate: val('tbReleaseDate'),
+            tat: val('tbTat'),
+            staff: val('tbValidatedBy'),
+            review: val('tbReviewedBy'),
+            notes: ''
+          };
+
+          var row = {
+            id: editId || uid(),
+            date: date,
+            labNo: val('tbLabNo'),
+            barcode: val('tbBarcode'),
+            name: name,
+            idNo: val('tbIdNo'),
+            unit: val('tbUnit'),
+            patient: val('tbPatient'),
+            samples: [sample],
+            createdAt: new Date().toISOString()
+          };
+
+          var rows = records();
+          var index = rows.findIndex(function (x) { return String(x.id) === String(row.id); });
+          if (index >= 0) rows[index] = row;
+          else rows.unshift(row);
+
+          saveRecords(rows);
+          clearForm();
+          page = 1;
           renderRows();
         }
-        function open(){render();}
-        return {open:open,render:render};
+
+        function render() {
+          var grid = $('moduleYearGrid'), title = $('moduleYearsTitle'), desc = $('moduleYearsDesc');
+          if (!grid || !title || !desc) return;
+
+          grid.className = 'module-year-grid tbis102a-active-grid';
+          grid.dataset.yearModule = 'TBIS102A';
+          title.textContent = 'TBIS102A';
+          desc.textContent = 'Registration and records for TBIS102A fluorescence microscopy screening.';
+          grid.innerHTML = buildForm();
+
+          setVal('tbDate', today());
+          document.getElementById('tbis102aForm').addEventListener('submit', submit);
+          document.getElementById('tbis102aClear').addEventListener('click', clearForm);
+
+          ['tbisSearch', 'tbisYearFilter', 'tbisMonthFilter'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener(id === 'tbisSearch' ? 'input' : 'change', function () {
+              page = 1;
+              renderRows();
+            });
+          });
+
+          renderRows();
+        }
+
+        function open() { render(); }
+
+        return { open: open, render: render };
       })();
 
       function renderMicrobiologyTbis() {
