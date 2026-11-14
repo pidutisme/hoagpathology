@@ -1090,8 +1090,13 @@ async function dispatch(db, method, a, req) {
       mapping[id] = Array.from(new Set(requested));
       settings.visitorPageAccess = mapping;
       await saveSettings(settings);
+      /* Page access is authorization state. Revoke existing sessions so a Visitor
+       * cannot keep an old permission snapshot after an administrator changes it.
+       * The next login receives the exact new assignment from app_settings. */
+      const { error: revokeError } = await supabase.from('app_sessions').delete().eq('user_id', id);
+      if (revokeError) throw revokeError;
       await log(db, s.userId, 'ADMIN_SET_VISITOR_PAGE_ACCESS', `${id}: ${mapping[id].join(', ')}`, a[3]);
-      return { ok: true, userId: id, pageAccess: mapping[id], version: VERSION };
+      return { ok: true, userId: id, pageAccess: mapping[id], sessionRevoked: true, version: VERSION };
     }
 
     case 'adminDeleteAuthUser': {

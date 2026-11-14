@@ -1994,7 +1994,7 @@
       var UPDATE_BYPASS_USER_KEY = 'labAppUpdateUserV1';
       var IDLE_TIMEOUT_MS = 15 * 60 * 1000;
       var IDLE_WARNING_MS = 60 * 1000;
-      var SESSION_CHECK_MS = 10 * 60 * 1000;
+      var SESSION_CHECK_MS = 60 * 1000;
       var LOGIN_WAIT_NOTICE_MS = 12000;
       var LOGIN_TIMEOUT_MS = 60000;
       /* A saved same-tab identity is non-secret and already contains the last
@@ -2002,9 +2002,7 @@
        * visually blocked when a login-state request is slow. The server check
        * still runs and remains authoritative; this only prevents an indefinite
        * startup spinner on a healthy existing session. */
-      var RESTORED_SESSION_FALLBACK_MS = 4500;
-      var restoredSessionFallbackTimer = null;
-      var nodes = {};
+            var nodes = {};
       var busy = false;
       var changeBusy = false;
       var idleWarningTimer = null;
@@ -2255,6 +2253,9 @@
         envelope = envelope && typeof envelope === 'object' ? envelope : {};
         var publicUser = normalizePublicAuthUser_(envelope.user || envelope);
         if (!publicUser) return false;
+        if (!Array.isArray(publicUser.pageAccess) && Array.isArray(envelope.pageAccess)) {
+          publicUser.pageAccess = envelope.pageAccess.slice();
+        }
 
         var payload = JSON.stringify({
           user: publicUser,
@@ -2890,7 +2891,11 @@
   
         storeSession(envelope);
   
-        unlock(envelope.user || getStoredPublicUser_() || {}, options || {});
+        var authUser = envelope.user || getStoredPublicUser_() || {};
+        if (!Array.isArray(authUser.pageAccess) && Array.isArray(envelope.pageAccess)) {
+          authUser = Object.assign({}, authUser, { pageAccess: envelope.pageAccess.slice() });
+        }
+        unlock(authUser, options || {});
         if (!envelope.token && typeof ActivityTracker !== 'undefined' && ActivityTracker.track) {
           ActivityTracker.track('SESSION_RESUME', 'Verified saved login session.', { page: 'session' }, { dedupeMs: 60000 });
         }
@@ -2921,27 +2926,15 @@
           if (active) nodes.app.setAttribute('aria-busy', 'true');
           else nodes.app.removeAttribute('aria-busy');
         }
-
-        /* A refresh must NEVER expose the last page/session identity while the
-         * HttpOnly cookie is being checked. The server response is the only
-         * authoritative source for the current user and role. */
-        if (active) {
-          /* IMPORTANT: never expose the application page while startup/session
-           * verification is running. The login screen must remain the first
-           * visible screen; only a confirmed authenticated response may reveal
-           * the app. */
-          document.body.classList.add('auth-locked');
-          document.body.classList.remove('auth-ready');
-          if (nodes.app) nodes.app.setAttribute('aria-hidden', 'true');
-          if (nodes.screen) nodes.screen.removeAttribute('hidden');
-          if (nodes.greeting) nodes.greeting.textContent = 'Verifying session…';
-        }
+        /* Session verification is a background integrity check. Once a same-tab
+         * session has a cached public identity, the application stays visible while
+         * the HttpOnly cookie is verified. A definitive server rejection still
+         * locks the app immediately. */
       }
 
       function checkStoredSession(retryAttempt) {
-        /* A same-tab refresh keeps the HttpOnly cookie and sessionStorage marker.
-         * Verify the cookie without navigating to login; only a definitive server
-         * response saying authenticated=false ends the session. */
+        /* Same-tab refresh: restore the app immediately from the last server-issued
+         * public identity, then verify the HttpOnly session in the background. */
         retryAttempt = Math.max(0, Number(retryAttempt || 0));
         updateResumeSessionButton_();
         var credentialsTouched = function () {
@@ -2952,59 +2945,55 @@
             busy || state.authUserId
           );
         };
+
         if (!hasTabAuthenticated_()) {
           setSessionVerifying_(false);
           clearStoredSession();
           showLoginPanel('', '');
           return;
         }
-        setSessionVerifying_(true);
 
-        /* If the server is temporarily slow, unlock from the last server-issued
-         * public identity after a short bounded delay. This does NOT create or
-         * extend a session and does NOT bypass the server check. When the real
-         * response arrives it immediately replaces the cached identity; if the
-         * session is actually invalid, the normal lock path still wins. */
         var cachedRestoreUser = getStoredPublicUser_();
-        if (cachedRestoreUser && retryAttempt === 0) {
-          if (restoredSessionFallbackTimer) window.clearTimeout(restoredSessionFallbackTimer);
-          restoredSessionFallbackTimer = window.setTimeout(function () {
-            restoredSessionFallbackTimer = null;
-            if (!hasTabAuthenticated_() || !state.authUserId) {
-              unlock(cachedRestoreUser, { freshLogin: false, restoredSession: true, deferredSessionVerification: true });
-            }
-          }, RESTORED_SESSION_FALLBACK_MS);
+        if (cachedRestoreUser && !state.authUserId) {
+          unlock(cachedRestoreUser, {
+            freshLogin: false,
+            restoredSession: true,
+            deferredSessionVerification: true
+          });
         }
+        setSessionVerifying_(true);
 
         hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
-            if (restoredSessionFallbackTimer) window.clearTimeout(restoredSessionFallbackTimer);
-            restoredSessionFallbackTimer = null;
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               setSessionVerifying_(false);
               if (credentialsTouched()) return;
-              clearStoredSession();
-              lock('Your secure session has expired. Please sign in again.', 'error');
+              forceLockFromServer(envelope && envelope.error ? envelope.error : 'Your secure session has expired. Please sign in again.');
               return;
             }
             storeSession(envelope);
             var restoredUser = envelope.user || {};
+            if (!Array.isArray(restoredUser.pageAccess) && Array.isArray(envelope.pageAccess)) {
+              restoredUser.pageAccess = envelope.pageAccess.slice();
+            }
             applyUser(restoredUser);
-            unlock(restoredUser, { freshLogin:false, restoredSession:true });
+            setSessionVerifying_(false);
+            if (!state.authUserId) {
+              unlock(restoredUser, { freshLogin: false, restoredSession: true });
+            }
           })
           .catch(function (error) {
-            /* Network/API slowness is not a logout. Retry while preserving the
-             * current page and session marker. */
+            /* Transient API/network errors do not hide a valid cached session. */
             console.warn('Initial session verification failed:', error);
             if (retryAttempt < 3 && hasTabAuthenticated_()) {
-              var delay = [500, 1000, 2000][retryAttempt] || 2000;
+              var delay = [1000, 3000, 5000][retryAttempt] || 5000;
               window.setTimeout(function () { checkStoredSession(retryAttempt + 1); }, delay);
               return;
             }
             setSessionVerifying_(false);
-            if (credentialsTouched()) return;
-            if (nodes.greeting) nodes.greeting.textContent = 'Session check delayed — refresh is safe.';
-            setSystemToast('Session Check Delayed', 'Your session was not signed out. Check the connection and refresh again if needed.', 6000);
+            if (!credentialsTouched() && state.authUserId) {
+              setSystemToast('Session Check Delayed', 'Session verification is temporarily unavailable. Your current session remains active.', 6000);
+            }
           });
       }
 
@@ -3536,13 +3525,6 @@ hoagApiRequest('logout', {
         return Number.isFinite(value) && value > 0 ? value : currentYear();
       }
 
-      /* +----------------------------------+
-       * + normalizeModuleName              +
-       * +----------------------------------+ */
-      function normalizeModuleName(cardName) {
-        return moduleDisplayNames[cardName] || String(cardName || '').toUpperCase();
-      }
-  
       /* +----------------------------------+
        * + currentYear                      +
        * +----------------------------------+ */
