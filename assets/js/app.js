@@ -280,6 +280,9 @@
       'MICROBIOLOGY': {
         '2026': 'https://drive.google.com/drive/folders/1ad1VDY4Oi0VNIwLibanz-oQnoZmPMuOH?usp=sharing'
       },
+      'MICROBIOLOGY EXTERNAL QUALITY ASSURANCE': {
+        '2026': 'https://drive.google.com/drive/folders/19IO9DxPJekBfOz7l7b7rgSmszu4WoNB9?usp=sharing'
+      },
       'URINE/STOOL ANALYSIS': {
         '2026': 'https://drive.google.com/drive/folders/1XtPFI7XT8mha3IDQgfPpHam7sThSIlG_?usp=sharing'
       },
