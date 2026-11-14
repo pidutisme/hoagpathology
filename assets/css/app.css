@@ -1315,15 +1315,42 @@
       overflow-wrap: anywhere;
     }
 
-    .settings-last-updated {
-      padding: 2px 4px 0;
-      color: var(--muted);
+    .settings-system-check-results {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 8px;
+      padding: 14px 16px;
+      border: 1px solid var(--year-page-card-border);
+      border-radius: 16px;
+      background: var(--year-page-card-bg);
+      color: var(--text);
       font-size: var(--type-small);
     }
 
-    .settings-last-updated strong {
-      color: var(--text);
+    .settings-system-check-results[hidden] {
+      display: none !important;
     }
+
+    .system-check-heading,
+    .system-check-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .system-check-row span:last-child {
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .system-check-status {
+      font-weight: 800;
+    }
+
+    .system-check-status[data-status="PASS"] { color: #16834a; }
+    .system-check-status[data-status="WARNING"] { color: #a56508; }
+    .system-check-status[data-status="FAIL"] { color: #bd2936; }
 
     body.dark-mode .settings-extra-icon {
       background: rgba(255, 255, 255, .045);
@@ -10915,4 +10942,32 @@ body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] 
   .admin-log-toolbar {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Keep protected UI hidden until the initial server session check resolves. */
+body.auth-resolving .app,
+body.auth-resolving.auth-verifying .app {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+body.auth-resolving .pages {
+  visibility: hidden !important;
+}
+
+body.auth-resolving.auth-verifying #authScreen.auth-screen {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+body.auth-resolving #authLoginPanel > :not(#authResolvingPanel) {
+  display: none !important;
+}
+
+body.auth-resolving #authResolvingPanel {
+  display: grid !important;
 }

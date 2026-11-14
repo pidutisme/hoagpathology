@@ -1,6 +1,6 @@
 {
-  "name": "hoagpathology",
-  "version": "2.2.2",
+  "name": "labportal",
+  "version": "3.0.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -26,8 +26,8 @@
   "main": "desktop/main.cjs",
   "build": {
     "appId": "com.hoagpathology.desktop",
-    "productName": "Hoag Pathology",
-    "artifactName": "Hoag-Pathology-Setup-${version}.${ext}",
+    "productName": "LabPortal - Laboratory Management System",
+    "artifactName": "LabPortal-Setup-${version}.${ext}",
     "directories": {
       "output": "dist-desktop"
     },

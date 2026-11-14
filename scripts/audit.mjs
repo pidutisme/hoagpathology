@@ -163,11 +163,37 @@ for (const file of versionFiles) {
   if (!/require\(["'][^"']*package\.json["']\)\.version/.test(read(file))) fail(`${file} does not derive its application version from package.json.`);
 }
 if (lock.packages?.['']?.version !== pkg.version) fail('package.json and package-lock.json versions do not match.');
+if (lock.name !== pkg.name || lock.packages?.['']?.name !== pkg.name) fail('package.json and package-lock.json names do not match.');
+if (pkg.name !== 'labportal' || pkg.version !== '3.0.1') fail('Official package identity/version must be LabPortal 3.0.1.');
 const versionLabel = html.match(/<span\b[^>]*\bid=["']aboutAppVersion["'][^>]*>([\s\S]*?)<\/span>/i)?.[1]?.trim();
 if (versionLabel && versionLabel !== '—' && versionLabel !== pkg.version) fail('index.html contains a hard-coded application version that conflicts with package.json.');
+const releaseMeta = html.match(/<meta\s+name=["']labportal-release-version["']\s+content=["']([^"']+)["']\s*\/?\s*>/i)?.[1];
+const buildMeta = html.match(/<meta\s+name=["']labportal-build-id["']\s+content=["']([^"']+)["']\s*\/?\s*>/i)?.[1];
+if (releaseMeta !== pkg.version) fail('index.html release metadata does not match package.json.');
+if (!/^[A-F0-9]{12}$/.test(buildMeta || '')) fail('index.html does not contain a generated local content Build ID.');
+if (/Last Updated/i.test(html)) fail('index.html still contains a Last Updated field.');
+if (!html.includes('LabPortal - Laboratory Management System') || !/<strong>App Type<\/strong><span>Single Page Application<\/span>/.test(html)) fail('LabPortal application identity or App Type is inconsistent.');
 if (/appVersion\s*:\s*["']\d+\.\d+\.\d+["']/.test(appJs)) fail('assets/js/app.js contains a hard-coded application version that conflicts with package.json.');
 if (/\bhoagpathology-v\d+\.\d+\.\d+\b/i.test(read('sw.js'))) fail('sw.js embeds a duplicate application version in its cache name.');
-if (!/var appVersion = \(data && data\.version\) \|\| '—';/.test(appJs)) fail('Frontend application version does not consume dashboard API metadata.');
+if (!/meta\[name="labportal-release-version"\]/.test(appJs) || !/meta\[name="labportal-build-id"\]/.test(appJs)) fail('Frontend version/build display does not use locally bundled metadata.');
+const buildScript = read('scripts/build.mjs');
+if (!/createHash\('sha256'\)/.test(buildScript) || !/calculateBuildId/.test(buildScript)) fail('Build ID is not calculated from deterministic content.');
+if (/process\.env\.VERCEL|Date\.now\(|Math\.random\(|fetch\s*\(/i.test(buildScript)) fail('Build ID calculation depends on deployment state, time, randomness, or a network request.');
+
+const authBootstrap = appJs.slice(appJs.indexOf('function checkStoredSession()'), appJs.indexOf('function updateResumeSessionButton_()'));
+if (!appJs.includes("var AUTH_RESOLVING = 'AUTH_RESOLVING';") || !/getNavigationType_\(\) === 'reload'/.test(authBootstrap) || !/freshSession: !tabAuthenticated/.test(authBootstrap)) fail('Authentication startup does not resolve and verify a same-tab refresh before unlocking.');
+if (/cachedRestoreUser|restoredSessionFallbackTimer|unlock\(cached/i.test(authBootstrap)) fail('Authentication startup trusts cached identity or uses a timed fallback.');
+if (!/auth-resolving/.test(html) || !/body\.auth-resolving\.auth-verifying \.app/.test(read('assets/css/app.css'))) fail('Protected UI is not hidden while authentication is resolving.');
+if (/Max-Age=\$\{SESSION_SECONDS\}/.test(read('api/login.js')) || /Max-Age=21600/.test(read('api/bridge.js'))) fail('Login cookie persists past browser/app termination.');
+
+const systemBridge = read('api/bridge.js');
+const systemCheckStart = systemBridge.indexOf('async function runSystemHealthCheck');
+const systemCheckEnd = systemBridge.indexOf('export default async function handler', systemCheckStart);
+const systemCheck = systemCheckStart >= 0 && systemCheckEnd > systemCheckStart ? systemBridge.slice(systemCheckStart, systemCheckEnd) : '';
+if (!/case 'runSystemCheck': return runSystemHealthCheck\(db, tokenAt\(0\)\)/.test(systemBridge) || !/await requireAdmin\(db, token\)/.test(systemCheck)) fail('System Check is not protected by server-side Admin authorization.');
+if (!/from\('app_settings'\)\.select\('id'\)\.limit\(1\)/.test(systemCheck) || !/import\('@vercel\/blob'\)[\s\S]*?list\(\{ prefix: 'transfusion\/', limit: 1 \}\)/.test(systemCheck)) fail('System Check does not perform safe database and storage health requests.');
+if (!/checks\.some\(check => check\.status === 'FAIL'\)/.test(systemCheck) || !/overall === 'PASS'/.test(systemCheck)) fail('System Check overall health does not reflect failed dependencies.');
+if (/localStorage\.setItem|navigator\.onLine|setTimeout\(/.test(appJs.slice(appJs.indexOf('ORIGINAL SCRIPT BLOCK: settings-system-check-runtime'), appJs.indexOf('ORIGINAL SCRIPT BLOCK: inventory-scroll-runtime-fix')))) fail('System Check still relies on decorative client-only checks or delays.');
 
 for (const [name, range] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies, ...pkg.optionalDependencies })) {
   if (!lock.packages?.[`node_modules/${name}`]) fail(`Dependency is missing from package-lock.json: ${name}`);
@@ -223,7 +249,7 @@ const transfusion = read('api/transfusion.js');
 if (!/READ-ONLY legacy compatibility/.test(transfusion)) fail('Transfusion legacy compatibility must be read-only.');
 if (/ensureIndependentRecords[\s\S]*?\.update\(/.test(transfusion)) fail('Transfusion read path must not rewrite legacy records.');
 
-console.log(`Hoag Pathology audit v${pkg.version}`);
+console.log(`LabPortal audit v${pkg.version}`);
 console.log(`Files checked: ${relativeFiles.length} (excluding installed dependencies)`);
 console.log(`HTML structure and IDs: ${counts.size} unique IDs / ${ids.length} total`);
 console.log(`Local HTML and manifest assets: checked`);

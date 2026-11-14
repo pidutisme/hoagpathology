@@ -11,7 +11,9 @@
        + HEAD AND PRE-AUTH BOOTSTRAP      +
        +----------------------------------+ -->
 <link href="/favicon.ico?v=3" rel="icon" type="image/x-icon"/>
-<title>HOAG Pathology</title>
+<title>LabPortal - Laboratory Management System</title>
+<meta name="labportal-release-version" content="3.0.1"/>
+<meta name="labportal-build-id" content="4719957C6223"/>
 <base target="_top"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -24,8 +26,8 @@
 <meta content="light dark" name="color-scheme"/>
 <meta content="yes" name="mobile-web-app-capable"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
-<meta content="WEB PatologiHOAG" name="application-name"/>
-<meta content="WEB PatologiHOAG" name="apple-mobile-web-app-title"/>
+<meta content="LabPortal - Laboratory Management System" name="application-name"/>
+<meta content="LabPortal - Laboratory Management System" name="apple-mobile-web-app-title"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="no-referrer-when-downgrade" name="referrer"/>
 <meta content="telephone=no,email=no,address=no" name="format-detection"/>
@@ -36,7 +38,7 @@
 <link rel="stylesheet" href="/assets/css/auth-redesign.css?v=auth-v19"/>
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
-<body class="auth-locked">
+<body class="auth-locked auth-resolving" data-auth-status="AUTH_RESOLVING">
 <!-- +----------------------------------+
        + HTML BODY / PAGE MARKUP          +
        +----------------------------------+ -->
@@ -45,12 +47,12 @@
      +----------------------------------+ -->
 <noscript>
 <div class="noscript-warning">
-<strong>LabApp requires JavaScript.</strong><br/>
+<strong>LabPortal - Laboratory Management System requires JavaScript.</strong><br/>
     Please enable JavaScript to use routing, calendar, roster auto-save, and theme.<br/>
-<span>LabLink App needs JavaScript enabled to load the dashboard, calendar, and roster modules.</span>
+<span>LabPortal needs JavaScript enabled to load the dashboard, calendar, and roster modules.</span>
 </div>
 </noscript>
-<div aria-label="LabApp login" aria-modal="true" class="auth-screen" id="authScreen" role="dialog">
+<div aria-label="LabPortal login" aria-modal="true" class="auth-screen" id="authScreen" role="dialog">
 <div aria-hidden="true" class="auth-orb auth-orb-one"></div>
 <div aria-hidden="true" class="auth-orb auth-orb-two"></div>
 <div class="auth-card">
@@ -58,7 +60,7 @@
   <div class="auth-brand-topline">
     <span class="auth-brand-icon"><svg viewBox="0 0 48 48"><path d="M15 8h12v5h-3v8.5l8.6 9.3A7 7 0 0 1 27.5 43H14.5A7 7 0 0 1 9.4 30.8L18 21.5V13h-3V8Z"/><path d="M15 8h12M14 29h14M18 21.5h6"/></svg></span>
     <span class="auth-brand-divider"></span>
-    <span class="auth-brand-name">HOAG<br/><strong>PATHOLOGY</strong></span>
+    <span class="auth-brand-name">LabPortal</span>
   </div>
   <div class="auth-brand-subtitle">Laboratory Management System</div>
   <div class="auth-brand-line"></div>
@@ -73,6 +75,7 @@
   <div class="auth-brand-hexes" aria-hidden="true"></div>
 </div>
 <div class="auth-card-inner" id="authLoginPanel">
+<div aria-live="polite" class="auth-resolution-panel" id="authResolvingPanel"><span class="auth-resolution-spinner" aria-hidden="true"></span><strong>Verifying secure session</strong><span>Waiting for the server to confirm your access.</span></div>
 <div class="auth-badge">🔐 Secure Access</div>
 <div class="auth-title-block">
 <h1 class="auth-title">ACCESS YOUR<br/>LABORATORY RECORDS</h1>
@@ -675,29 +678,30 @@
 <div class="content-inner">
 <div class="settings-standard-panel" id="settingsStandardPanel">
 <h3>SETTINGS</h3>
-<p>System information and configuration center for reviewing LabApp details, application settings,
+<p>System information and configuration center for reviewing LabPortal details, application settings,
                       and operational controls.</p>
 <div class="settings-content-grid">
 <div class="setting-grid">
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"></path><path d="M16 9h3a2 2 0 0 1 2 2v10"></path><path d="M9 7h2M9 11h2M9 15h2M18 13h1M18 17h1"></path></svg></div><div><strong>App Name</strong><span>HOAG Pathology</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 8h8v8H8z"></path></svg></div><div><strong>App Type</strong><span>Laboratory Management System</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"></path><path d="M16 9h3a2 2 0 0 1 2 2v10"></path><path d="M9 7h2M9 11h2M9 15h2M18 13h1M18 17h1"></path></svg></div><div><strong>App Name</strong><span>LabPortal - Laboratory Management System</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 8h8v8H8z"></path></svg></div><div><strong>App Type</strong><span>Single Page Application</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="10" cy="18" r="1"></circle></svg></div><div><strong>Department</strong><span>HOAG Pathology</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="14" rx="2" width="18" x="3" y="5"></rect><path d="M8 21h8M12 19v2"></path></svg></div><div><strong>Platform</strong><span>Android + Web + Windows</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v5l3 2"></path></svg></div><div><strong>Time Zone</strong><span>Asia/Kuala_Lumpur (GMT+8)</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">—</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">3.0.1</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M8 12h8M12 8v8"></path></svg></div><div><strong>Build</strong><span id="aboutAppBuild">—</span></div></div>
 </div>
 <div class="settings-extra-grid">
-<button aria-label="Run system check" class="settings-extra-card settings-check-card" id="settingsSystemCheckButton" type="button"><div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="m8.5 12 2.2 2.2 4.8-5"></path></svg></div><div class="settings-extra-copy"><strong>System Check</strong><span>Check app, storage &amp; connection</span></div></button>
+<button aria-label="Run system check" class="settings-extra-card settings-check-card" hidden="" id="settingsSystemCheckButton" type="button"><div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="m8.5 12 2.2 2.2 4.8-5"></path></svg></div><div class="settings-extra-copy"><strong>System Check</strong><span id="settingsSystemCheckSummary">Run live service checks</span></div></button>
 <div class="settings-extra-card">
 <div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"></path></svg></div>
 <div class="settings-extra-copy"><strong>Data &amp; Sync</strong><span>Supabase + Vercel</span></div>
 </div>
 <div class="settings-extra-card">
 <div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path></svg></div>
-<div class="settings-extra-copy"><strong>About</strong><span>HOAG Pathology Application</span></div>
+<div class="settings-extra-copy"><strong>About</strong><span>LabPortal - Laboratory Management System</span></div>
 </div>
 </div>
-<div class="settings-last-updated">Last Updated: <strong>21 October 2026</strong></div>
+<div aria-live="polite" class="settings-system-check-results" hidden="" id="settingsSystemCheckResults"></div>
 </div>
 </div>
 <div class="settings-admin-panel" hidden="" id="settingsAdminPanel">

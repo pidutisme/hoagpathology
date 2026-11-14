@@ -25,7 +25,7 @@ function createWindow() {
     url = getProductionUrl();
   } catch (error) {
     const { dialog } = require('electron');
-    dialog.showErrorBox('Hoag Pathology', error.message);
+    dialog.showErrorBox('LabPortal - Laboratory Management System', error.message);
     app.quit();
     return;
   }
@@ -34,7 +34,7 @@ function createWindow() {
 
   const win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1000, minHeight: 700,
-    title: 'Hoag Pathology', autoHideMenuBar: true,
+    title: 'LabPortal - Laboratory Management System', autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -73,7 +73,7 @@ function createWindow() {
   });
 
   win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-    console.warn('Hoag Pathology desktop load failed:', errorCode, errorDescription);
+    console.warn('LabPortal desktop load failed:', errorCode, errorDescription);
   });
 
   win.loadURL(url);

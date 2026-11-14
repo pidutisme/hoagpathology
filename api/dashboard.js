@@ -16,9 +16,9 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     ok: true,
-    appName: "LabApp",
+    appName: "LabPortal - Laboratory Management System",
     boardTitle: "HOAG PATHOLOGY",
-    subtitle: "SPA Single Page Application",
+    subtitle: "Single Page Application",
     version: VERSION,
     serverIso: now.toISOString(),
     serverDate: new Intl.DateTimeFormat("en-GB", {

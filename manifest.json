@@ -1,7 +1,7 @@
 {
-  "name": "HOAG Pathology",
-  "short_name": "HOAG",
-  "description": "HOAG Pathology Laboratory Operations System",
+  "name": "LabPortal - Laboratory Management System",
+  "short_name": "LabPortal",
+  "description": "LabPortal - Laboratory Management System",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

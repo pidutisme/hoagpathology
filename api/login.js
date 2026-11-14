@@ -42,7 +42,7 @@ const isHttpsRequest = req =>
     .startsWith('https://');
 
 const sessionCookie = (token, secure = true) =>
-  `labapp_session=${encodeURIComponent(token)}; Max-Age=${SESSION_SECONDS}; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`;
+  `labapp_session=${encodeURIComponent(token)}; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`;
 
 const userKeyFor = userId =>
   createHash('sha256')

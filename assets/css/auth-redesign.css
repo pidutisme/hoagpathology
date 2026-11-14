@@ -343,6 +343,14 @@ body.dark-mode #authScreen .auth-secondary-btn,body.dark-mode #authScreen .auth-
   #authScreen .auth-card-inner{padding:38px 22px 30px}
 }
 
+#authScreen .auth-resolution-panel{display:none;min-height:240px;align-content:center;justify-items:center;gap:14px;text-align:center;color:#17305b}
+#authScreen .auth-resolution-panel strong{font-size:20px;font-weight:900}
+#authScreen .auth-resolution-panel span:last-child{color:#60779a;font-size:13px;line-height:1.5}
+#authScreen .auth-resolution-spinner{width:28px;height:28px;border:3px solid rgba(37,99,235,.18);border-top-color:#1769ff;border-radius:50%;animation:authSpin .75s linear infinite}
+body.auth-resolving #authScreen .auth-resolution-panel{display:grid!important}
+body.auth-resolving #authScreen .auth-card-inner{align-content:center}
+@media(max-width:650px){#authScreen .auth-resolution-panel{min-height:200px}}
+
 /* ================================================================
    V18 — reference composition pass
    Visual-only. Keeps existing authentication/change-password behaviour.

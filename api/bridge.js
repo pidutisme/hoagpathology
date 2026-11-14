@@ -433,6 +433,66 @@ async function chatEnvelopeDisabled() {
   return { ok: true, messages: [], count: 0, updatedAt: iso(), chatControl: { locked: true }, users: [], version: VERSION, disabled: true };
 }
 
+async function runSystemHealthCheck(db, token) {
+  await requireAdmin(db, token);
+
+  const checks = [
+    { name: 'Application', status: 'PASS', message: 'The authenticated application API responded.' },
+    { name: 'Authentication', status: 'PASS', message: 'The administrator session was verified.' }
+  ];
+
+  const [database, storage] = await Promise.all([
+    (async () => {
+      try {
+        const { error } = await supabase.from('app_settings').select('id').limit(1);
+        if (error) throw error;
+        return { name: 'Database', status: 'PASS', message: 'A minimal configuration query succeeded.' };
+      } catch (_error) {
+        return { name: 'Database', status: 'FAIL', message: 'The database could not complete a health query.' };
+      }
+    })(),
+    (async () => {
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        return { name: 'Storage', status: 'FAIL', message: 'Private file storage is not configured.' };
+      }
+      try {
+        const { list } = await import('@vercel/blob');
+        const response = await list({ prefix: 'transfusion/', limit: 1 });
+        if (!response || !Array.isArray(response.blobs)) throw new Error('Storage returned an invalid response.');
+        return { name: 'Storage', status: 'PASS', message: 'Private file storage responded to a read-only listing.' };
+      } catch (_error) {
+        return { name: 'Storage', status: 'FAIL', message: 'Private file storage could not complete a health request.' };
+      }
+    })()
+  ]);
+  checks.push(database, storage);
+
+  const coreConfigured = Boolean(
+    process.env.SUPABASE_URL &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY &&
+    process.env.BLOB_READ_WRITE_TOKEN
+  );
+  const runtimeMajor = Number(String(process.versions.node || '').split('.')[0]);
+  const runtimeMatches = runtimeMajor === 22;
+  const backupConfigured = Boolean(process.env.BACKUP_ENCRYPTION_KEY && process.env.CRON_SECRET);
+  checks.push({
+    name: 'Configuration',
+    status: !coreConfigured || !runtimeMatches ? 'FAIL' : (backupConfigured ? 'PASS' : 'WARNING'),
+    message: !coreConfigured
+      ? 'Required application service configuration is incomplete.'
+      : (!runtimeMatches
+        ? 'The Node.js runtime does not match the required major version.'
+        : (backupConfigured
+          ? 'Core services and scheduled backup settings are configured.'
+          : 'Core services are configured, but scheduled backup settings are incomplete.'))
+  });
+
+  const overall = checks.some(check => check.status === 'FAIL')
+    ? 'FAIL'
+    : (checks.some(check => check.status === 'WARNING') ? 'WARNING' : 'PASS');
+  return { ok: true, healthy: overall === 'PASS', overall, checks, version: VERSION };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Pragma', 'no-cache');
@@ -461,7 +521,7 @@ export default async function handler(req, res) {
       const credentials = parseRequest(loginRequestSchema, payload);
       const result = await loginWithPassword(db, credentials, { ip: getClientIp(req), requestId: req.requestId });
       const isHttps = String(req.headers?.['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase() === 'https' || Boolean(req.socket?.encrypted) || String(req.headers?.origin || req.headers?.referer || '').trim().toLowerCase().startsWith('https://');
-      if (result.ok && result.token) res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(result.token)}; Max-Age=21600; Path=/; HttpOnly;${isHttps ? ' Secure;' : ''} SameSite=Lax`); else clearSessionCookie(res);
+      if (result.ok && result.token) res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(result.token)}; Path=/; HttpOnly;${isHttps ? ' Secure;' : ''} SameSite=Lax`); else clearSessionCookie(res);
       const status = result.httpStatus || (result.ok ? 200 : 401);
       delete result.httpStatus;
       if (result.token) delete result.token;
@@ -513,6 +573,7 @@ async function dispatch(db, method, a, req) {
   const tokenAt = i => { const supplied = clean(a[i], 300); return supplied === '__HTTPONLY_SESSION__' || !supplied ? cookieValue(req, 'labapp_session') : supplied; };
   switch (method) {
     case 'getDashboardData': return handlerDashboard();
+    case 'runSystemCheck': return runSystemHealthCheck(db, tokenAt(0));
     case 'recordSuccessfulLogin': { const s = await requireSession(db, tokenAt(0)); return { ok: true, authenticated: true, userId: s.userId, version: VERSION }; }
     case 'logClientActivity': {
       const s = await requireSession(db, tokenAt(0));
@@ -1304,5 +1365,5 @@ async function handlerDashboard() {
   const now = new Date();
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).formatToParts(now);
   const get = t => parts.find(p => p.type === t)?.value || '';
-  return { ok: true, appName: 'LabApp', boardTitle: 'HOAG PATHOLOGY', subtitle: 'SPA Single Page Application', version: VERSION, serverDate: `${get('day')} ${get('month')} ${get('year')}`, serverTime: `${get('hour')}:${get('minute')}:${get('second')} ${get('dayPeriod')}`, serverIso: now.toISOString(), timeZone: TZ };
+  return { ok: true, appName: 'LabPortal - Laboratory Management System', boardTitle: 'HOAG PATHOLOGY', subtitle: 'Single Page Application', version: VERSION, serverDate: `${get('day')} ${get('month')} ${get('year')}`, serverTime: `${get('hour')}:${get('minute')}:${get('second')} ${get('dayPeriod')}`, serverIso: now.toISOString(), timeZone: TZ };
 }

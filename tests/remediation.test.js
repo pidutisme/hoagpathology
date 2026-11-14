@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { calculateBuildId } from '../scripts/build.mjs';
 
 const read = name => fs.readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 
@@ -157,14 +158,101 @@ test('system log retention uses a strict 14-day cutoff and a bounded idempotent 
 
 test('application version is served from package metadata without a service-worker duplicate', () => {
   const pkg = JSON.parse(read('package.json'));
+  const lock = JSON.parse(read('package-lock.json'));
   const dashboard = read('api/dashboard.js');
   const bridge = read('api/bridge.js');
   const login = read('api/login.js');
   const loginState = read('api/login-state.js');
   const serviceWorker = read('sw.js');
-  assert.equal(JSON.parse(read('package-lock.json')).packages[''].version, pkg.version);
+  assert.equal(pkg.name, 'labportal');
+  assert.equal(pkg.version, '3.0.1');
+  assert.equal(lock.name, pkg.name);
+  assert.equal(lock.version, pkg.version);
+  assert.equal(lock.packages[''].name, pkg.name);
+  assert.equal(lock.packages[''].version, pkg.version);
   for (const source of [dashboard, bridge, login, loginState]) {
     assert.match(source, /require\(["'][^"']*package\.json["']\)\.version/);
   }
   assert.doesNotMatch(serviceWorker, /hoagpathology-v\d+\.\d+\.\d+/i);
+});
+
+test('local Build ID is deterministic and changes with deployed content', () => {
+  const html = '<meta name="labportal-build-id" content="BUILD_ID_PENDING"/>';
+  const sourceA = [
+    { path: 'assets/css/app.css', content: 'body{color:#111}' },
+    { path: 'assets/js/app.js', content: 'window.ready=true;' },
+    { path: 'index.html', content: html }
+  ];
+  const idA = calculateBuildId(sourceA);
+  const idARepeat = calculateBuildId([
+    { path: 'index.html', content: html.replace('BUILD_ID_PENDING', idA) },
+    sourceA[1], sourceA[0]
+  ]);
+  const idB = calculateBuildId([
+    { ...sourceA[0], content: 'body{color:#222}' }, sourceA[1], sourceA[2]
+  ]);
+  const buildScript = read('scripts/build.mjs');
+
+  assert.match(idA, /^[A-F0-9]{12}$/);
+  assert.equal(idARepeat, idA);
+  assert.notEqual(idA, idB);
+  assert.doesNotMatch(buildScript, /process\.env\.VERCEL|Date\.now\(|Math\.random\(|fetch\s*\(/i);
+});
+
+test('startup verifies the same-tab session before restoring protected pages', () => {
+  const app = read('assets/js/app.js');
+  const index = read('index.html');
+  const login = read('api/login.js');
+  const checkStart = app.indexOf('function checkStoredSession()');
+  const checkEnd = app.indexOf('function updateResumeSessionButton_()', checkStart);
+  const bootstrap = app.slice(checkStart, checkEnd);
+
+  assert.ok(checkStart >= 0 && checkEnd > checkStart);
+  assert.match(index, /<body class="auth-locked auth-resolving" data-auth-status="AUTH_RESOLVING">/);
+  assert.match(index, /<div aria-hidden="true" class="app">/);
+  assert.match(app, /var AUTH_RESOLVING = 'AUTH_RESOLVING'/);
+  assert.match(app, /hasTabAuthenticated_\(\) && getNavigationType_\(\) === 'reload'/);
+  assert.match(bootstrap, /hoagApiRequest\('loginState', \{ freshSession: !tabAuthenticated \}\)/);
+  assert.match(bootstrap, /unlock\(restoredUser, \{ freshLogin: false, restoredSession: true \}\)/);
+  assert.doesNotMatch(bootstrap, /cachedRestoreUser|restoredSessionFallbackTimer|setTimeout/);
+  assert.doesNotMatch(login, /Max-Age=\$\{SESSION_SECONDS\}/);
+});
+
+test('System Check performs protected read-only backend and Blob checks', () => {
+  const bridge = read('api/bridge.js');
+  const app = read('assets/js/app.js');
+  const start = bridge.indexOf('async function runSystemHealthCheck');
+  const end = bridge.indexOf('export default async function handler', start);
+  const check = bridge.slice(start, end);
+  const uiStart = app.indexOf('ORIGINAL SCRIPT BLOCK: settings-system-check-runtime');
+  const uiEnd = app.indexOf('ORIGINAL SCRIPT BLOCK: inventory-scroll-runtime-fix', uiStart);
+  const ui = app.slice(uiStart, uiEnd);
+
+  assert.ok(start >= 0 && end > start);
+  assert.match(bridge, /case 'runSystemCheck': return runSystemHealthCheck\(db, tokenAt\(0\)\)/);
+  assert.match(check, /await requireAdmin\(db, token\)/);
+  assert.match(check, /from\('app_settings'\)\.select\('id'\)\.limit\(1\)/);
+  assert.match(check, /await list\(\{ prefix: 'transfusion\/', limit: 1 \}\)/);
+  assert.match(check, /checks\.some\(check => check\.status === 'FAIL'\)/);
+  assert.doesNotMatch(check, /\.insert\(|\.update\(|\.delete\(|put\(/);
+  assert.match(ui, /auth\.runSystemCheck\(\)/);
+  assert.doesNotMatch(ui, /localStorage\.setItem|navigator\.onLine|setTimeout\(/);
+});
+
+test('LabPortal metadata is local, consistent, and has no Last Updated field', () => {
+  const index = read('index.html');
+  const manifest = JSON.parse(read('manifest.json'));
+  const pkg = JSON.parse(read('package.json'));
+  const app = read('assets/js/app.js');
+
+  assert.match(index, /<title>LabPortal - Laboratory Management System<\/title>/);
+  assert.match(index, /<strong>App Name<\/strong><span>LabPortal - Laboratory Management System<\/span>/);
+  assert.match(index, /<strong>App Type<\/strong><span>Single Page Application<\/span>/);
+  assert.match(index, /<meta name="labportal-release-version" content="3\.0\.1"\/>/);
+  assert.match(index, /<meta name="labportal-build-id" content="(?:BUILD_ID_PENDING|[A-F0-9]{12})"\/>/);
+  assert.doesNotMatch(index, /Last Updated/i);
+  assert.equal(manifest.name, 'LabPortal - Laboratory Management System');
+  assert.equal(pkg.build.productName, 'LabPortal - Laboratory Management System');
+  assert.match(app, /function renderApplicationMetadata\(\)/);
+  assert.match(app, /meta\[name="labportal-release-version"\]/);
 });

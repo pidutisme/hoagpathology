@@ -1679,7 +1679,8 @@
         date: null,
         greeting: null,
         clock: null,
-        aboutAppVersion: null
+        aboutAppVersion: null,
+        aboutAppBuild: null
       };
       var lastClockTimeText = '';
       var lastClockDateText = '';
@@ -1694,6 +1695,22 @@
         domNodes.greeting = $('displayGreeting');
         domNodes.clock = $('liveClock');
         domNodes.aboutAppVersion = $('aboutAppVersion');
+        domNodes.aboutAppBuild = $('aboutAppBuild');
+      }
+
+      function renderApplicationMetadata() {
+        if (!domNodes.aboutAppVersion || !domNodes.aboutAppBuild) cacheDomNodes();
+        var versionMeta = document.querySelector('meta[name="labportal-release-version"]');
+        var buildMeta = document.querySelector('meta[name="labportal-build-id"]');
+        var appVersion = versionMeta ? cleanText(versionMeta.getAttribute('content')) : '';
+        var buildId = buildMeta ? cleanText(buildMeta.getAttribute('content')) : '';
+        if (!/^\d+\.\d+\.\d+$/.test(appVersion)) appVersion = '—';
+        if (!/^[A-F0-9]{12}$/.test(buildId)) buildId = '—';
+        if (document.documentElement.getAttribute('data-labapp-version') !== appVersion) {
+          document.documentElement.setAttribute('data-labapp-version', appVersion);
+        }
+        setTextIfChanged(domNodes.aboutAppVersion, appVersion);
+        setTextIfChanged(domNodes.aboutAppBuild, buildId);
       }
   
       /* +----------------------------------+
@@ -1755,13 +1772,9 @@
        * + renderDashboard                  +
        * +----------------------------------+ */
       function renderDashboard(data) {
-        if (!domNodes.clock || !domNodes.aboutAppVersion) cacheDomNodes();
+        if (!domNodes.clock || !domNodes.aboutAppVersion || !domNodes.aboutAppBuild) cacheDomNodes();
         setTextIfChanged(domNodes.clock, (data && data.boardTitle) || 'HOAG PATHOLOGY');
-        var appVersion = (data && data.version) || '—';
-        if (document.documentElement.getAttribute('data-labapp-version') !== appVersion) {
-          document.documentElement.setAttribute('data-labapp-version', appVersion);
-        }
-        setTextIfChanged(domNodes.aboutAppVersion, appVersion);
+        renderApplicationMetadata();
         syncServerClock(data || {});
         runClockTick();
       }
@@ -1899,6 +1912,7 @@
       return {
         init: init,
         refreshClock: updateDisplayClock,
+        renderApplicationMetadata: renderApplicationMetadata,
         startClock: startClock,
         stopClock: stopClock
       };
@@ -2171,11 +2185,13 @@
       var TAB_AUTH_KEY = 'labAppTabAuthenticatedV1';
       var pageLifecycleBound = false;
       var pageLifecycleLogoutSent = false;
-      var restoredSessionFallbackTimer = null;
-      var sessionState = 'initializing';
+      var AUTH_RESOLVING = 'AUTH_RESOLVING';
+      var AUTHENTICATED = 'AUTHENTICATED';
+      var UNAUTHENTICATED = 'UNAUTHENTICATED';
+      var sessionState = AUTH_RESOLVING;
 
       function setSessionState_(nextState) {
-        sessionState = String(nextState || 'unauthenticated');
+        sessionState = String(nextState || UNAUTHENTICATED);
         state.authStatus = sessionState;
         if (document.body) {
           document.body.setAttribute('data-auth-status', sessionState);
@@ -2519,9 +2535,7 @@
         state.authPageAccess = state.authRole === 'VISITOR'
           ? normalizeVisitorPageAccessList(user.pageAccess)
           : null;
-        if (state.authUserId) {
-          setSessionState_('authorization-resolved');
-        }
+        if (state.authUserId) setSessionState_(AUTHENTICATED);
         applyVisitorReadOnly_();
         if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.refreshAccessControl === 'function') {
           window.LabApp.Router.refreshAccessControl();
@@ -2884,8 +2898,6 @@
         stopIdleTimers();
         clearIdleWarning();
         stopSessionWatchdog();
-        if (restoredSessionFallbackTimer) window.clearTimeout(restoredSessionFallbackTimer);
-        restoredSessionFallbackTimer = null;
       }
 
       /* +----------------------------------+
@@ -3025,10 +3037,10 @@
         clearLoginTimeout_();
         stopSessionControls();
         setSessionVerifying_(false);
-        setSessionState_('unauthenticated');
+        setSessionState_(UNAUTHENTICATED);
         closeNoAccessModal();
         document.body.classList.add('auth-locked');
-        document.body.classList.remove('auth-ready');
+        document.body.classList.remove('auth-ready', 'auth-resolving');
         Theme.suspendForLogin();
   
         if (nodes.app) nodes.app.setAttribute('aria-hidden', 'true');
@@ -3050,11 +3062,14 @@
       function unlock(user, options) {
         options = options && typeof options === 'object' ? options : {};
         clearLoginTimeout_();
-        setSessionState_('authenticated');
+        setSessionState_(AUTHENTICATED);
         closeNoAccessModal();
         applyUser(user);
+        if (window.LabApp && window.LabApp.Dashboard && typeof window.LabApp.Dashboard.renderApplicationMetadata === 'function') {
+          window.LabApp.Dashboard.renderApplicationMetadata();
+        }
         Theme.activateForApp();
-        document.body.classList.remove('auth-locked');
+        document.body.classList.remove('auth-locked', 'auth-resolving');
         document.body.classList.add('auth-ready');
         startVisitorReadOnlyObserver_();
         applyVisitorReadOnly_();
@@ -3148,79 +3163,41 @@
         if (!active) setSessionBackgroundShell_(false);
       }
 
-      function checkStoredSession(retryAttempt) {
-        /* Deterministic non-blocking session resolution:
-         * 1. Same-tab refresh with cached public user -> unlock immediately and verify in background.
-         * 2. Cold tab or reopened browser -> stay on login screen while checking HttpOnly session cookie
-         *    with a strict timeout so the UI never freezes on "Verifying session...". */
-        retryAttempt = Math.max(0, Number(retryAttempt || 0));
+      function checkStoredSession() {
+        /* Only a same-tab refresh can reuse authentication. The sessionStorage
+         * marker survives reloads, but not a closed tab or terminated app. */
         updateResumeSessionButton_();
-
-        var credentialsTouched = function () {
-          return !!(
-            (nodes.username && String(nodes.username.value || '').length) ||
-            (nodes.password && String(nodes.password.value || '').length) ||
-            (nodes.mfaCode && String(nodes.mfaCode.value || '').length) ||
-            busy
-          );
-        };
-
-        var tabAuthenticated = hasTabAuthenticated_();
-        var cachedRestoreUser = tabAuthenticated ? getStoredPublicUser_() : null;
-
-        if (cachedRestoreUser && !state.authUserId) {
-          setSessionState_('initializing');
-          unlock(cachedRestoreUser, {
-            freshLogin: false,
-            restoredSession: true,
-            deferredSessionVerification: true
-          });
-        } else if (!state.authUserId) {
-          lock('', '');
-          setSessionState_('initializing');
+        var tabAuthenticated = hasTabAuthenticated_() && getNavigationType_() === 'reload';
+        if (!tabAuthenticated) {
+          clearTabAuthenticated_();
+          safeSessionRemove(USER_KEY);
         }
 
-        if (restoredSessionFallbackTimer) {
-          window.clearTimeout(restoredSessionFallbackTimer);
-          restoredSessionFallbackTimer = null;
-        }
-        restoredSessionFallbackTimer = window.setTimeout(function () {
-          restoredSessionFallbackTimer = null;
-          setSessionVerifying_(false);
-          if (!state.authUserId) {
-            setSessionState_('unauthenticated');
-          }
-        }, 6000);
-
+        setSessionState_(AUTH_RESOLVING);
+        document.body.classList.add('auth-resolving');
         setSessionVerifying_(true);
 
-        hoagApiRequest('loginState', { freshSession: false })
+        hoagApiRequest('loginState', { freshSession: !tabAuthenticated })
           .then(function (envelope) {
-            if (restoredSessionFallbackTimer) {
-              window.clearTimeout(restoredSessionFallbackTimer);
-              restoredSessionFallbackTimer = null;
-            }
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               setSessionVerifying_(false);
-              if (credentialsTouched() && !state.authUserId) {
-                setSessionState_('unauthenticated');
-                return;
-              }
-              if (state.authUserId) {
-                forceLockFromServer(
-                  envelope && envelope.error
-                    ? envelope.error
-                    : 'Your secure session has expired. Please sign in again.'
-                );
-              } else {
-                clearStoredSession();
-                setSessionState_('unauthenticated');
-              }
+              clearStoredSession();
+              lock('', '');
               return;
             }
 
-            if (credentialsTouched() && !state.authUserId) {
+            /* A cold tab must be rejected even if a stale or misconfigured
+             * server response unexpectedly claims the shared cookie is valid. */
+            if (!tabAuthenticated) {
               setSessionVerifying_(false);
+              clearStoredSession();
+              lock('', '');
+              return;
+            }
+
+            if (state.authUserId) {
+              setSessionVerifying_(false);
+              forceLockFromServer('Please sign in again to continue.');
               return;
             }
 
@@ -3229,46 +3206,15 @@
             if (!Array.isArray(restoredUser.pageAccess) && Array.isArray(envelope.pageAccess)) {
               restoredUser.pageAccess = envelope.pageAccess.slice();
             }
-
-            var hadUser = !!state.authUserId;
-            applyUser(restoredUser);
             setSessionBackgroundShell_(false);
             setSessionVerifying_(false);
-
-            if (!hadUser) {
-              unlock(restoredUser, {
-                freshLogin: !tabAuthenticated,
-                restoredSession: tabAuthenticated
-              });
-            } else if (nodes.greeting) {
-              var hour = Number(getAppNowParts().hour);
-              var greeting = hour < 12 ? 'Good Morning' : (hour < 18 ? 'Good Afternoon' : 'Good Evening');
-              nodes.greeting.textContent = greeting + ', ' + (state.authUserDisplayName || 'Team Member') + ' 👋';
-            }
+            unlock(restoredUser, { freshLogin: false, restoredSession: true });
           })
           .catch(function (error) {
-            if (restoredSessionFallbackTimer) {
-              window.clearTimeout(restoredSessionFallbackTimer);
-              restoredSessionFallbackTimer = null;
-            }
             console.warn('Initial session verification failed:', error);
-            if (retryAttempt < 2 && tabAuthenticated && state.authUserId) {
-              var delay = [1500, 3500][retryAttempt] || 3500;
-              window.setTimeout(function () { checkStoredSession(retryAttempt + 1); }, delay);
-              return;
-            }
             setSessionVerifying_(false);
-            if (!state.authUserId) {
-              setSessionState_('unauthenticated');
-              return;
-            }
-            if (!credentialsTouched() && state.authUserId) {
-              setSystemToast(
-                'Session Check Delayed',
-                'Session verification is temporarily unavailable. Your current session remains active.',
-                4000
-              );
-            }
+            clearStoredSession();
+            lock('Unable to verify the saved session. Please sign in again when connected.', 'error');
           });
       }
 
@@ -3510,16 +3456,15 @@ hoagApiRequest('logout', {
        * +----------------------------------+ */
       function init() {
         cacheDomNodes();
-        setSessionState_('initializing');
+        setSessionState_(AUTH_RESOLVING);
+        document.body.classList.add('auth-resolving');
         /* Refresh-safe session: explicit LOG OUT is the only client action that
          * revokes the server session. Do not revoke it from pagehide/beforeunload. */
         if (nodes.greeting && nodes.greeting.textContent.indexOf('Verifying') >= 0) {
           nodes.greeting.textContent = 'HOAG PATHOLOGY';
         }
-        // Remove only legacy credential material. The public same-tab identity is
-        // intentionally preserved so an already-authenticated user can render the
-        // dashboard immediately while the HttpOnly session is verified in the
-        // background.
+        // Remove legacy credential material. The server verifies the HttpOnly
+        // cookie before unlocking the app or restoring a route.
         safeStorageRemove(TOKEN_KEY);
         Theme.suspendForLogin();
   
@@ -3614,6 +3559,9 @@ hoagApiRequest('logout', {
         },
         getSessionState: function () {
           return sessionState;
+        },
+        runSystemCheck: function () {
+          return hoagApiRequest('action', { method: 'runSystemCheck', args: [getStoredToken()] });
         },
         refreshVisitorReadOnly: applyVisitorReadOnly_
       };
@@ -8850,6 +8798,7 @@ function exportMonthlySchedulePdfs() {
       function cacheDom() {
         nodes.standardPanel = $('settingsStandardPanel');
         nodes.adminPanel = $('settingsAdminPanel');
+        nodes.systemCheckButton = $('settingsSystemCheckButton');
         nodes.workspaceTitle = $('adminWorkspaceTitle');
         nodes.workspaceSubtitle = $('adminWorkspaceSubtitle');
         nodes.tabSettingsBtn = $('adminTabSettingsBtn');
@@ -8896,6 +8845,14 @@ function exportMonthlySchedulePdfs() {
        * +----------------------------------+ */
       function isAdmin() {
         return isAdminRole();
+      }
+
+      function syncSystemCheckAccess() {
+        if (!nodes.systemCheckButton) nodes.systemCheckButton = $('settingsSystemCheckButton');
+        if (!nodes.systemCheckButton) return;
+        var allowed = isAdmin();
+        nodes.systemCheckButton.hidden = !allowed;
+        nodes.systemCheckButton.setAttribute('aria-hidden', String(!allowed));
       }
   
       /* +----------------------------------+
@@ -8960,8 +8917,9 @@ function exportMonthlySchedulePdfs() {
       function renderMode() {
         if (!nodes.standardPanel && !nodes.adminPanel) cacheDom();
         var admin = isAdmin();
-        if (nodes.standardPanel) nodes.standardPanel.hidden = admin;
+        if (nodes.standardPanel) nodes.standardPanel.hidden = false;
         if (nodes.adminPanel) nodes.adminPanel.hidden = !admin;
+        syncSystemCheckAccess();
         if (admin) {
           setAdminWorkspaceView(currentAdminView);
           if (!lastAdminData) loadAdminData(false);
@@ -11442,33 +11400,87 @@ if ("serviceWorker" in navigator) {
 
 /* ===== ORIGINAL SCRIPT BLOCK: settings-system-check-runtime ===== */
 (function(){
+  function readMeta(name){
+    var node=document.querySelector('meta[name="'+name+'"]');
+    return node?String(node.getAttribute('content')||'').trim():'';
+  }
+  function addResultRow(output,name,status,message){
+    var row=document.createElement('div');
+    row.className='system-check-row';
+    var label=document.createElement('span');
+    label.textContent=String(name||'Check').slice(0,80);
+    var value=document.createElement('span');
+    value.className='system-check-status';
+    value.textContent=String(status||'WARNING').slice(0,40);
+    if(['PASS','WARNING','FAIL'].indexOf(value.textContent)>=0) value.dataset.status=value.textContent;
+    row.append(label,value);
+    output.appendChild(row);
+    if(message){
+      var detail=document.createElement('div');
+      detail.className='system-check-message';
+      detail.textContent=String(message).slice(0,240);
+      output.appendChild(detail);
+    }
+  }
+  function renderResults(output,summary,overall,checks,version,buildId){
+    output.replaceChildren();
+    var heading=document.createElement('div');
+    heading.className='system-check-heading';
+    var title=document.createElement('strong');
+    title.textContent='System Check';
+    var status=document.createElement('span');
+    status.className='system-check-status';
+    status.textContent=overall;
+    if(['PASS','WARNING','FAIL'].indexOf(overall)>=0) status.dataset.status=overall;
+    heading.append(title,status);
+    output.appendChild(heading);
+    (Array.isArray(checks)?checks:[]).forEach(function(check){
+      if(!check||typeof check!=='object')return;
+      addResultRow(output,check.name,check.status,check.message);
+    });
+    addResultRow(output,'Version',version||'Unavailable','');
+    addResultRow(output,'Build',buildId||'Unavailable','');
+    summary.textContent=overall==='PASS'?'SYSTEM OK':(overall==='WARNING'?'SYSTEM WARNING':'SYSTEM FAIL');
+    output.hidden=false;
+  }
   function bindSystemCheck(){
     var btn=document.getElementById('settingsSystemCheckButton');
     if(!btn || btn.dataset.systemCheckBound==='1') return;
     btn.dataset.systemCheckBound='1';
+    var summary=document.getElementById('settingsSystemCheckSummary');
+    var output=document.getElementById('settingsSystemCheckResults');
     btn.addEventListener('click', function(event){
       event.preventDefault();
       event.stopPropagation();
       if(btn.dataset.checking==='1') return;
+      var auth=window.LabApp&&window.LabApp.Auth;
+      var user=auth&&typeof auth.getUser==='function'?auth.getUser():null;
+      if(!user||String(user.role||'').toUpperCase()!=='ADMIN'){
+        btn.hidden=true;
+        return;
+      }
+      if(!summary||!output||typeof auth.runSystemCheck!=='function')return;
       btn.dataset.checking='1';
       btn.disabled=true;
-      var copy=btn.querySelector('.settings-extra-copy span');
-      var original=copy ? copy.textContent : 'Check app, storage & connection';
-      if(copy) copy.textContent='Checking…';
-      var checks = {
-        app: !!window.LabApp,
-        storage: (function(){ try { var k='__labapp_check__'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; } catch(e){ return false; } })(),
-        connection: navigator.onLine !== false,
-      };
-      window.setTimeout(function(){
-        var ok = checks.app && checks.storage && checks.connection;
-        if(copy) copy.textContent = ok ? 'System OK ✓' : 'Check completed';
+      summary.textContent='Checking live services…';
+      output.replaceChildren();
+      output.hidden=false;
+      var localVersion=readMeta('labportal-release-version');
+      var rawBuild=readMeta('labportal-build-id');
+      var buildId=/^[A-F0-9]{12}$/.test(rawBuild)?rawBuild:'Unavailable';
+      auth.runSystemCheck().then(function(result){
+        if(!result||result.ok!==true||!Array.isArray(result.checks))throw new Error('Health check response was incomplete.');
+        var overall=['PASS','WARNING','FAIL'].indexOf(result.overall)>=0?result.overall:(result.healthy===true?'PASS':'FAIL');
+        var checks=result.checks.slice();
+        if(buildId==='Unavailable'&&overall==='PASS')overall='WARNING';
+        if(buildId==='Unavailable')checks.push({name:'Build ID',status:'WARNING',message:'This application bundle has no generated local Build ID.'});
+        renderResults(output,summary,overall,checks,localVersion,buildId);
+      }).catch(function(){
+        renderResults(output,summary,'FAIL',[{name:'Application/backend',status:'FAIL',message:'Unable to complete the authorized health check.'}],localVersion,buildId);
+      }).finally(function(){
         btn.dataset.checking='0';
-        window.setTimeout(function(){
-          if(copy) copy.textContent=original;
-          btn.disabled=false;
-        }, 1800);
-      }, 350);
+        btn.disabled=false;
+      });
     });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindSystemCheck, {once:true});
