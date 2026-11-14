@@ -2014,6 +2014,13 @@
       var SESSION_CHECK_MS = 10 * 60 * 1000;
       var LOGIN_WAIT_NOTICE_MS = 12000;
       var LOGIN_TIMEOUT_MS = 60000;
+      /* A saved same-tab identity is non-secret and already contains the last
+       * server-issued page assignment. Do not leave the whole application
+       * visually blocked when a login-state request is slow. The server check
+       * still runs and remains authoritative; this only prevents an indefinite
+       * startup spinner on a healthy existing session. */
+      var RESTORED_SESSION_FALLBACK_MS = 4500;
+      var restoredSessionFallbackTimer = null;
       var nodes = {};
       var busy = false;
       var changeBusy = false;
@@ -2692,6 +2699,8 @@
         stopIdleTimers();
         clearIdleWarning();
         stopSessionWatchdog();
+        if (restoredSessionFallbackTimer) window.clearTimeout(restoredSessionFallbackTimer);
+        restoredSessionFallbackTimer = null;
       }
 
       /* +----------------------------------+
@@ -2962,8 +2971,27 @@
           return;
         }
         setSessionVerifying_(true);
+
+        /* If the server is temporarily slow, unlock from the last server-issued
+         * public identity after a short bounded delay. This does NOT create or
+         * extend a session and does NOT bypass the server check. When the real
+         * response arrives it immediately replaces the cached identity; if the
+         * session is actually invalid, the normal lock path still wins. */
+        var cachedRestoreUser = getStoredPublicUser_();
+        if (cachedRestoreUser && retryAttempt === 0) {
+          if (restoredSessionFallbackTimer) window.clearTimeout(restoredSessionFallbackTimer);
+          restoredSessionFallbackTimer = window.setTimeout(function () {
+            restoredSessionFallbackTimer = null;
+            if (!hasTabAuthenticated_() || !state.authUserId) {
+              unlock(cachedRestoreUser, { freshLogin: false, restoredSession: true, deferredSessionVerification: true });
+            }
+          }, RESTORED_SESSION_FALLBACK_MS);
+        }
+
         hoagApiRequest('loginState', { freshSession: false })
           .then(function (envelope) {
+            if (restoredSessionFallbackTimer) window.clearTimeout(restoredSessionFallbackTimer);
+            restoredSessionFallbackTimer = null;
             if (!envelope || envelope.ok === false || !envelope.authenticated) {
               setSessionVerifying_(false);
               if (credentialsTouched()) return;
@@ -5069,7 +5097,17 @@ hoagApiRequest('logout', {
         saveLastModule(normalizedName, normalizedName === 'TRANSFUSION' ? (state.selectedModuleYear || currentYear()) : null);
         if (normalizedName === 'INVENTORY' && typeof Inventory !== 'undefined') {
           if (typeof Router !== 'undefined' && Router.rememberPage) Router.rememberPage('inventory');
-          Inventory.open();
+          try {
+            Inventory.open();
+          } catch (error) {
+            console.error('INVENTORY open failed:', error);
+            var inventoryPage = $('inventory');
+            if (inventoryPage) {
+              document.querySelectorAll('.page.active').forEach(function (page) { page.classList.remove('active'); });
+              inventoryPage.classList.add('active');
+              if (typeof Router !== 'undefined' && Router.renderBackButton) Router.renderBackButton('inventory');
+            }
+          }
           return;
         }
         if (normalizedName === 'TRANSFUSION' && typeof Transfusion !== 'undefined') {
