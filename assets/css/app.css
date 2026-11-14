@@ -11112,3 +11112,39 @@ body.auth-resolving #authResolvingPanel {
     overflow: visible;
   }
 }
+
+/* =========================================================
+   TBIS102A WORKSPACE — V6
+   Structure mirrors the existing OUTSOURCE / NOTIFICATION /
+   TRANSFUSION workspaces while preserving the TBIS terminology.
+   ========================================================= */
+.tbis102a-active-grid{display:block!important;width:100%;}
+.tbis102a-workspace{width:100%;}
+.tbis102a-grid-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;width:100%;}
+.tbis102a-card{width:100%;min-width:0;}
+.tbis102a-form{display:block;}
+.tbis102a-section-title{margin:18px 0 10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(150,165,190,.22);font-weight:800;letter-spacing:.04em;font-size:12px;color:#24324a;}
+.tbis102a-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;}
+.tbis102a-field{min-width:0;}
+.tbis102a-field label{display:block;font-size:10px;font-weight:800;letter-spacing:.035em;margin:0 0 5px;color:#526078;text-transform:uppercase;}
+.tbis102a-field input,.tbis102a-field select,.tbis102a-field textarea{width:100%;box-sizing:border-box;border:1px solid rgba(145,160,185,.28);border-radius:10px;background:rgba(248,250,253,.88);padding:9px 10px;font:inherit;font-size:12px;color:#24324a;outline:none;}
+.tbis102a-field input:focus,.tbis102a-field select:focus,.tbis102a-field textarea:focus{border-color:rgba(41,123,235,.48);box-shadow:0 0 0 3px rgba(41,123,235,.08);}
+.tbis102a-sample-card{margin-top:12px;padding:12px;border:1px solid rgba(145,160,185,.25);border-radius:14px;background:rgba(247,249,252,.56);}
+.tbis102a-sample-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#24324a;font-size:12px;}
+.tbis102a-sample-head span{font-size:9px;color:#718097;letter-spacing:.06em;font-weight:800;}
+.tbis102a-wide{grid-column:1/-1;}
+.tbis102a-form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+.tbis102a-table-wrap{overflow:auto;}
+.tbis102a-table{min-width:1450px;}
+.tbis102a-table th,.tbis102a-table td{white-space:nowrap;}
+.tbis102a-table td strong{font-weight:800;}
+.tbis102a-details-dialog{max-width:1100px;max-height:88vh;overflow:auto;}
+.tbis102a-detail-meta{font-size:11px;color:#66748a;margin:5px 0 14px;}
+.tbis102a-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:14px;}
+.tbis102a-detail-grid>div{padding:9px 10px;border-radius:10px;background:rgba(245,248,252,.8);border:1px solid rgba(145,160,185,.18);}
+.tbis102a-detail-grid label{display:block;font-size:9px;text-transform:uppercase;font-weight:800;color:#718097;margin-bottom:4px;}
+.tbis102a-detail-grid strong{font-size:11px;color:#24324a;word-break:break-word;}
+.tbis102a-detail-samples section{margin-top:12px;padding:12px;border-radius:13px;border:1px solid rgba(145,160,185,.2);}
+.tbis102a-detail-samples h4{margin:0 0 10px;font-size:12px;color:#24324a;}
+@media (max-width:1100px){.tbis102a-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.tbis102a-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:640px){.tbis102a-grid,.tbis102a-detail-grid{grid-template-columns:1fr;}.tbis102a-wide{grid-column:auto;}.tbis102a-form-actions{flex-direction:column;}.tbis102a-form-actions button{width:100%;}}
