@@ -5610,24 +5610,27 @@ hoagApiRequest('logout', {
             '<section class="notification-card notification-record-card tbis102a-card">' +
             '<div class="notification-card-head"><h3>REGISTERED TBIS102A</h3><span id="tbis102aTotal">0 TOTAL</span></div>' +
             '<div class="notification-summary tbis102a-summary">' +
-            '<div class="notification-stat"><div class="num" id="tbisStatTotal">0</div><div class="lbl">Total</div></div>' +
-            '<div class="notification-stat stat-no-afb"><div class="num" id="tbisStatNoAfb">0</div><div class="lbl">No AFB Seen</div></div>' +
-            '<div class="notification-stat stat-scanty"><div class="num" id="tbisStatScanty">0</div><div class="lbl">Scanty</div></div>' +
-            '<div class="notification-stat stat-pos"><div class="num" id="tbisStatPositive">0</div><div class="lbl">1+ / 2+ / 3+</div></div>' +
+            '<div class="notification-stat"><div class="num" id="tbisStatTotal">0</div><div class="lbl">Cases</div></div>' +
+            '<div class="notification-stat stat-no-afb"><div class="num" id="tbisStatNoAfb">0</div><div class="lbl">No AFB Cases</div></div>' +
+            '<div class="notification-stat stat-scanty"><div class="num" id="tbisStatScanty">0</div><div class="lbl">Scanty Cases</div></div>' +
+            '<div class="notification-stat stat-pos"><div class="num" id="tbisStatPositive">0</div><div class="lbl">Positive Cases</div></div>' +
             '</div>' +
             '<div class="notification-toolbar tbis102a-toolbar"><input id="tbisSearch" type="search" placeholder="Search name / IC / barcode / lab no..." aria-label="Search TBIS102A records">' +
             '<select id="tbisYearFilter" aria-label="Filter by year"><option value="ALL">All years</option></select>' +
             '<select id="tbisMonthFilter" aria-label="Filter by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
             '<div class="outsource-table-wrap notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table rt-responsive-table"><thead><tr>' +
-            '<th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>IC / ID</th><th>Unit</th><th>Patient</th><th>Sample</th><th>SPUTUM AFB</th><th>Result</th><th>Actions</th>' +
+            '<th>BIL</th><th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>IC / ID</th><th>Unit</th><th>Patient</th><th>Sample</th><th>Sample Quality</th><th>SPUTUM AFB</th><th>Result</th><th>Release Date</th><th>TAT</th><th>Validated By</th><th>Reviewed By</th><th>Actions</th>' +
             '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
             '<div class="outsource-pager tbis102a-pager" id="tbisPager">Showing 0–0 of 0</div>' +
             '</section></div></div>';
         }
 
         function matches(r, search, year, month) {
-          var s = getSingleSample(r);
-          var hay = [r.date, r.labNo, r.barcode, r.name, r.idNo, r.unit, r.patient, s.sample, s.quality, s.afb, s.result, s.scanty, s.releaseDate, s.tat, s.staff, s.review].join(' ').toLowerCase();
+          var samples = Array.isArray(r.samples) && r.samples.length ? r.samples : [getSingleSample(r)];
+          var sampleText = samples.map(function (s) {
+            return [s && s.sample, s && s.quality, s && s.afb, s && s.result, s && s.scanty, s && s.releaseDate, s && s.tat, s && s.staff, s && s.review].join(' ');
+          }).join(' ');
+          var hay = [r.bil, r.date, r.labNo, r.barcode, r.name, r.idNo, r.unit, r.patient, sampleText].join(' ').toLowerCase();
           if (search && hay.indexOf(search.toLowerCase()) === -1) return false;
           if (year !== 'ALL' && String(r.date || '').slice(0, 4) !== year) return false;
           if (month !== 'ALL' && String(r.date || '').slice(5, 7) !== month) return false;
@@ -5646,7 +5649,9 @@ hoagApiRequest('logout', {
           var filtered = allRows.filter(function (r) {
             return matches(r, search, year, month);
           }).sort(function (a, b) {
-            return String(b.date || b.createdAt || '').localeCompare(String(a.date || a.createdAt || ''));
+            var dateCompare = String(b.date || b.createdAt || '').localeCompare(String(a.date || a.createdAt || ''));
+            if (dateCompare !== 0) return dateCompare;
+            return Number(b.bil || 0) - Number(a.bil || 0);
           });
 
           var total = allRows.length;
@@ -5654,15 +5659,15 @@ hoagApiRequest('logout', {
           var scantyCount = 0;
           var positiveCount = 0;
           allRows.forEach(function (r) {
-            var s = getSingleSample(r);
-            var res = String(s.result || '').trim().toUpperCase();
-            if (res === 'NO AFB SEEN') noAfb += 1;
-            else if (res === 'SCANTY') scantyCount += 1;
-            else if (res === '1+' || res === '2+' || res === '3+') positiveCount += 1;
+            var samples = Array.isArray(r.samples) && r.samples.length ? r.samples : [getSingleSample(r)];
+            var results = samples.map(function (s) { return String(s && s.result || '').trim().toUpperCase(); });
+            if (results.indexOf('NO AFB SEEN') >= 0) noAfb += 1;
+            if (results.indexOf('SCANTY') >= 0) scantyCount += 1;
+            if (results.some(function (res) { return res === '1+' || res === '2+' || res === '3+'; })) positiveCount += 1;
           });
 
           var totalEl = document.getElementById('tbis102aTotal');
-          if (totalEl) totalEl.textContent = total + ' TOTAL';
+          if (totalEl) totalEl.textContent = total + ' CASES';
           ['tbisStatTotal', 'tbisStatNoAfb', 'tbisStatScanty', 'tbisStatPositive'].forEach(function (id, i) {
             var el = document.getElementById(id);
             if (el) el.textContent = String([total, noAfb, scantyCount, positiveCount][i]);
@@ -5689,28 +5694,50 @@ hoagApiRequest('logout', {
           var visible = filtered.slice(start, start + TBIS102A_PAGE_SIZE);
 
           body.innerHTML = visible.map(function (r) {
-            var s = getSingleSample(r);
-            var sampleDisplay = [s.sample, s.quality].filter(Boolean).join(' · ') || '—';
-            var resultLabel = formatResultDisplay(s);
-            var pillClass = getResultPillClass(s);
+            var samples = Array.isArray(r.samples) && r.samples.length
+              ? r.samples.slice(0, 3)
+              : [getSingleSample(r)];
+            samples = samples.length ? samples : [{}];
+
             var canModify = canModifyRecord(r);
-            return '<tr class="outsource-data-row" data-id="' + outsourceEsc(r.id) + '">' +
-              '<td>' + outsourceEsc(r.date || '—') + '</td>' +
-              '<td>' + outsourceEsc(r.labNo || '—') + '</td>' +
-              '<td>' + outsourceEsc(r.barcode || '—') + '</td>' +
-              '<td><strong>' + outsourceEsc(r.name || '—') + '</strong></td>' +
-              '<td>' + outsourceEsc(r.idNo || '—') + '</td>' +
-              '<td>' + outsourceEsc(r.unit || '—') + '</td>' +
-              '<td>' + outsourceEsc(r.patient || '—') + '</td>' +
-              '<td>' + outsourceEsc(sampleDisplay) + '</td>' +
-              '<td>' + outsourceEsc(String(s.afb || 'X1').toUpperCase()) + '</td>' +
-              '<td class="outsource-result"><span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span></td>' +
-              '<td class="outsource-actions-cell"><div class="outsource-actions">' +
-                '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
-                '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit" aria-label="Edit" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
-                '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="Delete" aria-label="Delete" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
-              '</div></td>' +
+            var bil = r.bil || '—';
+            var caseCells = [
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell tbis-bil-cell">' + outsourceEsc(bil) + '</td>',
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell">' + outsourceEsc(r.date || '—') + '</td>',
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell">' + outsourceEsc(r.labNo || '—') + '</td>',
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell">' + outsourceEsc(r.barcode || '—') + '</td>',
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell"><strong>' + outsourceEsc(r.name || '—') + '</strong></td>',
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell">' + outsourceEsc(r.idNo || '—') + '</td>',
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell">' + outsourceEsc(r.unit || '—') + '</td>',
+              '<td rowspan="' + samples.length + '" class="tbis-case-cell">' + outsourceEsc(r.patient || '—') + '</td>'
+            ].join('');
+
+            var actionCell = '<td rowspan="' + samples.length + '" class="outsource-actions-cell tbis-case-cell"><div class="outsource-actions">' +
+              '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
+              '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit" aria-label="Edit" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
+              '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="Delete" aria-label="Delete" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
+              '</div></td>';
+
+            return samples.map(function (s, sampleIndex) {
+              var sampleDisplay = s.sample || '—';
+              var qualityDisplay = s.quality || '—';
+              var afbDisplay = String(s.afb || 'X1').toUpperCase();
+              var resultLabel = formatResultDisplay(s);
+              var pillClass = getResultPillClass(s);
+              var sampleCells = '<td>' + outsourceEsc(sampleDisplay) + '</td>' +
+                '<td>' + outsourceEsc(qualityDisplay) + '</td>' +
+                '<td><strong>' + outsourceEsc(afbDisplay) + '</strong></td>' +
+                '<td class="outsource-result"><span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span></td>' +
+                '<td>' + outsourceEsc(s.releaseDate || '—') + '</td>' +
+                '<td>' + outsourceEsc(s.tat || '—') + '</td>' +
+                '<td>' + outsourceEsc(s.staff || '—') + '</td>' +
+                '<td>' + outsourceEsc(s.review || '—') + '</td>';
+              return '<tr class="outsource-data-row tbis-case-row' + (sampleIndex > 0 ? ' tbis-sample-row' : ' tbis-case-first-row') + '" data-id="' + outsourceEsc(r.id) + '">' +
+                (sampleIndex === 0 ? caseCells : '') +
+                sampleCells +
+                (sampleIndex === 0 ? actionCell : '') +
               '</tr>';
+            }).join('');
           }).join('');
 
           var empty = document.getElementById('tbisEmpty');
@@ -5722,14 +5749,14 @@ hoagApiRequest('logout', {
           var pager = document.getElementById('tbisPager');
           if (pager) {
             var rangeText = filtered.length
-              ? 'Showing ' + (start + 1) + '–' + Math.min(start + visible.length, filtered.length) + ' of ' + filtered.length
-              : 'Showing 0–0 of 0';
+              ? 'Showing cases ' + (start + 1) + '–' + Math.min(start + visible.length, filtered.length) + ' of ' + filtered.length
+              : 'Showing cases 0–0 of 0';
             if (pages > 1) {
               pager.innerHTML = '<span>' + rangeText + '</span>' +
                 '<div class="tbis102a-pager-btns">' +
-                  '<button type="button" class="outsource-mini" id="tbisPagePrev"' + (page <= 1 ? ' disabled' : '') + '>‹ Prev</button>' +
-                  '<span class="tbis102a-page-indicator">' + page + ' / ' + pages + '</span>' +
-                  '<button type="button" class="outsource-mini" id="tbisPageNext"' + (page >= pages ? ' disabled' : '') + '>Next ›</button>' +
+                '<button type="button" class="outsource-mini" id="tbisPagePrev"' + (page <= 1 ? ' disabled' : '') + '>‹ Prev</button>' +
+                '<span class="tbis102a-page-indicator">' + page + ' / ' + pages + '</span>' +
+                '<button type="button" class="outsource-mini" id="tbisPageNext"' + (page >= pages ? ' disabled' : '') + '>Next ›</button>' +
                 '</div>';
               var prevBtn = document.getElementById('tbisPagePrev');
               var nextBtn = document.getElementById('tbisPageNext');
@@ -5760,12 +5787,12 @@ hoagApiRequest('logout', {
                 showSaveError('You can only delete TBIS102A records created by your own account.');
                 return;
               }
-              var s = getSingleSample(r || {});
+              var samples = Array.isArray(r && r.samples) ? r.samples : [];
               var itemLabel = r && r.name ? String(r.name) : 'this patient';
-              var sampleLabel = [r && r.date, r && r.labNo, formatResultDisplay(s)].filter(Boolean).join(' · ');
+              var sampleLabel = [r && r.date, r && r.bil ? 'BIL ' + r.bil : '', samples.length ? samples.map(function (s) { return String(s && s.afb || '').toUpperCase(); }).join('/') : ''].filter(Boolean).join(' · ');
               requestAppConfirm(
                 'DELETE TBIS102A RECORD?',
-                'Delete TBIS102A record for ' + itemLabel + (sampleLabel ? ' · ' + sampleLabel : '') + '? This cannot be undone.',
+                'Delete TBIS102A case for ' + itemLabel + (sampleLabel ? ' · ' + sampleLabel : '') + '? This cannot be undone.',
                 function () {
                   b.disabled = true;
                   showSaveError('');
@@ -5777,23 +5804,11 @@ hoagApiRequest('logout', {
                       rows = rows.filter(function (x) { return String(x.id) !== rid; });
                       if (String(editId || '') === rid) clearForm();
                       renderRows();
-                      if (typeof setSystemToast === 'function') {
-                        setSystemToast('TBIS102A DELETED', 'The record was removed successfully.', 2200);
-                      }
-                      return loadRecords(true).then(function () {
-                        if (rows.some(function (x) { return String(x.id) === rid; })) {
-                          throw new Error('Supabase confirmed the delete request, but the record still appears in the refreshed list.');
-                        }
-                      });
                     })
                     .catch(function (error) {
                       console.error('TBIS102A delete failed:', error);
-                      var msg = error && error.message ? error.message : 'Unable to delete TBIS102A record.';
-                      showSaveError(msg);
-                      if (typeof setSystemToast === 'function') setSystemToast('DELETE FAILED', msg, 3200);
-                    })
-                    .finally(function () {
-                      if (b && b.isConnected) b.disabled = false;
+                      showSaveError(error && error.message ? error.message : 'Unable to delete TBIS102A record.');
+                      b.disabled = false;
                     });
                 }
               );
@@ -5801,62 +5816,7 @@ hoagApiRequest('logout', {
           });
         }
 
-        function openDetails(id) {
-          var r = records().find(function (x) { return String(x.id) === String(id); });
-          if (!r) return;
-          var s = getSingleSample(r);
-          var old = document.getElementById('tbis102aDetailsModal');
-          if (old) old.remove();
-
-          var fields = [
-            ['DATE', r.date || '—'],
-            ['LAB NO.', r.labNo || '—'],
-            ['BARCODE', r.barcode || '—'],
-            ['NAME', r.name || '—'],
-            ['IC / ID NO.', r.idNo || '—'],
-            ['UNIT', r.unit || '—'],
-            ['PATIENT', r.patient || '—'],
-            ['SAMPLE', s.sample || '—'],
-            ['SAMPLE QUALITY', s.quality || '—'],
-            ['SPUTUM AFB', String(s.afb || 'X1').toUpperCase()],
-            ['RESULT', formatResultDisplay(s)],
-            ['RELEASE DATE', s.releaseDate || '—'],
-            ['TAT', s.tat ? s.tat + ' hrs' : '—'],
-            ['VALIDATED BY', s.staff || '—'],
-            ['REVIEWED BY', s.review || '—']
-          ];
-
-          var modal = document.createElement('div');
-          modal.id = 'tbis102aDetailsModal';
-          modal.className = 'outsource-result-modal tbis102a-details-modal';
-          modal.innerHTML = '<div class="outsource-result-dialog outsource-detail-dialog tbis102a-details-dialog" role="dialog" aria-modal="true" aria-label="TBIS102A Record Details">' +
-            '<button type="button" class="outsource-result-close" aria-label="Close">×</button>' +
-            '<div class="outsource-modal-kicker">TBIS102A RECORD</div>' +
-            '<h2>' + outsourceEsc(r.name || 'PATIENT RECORD') + '</h2>' +
-            '<div class="outsource-detail-grid tbis102a-detail-grid">' +
-            fields.map(function (pair) {
-              return '<div class="outsource-detail-item"><label>' + outsourceEsc(pair[0]) + '</label><div>' + outsourceEsc(pair[1]) + '</div></div>';
-            }).join('') +
-            '</div>' +
-            '<div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary">CLOSE</button></div>' +
-            '</div>';
-
-          document.body.appendChild(modal);
-          modal.hidden = false;
-          var close = function () {
-            document.removeEventListener('keydown', onKey);
-            modal.remove();
-          };
-          var onKey = function (e) {
-            if (e.key === 'Escape') close();
-          };
-          document.addEventListener('keydown', onKey);
-          modal.addEventListener('click', function (e) {
-            if (e.target === modal || e.target.closest('.outsource-result-close') || e.target.closest('.outsource-btn.secondary')) close();
-          });
-        }
-
-        function submit(e) {
+function submit(e) {
           if (e && e.preventDefault) e.preventDefault();
           if (saving) return Promise.resolve(null);
           if (typeof isVisitorAccessRestricted === 'function' && isVisitorAccessRestricted()) {
@@ -5917,7 +5877,7 @@ hoagApiRequest('logout', {
           showSaveError('');
 
           var sample = {
-            afb: val('tbSputumAfb') || 'X1',
+            afb: (val('tbSputumAfb') || 'X1').toUpperCase(),
             sample: val('tbSample'),
             quality: val('tbQuality'),
             result: resultValue,
@@ -5937,8 +5897,22 @@ hoagApiRequest('logout', {
             ? String(existing.createdBy)
             : String(state.authUserId || state.authUserDisplayName || '');
 
+          var mergedSamples = existing && Array.isArray(existing.samples)
+            ? existing.samples.slice(0, 3).map(function (item) { return Object.assign({}, item); })
+            : [];
+          var selectedAfb = String(sample.afb || 'X1').toUpperCase();
+          var selectedIndex = mergedSamples.findIndex(function (item) {
+            return String(item && item.afb || '').toUpperCase() === selectedAfb;
+          });
+          if (selectedIndex >= 0) mergedSamples[selectedIndex] = Object.assign({}, mergedSamples[selectedIndex], sample);
+          else mergedSamples.push(sample);
+          mergedSamples = mergedSamples.slice(0, 3).sort(function (a, b) {
+            return String(a && a.afb || 'X1').localeCompare(String(b && b.afb || 'X1'));
+          });
+
           var row = {
             id: targetId,
+            bil: existing && existing.bil ? String(existing.bil) : '',
             date: date,
             labNo: val('tbLabNo'),
             barcode: val('tbBarcode'),
@@ -5946,7 +5920,7 @@ hoagApiRequest('logout', {
             idNo: val('tbIdNo'),
             unit: val('tbUnit'),
             patient: val('tbPatient'),
-            samples: [sample],
+            samples: mergedSamples,
             createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString(),
             createdBy: creator
           };
@@ -6008,6 +5982,7 @@ hoagApiRequest('logout', {
             });
         }
 
+        
         function render() {
           var grid = $('moduleYearGrid'), title = $('moduleYearsTitle'), desc = $('moduleYearsDesc');
           if (!grid || !title || !desc) return;

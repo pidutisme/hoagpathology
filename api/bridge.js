@@ -348,38 +348,55 @@ function normalizeTbis102aRecord(raw, existing, userId) {
   const previous = existing && typeof existing === 'object' ? existing : {};
   const id = clean(source.id || previous.id, 160);
   if (!id) fail('TBIS102A record ID is required.');
-  const samples = Array.isArray(source.samples) ? source.samples : [];
-  const sample = samples[0] && typeof samples[0] === 'object' ? samples[0] : {};
+
+  const incomingSamples = Array.isArray(source.samples) ? source.samples : [];
+  const previousSamples = Array.isArray(previous.samples) ? previous.samples : [];
+  const mergedSamples = previousSamples.map(sample => ({ ...(sample || {}) }));
+
+  incomingSamples.slice(0, 3).forEach(incoming => {
+    if (!incoming || typeof incoming !== 'object') return;
+    const afb = clean(incoming.afb || 'x1', 20).toLowerCase();
+    const index = mergedSamples.findIndex(sample => clean(sample && sample.afb || '', 20).toLowerCase() === afb);
+    if (index >= 0) mergedSamples[index] = { ...mergedSamples[index], ...incoming };
+    else mergedSamples.push({ ...incoming, afb });
+  });
+
+  const samples = mergedSamples.slice(0, 3);
   const now = iso();
   const createdAt = previous.createdAt || source.createdAt || now;
-  const resultVal = clean(sample.result, 40);
-  const isScanty = resultVal.toUpperCase() === 'SCANTY';
-  const scantyVal = isScanty ? clean(sample.scanty, 40) : '';
+  const resultSamples = samples.map(sample => {
+    const resultVal = clean(sample && sample.result, 40);
+    const isScanty = resultVal.toUpperCase() === 'SCANTY';
+    const scantyVal = isScanty ? clean(sample && sample.scanty, 40) : '';
+    return {
+      afb: clean(sample && sample.afb || 'x1', 20).toUpperCase(),
+      sample: clean(sample && sample.sample, 40),
+      quality: clean(sample && sample.quality, 40),
+      result: resultVal,
+      observation: clean(sample && sample.observation, 200),
+      scanty: scantyVal,
+      slideResult: clean(sample && sample.slideResult, 100),
+      patientResult: resultVal,
+      slide: clean(sample && sample.slide, 100),
+      releaseDate: clean(sample && sample.releaseDate, 20),
+      tat: clean(sample && sample.tat, 40),
+      staff: clean(sample && sample.staff, 120),
+      review: clean(sample && sample.review, 120),
+      notes: clean(sample && sample.notes, 1000)
+    };
+  });
+
   const record = {
     id,
-    date: clean(source.date, 20),
-    labNo: clean(source.labNo, 100),
-    barcode: clean(source.barcode, 160),
-    name: clean(source.name, 200),
-    idNo: clean(source.idNo, 100),
-    unit: clean(source.unit, 120),
-    patient: clean(source.patient, 60),
-    samples: [{
-      afb: clean(sample.afb || 'x1', 20),
-      sample: clean(sample.sample, 40),
-      quality: clean(sample.quality, 40),
-      result: resultVal,
-      observation: clean(sample.observation, 200),
-      scanty: scantyVal,
-      slideResult: clean(sample.slideResult, 100),
-      patientResult: resultVal,
-      slide: clean(sample.slide, 100),
-      releaseDate: clean(sample.releaseDate, 20),
-      tat: clean(sample.tat, 40),
-      staff: clean(sample.staff, 120),
-      review: clean(sample.review, 120),
-      notes: clean(sample.notes, 1000)
-    }],
+    bil: clean(previous.bil || source.bil, 20),
+    date: clean(source.date || previous.date, 20),
+    labNo: clean(source.labNo || previous.labNo, 100),
+    barcode: clean(source.barcode || previous.barcode, 160),
+    name: clean(source.name || previous.name, 200),
+    idNo: clean(source.idNo || previous.idNo, 100),
+    unit: clean(source.unit || previous.unit, 120),
+    patient: clean(source.patient || previous.patient, 60),
+    samples: resultSamples,
     createdAt,
     createdBy: previous.createdBy || source.createdBy || userId,
     updatedAt: now,
@@ -387,12 +404,17 @@ function normalizeTbis102aRecord(raw, existing, userId) {
     version: Number(previous.version || source.version || 0) + 1 || 1,
     deletedAt: ''
   };
+
   if (!record.date || !record.name) fail('Date and Name are required.');
-  const s = record.samples[0];
-  if (!s.result) fail('Result is required.');
-  if (isScanty && (!s.scanty || !/^[1-9]\d*$/.test(s.scanty))) {
-    fail('A positive integer numeric AFB count is required when Result is SCANTY.');
-  }
+  if (!record.samples.length) fail('At least one SPUTUM AFB sample is required.');
+
+  record.samples.forEach(s => {
+    if (!s.result) fail('Result is required for ' + s.afb + '.');
+    if (s.result.toUpperCase() === 'SCANTY' && (!s.scanty || !/^[1-9]\d*$/.test(s.scanty))) {
+      fail('A positive integer numeric AFB count is required when Result is SCANTY.');
+    }
+  });
+
   return record;
 }
 
@@ -912,7 +934,28 @@ async function dispatch(db, method, a, req) {
       if (existing && input.expectedVersion !== undefined && Number(existing.version || 1) !== Number(input.expectedVersion)) {
         fail('TBIS102A record changed. Reload before editing.', 409);
       }
-      const record = normalizeTbis102aRecord(input, existing, s.userId);
+      const inputForSave = { ...input };
+      const inputMonth = String(inputForSave.date || '').slice(0, 7);
+      const existingMonth = String(existing?.date || '').slice(0, 7);
+      const needsBil = !existing || !existing.bil || (inputMonth && existingMonth && inputMonth !== existingMonth);
+      if (needsBil && inputMonth) {
+        const { data: monthRows, error: monthError } = await supabase
+          .from('tbis102a_records')
+          .select('id, data')
+          .limit(10000);
+        if (monthError) throw monthError;
+        const usedBils = (monthRows || [])
+          .filter(row => String(row?.id || '') !== rid)
+          .filter(row => !row?.data?.deletedAt)
+          .filter(row => String(row?.data?.date || '').slice(0, 7) === inputMonth)
+          .map(row => Number(row?.data?.bil))
+          .filter(Number.isInteger)
+          .filter(n => n > 0);
+        inputForSave.bil = String((usedBils.length ? Math.max.apply(null, usedBils) : 0) + 1);
+      } else if (existing?.bil) {
+        inputForSave.bil = String(existing.bil);
+      }
+      const record = normalizeTbis102aRecord(inputForSave, existing, s.userId);
 
       /* Keep explicit INSERT/UPDATE semantics and ask Supabase to return only
        * the primary key. This verifies a matching row was written without
