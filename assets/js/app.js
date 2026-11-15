@@ -1,63 +1,3 @@
-/* ===== TBIS102A V22 SAVE/REGISTER FIX ===== */
-/* ===== TBIS102A KEYBOARD/SAVE GUARD (EARLY CAPTURE) ===== */
-(function(){
-  'use strict';
-  function getRoot(target){
-    if(!target || !target.closest) return null;
-    return target.closest('#tbis102aForm');
-  }
-  function getFields(root){
-    if(!root) return [];
-    return Array.prototype.slice.call(root.querySelectorAll(
-      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
-    ));
-  }
-  function focusNext(field, fields, index){
-    var next = fields[index + 1];
-    if(next){
-      try { next.focus({preventScroll:true}); } catch(_){ next.focus(); }
-      window.setTimeout(function(){
-        try { if(document.activeElement !== next){ next.focus(); } } catch(_){ }
-      }, 0);
-      if(next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number' && typeof next.select === 'function'){
-        try { next.select(); } catch(_){ }
-      }
-      return;
-    }
-    var save = document.getElementById('tbis102aSave');
-    if(save){
-      try { save.focus({preventScroll:true}); } catch(_){ save.focus(); }
-    }
-  }
-  document.addEventListener('keydown', function(event){
-    var root = getRoot(event.target);
-    if(!root) return;
-    if(event.key !== 'Enter' && event.code !== 'Enter' && event.code !== 'NumpadEnter') return;
-    var fields = getFields(root);
-    var index = fields.indexOf(event.target);
-    if(index < 0) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    if(event.stopImmediatePropagation) event.stopImmediatePropagation();
-
-    if(event.ctrlKey || event.metaKey){
-      if(typeof window.__TBIS102A_SUBMIT === 'function') window.__TBIS102A_SUBMIT(event);
-      return;
-    }
-    focusNext(event.target, fields, index);
-  }, true);
-
-  document.addEventListener('click', function(event){
-    var button = event.target && event.target.closest ? event.target.closest('#tbis102aSave') : null;
-    if(!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if(event.stopImmediatePropagation) event.stopImmediatePropagation();
-    if(typeof window.__TBIS102A_SUBMIT === 'function') window.__TBIS102A_SUBMIT(event);
-  }, true);
-})();
-
 /* ===== ORIGINAL SCRIPT BLOCK: outsource-filter-clean-final-js ===== */
 (function(){
   'use strict';
@@ -497,14 +437,14 @@
         action: authAction,
         payload: requestBody
       });
-      /* V21: never leave a Save/Register button spinning forever.
-       * Login keeps the normal request behavior; application API calls get a
-       * bounded 20-second timeout and surface a real error to the caller. */
+      /* Bound the complete request, including response-body reading and JSON
+       * parsing. Clearing this timer after fetch() resolves leaves response.text()
+       * unbounded, which can strand callers before their finally() cleanup. */
       var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var timeoutId = controller ? window.setTimeout(function(){ controller.abort(); }, 20000) : null;
-      var response;
-      try {
-        response = await fetch(authEndpoint || '/api/bridge', {
+      var timeoutId = null;
+      var requestLabel = authEndpoint ? 'Login' : (requestBody.method === 'upsertTbis102aRecord' ? 'TBIS102A save' : 'API');
+      var requestPromise = (async function () {
+        var response = await fetch(authEndpoint || '/api/bridge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -512,38 +452,47 @@
           body: body,
           signal: controller ? controller.signal : undefined
         });
+        var responseText = await response.text();
+        var data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (error) {
+          var requestIdHeader = response.headers.get('X-Request-Id') || '';
+          throw new Error('API returned an invalid response' + (requestIdHeader ? ' [Request ID: ' + requestIdHeader + ']' : '') + '.');
+        }
+
+        /* Keep login HTTP diagnostics internal to the login flow. */
+        if (authAction === 'login') {
+          if (data && typeof data === 'object') {
+            data._httpStatus = response.status;
+            data._requestId = data.requestId || response.headers.get('X-Request-Id') || '';
+          }
+          if (!response.ok) return data;
+        }
+        if (!response.ok) {
+          var apiError = data && data.error ? data.error : 'API request failed.';
+          if (data && data.errorCode) apiError += ' (Code: ' + data.errorCode + ')';
+          var apiRequestId = data && data.requestId ? ' [Request ID: ' + data.requestId + ']' : '';
+          throw new Error(apiError + apiRequestId);
+        }
+        return data;
+      })();
+      var timeoutPromise = new Promise(function (_resolve, reject) {
+        timeoutId = window.setTimeout(function () {
+          reject(new Error(requestLabel + ' request timed out after 20 seconds. Please retry and check the server logs.'));
+          if (controller) controller.abort();
+        }, 20000);
+      });
+      try {
+        return await Promise.race([requestPromise, timeoutPromise]);
       } catch (error) {
         if (error && error.name === 'AbortError') {
-          throw new Error(authEndpoint ? 'Login request timed out. Please try again.' : 'TBIS102A save request timed out. Please check Vercel Function Logs and Supabase, then try again.');
+          throw new Error(requestLabel + ' request was cancelled before a response completed.');
         }
         throw error;
       } finally {
         if (timeoutId) window.clearTimeout(timeoutId);
       }
-
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (error) {
-        throw new Error('API returned an invalid response.');
-      }
-
-      /* Keep HTTP diagnostics internal to the login flow. The Login UI must
-       * never expose status codes or request IDs to end users. */
-      if (authAction === 'login') {
-        if (data && typeof data === 'object') {
-          data._httpStatus = response.status;
-          data._requestId = data.requestId || response.headers.get('X-Request-Id') || '';
-        }
-        if (!response.ok) return data;
-      }
-      if (!response.ok) {
-        var apiError = data && data.error ? data.error : 'API request failed.';
-        var apiRequestId = data && data.requestId ? ' [Request ID: ' + data.requestId + ']' : '';
-        throw new Error(apiError + apiRequestId);
-      }
-      return data;
     }
 
     // Fluent replacement for Vercel API's former runner. Calls go to Vercel only.
@@ -5399,17 +5348,17 @@ hoagApiRequest('logout', {
         var page = 1;
 
         var rows = [];
-        var loading = false;
+        var loadingPromise = null;
         var saving = false;
 
         function records() { return rows.slice(); }
 
-        function apiToken() { return getStoredToken(); }
-
-        function loadRecords() {
-          if (loading) return Promise.resolve(rows.slice());
-          loading = true;
-          return hoagApiRequest('action', { method: 'getTbis102aRecords', args: [apiToken(), { limit: 1000, offset: 0 }] })
+        function loadRecords(forceAfterPendingLoad) {
+          if (loadingPromise) {
+            if (!forceAfterPendingLoad) return loadingPromise;
+            return loadingPromise.then(function () { return loadRecords(false); }, function () { return loadRecords(false); });
+          }
+          var request = hoagApiRequest('action', { method: 'getTbis102aRecords', args: [null, { limit: 1000, offset: 0 }] })
             .then(function (result) {
               if (!result || result.ok === false) throw new Error(result && result.error ? result.error : 'Unable to load TBIS102A records.');
               rows = Array.isArray(result.records) ? result.records.slice() : [];
@@ -5423,7 +5372,11 @@ hoagApiRequest('logout', {
               if (empty) { empty.hidden = false; empty.textContent = error && error.message ? error.message : 'Unable to load TBIS102A records.'; }
               throw error;
             })
-            .finally(function () { loading = false; });
+            .finally(function () {
+              if (loadingPromise === request) loadingPromise = null;
+            });
+          loadingPromise = request;
+          return request;
         }
 
         function uid() {
@@ -5437,17 +5390,51 @@ hoagApiRequest('logout', {
 
         function setVal(id, value) {
           var el = document.getElementById(id);
-          if (el) el.value = value == null ? '' : value;
+          if (el) {
+            el.value = value == null ? '' : value;
+            if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+
+        function syncScantyField() {
+          var result = document.getElementById('tbResult');
+          var wrapper = document.getElementById('tbResultSelectWrap');
+          var input = document.getElementById('tbScanty');
+          var hint = document.getElementById('tbResultHint');
+          var isScanty = !!result && String(result.value || '').toUpperCase() === 'SCANTY';
+          if (wrapper) {
+            wrapper.classList.add('is-qualitative');
+            wrapper.classList.toggle('is-scanty', isScanty);
+          }
+          if (input) {
+            input.hidden = !isScanty;
+            input.disabled = !isScanty;
+            input.required = isScanty;
+            input.setAttribute('aria-hidden', isScanty ? 'false' : 'true');
+            if (!isScanty) input.value = '';
+          }
+          if (hint) hint.textContent = isScanty ? 'Enter the numeric AFB count for SCANTY.' : 'Select result.';
+        }
+
+        function showSaveError(message) {
+          var error = document.getElementById('tbis102aSaveError');
+          if (!error) return;
+          error.textContent = String(message || '');
+          error.hidden = !message;
         }
 
         function clearForm() {
           editId = null;
           var form = document.getElementById('tbis102aForm');
-          if (form) form.reset();
+          if (form) {
+            form.reset();
+            form.querySelectorAll('select').forEach(function (select) {
+              select.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+          }
           setVal('tbDate', today());
-          setVal('tbScanty', '');
-          var scantyInput = document.getElementById('tbScanty');
-          if (scantyInput) { scantyInput.hidden = true; scantyInput.disabled = true; scantyInput.required = false; }
+          syncScantyField();
+          showSaveError('');
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'NEW RECORD';
           var save = document.getElementById('tbis102aSave');
@@ -5478,8 +5465,7 @@ hoagApiRequest('logout', {
           setVal('tbTat', s.tat);
           setVal('tbValidatedBy', s.staff || r.validatedBy);
           setVal('tbReviewedBy', s.review || r.reviewedBy);
-          var resultControl = document.getElementById('tbResult');
-          if (resultControl) resultControl.dispatchEvent(new Event('change', { bubbles: true }));
+          syncScantyField();
 
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'EDITING RECORD';
@@ -5493,44 +5479,44 @@ hoagApiRequest('logout', {
         function buildForm() {
           return '<div class="tbis102a-workspace">' +
             '<div class="tbis102a-grid-layout">' +
-            '<section class="outsource-card tbis102a-card">' +
-            '<div class="outsource-card-head"><h3>REGISTRATION FORM</h3><span id="tbis102aEditHint">NEW RECORD</span></div>' +
-            '<div class="outsource-form tbis102a-form tbis102a-registration-form" id="tbis102aForm" role="form" aria-label="TBIS102A Registration Form">' +
-            '<div class="tbis102a-grid">' +
-            '<div class="tbis102a-field"><label>DATE *</label><input id="tbDate" type="date" required></div>' +
-            '<div class="tbis102a-field"><label>LAB NO.</label><input id="tbLabNo" placeholder="Lab number"></div>' +
-            '<div class="tbis102a-field"><label>BARCODE</label><input id="tbBarcode" placeholder="Barcode"></div>' +
-            '<div class="tbis102a-field"><label>NAME *</label><input id="tbName" required placeholder="Patient name"></div>' +
-            '<div class="tbis102a-field"><label>IC / ID NO.</label><input id="tbIdNo" placeholder="IC / ID number"></div>' +
-            '<div class="tbis102a-field"><label>UNIT</label><select id="tbUnit"><option value="">Select unit</option><option>WAD 1</option><option>WAD 2</option><option>WAD 3</option><option>WAD 4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>UNIT KA</option></select></div>' +
-            '<div class="tbis102a-field"><label>PATIENT</label><select id="tbPatient"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>KONTAK</option><option>ULANGAN</option></select></div>' +
-            '<div class="tbis102a-field"><label>SAMPLE</label><select id="tbSample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option></select></div>' +
-            '<div class="tbis102a-field"><label>SAMPLE QUALITY</label><select id="tbQuality"><option value="">Select sample quality</option><option>SALIVA</option><option>SPUTUM</option></select></div>' +
-            '<div class="tbis102a-field"><label for="tbResult">RESULT <span class="tbis-required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control is-quantitative tbis102a-result-control"><select id="tbResult" aria-label="TBIS102A result"><option value="">Select result</option><option value="NO AFB SEEN">NO AFB SEEN</option><option value="SCANTY">SCANTY</option><option value="1+">1+</option><option value="2+">2+</option><option value="3+">3+</option></select><input id="tbScanty" type="number" min="1" step="1" placeholder="Enter numeric result" hidden disabled></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
-            '<div class="tbis102a-field"><label>RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
-            '<div class="tbis102a-field"><label>TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
-            '<div class="tbis102a-field"><label>VALIDATED BY</label><select id="tbValidatedBy"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
-            '<div class="tbis102a-field"><label>REVIEWED BY</label><select id="tbReviewedBy"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
-            
+            '<section class="notification-card notification-form-card tbis102a-card">' +
+            '<div class="notification-card-head"><h3>REGISTRATION FORM</h3><span id="tbis102aEditHint">NEW RECORD</span></div>' +
+            '<form class="notification-form tbis102a-form tbis102a-registration-form" id="tbis102aForm" autocomplete="off" novalidate aria-label="TBIS102A Registration Form">' +
+            '<div class="notification-grid tbis102a-grid">' +
+            '<div class="notification-field"><label for="tbDate">DATE <span class="required">*</span></label><input id="tbDate" type="date" required></div>' +
+            '<div class="notification-field"><label for="tbLabNo">LAB NO.</label><input id="tbLabNo" placeholder="Lab number"></div>' +
+            '<div class="notification-field"><label for="tbBarcode">BARCODE</label><input id="tbBarcode" placeholder="Barcode"></div>' +
+            '<div class="notification-field"><label for="tbName">NAME <span class="required">*</span></label><input id="tbName" required placeholder="Patient name"></div>' +
+            '<div class="notification-field"><label for="tbIdNo">IC / ID NO.</label><input id="tbIdNo" placeholder="IC / ID number"></div>' +
+            '<div class="notification-field"><label for="tbUnit">UNIT</label><select id="tbUnit" aria-label="Unit"><option value="">Select unit</option><option>WAD 1</option><option>WAD 2</option><option>WAD 3</option><option>WAD 4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>UNIT KA</option></select></div>' +
+            '<div class="notification-field"><label for="tbPatient">PATIENT</label><select id="tbPatient" aria-label="Patient category"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>KONTAK</option><option>ULANGAN</option></select></div>' +
+            '<div class="notification-field"><label for="tbSample">SAMPLE</label><select id="tbSample" aria-label="Sample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option></select></div>' +
+            '<div class="notification-field"><label for="tbQuality">SAMPLE QUALITY</label><select id="tbQuality" aria-label="Sample quality"><option value="">Select sample quality</option><option>SALIVA</option><option>SPUTUM</option></select></div>' +
+            '<div class="notification-field"><label for="tbResult">RESULT <span class="required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control tbis102a-result-control is-qualitative"><select id="tbResult" required aria-label="TBIS102A result"><option value="">Select result</option><option value="NO AFB SEEN">NO AFB SEEN</option><option value="SCANTY">SCANTY</option><option value="1+">1+</option><option value="2+">2+</option><option value="3+">3+</option></select><input id="tbScanty" type="number" min="1" step="1" placeholder="Enter numeric result" aria-label="Numeric result for SCANTY" hidden disabled></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
+            '<div class="notification-field"><label for="tbReleaseDate">RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
+            '<div class="notification-field"><label for="tbTat">TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
+            '<div class="notification-field"><label for="tbValidatedBy">VALIDATED BY</label><select id="tbValidatedBy" aria-label="Validated by"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
+            '<div class="notification-field"><label for="tbReviewedBy">REVIEWED BY</label><select id="tbReviewedBy" aria-label="Reviewed by"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
             '</div>' +
-            '<div class="tbis102a-form-actions"><button class="outsource-btn secondary" type="button" id="tbis102aClear">CLEAR</button><button class="outsource-btn primary" type="button" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
-            '</div></section>' +
+            '<small class="tbis102a-save-error" id="tbis102aSaveError" role="alert" hidden></small>' +
+            '<div class="notification-form-actions"><button class="notification-btn secondary" type="button" id="tbis102aClear">↻ CLEAR</button><button class="notification-btn primary" type="submit" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
+            '</form></section>' +
 
-            '<section class="outsource-card tbis102a-card">' +
-            '<div class="outsource-card-head"><h3>REGISTERED TBIS102A</h3><span id="tbis102aTotal">0 TOTAL</span></div>' +
-            '<div class="outsource-summary">' +
-            '<div class="outsource-stat"><div class="num" id="tbisStatTotal">0</div><div class="lbl">Total</div></div>' +
-            '<div class="outsource-stat"><div class="num" id="tbisStatPositive">0</div><div class="lbl">Positive</div></div>' +
-            '<div class="outsource-stat"><div class="num" id="tbisStatNegative">0</div><div class="lbl">Negative</div></div>' +
-            '<div class="outsource-stat"><div class="num" id="tbisStatPending">0</div><div class="lbl">Pending</div></div>' +
+            '<section class="notification-card notification-record-card tbis102a-card">' +
+            '<div class="notification-card-head"><h3>REGISTERED TBIS102A</h3><span id="tbis102aTotal">0 TOTAL</span></div>' +
+            '<div class="notification-summary tbis102a-summary">' +
+            '<div class="notification-stat"><div class="num" id="tbisStatTotal">0</div><div class="lbl">Total</div></div>' +
+            '<div class="notification-stat"><div class="num" id="tbisStatPositive">0</div><div class="lbl">Positive</div></div>' +
+            '<div class="notification-stat"><div class="num" id="tbisStatNegative">0</div><div class="lbl">Negative</div></div>' +
+            '<div class="notification-stat"><div class="num" id="tbisStatPending">0</div><div class="lbl">Pending</div></div>' +
             '</div>' +
-            '<div class="outsource-search"><input id="tbisSearch" type="search" placeholder="Search name / ID / barcode / lab no..." aria-label="Search TBIS102A records">' +
-            '<select id="tbisYearFilter"><option value="ALL">All years</option></select>' +
-            '<select id="tbisMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
-            '<div class="outsource-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table"><thead><tr>' +
+            '<div class="notification-toolbar tbis102a-toolbar"><input id="tbisSearch" type="search" placeholder="Search name / ID / barcode / lab no..." aria-label="Search TBIS102A records">' +
+            '<select id="tbisYearFilter" aria-label="Filter by year"><option value="ALL">All years</option></select>' +
+            '<select id="tbisMonthFilter" aria-label="Filter by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
+            '<div class="notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table"><thead><tr>' +
             '<th>No.</th><th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>ID No.</th><th>Unit</th><th>Patient</th><th>SPUTUM AFB</th><th>Sample</th><th>Sample Quality</th><th>Result</th><th>Observation in 1L</th><th>AFB Count (Scanty)</th><th>Slide Result</th><th>Patient Result</th><th>Slide</th><th>Release Date</th><th>Lab Turn Around Time (JAM)</th><th>Staff</th><th>Review</th><th>Catatan</th><th>Actions</th>' +
             '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
-            '<div class="outsource-pager" id="tbisPager">Showing 0–0 of 0</div>' +
+            '<div class="outsource-pager tbis102a-pager" id="tbisPager">Showing 0–0 of 0</div>' +
             '</section></div></div>';
         }
 
@@ -5589,6 +5575,9 @@ hoagApiRequest('logout', {
               return '<option value="' + esc(y) + '">' + esc(y) + '</option>';
             }).join('');
             yf.value = years.indexOf(current) >= 0 ? current : 'ALL';
+            if (window.LabNotification && typeof window.LabNotification.enhanceSelects === 'function') {
+              window.LabNotification.enhanceSelects(document.getElementById('moduleYearGrid'));
+            }
           }
 
           var pages = Math.max(1, Math.ceil(filtered.length / TBIS102A_PAGE_SIZE));
@@ -5653,18 +5642,21 @@ hoagApiRequest('logout', {
               var rid = String(b.dataset.id || '');
               if (!rid) return;
               b.disabled = true;
-              hoagApiRequest('action', { method: 'deleteTbis102aRecord', args: [rid, apiToken()] })
+              hoagApiRequest('action', { method: 'deleteTbis102aRecord', args: [rid] })
                 .then(function (result) {
                   if (!result || result.ok === false || result.deleted !== true) throw new Error(result && result.error ? result.error : 'TBIS102A delete was not committed.');
                   rows = rows.filter(function (x) { return String(x.id) !== rid; });
                   renderRows();
-                  if (typeof setSystemToast === 'function') setSystemToast('TBIS102A DELETED', 'The record was removed successfully.', 2200);
+                  return loadRecords(true).then(function () {
+                    if (rows.some(function (x) { return String(x.id) === rid; })) throw new Error('Supabase confirmed the delete request, but the record still appears in the refreshed list.');
+                    if (typeof setSystemToast === 'function') setSystemToast('TBIS102A DELETED', 'The record was removed successfully.', 2200);
+                  });
                 })
                 .catch(function (error) {
                   console.error('TBIS102A delete failed:', error);
                   window.alert(error && error.message ? error.message : 'Unable to delete TBIS102A record.');
-                  b.disabled = false;
-                });
+                })
+                .finally(function () { b.disabled = false; });
             });
           });
         }
@@ -5681,7 +5673,7 @@ hoagApiRequest('logout', {
             ['IC / ID NO.', r.idNo], ['UNIT', r.unit], ['PATIENT', r.patient], ['SAMPLE', s.sample],
             ['SAMPLE QUALITY', s.quality], ['RESULT', s.result], ['RELEASE DATE', s.releaseDate],
             ['TAT', s.tat], ['VALIDATED BY', s.staff], ['REVIEWED BY', s.review],
-            ['RESULT', s.patientResult]
+            ['PATIENT RESULT', s.patientResult]
           ];
 
           var modal = document.createElement('div');
@@ -5708,24 +5700,40 @@ hoagApiRequest('logout', {
         }
 
         function submit(e) {
-          e.preventDefault();
+          if (e && e.preventDefault) e.preventDefault();
+          if (saving) return Promise.resolve(null);
+          var form = document.getElementById('tbis102aForm');
           var name = val('tbName'), date = val('tbDate');
           var resultValue = val('tbResult');
           var scantyValue = val('tbScanty');
-          if (!name || !date) {
-            window.alert('Please fill Date and Name.');
-            return;
+          var scantyInput = document.getElementById('tbScanty');
+          if (!date) {
+            document.getElementById('tbDate').reportValidity();
+            return Promise.resolve(null);
+          }
+          if (!name) {
+            document.getElementById('tbName').reportValidity();
+            return Promise.resolve(null);
           }
           if (!resultValue) {
-            window.alert('Please select a Result.');
-            return;
+            var resultTrigger = document.querySelector('#tbResultSelectWrap .notification-select-trigger');
+            if (resultTrigger) resultTrigger.focus();
+            showSaveError('Select a Result before registration.');
+            return Promise.resolve(null);
           }
-          if (resultValue === 'SCANTY' && (!scantyValue || !/^\d+(?:\.\d+)?$/.test(scantyValue))) {
-            window.alert('Please enter the numeric result for SCANTY.');
-            var scantyInput = document.getElementById('tbScanty');
-            if (scantyInput) scantyInput.focus();
-            return;
+          if (resultValue === 'SCANTY') {
+            syncScantyField();
+            if (!scantyInput || scantyInput.hidden || scantyInput.disabled || !scantyValue || !scantyInput.validity.valid) {
+              if (scantyInput) { scantyInput.focus(); scantyInput.reportValidity(); }
+              showSaveError('Enter a valid numeric AFB count for SCANTY.');
+              return Promise.resolve(null);
+            }
           }
+          if (!form || !form.checkValidity()) {
+            if (form) form.reportValidity();
+            return Promise.resolve(null);
+          }
+          showSaveError('');
 
           var sample = {
             afb: 'x1',
@@ -5757,10 +5765,8 @@ hoagApiRequest('logout', {
             createdAt: new Date().toISOString()
           };
 
-          if (saving) return;
           saving = true;
           var saveButton = document.getElementById('tbis102aSave');
-          var originalLabel = saveButton ? saveButton.textContent : 'REGISTER TBIS102A';
           if (saveButton) { saveButton.disabled = true; saveButton.textContent = editId ? 'SAVING...' : 'REGISTERING...'; }
 
           var existing = rows.find(function (x) { return String(x.id) === String(row.id); });
@@ -5770,22 +5776,40 @@ hoagApiRequest('logout', {
           return hoagApiRequest('action', { method: 'upsertTbis102aRecord', args: [argsRecord] })
             .then(function (result) {
               if (!result || result.ok === false || !result.record) throw new Error(result && result.error ? result.error : 'TBIS102A save was not confirmed by Supabase.');
-              var index = rows.findIndex(function (x) { return String(x.id) === String(result.record.id); });
-              if (index >= 0) rows[index] = result.record; else rows.unshift(result.record);
+              var savedRecord = result.record;
+              var index = rows.findIndex(function (x) { return String(x.id) === String(savedRecord.id); });
+              if (index >= 0) rows[index] = savedRecord; else rows.unshift(savedRecord);
               clearForm();
               page = 1;
               renderRows();
               if (typeof setSystemToast === 'function') setSystemToast('TBIS102A SAVED', 'The record has been saved to Supabase successfully.', 2800);
-              return result.record;
+              return loadRecords(true).then(function (freshRows) {
+                var persisted = freshRows.find(function (record) { return String(record.id) === String(savedRecord.id); });
+                if (!persisted) {
+                  rows.unshift(savedRecord);
+                  renderRows();
+                  showSaveError('Supabase confirmed the save, but the refreshed record list did not return this record.');
+                }
+                return persisted || savedRecord;
+              }).catch(function (refreshError) {
+                console.error('TBIS102A save was confirmed, but records could not be refreshed:', refreshError);
+                if (!rows.some(function (record) { return String(record.id) === String(savedRecord.id); })) rows.unshift(savedRecord);
+                renderRows();
+                showSaveError('Supabase confirmed the save, but the records list could not be refreshed: ' + (refreshError && refreshError.message ? refreshError.message : 'Unknown refresh error.'));
+                return savedRecord;
+              });
             })
             .catch(function (error) {
               console.error('TBIS102A save failed:', error);
-              window.alert(error && error.message ? error.message : 'Unable to save TBIS102A record to Supabase.');
-              throw error;
+              showSaveError(error && error.message ? error.message : 'Unable to save TBIS102A record to Supabase.');
+              return null;
             })
             .finally(function () {
               saving = false;
-              if (saveButton) { saveButton.disabled = false; saveButton.textContent = originalLabel || 'REGISTER TBIS102A'; }
+              if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = editId ? 'SAVE CHANGES' : 'REGISTER TBIS102A';
+              }
             });
         }
 
@@ -5800,54 +5824,45 @@ hoagApiRequest('logout', {
           grid.innerHTML = buildForm();
 
           setVal('tbDate', today());
+          if (window.LabNotification && typeof window.LabNotification.enhanceSelects === 'function') {
+            window.LabNotification.enhanceSelects(grid);
+          }
           var tbForm = document.getElementById('tbis102aForm');
           var tbSave = document.getElementById('tbis102aSave');
           var tbClear = document.getElementById('tbis102aClear');
 
-          /* TBIS102A keyboard flow: ENTER always advances to the next ACTIVE
-           * field. The field list is rebuilt on every ENTER so conditional fields
-           * such as SCANTY numeric result are included immediately after they
-           * become enabled. */
           if (tbForm) {
             tbForm.addEventListener('keydown', function (event) {
-              if (event.key !== 'Enter') return;
-
-              event.preventDefault();
-              event.stopPropagation();
-              if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-
+              if (event.key !== 'Enter' || event.altKey || event.shiftKey) return;
               if (event.ctrlKey || event.metaKey) {
+                event.preventDefault();
                 submit(event);
                 return;
               }
 
-              var tbFields = Array.prototype.slice.call(
-                tbForm.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
-              ).filter(function (field) {
-                return field.offsetParent !== null && field.getClientRects().length > 0;
-              });
-              var currentIndex = tbFields.indexOf(event.target);
-              var next = currentIndex >= 0 ? tbFields[currentIndex + 1] : null;
-
-              if (next) {
-                next.focus();
-                if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') {
-                  next.select();
-                }
-              } else if (tbSave) {
-                tbSave.focus();
+              var target = event.target;
+              if (!target || target.closest('button:not(.notification-select-trigger)')) return;
+              var isSelectTrigger = target.classList && target.classList.contains('notification-select-trigger');
+              if (isSelectTrigger) {
+                var select = target.parentElement && target.parentElement.querySelector('select');
+                if (!select || !select.value) return;
               }
-            }, true);
-          }
-
-          /* Bind SAVE directly to the button. Do not rely on delegated form
-           * submission because TBIS102A deliberately has no native <form>. */
-          if (tbSave) {
-            tbSave.addEventListener('click', function (event) {
+              var fields = Array.prototype.slice.call(tbForm.querySelectorAll(
+                'input:not([type="hidden"]):not([disabled]), .notification-select-trigger:not([disabled]), select:not(.notification-native-select):not([disabled]), textarea:not([disabled])'
+              )).filter(function (field) {
+                return !field.hidden && field.getClientRects().length > 0;
+              });
+              var currentIndex = fields.indexOf(target);
+              if (currentIndex < 0) return;
               event.preventDefault();
               event.stopPropagation();
-              submit(event);
+              var next = fields[currentIndex + 1];
+              if (next) {
+                next.focus();
+                if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') next.select();
+              } else if (tbSave) tbSave.focus();
             });
+            tbForm.addEventListener('submit', function (event) { submit(event); });
           }
           if (tbClear) tbClear.addEventListener('click', function (event) {
             event.preventDefault();
@@ -5855,26 +5870,6 @@ hoagApiRequest('logout', {
           });
 
           var tbResult = document.getElementById('tbResult');
-          var tbScanty = document.getElementById('tbScanty');
-          function syncScantyField() {
-            var isScanty = tbResult && String(tbResult.value || '').toUpperCase() === 'SCANTY';
-            if (tbResult) {
-              var wrap = document.getElementById('tbResultSelectWrap');
-              if (wrap) {
-                wrap.classList.toggle('is-scanty', isScanty);
-                wrap.classList.toggle('is-quantitative', !isScanty);
-              }
-            }
-            if (tbScanty) {
-              tbScanty.hidden = !isScanty;
-              tbScanty.disabled = !isScanty;
-              tbScanty.required = isScanty;
-              tbScanty.setAttribute('aria-hidden', isScanty ? 'false' : 'true');
-              if (!isScanty) tbScanty.value = '';
-            }
-            var hint = document.getElementById('tbResultHint');
-            if (hint) hint.textContent = isScanty ? 'Enter the numeric AFB count for SCANTY.' : 'Select result.';
-          }
           if (tbResult) {
             tbResult.addEventListener('change', syncScantyField);
             tbResult.addEventListener('input', syncScantyField);
@@ -5894,10 +5889,6 @@ hoagApiRequest('logout', {
         }
 
         function open() { render(); }
-
-        window.__TBIS102A_SUBMIT = function (event) {
-          submit(event || { preventDefault: function () {} });
-        };
 
         return { open: open, render: render, submit: submit };
       })();

@@ -754,6 +754,7 @@
   var notificationUserRole = '';
   var notificationIsAdmin = false;
   var notificationDateTimeState = '';
+  var notificationSelectState = { menu: null, trigger: null, select: null, listenersBound: false };
 
   function notificationApi(method, args) {
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -1483,49 +1484,116 @@
     visible._syncNotificationDateTime = function(){ var p=parseValue(hidden.value); notificationDateTimeState=String(hidden.value || '').trim(); visible.value=display(p); };
   }
 
-  function initNotificationNeumorphicSelects() {
-    var page = $('notification');
+  function initNotificationNeumorphicSelects(root) {
+    var page = root || $('notification');
     if (!page) return;
-    var openMenu = null, openTrigger = null, openSelect = null;
-    function close() {
-      if (openMenu) openMenu.remove();
-      if (openTrigger) { openTrigger.classList.remove('is-open'); openTrigger.setAttribute('aria-expanded','false'); }
-      openMenu = openTrigger = openSelect = null;
+
+    function close(returnFocus) {
+      var trigger = notificationSelectState.trigger;
+      if (notificationSelectState.menu) notificationSelectState.menu.remove();
+      if (trigger) {
+        trigger.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.removeAttribute('aria-controls');
+      }
+      notificationSelectState.menu = notificationSelectState.trigger = notificationSelectState.select = null;
+      if (returnFocus && trigger && trigger.isConnected) trigger.focus();
     }
     function position() {
-      if (!openMenu || !openTrigger) return;
-      var r=openTrigger.getBoundingClientRect(), w=Math.max(r.width,180), h=openMenu.offsetHeight;
-      var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-w-8)), top=r.bottom+6;
-      if(top+h>window.innerHeight-8) top=Math.max(8,r.top-h-6);
-      openMenu.style.width=w+'px'; openMenu.style.left=left+'px'; openMenu.style.top=top+'px';
+      var menu = notificationSelectState.menu, trigger = notificationSelectState.trigger;
+      if (!menu || !trigger) return;
+      var r = trigger.getBoundingClientRect(), w = Math.max(r.width, 180), h = menu.offsetHeight;
+      var left = Math.min(Math.max(8, r.left), Math.max(8, window.innerWidth - w - 8)), top = r.bottom + 6;
+      if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+      menu.style.width = w + 'px'; menu.style.left = left + 'px'; menu.style.top = top + 'px';
     }
     function sync(select) {
-      var wrap=select.parentElement, trigger=wrap && wrap.querySelector('.notification-select-trigger');
-      if(!trigger) return;
-      var label=trigger.querySelector('[data-notification-select-label]'), opt=select.options[select.selectedIndex];
-      if(label) label.textContent=opt?opt.textContent:'Select...';
-      trigger.classList.toggle('is-disabled',!!select.disabled);
-      if(openMenu) openMenu.querySelectorAll('button').forEach(function(b){b.classList.toggle('is-selected',b.dataset.value===select.value);});
+      var wrap = select.parentElement, trigger = wrap && wrap.querySelector('.notification-select-trigger');
+      if (!trigger) return;
+      var label = trigger.querySelector('[data-notification-select-label]'), opt = select.options[select.selectedIndex];
+      if (label) label.textContent = opt ? opt.textContent : 'Select...';
+      trigger.classList.toggle('is-disabled', !!select.disabled);
+      trigger.disabled = !!select.disabled;
+      if (notificationSelectState.select === select && notificationSelectState.menu) {
+        notificationSelectState.menu.querySelectorAll('[role="option"]').forEach(function (button) {
+          var selected = button.dataset.value === select.value;
+          button.classList.toggle('is-selected', selected);
+          button.setAttribute('aria-selected', selected ? 'true' : 'false');
+        });
+      }
     }
     function setup(select) {
-      if(!select || select.dataset.notificationCustom==='1') { if(select) sync(select); return; }
-      select.dataset.notificationCustom='1';
-      var wrap=document.createElement('div'); wrap.className='notification-custom-select-wrap';
-      select.parentNode.insertBefore(wrap,select); wrap.appendChild(select); select.classList.add('notification-native-select');
-      var trigger=document.createElement('button'); trigger.type='button'; trigger.className='notification-select-trigger'; trigger.setAttribute('aria-haspopup','listbox'); trigger.setAttribute('aria-expanded','false');
-      trigger.innerHTML='<span data-notification-select-label></span><span class="notification-select-chevron">⌄</span>';
-      wrap.insertBefore(trigger,select); sync(select);
-      trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation(); if(select.disabled)return; if(openTrigger===trigger)close(); else {
-        close(); openTrigger=trigger; openSelect=select; openMenu=document.createElement('div'); openMenu.className='notification-select-menu'; openMenu.setAttribute('role','listbox');
-        Array.prototype.forEach.call(select.options,function(opt){ var b=document.createElement('button'); b.type='button'; b.textContent=opt.textContent; b.dataset.value=opt.value; b.setAttribute('role','option'); if(opt.value===select.value)b.classList.add('is-selected'); b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();select.value=opt.value;select.dispatchEvent(new Event('change',{bubbles:true}));sync(select);close();}); openMenu.appendChild(b); });
-        document.body.appendChild(openMenu); trigger.classList.add('is-open'); trigger.setAttribute('aria-expanded','true'); position();
-      }});
-      select.addEventListener('change',function(){sync(select);});
+      if (!select || select.dataset.notificationCustom === '1') { if (select) sync(select); return; }
+      select.dataset.notificationCustom = '1';
+      var wrap = document.createElement('div'); wrap.className = 'notification-custom-select-wrap';
+      select.parentNode.insertBefore(wrap, select); wrap.appendChild(select); select.classList.add('notification-native-select');
+      select.tabIndex = -1;
+      select.setAttribute('aria-hidden', 'true');
+      var label = select.getAttribute('aria-label') || '';
+      if (!label && select.id) {
+        var fieldLabel = page.querySelector('label[for="' + select.id + '"]');
+        label = fieldLabel ? fieldLabel.textContent.trim() : select.id;
+      }
+      var trigger = document.createElement('button');
+      trigger.type = 'button'; trigger.className = 'notification-select-trigger';
+      trigger.setAttribute('aria-haspopup', 'listbox'); trigger.setAttribute('aria-expanded', 'false');
+      if (label) trigger.setAttribute('aria-label', label);
+      trigger.innerHTML = '<span data-notification-select-label></span><span class="notification-select-chevron">⌄</span>';
+      wrap.insertBefore(trigger, select); sync(select);
+      trigger.addEventListener('click', function (event) {
+        event.preventDefault(); event.stopPropagation();
+        if (select.disabled) return;
+        if (notificationSelectState.trigger === trigger) { close(); return; }
+        close();
+        var menu = document.createElement('div');
+        menu.id = 'notificationSelectMenu'; menu.className = 'notification-select-menu'; menu.setAttribute('role', 'listbox');
+        menu.setAttribute('aria-label', label || 'Options');
+        Array.prototype.forEach.call(select.options, function (option) {
+          var button = document.createElement('button'); button.type = 'button'; button.textContent = option.textContent;
+          button.dataset.value = option.value; button.setAttribute('role', 'option');
+          button.setAttribute('aria-selected', option.value === select.value ? 'true' : 'false');
+          if (option.value === select.value) button.classList.add('is-selected');
+          button.addEventListener('click', function (clickEvent) {
+            clickEvent.preventDefault(); clickEvent.stopPropagation();
+            select.value = option.value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            close(true);
+          });
+          menu.appendChild(button);
+        });
+        document.body.appendChild(menu);
+        notificationSelectState.menu = menu; notificationSelectState.trigger = trigger; notificationSelectState.select = select;
+        trigger.classList.add('is-open'); trigger.setAttribute('aria-expanded', 'true'); trigger.setAttribute('aria-controls', menu.id);
+        menu.addEventListener('keydown', function (keyEvent) {
+          var options = Array.prototype.slice.call(menu.querySelectorAll('[role="option"]'));
+          var index = options.indexOf(document.activeElement);
+          if (keyEvent.key === 'Escape') { keyEvent.preventDefault(); close(true); return; }
+          if (keyEvent.key === 'Tab') { close(false); return; }
+          if (!options.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(keyEvent.key)) return;
+          keyEvent.preventDefault();
+          if (keyEvent.key === 'Home') index = 0;
+          else if (keyEvent.key === 'End') index = options.length - 1;
+          else if (keyEvent.key === 'ArrowDown') index = (index + 1 + options.length) % options.length;
+          else index = (index - 1 + options.length) % options.length;
+          options[index].focus();
+        });
+        position();
+        var initial = menu.querySelector('[aria-selected="true"]') || menu.querySelector('[role="option"]');
+        if (initial) initial.focus();
+      });
+      select.addEventListener('change', function () { sync(select); });
     }
+
     page.querySelectorAll('select').forEach(setup);
-    document.addEventListener('click',function(e){if(openMenu && !e.target.closest('.notification-select-menu') && !e.target.closest('.notification-select-trigger')) close();});
-    document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
-    window.addEventListener('resize',position); window.addEventListener('scroll',position,true);
+    if (!notificationSelectState.listenersBound) {
+      notificationSelectState.listenersBound = true;
+      document.addEventListener('click', function (event) {
+        if (notificationSelectState.menu && !event.target.closest('.notification-select-menu') && !event.target.closest('.notification-select-trigger')) close(false);
+      });
+      document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && notificationSelectState.menu) close(true); });
+      window.addEventListener('resize', position);
+      window.addEventListener('scroll', position, true);
+    }
   }
   function parseNotificationDisplayDateTime(value) {
     var raw = String(value || '').trim();
@@ -1813,6 +1881,6 @@
     });
   }
 
-  window.LabNotification = { open: open, render: render, loadRecords: loadRecords, syncInteractiveState: syncInteractiveState, getRecords: function () { return records.slice(); } };
+  window.LabNotification = { open: open, render: render, loadRecords: loadRecords, syncInteractiveState: syncInteractiveState, enhanceSelects: initNotificationNeumorphicSelects, getRecords: function () { return records.slice(); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }
 })(window, document);

@@ -638,9 +638,26 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Vercel API action failed:', req.requestId, error?.message || 'Unknown error');
     const status = Number(error?.status) || 500;
-    const safe = status >= 500 ? 'Unable to process the request right now. Please try again.' : clean(error?.message || 'Unable to process request', 300);
-    return res.status(status).json({ ok: false, error: safe, version: VERSION, requestId: req.requestId });
+    const actionMethod = envelopeMethod(req.body);
+    const isTbis102aAction = ['getTbis102aRecords', 'upsertTbis102aRecord', 'deleteTbis102aRecord'].includes(actionMethod);
+    const safe = status >= 500
+      ? (isTbis102aAction ? clean(error?.message || 'Unknown TBIS102A backend error.', 300) : 'Unable to process the request right now. Please try again.')
+      : clean(error?.message || 'Unable to process request', 300);
+    return res.status(status).json({
+      ok: false,
+      error: safe,
+      ...(isTbis102aAction && error?.code ? { errorCode: clean(error.code, 40) } : {}),
+      version: VERSION,
+      requestId: req.requestId
+    });
   }
+}
+
+function envelopeMethod(body) {
+  const payload = body && typeof body === 'object' ? body.payload : null;
+  return body && body.action === 'action' && payload && typeof payload.method === 'string'
+    ? payload.method
+    : '';
 }
 
 async function loginState(db, token) {
@@ -891,36 +908,39 @@ async function dispatch(db, method, a, req) {
       }
       const record = normalizeTbis102aRecord(input, existing, s.userId);
 
-      /* V21: keep the write path deliberately simple and deterministic.
-       * Do not request a PostgREST representation after the write. The table is
-       * written by the server service-role client, so asking Supabase to return
-       * the row adds another database response/RLS/representation step that is
-       * not needed for registration and was capable of leaving the UI waiting.
-       * We already have the canonical normalized record in memory. */
+      /* Keep explicit INSERT/UPDATE semantics and ask Supabase to return only
+       * the primary key. This verifies a matching row was written without
+       * fetching the full JSON payload a second time. */
       if (existing) {
-        const { error: updateError } = await supabase
+        const { data: updatedRow, error: updateError } = await supabase
           .from('tbis102a_records')
           .update({
             data: record,
             updated_at: record.updatedAt
           })
-          .eq('id', record.id);
+          .eq('id', record.id)
+          .select('id')
+          .maybeSingle();
         if (updateError) throw updateError;
+        if (!updatedRow || String(updatedRow.id) !== record.id) fail('TBIS102A update was not persisted.', 500);
       } else {
-        const { error: insertError } = await supabase
+        const { data: insertedRow, error: insertError } = await supabase
           .from('tbis102a_records')
           .insert({
             id: record.id,
             data: record,
             created_at: record.createdAt,
             updated_at: record.updatedAt
-          });
+          })
+          .select('id')
+          .single();
         if (insertError) {
           if (insertError.code === '23505') {
             fail('TBIS102A record already exists. Please reload the list and try again.', 409);
           }
           throw insertError;
         }
+        if (!insertedRow || String(insertedRow.id) !== record.id) fail('TBIS102A insert was not persisted.', 500);
       }
 
       const saved = record;
@@ -944,9 +964,15 @@ async function dispatch(db, method, a, req) {
       requireTbis102aDeletePermission(s, current);
       const now = iso();
       const deleted = { ...current, deletedAt: now, deletedBy: s.userId, updatedAt: now, updatedBy: s.userId, version: Number(current.version || 0) + 1 || 1 };
-      const { error: deleteError } = await supabase.from('tbis102a_records').update({ data: deleted, updated_at: now }).eq('id', rid);
+      const { data: deletedRow, error: deleteError } = await supabase.from('tbis102a_records')
+        .update({ data: deleted, updated_at: now })
+        .eq('id', rid)
+        .select('id')
+        .maybeSingle();
       if (deleteError) throw deleteError;
-      await log(db, s.userId, 'TBIS102A_RECORD_DELETED', `Deleted TBIS102A record ${rid}.`, { page: 'Microbiology', role: s.role });
+      if (!deletedRow || String(deletedRow.id) !== rid) fail('TBIS102A delete was not persisted.', 500);
+      log(db, s.userId, 'TBIS102A_RECORD_DELETED', `Deleted TBIS102A record ${rid}.`, { page: 'Microbiology', role: s.role })
+        .catch(error => console.error('TBIS102A delete audit log failed:', error?.message || error));
       return { ok: true, deleted: true, recordId: rid, deletedAt: now, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 

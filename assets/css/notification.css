@@ -1,24 +1,24 @@
 /* =========================================================
    NOTIFICATION WORKSPACE (#notification)
-   Strictly scoped to #notification, #notificationDetailModal,
+   Strictly scoped to :is(#notification, #moduleYearGrid.tbis102a-active-grid), #notificationDetailModal,
    and .notification-select-menu. Uses the shared application
    design tokens and component specifications.
    ========================================================= */
 
-#notification.notification-page,
-#notification.notification-page .notification-scroll {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid).notification-page,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid).notification-page .notification-scroll {
   height: 100%;
   min-height: 0;
   overflow: hidden !important;
   background: transparent;
 }
 
-#notification .notification-scroll {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-scroll {
   box-sizing: border-box;
   padding: 8px !important;
 }
 
-#notification .notification-shell {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-shell {
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -36,7 +36,7 @@
 }
 
 /* Header */
-#notification .notification-head {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-head {
   flex: 0 0 auto;
   width: 100%;
   display: flex;
@@ -47,11 +47,11 @@
   margin: 0;
 }
 
-#notification .notification-title-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-title-wrap {
   min-width: 0;
 }
 
-#notification .notification-kicker {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-kicker {
   margin: 0 0 3px;
   color: var(--primary);
   font-size: 10px;
@@ -60,7 +60,7 @@
   text-transform: uppercase;
 }
 
-#notification .notification-title-wrap h2 {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-title-wrap h2 {
   margin: 0;
   color: var(--text);
   font-family: Poppins, "Nunito Sans", Inter, sans-serif;
@@ -70,14 +70,14 @@
   line-height: 1.15;
 }
 
-#notification .notification-title-wrap p {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-title-wrap p {
   margin: 3px 0 0;
   color: var(--muted);
   font-size: 11.5px;
   font-weight: 750;
 }
 
-#notification .notification-back-btn {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-back-btn {
   appearance: none;
   -webkit-appearance: none;
   min-height: 36px;
@@ -100,24 +100,24 @@
   transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), border-color 0.2s ease;
 }
 
-#notification .notification-back-btn:hover {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-back-btn:hover {
   transform: translateY(-1px);
   border-color: rgba(37, 99, 235, 0.34);
   box-shadow: var(--year-page-card-hover-shadow);
 }
 
-#notification .notification-back-btn:active {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-back-btn:active {
   transform: translateY(0) scale(0.99);
 }
 
-#notification .notification-back-btn:focus-visible {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-back-btn:focus-visible {
   outline: none;
   border-color: var(--primary);
   box-shadow: var(--shadow-soft), var(--focus-ring);
 }
 
 /* Main Two-Column Workspace Layout */
-#notification .notification-layout {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-layout {
   flex: 1 1 auto;
   height: 0;
   min-height: 0;
@@ -129,7 +129,7 @@
 }
 
 /* Shared Card Surface inside Notification */
-#notification .notification-card {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-card {
   min-width: 0;
   height: 100%;
   min-height: 0;
@@ -142,7 +142,7 @@
   overflow: hidden;
 }
 
-#notification .notification-card-head {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-card-head {
   flex: 0 0 auto;
   min-height: 46px;
   padding: 12px 16px;
@@ -154,7 +154,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-#notification .notification-card-head h3 {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-card-head h3 {
   margin: 0;
   color: var(--primary);
   font-size: 13px;
@@ -163,7 +163,7 @@
   text-transform: uppercase;
 }
 
-#notification .notification-card-head span {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-card-head span {
   color: var(--muted);
   font-size: 10.5px;
   font-weight: 850;
@@ -173,12 +173,12 @@
 }
 
 /* Registration Form Column */
-#notification .notification-form-card {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-form-card {
   display: flex;
   flex-direction: column;
 }
 
-#notification .notification-form {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-form {
   flex: 1 1 auto;
   min-height: 0;
   padding: 14px;
@@ -190,7 +190,7 @@
   overscroll-behavior: contain;
 }
 
-#notification .notification-section-title {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-section-title {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -206,44 +206,44 @@
   text-transform: uppercase;
 }
 
-#notification .notification-section-title .icon {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-section-title .icon {
   font-size: 14px;
   line-height: 1;
 }
 
 /* Form Grids & Fields */
-#notification .notification-grid {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
 }
 
-#notification .notification-grid.four {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-grid.four {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-#notification .patient-info-grid {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .patient-info-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
 }
 
-#notification .notification-status-notes-grid {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-status-notes-grid {
   grid-template-columns: minmax(170px, 0.44fr) minmax(0, 1.56fr);
   align-items: stretch;
 }
 
-#notification .notification-field {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-#notification .notification-field.full {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field.full {
   grid-column: 1 / -1;
 }
 
-#notification .notification-field label {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field label {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -256,11 +256,11 @@
   line-height: 1.2;
 }
 
-#notification .notification-field label .required {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field label .required {
   color: var(--danger);
 }
 
-#notification .notification-auto-badge {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-auto-badge {
   display: inline-flex;
   align-items: center;
   margin-left: auto;
@@ -276,10 +276,10 @@
 }
 
 /* Standardized Form Controls (Inputs, Selects, Textareas) */
-#notification .notification-field input,
-#notification .notification-field select:not(.notification-native-select),
-#notification .notification-field textarea,
-#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field input,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field select:not(.notification-native-select),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field textarea,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
   width: 100%;
   min-width: 0;
   min-height: 38px;
@@ -298,7 +298,7 @@
   transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
 }
 
-#notification .notification-field textarea {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field textarea {
   min-height: 64px;
   height: auto;
   padding: 8px 12px;
@@ -306,7 +306,7 @@
   resize: vertical;
 }
 
-#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-status-notes-grid .notification-notes-field textarea#notificationNotes {
   min-height: 38px;
   height: 38px;
   padding: 8px 12px;
@@ -314,62 +314,62 @@
   resize: none;
 }
 
-#notification .notification-field input::placeholder,
-#notification .notification-field textarea::placeholder {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field input::placeholder,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field textarea::placeholder {
   color: var(--muted);
   opacity: 0.72;
   font-weight: 650;
 }
 
-#notification .notification-field input:hover:not([readonly]):not(:disabled),
-#notification .notification-field select:not(.notification-native-select):hover:not(:disabled),
-#notification .notification-field textarea:hover:not([readonly]):not(:disabled),
-#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:hover:not([readonly]):not(:disabled) {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field input:hover:not([readonly]):not(:disabled),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field select:not(.notification-native-select):hover:not(:disabled),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field textarea:hover:not([readonly]):not(:disabled),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:hover:not([readonly]):not(:disabled) {
   border-color: rgba(37, 99, 235, 0.36);
 }
 
-#notification .notification-field input:focus,
-#notification .notification-field select:not(.notification-native-select):focus,
-#notification .notification-field textarea:focus,
-#notification .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:focus {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field input:focus,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field select:not(.notification-native-select):focus,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field textarea:focus,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-status-notes-grid .notification-notes-field textarea#notificationNotes:focus {
   border-color: var(--primary);
   box-shadow: var(--shadow-inset), var(--focus-ring);
   outline: none;
 }
 
-#notification .notification-field input[readonly] {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field input[readonly] {
   color: var(--text-secondary);
   opacity: 0.88;
   cursor: default;
 }
 
-#notification .notification-field input:disabled,
-#notification .notification-field select:disabled,
-#notification .notification-field textarea:disabled {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field input:disabled,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field select:disabled,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-field textarea:disabled {
   opacity: 0.58;
   cursor: not-allowed;
 }
 
 /* Qualitative / Quantitative Result Field Switching */
-#notification .notification-result-control {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control {
   min-width: 0;
 }
 
-#notification .notification-result-control .notification-custom-select-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control .notification-custom-select-wrap {
   width: 100%;
 }
 
-#notification .notification-result-control .notification-select-trigger {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control .notification-select-trigger {
   min-height: 38px;
   height: 38px;
   border-radius: 12px;
 }
 
-#notification .notification-result-control .notification-native-select {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control .notification-native-select {
   position: absolute !important;
 }
 
-#notification .notification-result-hint {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-hint {
   display: block;
   margin-top: 5px;
   color: var(--muted);
@@ -377,24 +377,24 @@
   font-weight: 800;
 }
 
-#notification .notification-result-control.is-qualitative .notification-custom-select-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control.is-qualitative .notification-custom-select-wrap {
   display: block !important;
 }
 
-#notification .notification-result-control.is-quantitative .notification-custom-select-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control.is-quantitative .notification-custom-select-wrap {
   display: none !important;
 }
 
-#notification .notification-result-control.is-qualitative #notificationResult {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control.is-qualitative #notificationResult {
   display: none !important;
 }
 
-#notification .notification-result-control.is-quantitative #notificationResult {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-result-control.is-quantitative #notificationResult {
   display: block !important;
 }
 
 /* Critical Limit Banner & Status Flag */
-#notification .notification-critical-box {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-critical-box {
   border: 1px solid var(--warning-border);
   background: var(--warning-bg);
   border-radius: 12px;
@@ -403,7 +403,7 @@
   box-shadow: var(--shadow-soft);
 }
 
-#notification .notification-critical-box strong {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-critical-box strong {
   display: block;
   font-size: 9.5px;
   font-weight: 900;
@@ -411,7 +411,7 @@
   letter-spacing: 0.06em;
 }
 
-#notification .notification-critical-box span {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-critical-box span {
   display: block;
   margin-top: 3px;
   font-size: 12px;
@@ -419,19 +419,19 @@
   color: var(--text);
 }
 
-#notification .notification-critical-box.is-empty {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-critical-box.is-empty {
   border-color: var(--year-page-card-border);
   background: var(--surface-inset);
   box-shadow: var(--shadow-inset);
   color: var(--muted);
 }
 
-#notification .notification-critical-box.is-empty span {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-critical-box.is-empty span {
   color: var(--muted);
   font-weight: 750;
 }
 
-#notification .notification-flag {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-flag {
   min-height: 38px;
   height: 38px;
   box-sizing: border-box;
@@ -449,27 +449,27 @@
   letter-spacing: 0.03em;
 }
 
-#notification .notification-flag.critical {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-flag.critical {
   border-color: var(--danger-border);
   background: var(--danger-bg);
   color: var(--danger);
   box-shadow: none;
 }
 
-#notification .notification-flag.normal {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-flag.normal {
   border-color: var(--ok-border);
   background: var(--ok-bg);
   color: var(--ok);
   box-shadow: none;
 }
 
-#notification .notification-flag::before {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-flag::before {
   content: "●";
   font-size: 10px;
 }
 
 /* Form Action Buttons (Identical to Application Pill Buttons) */
-#notification .notification-form-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -483,7 +483,7 @@
   background: transparent;
 }
 
-#notification .notification-btn {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn {
   appearance: none;
   -webkit-appearance: none;
   min-height: 34px;
@@ -507,47 +507,47 @@
   transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), border-color 0.2s ease;
 }
 
-#notification .notification-btn:hover:not(:disabled) {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: rgba(37, 99, 235, 0.34);
   box-shadow: var(--year-page-card-hover-shadow);
 }
 
-#notification .notification-btn:active:not(:disabled) {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn:active:not(:disabled) {
   transform: translateY(0) scale(0.99);
 }
 
-#notification .notification-btn:focus-visible {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn:focus-visible {
   outline: none;
   border-color: var(--primary);
   box-shadow: var(--shadow-soft), var(--focus-ring);
 }
 
-#notification .notification-btn:disabled {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn:disabled {
   opacity: 0.56;
   cursor: not-allowed;
   transform: none;
 }
 
-#notification .notification-btn.secondary {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn.secondary {
   color: var(--text);
   background: var(--neo-surface-soft);
   border-color: var(--year-page-card-border);
 }
 
-#notification .notification-btn.primary {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn.primary {
   color: #ffffff;
   background: linear-gradient(135deg, var(--primary), var(--primary-2));
   border-color: rgba(255, 255, 255, 0.28);
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24), inset 1px 1px 0 rgba(255, 255, 255, 0.28);
 }
 
-#notification .notification-btn.primary:hover:not(:disabled) {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-btn.primary:hover:not(:disabled) {
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.32), inset 1px 1px 0 rgba(255, 255, 255, 0.34);
 }
 
 /* Right Column: Registered Records Card & KPI Summary */
-#notification .notification-record-card {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-record-card {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -557,7 +557,7 @@
   container: notification-record-card / inline-size;
 }
 
-#notification .notification-summary {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-summary {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -565,7 +565,7 @@
   padding: 12px 14px 6px;
 }
 
-#notification .notification-stat {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-stat {
   min-width: 0;
   display: flex;
   align-items: baseline;
@@ -578,7 +578,7 @@
   box-shadow: var(--shadow-soft);
 }
 
-#notification .notification-stat .num {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-stat .num {
   font-family: Poppins, "Nunito Sans", Inter, sans-serif;
   font-size: 20px;
   line-height: 1;
@@ -588,7 +588,7 @@
   order: 2;
 }
 
-#notification .notification-stat .lbl {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-stat .lbl {
   margin: 0;
   color: var(--muted);
   font-size: 10px;
@@ -598,20 +598,20 @@
   order: 1;
 }
 
-#notification .notification-stat.bio .num {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-stat.bio .num {
   color: var(--primary);
 }
 
-#notification .notification-stat.hema .num {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-stat.hema .num {
   color: var(--primary-2);
 }
 
-#notification .notification-stat.micro .num {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-stat.micro .num {
   color: var(--ok);
 }
 
 /* Filter & Search Toolbar */
-#notification .notification-toolbar {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(210px, 1.35fr) repeat(5, minmax(96px, 0.36fr));
@@ -621,8 +621,8 @@
   border-bottom: 1px solid var(--line);
 }
 
-#notification .notification-toolbar input,
-#notification .notification-toolbar select:not(.notification-native-select) {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar input,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar select:not(.notification-native-select) {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -641,25 +641,25 @@
   transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
 }
 
-#notification .notification-toolbar input::placeholder {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar input::placeholder {
   color: var(--muted);
   opacity: 0.72;
   font-weight: 650;
 }
 
-#notification .notification-toolbar input:hover,
-#notification .notification-toolbar select:not(.notification-native-select):hover {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar input:hover,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar select:not(.notification-native-select):hover {
   border-color: rgba(37, 99, 235, 0.36);
 }
 
-#notification .notification-toolbar input:focus,
-#notification .notification-toolbar select:not(.notification-native-select):focus {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar input:focus,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar select:not(.notification-native-select):focus {
   border-color: var(--primary);
   box-shadow: var(--shadow-inset), var(--focus-ring);
 }
 
 /* Registered Records Data Table */
-#notification .notification-table-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
@@ -671,7 +671,7 @@
   box-shadow: var(--shadow-inset);
 }
 
-#notification .notification-table {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
   width: 100%;
   min-width: 1180px;
   border-collapse: separate;
@@ -679,7 +679,7 @@
   font-size: 11.5px;
 }
 
-#notification .notification-table th {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -695,7 +695,7 @@
   white-space: nowrap;
 }
 
-#notification .notification-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
   height: 36px;
   padding: 7px 8px;
   box-sizing: border-box;
@@ -706,11 +706,11 @@
   vertical-align: middle;
 }
 
-#notification .notification-table tbody tr {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr {
   transition: background-color 0.15s ease;
 }
 
-#notification .notification-table tbody tr:hover {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr:hover {
   background: var(--primary-soft);
 }
 
@@ -718,30 +718,30 @@
    On narrow/low-resolution windows the 10-column desktop table becomes
    a stacked record card instead of forcing the right side off-screen. */
 @media (max-width: 1100px) {
-  #notification .notification-table-wrap {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap {
     overflow-x: hidden;
     overflow-y: auto;
     padding: 8px;
     box-sizing: border-box;
   }
 
-  #notification .notification-table {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
     width: 100%;
     min-width: 0;
     display: block;
     font-size: 11px;
   }
 
-  #notification .notification-table thead {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table thead {
     display: none;
   }
 
-  #notification .notification-table tbody {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody {
     display: grid;
     gap: 8px;
   }
 
-  #notification .notification-table tbody tr {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0;
@@ -753,11 +753,11 @@
     box-shadow: var(--shadow-soft);
   }
 
-  #notification .notification-table tbody tr:hover {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr:hover {
     background: var(--neo-surface-soft);
   }
 
-  #notification .notification-table td {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
     min-width: 0;
     height: auto;
     min-height: 40px;
@@ -770,15 +770,15 @@
     overflow-wrap: anywhere;
   }
 
-  #notification .notification-table td:nth-child(odd) {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(odd) {
     border-right: 1px solid var(--line);
   }
 
-  #notification .notification-table td:nth-last-child(-n + 2) {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-last-child(-n + 2) {
     border-bottom: 0;
   }
 
-  #notification .notification-table td::before {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td::before {
     color: var(--muted);
     font-size: 8.5px;
     font-weight: 950;
@@ -787,48 +787,48 @@
     text-transform: uppercase;
   }
 
-  #notification .notification-table td:nth-child(1)::before { content: 'Date / Time'; }
-  #notification .notification-table td:nth-child(2)::before { content: 'Patient'; }
-  #notification .notification-table td:nth-child(3)::before { content: 'ID / IC'; }
-  #notification .notification-table td:nth-child(4)::before { content: 'Unit'; }
-  #notification .notification-table td:nth-child(5)::before { content: 'Discipline'; }
-  #notification .notification-table td:nth-child(6)::before { content: 'Test'; }
-  #notification .notification-table td:nth-child(7)::before { content: 'Result'; }
-  #notification .notification-table td:nth-child(8)::before { content: 'Flag'; }
-  #notification .notification-table td:nth-child(9)::before { content: 'Status'; }
-  #notification .notification-table td:nth-child(10)::before { content: 'Action'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(1)::before { content: 'Date / Time'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(2)::before { content: 'Patient'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(3)::before { content: 'ID / IC'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(4)::before { content: 'Unit'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(5)::before { content: 'Discipline'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(6)::before { content: 'Test'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(7)::before { content: 'Result'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(8)::before { content: 'Flag'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(9)::before { content: 'Status'; }
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10)::before { content: 'Action'; }
 
-  #notification .notification-table td .notification-pill {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td .notification-pill {
     justify-self: start;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  #notification .notification-table td:nth-child(10) {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) {
     grid-column: 1 / -1;
     border-right: 0;
   }
 
-  #notification .notification-table td:nth-child(10) .notification-actions {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
   }
 }
 
 @media (max-width: 620px) {
-  #notification .notification-table tbody tr {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  #notification .notification-table td,
-  #notification .notification-table td:nth-child(odd),
-  #notification .notification-table td:nth-last-child(-n + 2) {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td,
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(odd),
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-last-child(-n + 2) {
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
 
-  #notification .notification-table td:last-child {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:last-child {
     border-bottom: 0;
   }
 }
@@ -840,31 +840,31 @@
    cannot guarantee that the table will switch before its columns are clipped. */
 @supports (container-type: inline-size) {
   @container notification-record-card (max-width: 1100px) {
-    #notification .notification-table-wrap {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap {
       overflow-x: hidden;
       overflow-y: auto;
       padding: 8px;
       box-sizing: border-box;
     }
 
-    #notification .notification-table {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
       width: 100%;
       min-width: 0;
       display: block;
       font-size: 11px;
     }
 
-    #notification .notification-table thead {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table thead {
       display: none;
     }
 
-    #notification .notification-table tbody {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody {
       display: grid;
       width: 100%;
       gap: 8px;
     }
 
-    #notification .notification-table tbody tr {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       width: 100%;
@@ -876,11 +876,11 @@
       box-shadow: var(--shadow-soft);
     }
 
-    #notification .notification-table tbody tr:hover {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr:hover {
       background: var(--neo-surface-soft);
     }
 
-    #notification .notification-table td {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
       min-width: 0;
       height: auto;
       min-height: 40px;
@@ -894,15 +894,15 @@
       word-break: break-word;
     }
 
-    #notification .notification-table td:nth-child(odd) {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(odd) {
       border-right: 1px solid var(--line);
     }
 
-    #notification .notification-table td:nth-last-child(-n + 2) {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-last-child(-n + 2) {
       border-bottom: 0;
     }
 
-    #notification .notification-table td::before {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td::before {
       color: var(--muted);
       font-size: 8.5px;
       font-weight: 950;
@@ -911,30 +911,30 @@
       text-transform: uppercase;
     }
 
-    #notification .notification-table td:nth-child(1)::before { content: 'Date / Time'; }
-    #notification .notification-table td:nth-child(2)::before { content: 'Patient'; }
-    #notification .notification-table td:nth-child(3)::before { content: 'ID / IC'; }
-    #notification .notification-table td:nth-child(4)::before { content: 'Unit'; }
-    #notification .notification-table td:nth-child(5)::before { content: 'Discipline'; }
-    #notification .notification-table td:nth-child(6)::before { content: 'Test'; }
-    #notification .notification-table td:nth-child(7)::before { content: 'Result'; }
-    #notification .notification-table td:nth-child(8)::before { content: 'Flag'; }
-    #notification .notification-table td:nth-child(9)::before { content: 'Status'; }
-    #notification .notification-table td:nth-child(10)::before { content: 'Action'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(1)::before { content: 'Date / Time'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(2)::before { content: 'Patient'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(3)::before { content: 'ID / IC'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(4)::before { content: 'Unit'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(5)::before { content: 'Discipline'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(6)::before { content: 'Test'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(7)::before { content: 'Result'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(8)::before { content: 'Flag'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(9)::before { content: 'Status'; }
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10)::before { content: 'Action'; }
 
-    #notification .notification-table td .notification-pill {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td .notification-pill {
       justify-self: start;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    #notification .notification-table td:nth-child(10) {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) {
       grid-column: 1 / -1;
       border-right: 0;
     }
 
-    #notification .notification-table td:nth-child(10) .notification-actions {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
       justify-content: flex-start;
       flex-wrap: wrap;
       min-width: 0;
@@ -942,35 +942,35 @@
   }
 
   @container notification-record-card (max-width: 620px) {
-    #notification .notification-table tbody tr {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    #notification .notification-table td,
-    #notification .notification-table td:nth-child(odd),
-    #notification .notification-table td:nth-last-child(-n + 2) {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td,
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(odd),
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-last-child(-n + 2) {
       border-right: 0;
       border-bottom: 1px solid var(--line);
     }
 
-    #notification .notification-table td:last-child {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:last-child {
       border-bottom: 0;
     }
   }
 }
 
-#notification .notification-table .patient {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table .patient {
   color: var(--text);
   font-weight: 900;
 }
 
-#notification .notification-table .result {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table .result {
   color: var(--primary);
   font-weight: 900;
 }
 
 /* Standardized Badges / Pills */
-#notification .notification-pill {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -987,45 +987,45 @@
   color: var(--text);
 }
 
-#notification .notification-pill.bio {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill.bio {
   color: var(--primary);
   background: var(--primary-soft);
   border-color: rgba(37, 99, 235, 0.24);
 }
 
-#notification .notification-pill.hema {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill.hema {
   color: var(--primary-2);
   background: rgba(14, 165, 233, 0.14);
   border-color: rgba(14, 165, 233, 0.28);
 }
 
-#notification .notification-pill.micro {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill.micro {
   color: var(--ok);
   background: var(--ok-bg);
   border-color: var(--ok-border);
 }
 
-#notification .notification-pill.flag {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill.flag {
   color: var(--danger);
   background: var(--danger-bg);
   border-color: var(--danger-border);
 }
 
-#notification .notification-pill.status,
-#notification .notification-pill.status.completed {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill.status,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill.status.completed {
   color: var(--ok);
   background: var(--ok-bg);
   border-color: var(--ok-border);
 }
 
-#notification .notification-pill.status.pending {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pill.status.pending {
   color: var(--warning);
   background: var(--warning-bg);
   border-color: var(--warning-border);
 }
 
 /* Table Row Action Buttons — match Outsource / Transfusion exactly */
-#notification .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-actions {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1034,7 +1034,7 @@
   white-space: nowrap;
 }
 
-#notification .notification-action.outsource-mini {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-action.outsource-mini {
   min-height: 26px;
   padding: 0 8px;
   border-radius: 999px;
@@ -1053,7 +1053,7 @@
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-#notification .notification-action.outsource-mini:first-child {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-action.outsource-mini:first-child {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1065,47 +1065,47 @@
   line-height: 1;
 }
 
-#notification .notification-action.outsource-mini:hover {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-action.outsource-mini:hover {
   transform: translateY(-1px);
   border-color: var(--primary);
 }
 
-#notification .notification-action.outsource-mini:active {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-action.outsource-mini:active {
   transform: translateY(0) scale(0.96);
   box-shadow: var(--shadow-inset);
 }
 
-#notification .notification-action.outsource-mini.delete {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-action.outsource-mini.delete {
   color: var(--danger);
   background: var(--danger-bg);
   border-color: var(--danger-border);
 }
 
-#notification .notification-action.outsource-mini.delete:hover {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-action.outsource-mini.delete:hover {
   border-color: var(--danger);
 }
 
-#notification .notification-action.outsource-mini:disabled {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-action.outsource-mini:disabled {
   opacity: 0.55;
   cursor: wait;
   transform: none;
 }
 
 /* Empty State & Pager */
-#notification .notification-empty {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-empty {
   padding: 40px 20px;
   text-align: center;
   color: var(--muted);
 }
 
-#notification .notification-empty strong {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-empty strong {
   display: block;
   color: var(--text);
   font-size: 13px;
   font-weight: 900;
 }
 
-#notification .notification-empty span {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-empty span {
   display: block;
   margin-top: 5px;
   font-size: 11px;
@@ -1113,7 +1113,7 @@
   color: var(--muted);
 }
 
-#notification .notification-pager {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-pager {
   flex: 0 0 auto;
   padding: 6px 16px 10px;
   color: var(--muted);
@@ -1124,12 +1124,12 @@
 /* =========================================================
    NOTIFICATION NEUMORPHIC DATE / TIME PICKER
    ========================================================= */
-#notification .notification-datetime-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-datetime-wrap {
   position: relative;
   width: 100%;
 }
 
-#notification .notification-neumorphic-datetime {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-neumorphic-datetime {
   width: 100%;
   min-height: 38px;
   height: 38px;
@@ -1147,8 +1147,8 @@
   box-sizing: border-box;
 }
 
-#notification .notification-neumorphic-datetime:hover,
-#notification .notification-neumorphic-datetime:focus {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-neumorphic-datetime:hover,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-neumorphic-datetime:focus {
   border-color: rgba(37, 99, 235, 0.42);
   box-shadow: var(--shadow-inset), 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
@@ -1377,16 +1377,16 @@
 /* =========================================================
    NOTIFICATION CUSTOM NEUMORPHIC SELECTS
    Same visual language as Outsource / Transfusion / Inventory,
-   scoped strictly to #notification and .notification-select-menu.
+   scoped strictly to :is(#notification, #moduleYearGrid.tbis102a-active-grid) and .notification-select-menu.
    ========================================================= */
-#notification .notification-custom-select-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-custom-select-wrap {
   position: relative !important;
   display: block !important;
   width: 100% !important;
   min-width: 0 !important;
 }
 
-#notification .notification-native-select {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-native-select {
   position: absolute !important;
   inset: 0 !important;
   width: 1px !important;
@@ -1401,7 +1401,7 @@
   clip-path: inset(50%) !important;
 }
 
-#notification .notification-select-trigger {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-trigger {
   position: relative;
   z-index: 2;
   width: 100%;
@@ -1426,42 +1426,42 @@
   transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
 }
 
-#notification .notification-select-trigger:hover,
-#notification .notification-select-trigger.is-open,
-#notification .notification-select-trigger:focus-visible {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-trigger:hover,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-trigger.is-open,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-trigger:focus-visible {
   border-color: var(--primary);
   box-shadow: var(--shadow-inset), var(--focus-ring);
 }
 
-#notification .notification-select-trigger.is-disabled {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-trigger.is-disabled {
   opacity: 0.58;
   cursor: not-allowed;
 }
 
-#notification .notification-select-trigger > span:first-child {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-trigger > span:first-child {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-#notification .notification-select-chevron {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-chevron {
   flex: 0 0 auto;
   color: var(--muted);
   font-size: 12px;
   transition: transform 0.18s var(--ease-smooth);
 }
 
-#notification .notification-select-trigger.is-open .notification-select-chevron {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-trigger.is-open .notification-select-chevron {
   transform: rotate(180deg);
   color: var(--primary);
 }
 
-#notification .notification-toolbar .notification-custom-select-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar .notification-custom-select-wrap {
   min-width: 0;
 }
 
-#notification .notification-toolbar .notification-select-trigger {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar .notification-select-trigger {
   min-height: 36px;
   height: 36px;
 }
@@ -1520,12 +1520,12 @@
    grid cards as Outsource / Transfusion / Inventory modals.
    ========================================================= */
 #notificationDetailModal.notification-modal[hidden],
-#notification .notification-modal[hidden] {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal[hidden] {
   display: none !important;
 }
 
 #notificationDetailModal.notification-modal,
-#notification .notification-modal {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal {
   position: fixed;
   inset: 0;
   z-index: 11500;
@@ -1540,7 +1540,7 @@
 }
 
 #notificationDetailModal .notification-modal-dialog,
-#notification .notification-modal-dialog {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-dialog {
   width: min(760px, 95vw);
   max-height: min(88vh, 780px);
   overflow-y: auto;
@@ -1557,7 +1557,7 @@
 }
 
 #notificationDetailModal .notification-modal-head,
-#notification .notification-modal-head {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1567,7 +1567,7 @@
 }
 
 #notificationDetailModal .notification-modal-head h3,
-#notification .notification-modal-head h3 {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-head h3 {
   margin: 2px 0 0;
   color: var(--text);
   font-size: clamp(18px, 1.4vw, 22px);
@@ -1576,7 +1576,7 @@
 }
 
 #notificationDetailModal .notification-modal-close,
-#notification .notification-modal-close {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-close {
   width: 36px;
   height: 36px;
   border-radius: 999px;
@@ -1594,25 +1594,25 @@
 }
 
 #notificationDetailModal .notification-modal-close:hover,
-#notification .notification-modal-close:hover {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-close:hover {
   transform: translateY(-1px);
   border-color: var(--primary);
 }
 
 #notificationDetailModal .notification-modal-body,
-#notification .notification-modal-body {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-body {
   padding: 0;
 }
 
 #notificationDetailModal .notification-detail-grid,
-#notification .notification-detail-grid {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-detail-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
 #notificationDetailModal .notification-detail,
-#notification .notification-detail {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-detail {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1625,7 +1625,7 @@
 }
 
 #notificationDetailModal .notification-detail small,
-#notification .notification-detail small {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-detail small {
   display: block;
   color: var(--muted);
   font-size: 10px;
@@ -1635,7 +1635,7 @@
 }
 
 #notificationDetailModal .notification-detail strong,
-#notification .notification-detail strong {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-detail strong {
   display: block;
   margin-top: 2px;
   color: var(--text);
@@ -1645,62 +1645,62 @@
   overflow-wrap: anywhere;
 }
 
-/* Responsive Breakpoints (Scoped to #notification & #notificationDetailModal) */
+/* Responsive Breakpoints (Scoped to :is(#notification, #moduleYearGrid.tbis102a-active-grid) & #notificationDetailModal) */
 @media (max-width: 1180px) {
-  #notification .notification-layout {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-layout {
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
     overflow: hidden;
   }
 
-  #notification .notification-record-card {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-record-card {
     min-height: 0;
   }
 }
 
 @media (max-width: 780px) {
-  #notification .notification-scroll {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-scroll {
     padding: 6px !important;
   }
 
-  #notification .notification-head {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-head {
     align-items: flex-start;
   }
 
-  #notification .notification-grid,
-  #notification .notification-grid.four,
-  #notification .patient-info-grid,
-  #notification .notification-status-notes-grid {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-grid,
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-grid.four,
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .patient-info-grid,
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-status-notes-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  #notification .notification-summary {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  #notification .notification-toolbar {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  #notification .notification-toolbar input {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar input {
     grid-column: 1 / -1;
   }
 
   #notificationDetailModal .notification-detail-grid,
-  #notification .notification-detail-grid {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-detail-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 480px) {
-  #notification .notification-summary,
-  #notification .notification-toolbar,
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-summary,
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar,
   #notificationDetailModal .notification-detail-grid,
-  #notification .notification-detail-grid {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-detail-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  #notification .notification-toolbar input {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-toolbar input {
     grid-column: auto;
   }
 }
@@ -1709,15 +1709,15 @@
    NOTIFICATION — INVISIBLE SCROLLBARS
    Keep scrolling functional, hide scrollbar chrome completely.
    ========================================================= */
-#notification,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid),
 #notificationDetailModal,
-#notification * {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) * {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
-#notification::-webkit-scrollbar,
-#notification *::-webkit-scrollbar,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid)::-webkit-scrollbar,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) *::-webkit-scrollbar,
 #notificationDetailModal::-webkit-scrollbar,
 #notificationDetailModal *::-webkit-scrollbar {
   width: 0 !important;
@@ -1726,24 +1726,24 @@
   background: transparent !important;
 }
 
-#notification .notification-scroll,
-#notification .notification-record-card,
-#notification .notification-table-wrap,
-#notification .notification-time-list,
-#notification .notification-select-menu,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-scroll,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-record-card,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-time-list,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-menu,
 #notificationDetailModal .notification-modal-dialog,
-#notification .notification-modal-dialog {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-dialog {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
-#notification .notification-scroll::-webkit-scrollbar,
-#notification .notification-record-card::-webkit-scrollbar,
-#notification .notification-table-wrap::-webkit-scrollbar,
-#notification .notification-time-list::-webkit-scrollbar,
-#notification .notification-select-menu::-webkit-scrollbar,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-scroll::-webkit-scrollbar,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-record-card::-webkit-scrollbar,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap::-webkit-scrollbar,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-time-list::-webkit-scrollbar,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-menu::-webkit-scrollbar,
 #notificationDetailModal .notification-modal-dialog::-webkit-scrollbar,
-#notification .notification-modal-dialog::-webkit-scrollbar {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-dialog::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
   display: none !important;
@@ -1773,7 +1773,7 @@
 
 
 /* V5 final responsive-table overrides: keep words intact and actions icon-only. */
-#notification .notification-table.rt-responsive-table .notification-pill {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table .notification-pill {
   white-space: nowrap !important;
   overflow: visible !important;
   text-overflow: clip !important;
@@ -1783,18 +1783,18 @@
   max-width: none !important;
   min-width: max-content !important;
 }
-#notification .notification-table.rt-responsive-table td,
-#notification .notification-table.rt-responsive-table th {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th {
   overflow-wrap: normal !important;
   word-break: normal !important;
   hyphens: none !important;
 }
-#notification .notification-table.rt-responsive-table .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table .notification-actions {
   flex-wrap: nowrap !important;
   width: max-content !important;
   white-space: nowrap !important;
 }
-#notification .notification-table.rt-responsive-table .notification-action.icon-only {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table .notification-action.icon-only {
   width: 28px !important;
   min-width: 28px !important;
   max-width: 28px !important;
@@ -1806,7 +1806,7 @@
   font-size: 0 !important;
   line-height: 0 !important;
 }
-#notification .notification-table.rt-responsive-table .notification-action.icon-only svg {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table .notification-action.icon-only svg {
   display: block !important;
   width: 15px !important;
   height: 15px !important;
@@ -1820,38 +1820,38 @@
 
 /* V50: desktop notification table column protection. Keep real columns,
    allow normal word wrapping, and only break an unbreakable word when needed. */
-#notification .notification-table.rt-responsive-table {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table {
   min-width: 1180px !important;
   table-layout: fixed !important;
 }
-#notification .notification-table.rt-responsive-table th,
-#notification .notification-table.rt-responsive-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td {
   white-space: normal !important;
   overflow-wrap: break-word !important;
   word-break: normal !important;
   hyphens: none !important;
 }
-#notification .notification-table.rt-responsive-table th:nth-child(1),
-#notification .notification-table.rt-responsive-table td:nth-child(1) { width: 9% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(2),
-#notification .notification-table.rt-responsive-table td:nth-child(2) { width: 15% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(3),
-#notification .notification-table.rt-responsive-table td:nth-child(3) { width: 11% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(4),
-#notification .notification-table.rt-responsive-table td:nth-child(4) { width: 7% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(5),
-#notification .notification-table.rt-responsive-table td:nth-child(5) { width: 12% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(6),
-#notification .notification-table.rt-responsive-table td:nth-child(6) { width: 12% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(7),
-#notification .notification-table.rt-responsive-table td:nth-child(7) { width: 11% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(8),
-#notification .notification-table.rt-responsive-table td:nth-child(8) { width: 10% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(9),
-#notification .notification-table.rt-responsive-table td:nth-child(9) { width: 7% !important; }
-#notification .notification-table.rt-responsive-table th:nth-child(10),
-#notification .notification-table.rt-responsive-table td:nth-child(10) { width: 6% !important; }
-#notification .notification-table.rt-responsive-table .notification-pill {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(1),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(1) { width: 9% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(2),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(2) { width: 15% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(3),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(3) { width: 11% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(4),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(4) { width: 7% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(5),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(5) { width: 12% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(6),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(6) { width: 12% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(7),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(7) { width: 11% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(8),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(8) { width: 10% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(9),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(9) { width: 7% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table th:nth-child(10),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table td:nth-child(10) { width: 6% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table.rt-responsive-table .notification-pill {
   white-space: normal !important;
   width: auto !important;
   min-width: 0 !important;
@@ -1864,14 +1864,14 @@
 /* V57 FINAL: Notification uses the same real-table behavior as Outsource/Transfusion.
    Fill the available card width on desktop; only use the minimum width when the
    card is narrower, then let the wrapper scroll horizontally. Never switch to cards. */
-#notification .notification-table-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap {
   overflow-x: auto !important;
   overflow-y: auto !important;
   padding: 0 !important;
   min-width: 0 !important;
   max-width: 100% !important;
 }
-#notification .notification-table {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
   display: table !important;
   width: 100% !important;
   min-width: 1180px !important;
@@ -1879,15 +1879,15 @@
   table-layout: fixed !important;
   border-collapse: separate !important;
 }
-#notification .notification-table thead {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table thead {
   display: table-header-group !important;
 }
-#notification .notification-table tbody {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody {
   display: table-row-group !important;
   width: auto !important;
   gap: 0 !important;
 }
-#notification .notification-table tbody tr {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr {
   display: table-row !important;
   width: auto !important;
   min-width: 0 !important;
@@ -1896,8 +1896,8 @@
   background: transparent !important;
   box-shadow: none !important;
 }
-#notification .notification-table th,
-#notification .notification-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
   display: table-cell !important;
   box-sizing: border-box !important;
   min-width: 0 !important;
@@ -1911,38 +1911,38 @@
   hyphens: none !important;
   vertical-align: middle !important;
 }
-#notification .notification-table th:nth-child(1),
-#notification .notification-table td:nth-child(1) { width: 9% !important; }
-#notification .notification-table th:nth-child(2),
-#notification .notification-table td:nth-child(2) { width: 15% !important; }
-#notification .notification-table th:nth-child(3),
-#notification .notification-table td:nth-child(3) { width: 11% !important; white-space: nowrap !important; }
-#notification .notification-table th:nth-child(4),
-#notification .notification-table td:nth-child(4) { width: 7% !important; }
-#notification .notification-table th:nth-child(5),
-#notification .notification-table td:nth-child(5) { width: 12% !important; }
-#notification .notification-table th:nth-child(6),
-#notification .notification-table td:nth-child(6) { width: 12% !important; }
-#notification .notification-table th:nth-child(7),
-#notification .notification-table td:nth-child(7) { width: 11% !important; }
-#notification .notification-table th:nth-child(8),
-#notification .notification-table td:nth-child(8) { width: 10% !important; }
-#notification .notification-table th:nth-child(9),
-#notification .notification-table td:nth-child(9) { width: 7% !important; }
-#notification .notification-table th:nth-child(10),
-#notification .notification-table td:nth-child(10) { width: 6% !important; }
-#notification .notification-table th {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(1),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(1) { width: 9% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(2),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(2) { width: 15% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(3),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(3) { width: 11% !important; white-space: nowrap !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(4),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(4) { width: 7% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(5),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(5) { width: 12% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(6),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(6) { width: 12% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(7),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(7) { width: 11% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(8),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(8) { width: 10% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(9),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(9) { width: 7% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(10),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) { width: 6% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th {
   text-align: center !important;
   white-space: normal !important;
 }
-#notification .notification-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
   text-align: left !important;
 }
-#notification .notification-table td:nth-child(10),
-#notification .notification-table td:nth-child(10) .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
   text-align: center !important;
 }
-#notification .notification-table td:nth-child(10) .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1950,10 +1950,10 @@
   gap: 6px !important;
   white-space: nowrap !important;
 }
-#notification .notification-table td::before {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td::before {
   display: none !important;
 }
-#notification .notification-table .notification-pill {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table .notification-pill {
   max-width: 100% !important;
   min-width: 0 !important;
   width: auto !important;
@@ -1967,7 +1967,7 @@
    canvas inside the Electron records pane. Use the available width when it
    is sufficient; otherwise keep a readable fixed table width and let the
    existing table wrapper scroll horizontally. */
-#notification .notification-table-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap {
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
@@ -1975,15 +1975,15 @@
   overflow-y: auto !important;
   padding: 0 !important;
 }
-#notification .notification-table {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
   display: table !important;
   width: 100% !important;
   min-width: 860px !important;
   max-width: none !important;
   table-layout: fixed !important;
 }
-#notification .notification-table th,
-#notification .notification-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
   box-sizing: border-box !important;
   overflow: hidden !important;
   text-overflow: clip !important;
@@ -1994,42 +1994,42 @@
 }
 
 /* 10 columns: balanced widths that still work in the Electron pane. */
-#notification .notification-table th:nth-child(1),
-#notification .notification-table td:nth-child(1) { width: 8% !important; }
-#notification .notification-table th:nth-child(2),
-#notification .notification-table td:nth-child(2) { width: 16% !important; }
-#notification .notification-table th:nth-child(3),
-#notification .notification-table td:nth-child(3) { width: 12% !important; white-space: nowrap !important; }
-#notification .notification-table th:nth-child(4),
-#notification .notification-table td:nth-child(4) { width: 7% !important; }
-#notification .notification-table th:nth-child(5),
-#notification .notification-table td:nth-child(5) { width: 11% !important; }
-#notification .notification-table th:nth-child(6),
-#notification .notification-table td:nth-child(6) { width: 12% !important; }
-#notification .notification-table th:nth-child(7),
-#notification .notification-table td:nth-child(7) { width: 10% !important; }
-#notification .notification-table th:nth-child(8),
-#notification .notification-table td:nth-child(8) { width: 9% !important; }
-#notification .notification-table th:nth-child(9),
-#notification .notification-table td:nth-child(9) { width: 7% !important; white-space: nowrap !important; }
-#notification .notification-table th:nth-child(10),
-#notification .notification-table td:nth-child(10) { width: 8% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(1),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(1) { width: 8% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(2),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(2) { width: 16% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(3),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(3) { width: 12% !important; white-space: nowrap !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(4),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(4) { width: 7% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(5),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(5) { width: 11% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(6),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(6) { width: 12% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(7),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(7) { width: 10% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(8),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(8) { width: 9% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(9),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(9) { width: 7% !important; white-space: nowrap !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(10),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) { width: 8% !important; }
 
-#notification .notification-table th {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th {
   text-align: center !important;
   white-space: nowrap !important;
 }
-#notification .notification-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
   text-align: left !important;
   min-width: 0 !important;
   height: 36px !important;
   padding: 6px !important;
 }
-#notification .notification-table td:nth-child(10),
-#notification .notification-table td:nth-child(10) .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
   text-align: center !important;
 }
-#notification .notification-table td:nth-child(10) .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -2039,7 +2039,7 @@
 }
 
 /* Keep IDs/ICs on one line, like Outsource/Transfusion. */
-#notification .notification-table td:nth-child(3) {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(3) {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: clip !important;
@@ -2047,7 +2047,7 @@
 
 @supports (container-type: inline-size) {
   @container notification-record-card (max-width: 1180px) {
-    #notification .notification-table {
+    :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
       width: 860px !important;
       min-width: 860px !important;
       max-width: none !important;
@@ -2059,7 +2059,7 @@
 /* V60 FINAL OVERRIDE: fit the Notification real table to the actual Electron record card.
    Keep all 10 columns as a real table. Do not convert to cards and do not
    force an 860/1180px canvas inside the split Notification workspace. */
-#notification .notification-table-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap {
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
@@ -2068,7 +2068,7 @@
   box-sizing: border-box !important;
 }
 
-#notification .notification-table {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
   display: table !important;
   width: 100% !important;
   min-width: 0 !important;
@@ -2076,23 +2076,23 @@
   table-layout: fixed !important;
 }
 
-#notification .notification-table thead {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table thead {
   display: table-header-group !important;
 }
 
-#notification .notification-table tbody {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody {
   display: table-row-group !important;
   width: auto !important;
 }
 
-#notification .notification-table tbody tr {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table tbody tr {
   display: table-row !important;
   width: auto !important;
   min-width: 0 !important;
 }
 
-#notification .notification-table th,
-#notification .notification-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th,
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
   display: table-cell !important;
   min-width: 0 !important;
   max-width: none !important;
@@ -2105,46 +2105,46 @@
 }
 
 /* Balanced 10-column layout. Percentages sum to 100%. */
-#notification .notification-table th:nth-child(1),
-#notification .notification-table td:nth-child(1) { width: 9% !important; }
-#notification .notification-table th:nth-child(2),
-#notification .notification-table td:nth-child(2) { width: 15% !important; }
-#notification .notification-table th:nth-child(3),
-#notification .notification-table td:nth-child(3) { width: 12% !important; white-space: nowrap !important; }
-#notification .notification-table th:nth-child(4),
-#notification .notification-table td:nth-child(4) { width: 7% !important; }
-#notification .notification-table th:nth-child(5),
-#notification .notification-table td:nth-child(5) { width: 12% !important; }
-#notification .notification-table th:nth-child(6),
-#notification .notification-table td:nth-child(6) { width: 12% !important; }
-#notification .notification-table th:nth-child(7),
-#notification .notification-table td:nth-child(7) { width: 10% !important; }
-#notification .notification-table th:nth-child(8),
-#notification .notification-table td:nth-child(8) { width: 9% !important; }
-#notification .notification-table th:nth-child(9),
-#notification .notification-table td:nth-child(9) { width: 6% !important; white-space: nowrap !important; }
-#notification .notification-table th:nth-child(10),
-#notification .notification-table td:nth-child(10) { width: 8% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(1),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(1) { width: 9% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(2),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(2) { width: 15% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(3),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(3) { width: 12% !important; white-space: nowrap !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(4),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(4) { width: 7% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(5),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(5) { width: 12% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(6),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(6) { width: 12% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(7),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(7) { width: 10% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(8),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(8) { width: 9% !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(9),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(9) { width: 6% !important; white-space: nowrap !important; }
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th:nth-child(10),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) { width: 8% !important; }
 
-#notification .notification-table th {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th {
   text-align: center !important;
   white-space: normal !important;
   padding: 8px 5px !important;
 }
 
-#notification .notification-table td {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
   text-align: left !important;
   padding: 6px 5px !important;
   height: 36px !important;
   line-height: 1.18 !important;
 }
 
-#notification .notification-table td:nth-child(10),
-#notification .notification-table td:nth-child(10) .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10),
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
   text-align: center !important;
 }
 
-#notification .notification-table td:nth-child(10) .notification-actions {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td:nth-child(10) .notification-actions {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -2153,11 +2153,11 @@
   width: 100% !important;
 }
 
-#notification .notification-table td::before {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td::before {
   display: none !important;
 }
 
-#notification .notification-table .notification-pill {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table .notification-pill {
   max-width: 100% !important;
   min-width: 0 !important;
   width: auto !important;
@@ -2169,14 +2169,14 @@
 /* At the compact Electron width, reduce only typography/padding so all real
    columns remain visible. IDs/ICs stay on one line. */
 @media (max-width: 1200px) {
-  #notification .notification-table {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
     font-size: 10px !important;
   }
-  #notification .notification-table th {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table th {
     padding: 7px 4px !important;
     font-size: 8.5px !important;
   }
-  #notification .notification-table td {
+  :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table td {
     padding: 6px 4px !important;
     font-size: 10px !important;
   }
@@ -2190,7 +2190,7 @@
    The stronger companion override is in responsive-tables.css because
    responsive-tables.css is loaded after this stylesheet.
    ========================================================= */
-#notification .notification-table-wrap {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table-wrap {
   min-width: 0 !important;
   max-width: 100% !important;
   width: 100% !important;
@@ -2198,9 +2198,94 @@
   overflow-y: auto !important;
 }
 
-#notification .notification-table {
+:is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-table {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   table-layout: fixed !important;
+}
+
+/* TBIS102A workspace shell; form controls reuse the Notification components above. */
+#moduleYears:has(#moduleYearGrid.tbis102a-active-grid) .module-years-panel {
+  padding: 2px !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+#moduleYears:has(#moduleYearGrid.tbis102a-active-grid) .module-years-head { display: none !important; }
+#moduleYearGrid.tbis102a-active-grid {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-workspace,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-grid-layout {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-grid-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, .75fr) minmax(0, 1.75fr);
+  gap: 14px;
+  align-items: stretch;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-card { min-width: 0; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-form { min-height: 0; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-result-control input[hidden] { display: none !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-toolbar {
+  grid-template-columns: minmax(180px, 1.6fr) minmax(110px, .7fr) minmax(110px, .7fr);
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-summary .notification-stat:nth-child(1) .num { color: var(--primary); }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-summary .notification-stat:nth-child(2) .num { color: var(--warning); }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-summary .notification-stat:nth-child(3) .num { color: var(--ok); }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-summary .notification-stat:nth-child(4) .num { color: var(--danger); }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table { min-width: 1450px; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table th,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table td { white-space: nowrap; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-save-error {
+  display: block;
+  margin: 0 14px;
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 800;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-save-error[hidden] { display: none !important; }
+.tbis102a-details-dialog { max-width: 1100px; max-height: 88vh; overflow: auto; }
+.tbis102a-detail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-bottom: 14px; }
+.tbis102a-detail-grid > div { padding: 9px 10px; border-radius: 10px; background: rgba(245,248,252,.8); border: 1px solid rgba(145,160,185,.18); }
+.tbis102a-detail-grid label { display: block; margin-bottom: 4px; color: #718097; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.tbis102a-detail-grid strong { color: #24324a; font-size: 11px; word-break: break-word; }
+@media (max-width: 1100px) {
+  #moduleYears:has(#moduleYearGrid.tbis102a-active-grid) .module-years-panel,
+  #moduleYearGrid.tbis102a-active-grid { height: auto !important; max-height: none !important; overflow: visible !important; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-grid-layout { height: auto; grid-template-columns: minmax(0, 1fr); }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-card { height: auto; min-height: 0; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-table-wrap { max-height: 480px; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-grid { grid-template-columns: 1fr; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-toolbar { grid-template-columns: 1fr; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-summary { grid-template-columns: 1fr; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-form-actions { flex-direction: column; align-items: stretch; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-form-actions .notification-btn { width: 100%; }
+  .tbis102a-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
