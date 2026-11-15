@@ -5510,6 +5510,7 @@ hoagApiRequest('logout', {
           }
           setVal('tbDate', getAppDateKey());
           setVal('tbReleaseDate', '');
+          setVal('tbSputumAfb', 'X1');
           syncScantyField();
           showSaveError('');
           var hint = document.getElementById('tbis102aEditHint');
@@ -5558,6 +5559,7 @@ hoagApiRequest('logout', {
           setVal('tbPatient', r.patient);
           setVal('tbSample', s.sample);
           setVal('tbQuality', s.quality);
+          setVal('tbSputumAfb', String(s.afb || 'X1').toUpperCase());
           setVal('tbResult', s.result);
           syncScantyField();
           if (String(s.result || '').toUpperCase() === 'SCANTY') {
@@ -5594,6 +5596,7 @@ hoagApiRequest('logout', {
             '<div class="notification-field"><label for="tbPatient">PATIENT</label><select id="tbPatient" aria-label="Patient category"><option value="">Select patient category</option><option value="SIMPTOMATIK">SIMPTOMATIK</option><option value="KONTAK">KONTAK</option><option value="ULANGAN">ULANGAN</option></select></div>' +
             '<div class="notification-field"><label for="tbSample">SAMPLE</label><select id="tbSample" aria-label="Sample"><option value="">Select sample</option><option value="MORNING">MORNING</option><option value="SPOT">SPOT</option></select></div>' +
             '<div class="notification-field"><label for="tbQuality">SAMPLE QUALITY</label><select id="tbQuality" aria-label="Sample quality"><option value="">Select sample quality</option><option value="SALIVA">SALIVA</option><option value="SPUTUM">SPUTUM</option></select></div>' +
+            '<div class="notification-field"><label for="tbSputumAfb">SPUTUM AFB</label><select id="tbSputumAfb" aria-label="Sputum AFB"><option value="X1">X1</option><option value="X2">X2</option><option value="X3">X3</option></select></div>' +
             '<div class="notification-field"><label for="tbResult">RESULT <span class="required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control tbis102a-result-control is-qualitative"><select id="tbResult" required aria-label="TBIS102A result"><option value="">Select result</option><option value="NO AFB SEEN">NO AFB SEEN</option><option value="SCANTY">SCANTY</option><option value="1+">1+</option><option value="2+">2+</option><option value="3+">3+</option></select><input id="tbScanty" type="number" min="1" step="1" inputmode="numeric" placeholder="Numeric AFB count" aria-label="Numeric result for SCANTY" hidden disabled></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
             '<div class="notification-field"><label for="tbReleaseDate">RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
             '<div class="notification-field"><label for="tbTat">TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
@@ -5616,7 +5619,7 @@ hoagApiRequest('logout', {
             '<select id="tbisYearFilter" aria-label="Filter by year"><option value="ALL">All years</option></select>' +
             '<select id="tbisMonthFilter" aria-label="Filter by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
             '<div class="outsource-table-wrap notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table rt-responsive-table"><thead><tr>' +
-            '<th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>IC / ID</th><th>Unit</th><th>Patient</th><th>Sample</th><th>Result</th><th>Actions</th>' +
+            '<th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>IC / ID</th><th>Unit</th><th>Patient</th><th>Sample</th><th>SPUTUM AFB</th><th>Result</th><th>Actions</th>' +
             '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
             '<div class="outsource-pager tbis102a-pager" id="tbisPager">Showing 0–0 of 0</div>' +
             '</section></div></div>';
@@ -5624,7 +5627,7 @@ hoagApiRequest('logout', {
 
         function matches(r, search, year, month) {
           var s = getSingleSample(r);
-          var hay = [r.date, r.labNo, r.barcode, r.name, r.idNo, r.unit, r.patient, s.sample, s.quality, s.result, s.scanty, s.releaseDate, s.tat, s.staff, s.review].join(' ').toLowerCase();
+          var hay = [r.date, r.labNo, r.barcode, r.name, r.idNo, r.unit, r.patient, s.sample, s.quality, s.afb, s.result, s.scanty, s.releaseDate, s.tat, s.staff, s.review].join(' ').toLowerCase();
           if (search && hay.indexOf(search.toLowerCase()) === -1) return false;
           if (year !== 'ALL' && String(r.date || '').slice(0, 4) !== year) return false;
           if (month !== 'ALL' && String(r.date || '').slice(5, 7) !== month) return false;
@@ -5700,6 +5703,7 @@ hoagApiRequest('logout', {
               '<td>' + outsourceEsc(r.unit || '—') + '</td>' +
               '<td>' + outsourceEsc(r.patient || '—') + '</td>' +
               '<td>' + outsourceEsc(sampleDisplay) + '</td>' +
+              '<td>' + outsourceEsc(String(s.afb || 'X1').toUpperCase()) + '</td>' +
               '<td class="outsource-result"><span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span></td>' +
               '<td class="outsource-actions-cell"><div class="outsource-actions">' +
                 '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
@@ -5814,6 +5818,7 @@ hoagApiRequest('logout', {
             ['PATIENT', r.patient || '—'],
             ['SAMPLE', s.sample || '—'],
             ['SAMPLE QUALITY', s.quality || '—'],
+            ['SPUTUM AFB', String(s.afb || 'X1').toUpperCase()],
             ['RESULT', formatResultDisplay(s)],
             ['RELEASE DATE', s.releaseDate || '—'],
             ['TAT', s.tat ? s.tat + ' hrs' : '—'],
@@ -5912,7 +5917,7 @@ hoagApiRequest('logout', {
           showSaveError('');
 
           var sample = {
-            afb: 'x1',
+            afb: val('tbSputumAfb') || 'X1',
             sample: val('tbSample'),
             quality: val('tbQuality'),
             result: resultValue,
@@ -6015,6 +6020,7 @@ hoagApiRequest('logout', {
           grid.innerHTML = buildForm();
 
           setVal('tbDate', getAppDateKey());
+          setVal('tbSputumAfb', 'X1');
           if (window.LabNotification && typeof window.LabNotification.enhanceSelects === 'function') {
             window.LabNotification.enhanceSelects(grid);
           }

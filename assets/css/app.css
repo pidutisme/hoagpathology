@@ -8231,27 +8231,29 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 #moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(8),
 #moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(8) { width: 13.5%; overflow: visible; }
 
-/* TBIS102A 10-column proportional layout (sums to 100%) */
+/* TBIS102A 11-column proportional layout (sums to 100%) */
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(1),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(1) { width: 9%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(1) { width: 8%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(2),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(2) { width: 9%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(2) { width: 8%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(3),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(3) { width: 9.5%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(3) { width: 8.5%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(4),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(4) { width: 16.5%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(4) { width: 14%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(5),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(5) { width: 11%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(5) { width: 10%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(6),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(6) { width: 8.5%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(6) { width: 8%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(7),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(7) { width: 9.5%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(7) { width: 8.5%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(8),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(8) { width: 8%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(8) { width: 7.5%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(9),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(9) { width: 9.5%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(9) { width: 8%; }
 #moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(10),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(10) { width: 9.5%; overflow: visible; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(10) { width: 9%; }
+#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(11),
+#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(11) { width: 10.5%; overflow: visible; }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table tbody tr.outsource-data-row,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table tbody tr.transfusion-data-row {
