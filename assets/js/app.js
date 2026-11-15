@@ -2683,7 +2683,7 @@
           '[data-roster-action="edit-row"],[data-roster-action="delete-row"],' +
           '[data-notification-edit],[data-notification-delete],' +
           '.roster-delete-btn,.roster-cancel-edit-btn,' +
-          '.tr-edit,.tr-delete'
+          '.tr-edit,.tr-delete,.tbis-edit,.tbis-delete'
         ).forEach(function(el){ el.hidden = true; el.setAttribute('aria-hidden','true'); el.classList.add('visitor-hidden-action'); });
 
         document.querySelectorAll(
@@ -2783,7 +2783,7 @@
        * was resolved. The capture handler also covers dynamically-created controls. */
       document.addEventListener('click', function(e) {
         if (!isVisitorRole_()) return;
-        var forbiddenAction = e.target && e.target.closest ? e.target.closest('[data-outsource-action="edit"],[data-outsource-action="delete"],[data-inventory-edit-id],[data-inventory-delete-id],[data-admin-item-edit],[data-admin-item-delete],[data-roster-action="edit-row"],[data-roster-action="delete-row"],[data-action="edit"],[data-action="delete"],.tr-edit,.tr-delete') : null;
+        var forbiddenAction = e.target && e.target.closest ? e.target.closest('[data-outsource-action="edit"],[data-outsource-action="delete"],[data-inventory-edit-id],[data-inventory-delete-id],[data-admin-item-edit],[data-admin-item-delete],[data-roster-action="edit-row"],[data-roster-action="delete-row"],[data-action="edit"],[data-action="delete"],.tr-edit,.tr-delete,.tbis-edit,.tbis-delete') : null;
         if (forbiddenAction && !forbiddenAction.matches('[data-visitor-allow]')) {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -5248,21 +5248,34 @@ hoagApiRequest('logout', {
         { title: 'IGRA', icon: '🧪', description: 'IGRA records.' }
       ];
 
-      function showModuleNotice(title, message) {
-        var toast = $('systemNoticeToast');
-        var noticeTitle = $('systemNoticeTitle');
-        var noticeText = $('systemNoticeText');
-        if (toast && noticeTitle && noticeText && toast.classList.contains('is-hidden')) {
-          noticeTitle.textContent = title || 'Module Opened';
-          noticeText.textContent = message || '';
-          toast.classList.remove('is-hidden');
-          window.setTimeout(function () {
-            if (noticeTitle.textContent === (title || 'Module Opened') && noticeText.textContent === (message || '')) {
-              toast.classList.add('is-hidden');
-              noticeText.textContent = '';
-            }
-          }, 2200);
+      var microbiologySubBackAction = null;
+
+      function updateMicrobiologySubBackButton(label, onBack) {
+        var header = document.querySelector('#moduleYears .module-years-header');
+        if (!header) return;
+        var btn = document.getElementById('moduleYearsSubBackBtn');
+        if (!label || typeof onBack !== 'function') {
+          microbiologySubBackAction = null;
+          if (btn) btn.hidden = true;
+          return;
         }
+        if (!btn) {
+          btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = 'moduleYearsSubBackBtn';
+          btn.className = 'module-years-sub-back';
+          header.insertBefore(btn, header.firstChild);
+          btn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof microbiologySubBackAction === 'function') {
+              microbiologySubBackAction();
+            }
+          });
+        }
+        microbiologySubBackAction = onBack;
+        btn.textContent = '← ' + label;
+        btn.hidden = false;
       }
 
       function createMicrobiologyCard(definition, onClick) {
@@ -5302,25 +5315,63 @@ hoagApiRequest('logout', {
         return card;
       }
 
+      function renderMicrobiologySubmodulePlaceholder(definition, backLabel, onBack) {
+        var grid = $('moduleYearGrid');
+        var title = $('moduleYearsTitle');
+        var desc = $('moduleYearsDesc');
+        if (!grid || !title || !desc) return;
+
+        updateMicrobiologySubBackButton(backLabel, onBack);
+        grid.className = 'module-year-grid microbiology-structure-grid microbiology-submodule-view';
+        grid.dataset.yearModule = definition.title;
+        grid.textContent = '';
+        title.textContent = definition.title;
+        desc.textContent = definition.description || 'Microbiology submodule workspace.';
+
+        var stateCard = document.createElement('div');
+        stateCard.className = 'microbiology-submodule-state-card';
+        stateCard.innerHTML =
+          '<div class="microbiology-submodule-state-head">' +
+            '<div class="microbiology-structure-icon-shell"><div class="microbiology-structure-icon">' + outsourceEsc(definition.icon || '🧫') + '</div></div>' +
+            '<div class="microbiology-submodule-state-meta">' +
+              '<span class="microbiology-submodule-state-badge">MICROBIOLOGY SUBMODULE</span>' +
+              '<h3 class="microbiology-submodule-state-title">' + outsourceEsc(definition.title) + '</h3>' +
+            '</div>' +
+          '</div>' +
+          '<p class="microbiology-submodule-state-description">' + outsourceEsc(definition.description || '') + ' This section is registered in the Microbiology portal structure and ready for record configuration.</p>' +
+          '<div class="microbiology-submodule-state-actions">' +
+            '<button type="button" class="microbiology-submodule-back-btn">← BACK TO ' + outsourceEsc(backLabel) + '</button>' +
+          '</div>';
+        var backBtn = stateCard.querySelector('.microbiology-submodule-back-btn');
+        if (backBtn && typeof onBack === 'function') {
+          backBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            onBack();
+          });
+        }
+        grid.appendChild(stateCard);
+      }
+
       function renderMicrobiologyHome() {
         var grid = $('moduleYearGrid');
         var title = $('moduleYearsTitle');
         var desc = $('moduleYearsDesc');
         if (!grid || !title || !desc) return;
 
+        updateMicrobiologySubBackButton('', null);
         grid.className = 'module-year-grid microbiology-structure-grid';
         grid.dataset.yearModule = 'MICROBIOLOGY';
         grid.textContent = '';
         title.textContent = 'MICROBIOLOGY';
-        desc.textContent = 'Select a Microbiology section to continue. Content and records will be added after the structure is finalized.';
+        desc.textContent = 'Select a Microbiology section to continue.';
 
         grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.externalQuality, renderMicrobiologyEqa));
         grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.tbInformation, renderMicrobiologyTbis));
         grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.dengue, function () {
-          showModuleNotice('Module Opened', MICROBIOLOGY_CARDS.dengue.title + ' opened.');
+          renderMicrobiologySubmodulePlaceholder(MICROBIOLOGY_CARDS.dengue, 'MICROBIOLOGY', renderMicrobiologyHome);
         }));
         grid.appendChild(createMicrobiologyCard(MICROBIOLOGY_CARDS.bfmp, function () {
-          showModuleNotice('Module Opened', MICROBIOLOGY_CARDS.bfmp.title + ' opened.');
+          renderMicrobiologySubmodulePlaceholder(MICROBIOLOGY_CARDS.bfmp, 'MICROBIOLOGY', renderMicrobiologyHome);
         }));
       }
 
@@ -5330,6 +5381,7 @@ hoagApiRequest('logout', {
         var desc = $('moduleYearsDesc');
         if (!grid || !title || !desc) return;
 
+        updateMicrobiologySubBackButton('MICROBIOLOGY', renderMicrobiologyHome);
         grid.className = 'module-year-grid year-cards-independent year-cards-module--microbiology-external-quality-assurance';
         grid.dataset.yearModule = 'MICROBIOLOGY EXTERNAL QUALITY ASSURANCE';
         grid.textContent = '';
@@ -5352,6 +5404,20 @@ hoagApiRequest('logout', {
         var saving = false;
 
         function records() { return rows.slice(); }
+
+        function canModifyRecord(record) {
+          if (typeof isVisitorAccessRestricted === 'function' && isVisitorAccessRestricted()) return false;
+          if (typeof isAdminRole === 'function' && isAdminRole()) return true;
+          if (!record) return true;
+          var ownerKeys = [record.createdBy, record.createdByUserId, record.ownerId, record.ownerUserId]
+            .map(function (v) { return String(v || '').trim().toLowerCase(); })
+            .filter(Boolean);
+          if (!ownerKeys.length) return true;
+          var userKeys = [state.authUserId, state.authUserDisplayName]
+            .map(function (v) { return String(v || '').trim().toLowerCase(); })
+            .filter(Boolean);
+          return ownerKeys.some(function (owner) { return userKeys.indexOf(owner) >= 0; });
+        }
 
         function loadRecords(forceAfterPendingLoad) {
           if (loadingPromise) {
@@ -5390,10 +5456,17 @@ hoagApiRequest('logout', {
 
         function setVal(id, value) {
           var el = document.getElementById(id);
-          if (el) {
-            el.value = value == null ? '' : value;
-            if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
+          if (!el) return;
+          var normalized = value == null ? '' : String(value);
+          if (el.tagName === 'SELECT' && normalized && !Array.prototype.some.call(el.options, function (opt) { return opt.value === normalized || opt.textContent === normalized; })) {
+            var dynamicOpt = document.createElement('option');
+            dynamicOpt.value = normalized;
+            dynamicOpt.textContent = normalized;
+            el.appendChild(dynamicOpt);
           }
+          el.value = normalized;
+          if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
+          if (el._syncDate) el._syncDate();
         }
 
         function syncScantyField() {
@@ -5411,9 +5484,12 @@ hoagApiRequest('logout', {
             input.disabled = !isScanty;
             input.required = isScanty;
             input.setAttribute('aria-hidden', isScanty ? 'false' : 'true');
-            if (!isScanty) input.value = '';
+            if (!isScanty) {
+              input.value = '';
+              input.setCustomValidity('');
+            }
           }
-          if (hint) hint.textContent = isScanty ? 'Enter the numeric AFB count for SCANTY.' : 'Select result.';
+          if (hint) hint.textContent = isScanty ? 'Enter the numeric AFB count for SCANTY (minimum 1).' : 'Select result.';
         }
 
         function showSaveError(message) {
@@ -5432,13 +5508,17 @@ hoagApiRequest('logout', {
               select.dispatchEvent(new Event('change', { bubbles: true }));
             });
           }
-          setVal('tbDate', today());
+          setVal('tbDate', getAppDateKey());
+          setVal('tbReleaseDate', '');
           syncScantyField();
           showSaveError('');
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'NEW RECORD';
           var save = document.getElementById('tbis102aSave');
-          if (save) save.textContent = 'REGISTER TBIS102A';
+          if (save) {
+            save.disabled = false;
+            save.textContent = 'REGISTER TBIS102A';
+          }
         }
 
         function getSingleSample(r) {
@@ -5446,7 +5526,26 @@ hoagApiRequest('logout', {
           return {};
         }
 
+        function formatResultDisplay(s) {
+          var res = String((s && s.result) || '').trim().toUpperCase();
+          var scanty = String((s && s.scanty) || '').trim();
+          if (res === 'SCANTY' && scanty) return 'SCANTY (' + scanty + ')';
+          return res || '—';
+        }
+
+        function getResultPillClass(s) {
+          var res = String((s && s.result) || '').trim().toUpperCase();
+          if (res === 'NO AFB SEEN') return 'status-done';
+          if (res === 'SCANTY') return 'status-pending';
+          if (res === '1+' || res === '2+' || res === '3+') return 'status-reject';
+          return 'status-pending';
+        }
+
         function fillForm(r) {
+          if (!canModifyRecord(r)) {
+            showSaveError('You can only edit TBIS102A records created by your own account.');
+            return;
+          }
           editId = r.id;
           var s = getSingleSample(r);
 
@@ -5460,12 +5559,15 @@ hoagApiRequest('logout', {
           setVal('tbSample', s.sample);
           setVal('tbQuality', s.quality);
           setVal('tbResult', s.result);
-          setVal('tbScanty', s.scanty);
+          syncScantyField();
+          if (String(s.result || '').toUpperCase() === 'SCANTY') {
+            setVal('tbScanty', s.scanty);
+          }
           setVal('tbReleaseDate', s.releaseDate);
           setVal('tbTat', s.tat);
           setVal('tbValidatedBy', s.staff || r.validatedBy);
           setVal('tbReviewedBy', s.review || r.reviewedBy);
-          syncScantyField();
+          showSaveError('');
 
           var hint = document.getElementById('tbis102aEditHint');
           if (hint) hint.textContent = 'EDITING RECORD';
@@ -5480,23 +5582,23 @@ hoagApiRequest('logout', {
           return '<div class="tbis102a-workspace">' +
             '<div class="tbis102a-grid-layout">' +
             '<section class="notification-card notification-form-card tbis102a-card">' +
-            '<div class="notification-card-head"><h3>REGISTRATION FORM</h3><span id="tbis102aEditHint">NEW RECORD</span></div>' +
+            '<div class="notification-card-head"><div class="tbis102a-card-head-left"><button type="button" class="notification-btn secondary tbis102a-back-btn" id="tbis102aBackBtn" title="Back to TB Information System">← TBIS</button><h3>REGISTRATION FORM</h3></div><span id="tbis102aEditHint">NEW RECORD</span></div>' +
             '<form class="notification-form tbis102a-form tbis102a-registration-form" id="tbis102aForm" autocomplete="off" novalidate aria-label="TBIS102A Registration Form">' +
             '<div class="notification-grid tbis102a-grid">' +
             '<div class="notification-field"><label for="tbDate">DATE <span class="required">*</span></label><input id="tbDate" type="date" required></div>' +
-            '<div class="notification-field"><label for="tbLabNo">LAB NO.</label><input id="tbLabNo" placeholder="Lab number"></div>' +
-            '<div class="notification-field"><label for="tbBarcode">BARCODE</label><input id="tbBarcode" placeholder="Barcode"></div>' +
-            '<div class="notification-field"><label for="tbName">NAME <span class="required">*</span></label><input id="tbName" required placeholder="Patient name"></div>' +
-            '<div class="notification-field"><label for="tbIdNo">IC / ID NO.</label><input id="tbIdNo" placeholder="IC / ID number"></div>' +
-            '<div class="notification-field"><label for="tbUnit">UNIT</label><select id="tbUnit" aria-label="Unit"><option value="">Select unit</option><option>WAD 1</option><option>WAD 2</option><option>WAD 3</option><option>WAD 4</option><option>ED</option><option>OPD</option><option>UKIA</option><option>PRIMER</option><option>UNIT KA</option></select></div>' +
-            '<div class="notification-field"><label for="tbPatient">PATIENT</label><select id="tbPatient" aria-label="Patient category"><option value="">Select patient category</option><option>SIMPTOMATIK</option><option>KONTAK</option><option>ULANGAN</option></select></div>' +
-            '<div class="notification-field"><label for="tbSample">SAMPLE</label><select id="tbSample" aria-label="Sample"><option value="">Select sample</option><option>MORNING</option><option>SPOT</option></select></div>' +
-            '<div class="notification-field"><label for="tbQuality">SAMPLE QUALITY</label><select id="tbQuality" aria-label="Sample quality"><option value="">Select sample quality</option><option>SALIVA</option><option>SPUTUM</option></select></div>' +
-            '<div class="notification-field"><label for="tbResult">RESULT <span class="required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control tbis102a-result-control is-qualitative"><select id="tbResult" required aria-label="TBIS102A result"><option value="">Select result</option><option value="NO AFB SEEN">NO AFB SEEN</option><option value="SCANTY">SCANTY</option><option value="1+">1+</option><option value="2+">2+</option><option value="3+">3+</option></select><input id="tbScanty" type="number" min="1" step="1" placeholder="Enter numeric result" aria-label="Numeric result for SCANTY" hidden disabled></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
+            '<div class="notification-field"><label for="tbLabNo">LAB NO.</label><input id="tbLabNo" type="text" placeholder="Lab number"></div>' +
+            '<div class="notification-field"><label for="tbBarcode">BARCODE</label><input id="tbBarcode" type="text" placeholder="Barcode"></div>' +
+            '<div class="notification-field"><label for="tbName">NAME <span class="required">*</span></label><input id="tbName" type="text" required placeholder="Patient name"></div>' +
+            '<div class="notification-field"><label for="tbIdNo">IC / ID NO.</label><input id="tbIdNo" type="text" placeholder="IC / ID number"></div>' +
+            '<div class="notification-field"><label for="tbUnit">UNIT</label><select id="tbUnit" aria-label="Unit"><option value="">Select unit</option><option value="WAD 1">WAD 1</option><option value="WAD 2">WAD 2</option><option value="WAD 3">WAD 3</option><option value="WAD 4">WAD 4</option><option value="ED">ED</option><option value="OPD">OPD</option><option value="UKIA">UKIA</option><option value="PRIMER">PRIMER</option><option value="UNIT KA">UNIT KA</option></select></div>' +
+            '<div class="notification-field"><label for="tbPatient">PATIENT</label><select id="tbPatient" aria-label="Patient category"><option value="">Select patient category</option><option value="SIMPTOMATIK">SIMPTOMATIK</option><option value="KONTAK">KONTAK</option><option value="ULANGAN">ULANGAN</option></select></div>' +
+            '<div class="notification-field"><label for="tbSample">SAMPLE</label><select id="tbSample" aria-label="Sample"><option value="">Select sample</option><option value="MORNING">MORNING</option><option value="SPOT">SPOT</option></select></div>' +
+            '<div class="notification-field"><label for="tbQuality">SAMPLE QUALITY</label><select id="tbQuality" aria-label="Sample quality"><option value="">Select sample quality</option><option value="SALIVA">SALIVA</option><option value="SPUTUM">SPUTUM</option></select></div>' +
+            '<div class="notification-field"><label for="tbResult">RESULT <span class="required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control tbis102a-result-control is-qualitative"><select id="tbResult" required aria-label="TBIS102A result"><option value="">Select result</option><option value="NO AFB SEEN">NO AFB SEEN</option><option value="SCANTY">SCANTY</option><option value="1+">1+</option><option value="2+">2+</option><option value="3+">3+</option></select><input id="tbScanty" type="number" min="1" step="1" inputmode="numeric" placeholder="Numeric AFB count" aria-label="Numeric result for SCANTY" hidden disabled></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
             '<div class="notification-field"><label for="tbReleaseDate">RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
             '<div class="notification-field"><label for="tbTat">TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
-            '<div class="notification-field"><label for="tbValidatedBy">VALIDATED BY</label><select id="tbValidatedBy" aria-label="Validated by"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
-            '<div class="notification-field"><label for="tbReviewedBy">REVIEWED BY</label><select id="tbReviewedBy" aria-label="Reviewed by"><option value="">Select staff</option><option>LIZA</option><option>JAYANTHI</option><option>SURIANI</option><option>JAPIDI</option><option>SHOUNNA</option><option>NAZRAN</option></select></div>' +
+            '<div class="notification-field"><label for="tbValidatedBy">VALIDATED BY</label><select id="tbValidatedBy" aria-label="Validated by"><option value="">Select staff</option><option value="LIZA">LIZA</option><option value="JAYANTHI">JAYANTHI</option><option value="SURIANI">SURIANI</option><option value="JAPIDI">JAPIDI</option><option value="SHOUNNA">SHOUNNA</option><option value="NAZRAN">NAZRAN</option></select></div>' +
+            '<div class="notification-field"><label for="tbReviewedBy">REVIEWED BY</label><select id="tbReviewedBy" aria-label="Reviewed by"><option value="">Select staff</option><option value="LIZA">LIZA</option><option value="JAYANTHI">JAYANTHI</option><option value="SURIANI">SURIANI</option><option value="JAPIDI">JAPIDI</option><option value="SHOUNNA">SHOUNNA</option><option value="NAZRAN">NAZRAN</option></select></div>' +
             '</div>' +
             '<small class="tbis102a-save-error" id="tbis102aSaveError" role="alert" hidden></small>' +
             '<div class="notification-form-actions"><button class="notification-btn secondary" type="button" id="tbis102aClear">↻ CLEAR</button><button class="notification-btn primary" type="submit" id="tbis102aSave">REGISTER TBIS102A</button></div>' +
@@ -5506,15 +5608,15 @@ hoagApiRequest('logout', {
             '<div class="notification-card-head"><h3>REGISTERED TBIS102A</h3><span id="tbis102aTotal">0 TOTAL</span></div>' +
             '<div class="notification-summary tbis102a-summary">' +
             '<div class="notification-stat"><div class="num" id="tbisStatTotal">0</div><div class="lbl">Total</div></div>' +
-            '<div class="notification-stat"><div class="num" id="tbisStatPositive">0</div><div class="lbl">Positive</div></div>' +
-            '<div class="notification-stat"><div class="num" id="tbisStatNegative">0</div><div class="lbl">Negative</div></div>' +
-            '<div class="notification-stat"><div class="num" id="tbisStatPending">0</div><div class="lbl">Pending</div></div>' +
+            '<div class="notification-stat stat-no-afb"><div class="num" id="tbisStatNoAfb">0</div><div class="lbl">No AFB Seen</div></div>' +
+            '<div class="notification-stat stat-scanty"><div class="num" id="tbisStatScanty">0</div><div class="lbl">Scanty</div></div>' +
+            '<div class="notification-stat stat-pos"><div class="num" id="tbisStatPositive">0</div><div class="lbl">1+ / 2+ / 3+</div></div>' +
             '</div>' +
-            '<div class="notification-toolbar tbis102a-toolbar"><input id="tbisSearch" type="search" placeholder="Search name / ID / barcode / lab no..." aria-label="Search TBIS102A records">' +
+            '<div class="notification-toolbar tbis102a-toolbar"><input id="tbisSearch" type="search" placeholder="Search name / IC / barcode / lab no..." aria-label="Search TBIS102A records">' +
             '<select id="tbisYearFilter" aria-label="Filter by year"><option value="ALL">All years</option></select>' +
             '<select id="tbisMonthFilter" aria-label="Filter by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
-            '<div class="notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table"><thead><tr>' +
-            '<th>No.</th><th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>ID No.</th><th>Unit</th><th>Patient</th><th>SPUTUM AFB</th><th>Sample</th><th>Sample Quality</th><th>Result</th><th>Observation in 1L</th><th>AFB Count (Scanty)</th><th>Slide Result</th><th>Patient Result</th><th>Slide</th><th>Release Date</th><th>Lab Turn Around Time (JAM)</th><th>Staff</th><th>Review</th><th>Catatan</th><th>Actions</th>' +
+            '<div class="outsource-table-wrap notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table rt-responsive-table"><thead><tr>' +
+            '<th>Date</th><th>Lab No.</th><th>Barcode</th><th>Name</th><th>IC / ID</th><th>Unit</th><th>Patient</th><th>Sample</th><th>Result</th><th>Actions</th>' +
             '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
             '<div class="outsource-pager tbis102a-pager" id="tbisPager">Showing 0–0 of 0</div>' +
             '</section></div></div>';
@@ -5522,7 +5624,7 @@ hoagApiRequest('logout', {
 
         function matches(r, search, year, month) {
           var s = getSingleSample(r);
-          var hay = [r.date, r.labNo, r.barcode, r.name, r.idNo, r.unit, r.patient, s.afb, s.sample, s.quality, s.result, s.patientResult, s.staff, s.review].join(' ').toLowerCase();
+          var hay = [r.date, r.labNo, r.barcode, r.name, r.idNo, r.unit, r.patient, s.sample, s.quality, s.result, s.scanty, s.releaseDate, s.tat, s.staff, s.review].join(' ').toLowerCase();
           if (search && hay.indexOf(search.toLowerCase()) === -1) return false;
           if (year !== 'ALL' && String(r.date || '').slice(0, 4) !== year) return false;
           if (month !== 'ALL' && String(r.date || '').slice(5, 7) !== month) return false;
@@ -5533,46 +5635,44 @@ hoagApiRequest('logout', {
           var body = document.getElementById('tbisTableBody');
           if (!body) return;
 
-          var rows = records();
+          var allRows = records();
           var search = val('tbisSearch');
           var year = val('tbisYearFilter') || 'ALL';
           var month = val('tbisMonthFilter') || 'ALL';
 
-          var filtered = rows.filter(function (r) {
+          var filtered = allRows.filter(function (r) {
             return matches(r, search, year, month);
           }).sort(function (a, b) {
-            return String(b.date || '').localeCompare(String(a.date || ''));
+            return String(b.date || b.createdAt || '').localeCompare(String(a.date || a.createdAt || ''));
           });
 
-          var total = rows.length;
-          var positive = rows.filter(function (r) {
+          var total = allRows.length;
+          var noAfb = 0;
+          var scantyCount = 0;
+          var positiveCount = 0;
+          allRows.forEach(function (r) {
             var s = getSingleSample(r);
-            return String(s.patientResult || '').toUpperCase() === 'POSITIVE';
-          }).length;
-          var negative = rows.filter(function (r) {
-            var s = getSingleSample(r);
-            return String(s.patientResult || '').toUpperCase() === 'NEGATIVE';
-          }).length;
-          var pending = rows.filter(function (r) {
-            var s = getSingleSample(r);
-            return !String(s.patientResult || '').trim();
-          }).length;
+            var res = String(s.result || '').trim().toUpperCase();
+            if (res === 'NO AFB SEEN') noAfb += 1;
+            else if (res === 'SCANTY') scantyCount += 1;
+            else if (res === '1+' || res === '2+' || res === '3+') positiveCount += 1;
+          });
 
           var totalEl = document.getElementById('tbis102aTotal');
           if (totalEl) totalEl.textContent = total + ' TOTAL';
-          ['tbisStatTotal', 'tbisStatPositive', 'tbisStatNegative', 'tbisStatPending'].forEach(function (id, i) {
+          ['tbisStatTotal', 'tbisStatNoAfb', 'tbisStatScanty', 'tbisStatPositive'].forEach(function (id, i) {
             var el = document.getElementById(id);
-            if (el) el.textContent = [total, positive, negative, pending][i];
+            if (el) el.textContent = String([total, noAfb, scantyCount, positiveCount][i]);
           });
 
           var yf = document.getElementById('tbisYearFilter');
           if (yf) {
-            var years = Array.from(new Set(rows.map(function (r) {
+            var years = Array.from(new Set(allRows.map(function (r) {
               return String(r.date || '').slice(0, 4);
             }).filter(Boolean))).sort().reverse();
             var current = yf.value || 'ALL';
             yf.innerHTML = '<option value="ALL">All years</option>' + years.map(function (y) {
-              return '<option value="' + esc(y) + '">' + esc(y) + '</option>';
+              return '<option value="' + outsourceEsc(y) + '">' + outsourceEsc(y) + '</option>';
             }).join('');
             yf.value = years.indexOf(current) >= 0 ? current : 'ALL';
             if (window.LabNotification && typeof window.LabNotification.enhanceSelects === 'function') {
@@ -5585,45 +5685,56 @@ hoagApiRequest('logout', {
           var start = (page - 1) * TBIS102A_PAGE_SIZE;
           var visible = filtered.slice(start, start + TBIS102A_PAGE_SIZE);
 
-          body.innerHTML = visible.map(function (r, idx) {
+          body.innerHTML = visible.map(function (r) {
             var s = getSingleSample(r);
-            return '<tr>' +
-              '<td>' + (start + idx + 1) + '</td>' +
-              '<td>' + esc(r.date || '') + '</td>' +
-              '<td>' + esc(r.labNo || '') + '</td>' +
-              '<td>' + esc(r.barcode || '') + '</td>' +
-              '<td><strong>' + esc(r.name || '') + '</strong></td>' +
-              '<td>' + esc(r.idNo || '') + '</td>' +
-              '<td>' + esc(r.unit || '') + '</td>' +
-              '<td>' + esc(r.patient || '') + '</td>' +
-              '<td>' + esc(s.afb || 'x1') + '</td>' +
-              '<td>' + esc(s.sample || '') + '</td>' +
-              '<td>' + esc(s.quality || '') + '</td>' +
-              '<td>' + esc(s.result || '') + '</td>' +
-              '<td>' + esc(s.observation || '') + '</td>' +
-              '<td>' + esc(s.scanty || '') + '</td>' +
-              '<td>' + esc(s.slideResult || '') + '</td>' +
-              '<td>' + esc(s.patientResult || '') + '</td>' +
-              '<td>' + esc(s.slide || '') + '</td>' +
-              '<td>' + esc(s.releaseDate || '') + '</td>' +
-              '<td>' + esc(s.tat || '') + '</td>' +
-              '<td>' + esc(s.staff || '') + '</td>' +
-              '<td>' + esc(s.review || '') + '</td>' +
-              '<td>' + esc(s.notes || '') + '</td>' +
-              '<td><button class="outsource-row-action tbis-view" data-id="' + esc(r.id) + '" type="button">VIEW</button><button class="outsource-row-action tbis-edit" data-id="' + esc(r.id) + '" type="button">EDIT</button><button class="outsource-row-action danger tbis-delete" data-id="' + esc(r.id) + '" type="button">DELETE</button></td>' +
+            var sampleDisplay = [s.sample, s.quality].filter(Boolean).join(' · ') || '—';
+            var resultLabel = formatResultDisplay(s);
+            var pillClass = getResultPillClass(s);
+            var canModify = canModifyRecord(r);
+            return '<tr class="outsource-data-row" data-id="' + outsourceEsc(r.id) + '">' +
+              '<td>' + outsourceEsc(r.date || '—') + '</td>' +
+              '<td>' + outsourceEsc(r.labNo || '—') + '</td>' +
+              '<td>' + outsourceEsc(r.barcode || '—') + '</td>' +
+              '<td><strong>' + outsourceEsc(r.name || '—') + '</strong></td>' +
+              '<td>' + outsourceEsc(r.idNo || '—') + '</td>' +
+              '<td>' + outsourceEsc(r.unit || '—') + '</td>' +
+              '<td>' + outsourceEsc(r.patient || '—') + '</td>' +
+              '<td>' + outsourceEsc(sampleDisplay) + '</td>' +
+              '<td class="outsource-result"><span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span></td>' +
+              '<td class="outsource-actions-cell"><div class="outsource-actions">' +
+                '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
+                '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit" aria-label="Edit" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
+                '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="Delete" aria-label="Delete" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
+              '</div></td>' +
               '</tr>';
           }).join('');
 
           var empty = document.getElementById('tbisEmpty');
           if (empty) {
             empty.hidden = visible.length !== 0;
-            empty.textContent = filtered.length ? 'No records match the current filters.' : 'No TBIS102A record registered yet.';
+            empty.textContent = allRows.length ? 'No records match the current filters.' : 'No TBIS102A record registered yet.';
           }
 
           var pager = document.getElementById('tbisPager');
-          if (pager) pager.textContent = filtered.length
-            ? 'Showing ' + (start + 1) + '–' + Math.min(start + visible.length, filtered.length) + ' of ' + filtered.length
-            : 'Showing 0–0 of 0';
+          if (pager) {
+            var rangeText = filtered.length
+              ? 'Showing ' + (start + 1) + '–' + Math.min(start + visible.length, filtered.length) + ' of ' + filtered.length
+              : 'Showing 0–0 of 0';
+            if (pages > 1) {
+              pager.innerHTML = '<span>' + rangeText + '</span>' +
+                '<div class="tbis102a-pager-btns">' +
+                  '<button type="button" class="outsource-mini" id="tbisPagePrev"' + (page <= 1 ? ' disabled' : '') + '>‹ Prev</button>' +
+                  '<span class="tbis102a-page-indicator">' + page + ' / ' + pages + '</span>' +
+                  '<button type="button" class="outsource-mini" id="tbisPageNext"' + (page >= pages ? ' disabled' : '') + '>Next ›</button>' +
+                '</div>';
+              var prevBtn = document.getElementById('tbisPagePrev');
+              var nextBtn = document.getElementById('tbisPageNext');
+              if (prevBtn) prevBtn.addEventListener('click', function () { if (page > 1) { page -= 1; renderRows(); } });
+              if (nextBtn) nextBtn.addEventListener('click', function () { if (page < pages) { page += 1; renderRows(); } });
+            } else {
+              pager.textContent = rangeText;
+            }
+          }
 
           body.querySelectorAll('.tbis-edit').forEach(function (b) {
             b.addEventListener('click', function () {
@@ -5638,25 +5749,50 @@ hoagApiRequest('logout', {
 
           body.querySelectorAll('.tbis-delete').forEach(function (b) {
             b.addEventListener('click', function () {
-              if (!window.confirm('Delete this TBIS102A record?')) return;
               var rid = String(b.dataset.id || '');
               if (!rid) return;
-              b.disabled = true;
-              hoagApiRequest('action', { method: 'deleteTbis102aRecord', args: [rid] })
-                .then(function (result) {
-                  if (!result || result.ok === false || result.deleted !== true) throw new Error(result && result.error ? result.error : 'TBIS102A delete was not committed.');
-                  rows = rows.filter(function (x) { return String(x.id) !== rid; });
-                  renderRows();
-                  return loadRecords(true).then(function () {
-                    if (rows.some(function (x) { return String(x.id) === rid; })) throw new Error('Supabase confirmed the delete request, but the record still appears in the refreshed list.');
-                    if (typeof setSystemToast === 'function') setSystemToast('TBIS102A DELETED', 'The record was removed successfully.', 2200);
-                  });
-                })
-                .catch(function (error) {
-                  console.error('TBIS102A delete failed:', error);
-                  window.alert(error && error.message ? error.message : 'Unable to delete TBIS102A record.');
-                })
-                .finally(function () { b.disabled = false; });
+              var r = records().find(function (x) { return String(x.id) === rid; });
+              if (!canModifyRecord(r)) {
+                showSaveError('You can only delete TBIS102A records created by your own account.');
+                return;
+              }
+              var s = getSingleSample(r || {});
+              var itemLabel = r && r.name ? String(r.name) : 'this patient';
+              var sampleLabel = [r && r.date, r && r.labNo, formatResultDisplay(s)].filter(Boolean).join(' · ');
+              requestAppConfirm(
+                'DELETE TBIS102A RECORD?',
+                'Delete TBIS102A record for ' + itemLabel + (sampleLabel ? ' · ' + sampleLabel : '') + '? This cannot be undone.',
+                function () {
+                  b.disabled = true;
+                  showSaveError('');
+                  hoagApiRequest('action', { method: 'deleteTbis102aRecord', args: [rid] })
+                    .then(function (result) {
+                      if (!result || result.ok === false || result.deleted !== true) {
+                        throw new Error(result && result.error ? result.error : 'TBIS102A delete was not committed.');
+                      }
+                      rows = rows.filter(function (x) { return String(x.id) !== rid; });
+                      if (String(editId || '') === rid) clearForm();
+                      renderRows();
+                      if (typeof setSystemToast === 'function') {
+                        setSystemToast('TBIS102A DELETED', 'The record was removed successfully.', 2200);
+                      }
+                      return loadRecords(true).then(function () {
+                        if (rows.some(function (x) { return String(x.id) === rid; })) {
+                          throw new Error('Supabase confirmed the delete request, but the record still appears in the refreshed list.');
+                        }
+                      });
+                    })
+                    .catch(function (error) {
+                      console.error('TBIS102A delete failed:', error);
+                      var msg = error && error.message ? error.message : 'Unable to delete TBIS102A record.';
+                      showSaveError(msg);
+                      if (typeof setSystemToast === 'function') setSystemToast('DELETE FAILED', msg, 3200);
+                    })
+                    .finally(function () {
+                      if (b && b.isConnected) b.disabled = false;
+                    });
+                }
+              );
             });
           });
         }
@@ -5669,23 +5805,32 @@ hoagApiRequest('logout', {
           if (old) old.remove();
 
           var fields = [
-            ['DATE', r.date], ['LAB NO.', r.labNo], ['BARCODE', r.barcode], ['NAME', r.name],
-            ['IC / ID NO.', r.idNo], ['UNIT', r.unit], ['PATIENT', r.patient], ['SAMPLE', s.sample],
-            ['SAMPLE QUALITY', s.quality], ['RESULT', s.result], ['RELEASE DATE', s.releaseDate],
-            ['TAT', s.tat], ['VALIDATED BY', s.staff], ['REVIEWED BY', s.review],
-            ['PATIENT RESULT', s.patientResult]
+            ['DATE', r.date || '—'],
+            ['LAB NO.', r.labNo || '—'],
+            ['BARCODE', r.barcode || '—'],
+            ['NAME', r.name || '—'],
+            ['IC / ID NO.', r.idNo || '—'],
+            ['UNIT', r.unit || '—'],
+            ['PATIENT', r.patient || '—'],
+            ['SAMPLE', s.sample || '—'],
+            ['SAMPLE QUALITY', s.quality || '—'],
+            ['RESULT', formatResultDisplay(s)],
+            ['RELEASE DATE', s.releaseDate || '—'],
+            ['TAT', s.tat ? s.tat + ' hrs' : '—'],
+            ['VALIDATED BY', s.staff || '—'],
+            ['REVIEWED BY', s.review || '—']
           ];
 
           var modal = document.createElement('div');
           modal.id = 'tbis102aDetailsModal';
           modal.className = 'outsource-result-modal tbis102a-details-modal';
-          modal.innerHTML = '<div class="outsource-result-dialog tbis102a-details-dialog">' +
+          modal.innerHTML = '<div class="outsource-result-dialog outsource-detail-dialog tbis102a-details-dialog" role="dialog" aria-modal="true" aria-label="TBIS102A Record Details">' +
             '<button type="button" class="outsource-result-close" aria-label="Close">×</button>' +
             '<div class="outsource-modal-kicker">TBIS102A RECORD</div>' +
-            '<h2>' + esc(r.name || '') + '</h2>' +
-            '<div class="tbis102a-detail-grid">' +
+            '<h2>' + outsourceEsc(r.name || 'PATIENT RECORD') + '</h2>' +
+            '<div class="outsource-detail-grid tbis102a-detail-grid">' +
             fields.map(function (pair) {
-              return '<div><label>' + pair[0] + '</label><strong>' + esc(pair[1] || '') + '</strong></div>';
+              return '<div class="outsource-detail-item"><label>' + outsourceEsc(pair[0]) + '</label><div>' + outsourceEsc(pair[1]) + '</div></div>';
             }).join('') +
             '</div>' +
             '<div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary">CLOSE</button></div>' +
@@ -5693,7 +5838,14 @@ hoagApiRequest('logout', {
 
           document.body.appendChild(modal);
           modal.hidden = false;
-          var close = function () { modal.remove(); };
+          var close = function () {
+            document.removeEventListener('keydown', onKey);
+            modal.remove();
+          };
+          var onKey = function (e) {
+            if (e.key === 'Escape') close();
+          };
+          document.addEventListener('keydown', onKey);
           modal.addEventListener('click', function (e) {
             if (e.target === modal || e.target.closest('.outsource-result-close') || e.target.closest('.outsource-btn.secondary')) close();
           });
@@ -5702,17 +5854,26 @@ hoagApiRequest('logout', {
         function submit(e) {
           if (e && e.preventDefault) e.preventDefault();
           if (saving) return Promise.resolve(null);
+          if (typeof isVisitorAccessRestricted === 'function' && isVisitorAccessRestricted()) {
+            showSaveError('Visitor accounts have read-only access and cannot register or update TBIS102A records.');
+            return Promise.resolve(null);
+          }
           var form = document.getElementById('tbis102aForm');
           var name = val('tbName'), date = val('tbDate');
           var resultValue = val('tbResult');
-          var scantyValue = val('tbScanty');
+          var isScanty = resultValue.toUpperCase() === 'SCANTY';
+          var scantyValue = isScanty ? val('tbScanty') : '';
           var scantyInput = document.getElementById('tbScanty');
           if (!date) {
-            document.getElementById('tbDate').reportValidity();
+            var dateEl = document.getElementById('tbDate');
+            if (dateEl) { dateEl.focus(); dateEl.reportValidity(); }
+            showSaveError('Date is required.');
             return Promise.resolve(null);
           }
           if (!name) {
-            document.getElementById('tbName').reportValidity();
+            var nameEl = document.getElementById('tbName');
+            if (nameEl) { nameEl.focus(); nameEl.reportValidity(); }
+            showSaveError('Patient Name is required.');
             return Promise.resolve(null);
           }
           if (!resultValue) {
@@ -5721,16 +5882,31 @@ hoagApiRequest('logout', {
             showSaveError('Select a Result before registration.');
             return Promise.resolve(null);
           }
-          if (resultValue === 'SCANTY') {
+          if (isScanty) {
             syncScantyField();
-            if (!scantyInput || scantyInput.hidden || scantyInput.disabled || !scantyValue || !scantyInput.validity.valid) {
-              if (scantyInput) { scantyInput.focus(); scantyInput.reportValidity(); }
-              showSaveError('Enter a valid numeric AFB count for SCANTY.');
+            var isPositiveInt = /^[1-9]\d*$/.test(scantyValue);
+            if (!scantyInput || scantyInput.hidden || scantyInput.disabled || !isPositiveInt) {
+              if (scantyInput) {
+                scantyInput.setCustomValidity('Enter a whole number greater than or equal to 1.');
+                scantyInput.focus();
+                scantyInput.reportValidity();
+              }
+              showSaveError('Enter a valid positive integer AFB count for SCANTY (minimum 1).');
               return Promise.resolve(null);
             }
+            scantyInput.setCustomValidity('');
+          } else if (scantyInput) {
+            scantyInput.setCustomValidity('');
           }
           if (!form || !form.checkValidity()) {
             if (form) form.reportValidity();
+            return Promise.resolve(null);
+          }
+
+          var targetId = editId || uid();
+          var existing = rows.find(function (x) { return String(x.id) === String(targetId); });
+          if (existing && !canModifyRecord(existing)) {
+            showSaveError('You can only update TBIS102A records created by your own account.');
             return Promise.resolve(null);
           }
           showSaveError('');
@@ -5739,9 +5915,9 @@ hoagApiRequest('logout', {
             afb: 'x1',
             sample: val('tbSample'),
             quality: val('tbQuality'),
-            result: val('tbResult'),
+            result: resultValue,
             observation: '',
-            scanty: val('tbScanty'),
+            scanty: isScanty ? scantyValue : '',
             slideResult: '',
             patientResult: resultValue,
             slide: '',
@@ -5752,8 +5928,12 @@ hoagApiRequest('logout', {
             notes: ''
           };
 
+          var creator = existing && existing.createdBy
+            ? String(existing.createdBy)
+            : String(state.authUserId || state.authUserDisplayName || '');
+
           var row = {
-            id: editId || uid(),
+            id: targetId,
             date: date,
             labNo: val('tbLabNo'),
             barcode: val('tbBarcode'),
@@ -5762,42 +5942,51 @@ hoagApiRequest('logout', {
             unit: val('tbUnit'),
             patient: val('tbPatient'),
             samples: [sample],
-            createdAt: new Date().toISOString()
+            createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString(),
+            createdBy: creator
           };
 
           saving = true;
           var saveButton = document.getElementById('tbis102aSave');
-          if (saveButton) { saveButton.disabled = true; saveButton.textContent = editId ? 'SAVING...' : 'REGISTERING...'; }
+          if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = editId ? 'SAVING...' : 'REGISTERING...';
+          }
 
-          var existing = rows.find(function (x) { return String(x.id) === String(row.id); });
           var expectedVersion = existing ? Number(existing.version || 1) : undefined;
           var argsRecord = Object.assign({}, row, expectedVersion ? { expectedVersion: expectedVersion } : {});
 
           return hoagApiRequest('action', { method: 'upsertTbis102aRecord', args: [argsRecord] })
             .then(function (result) {
-              if (!result || result.ok === false || !result.record) throw new Error(result && result.error ? result.error : 'TBIS102A save was not confirmed by Supabase.');
+              if (!result || result.ok === false || !result.record) {
+                throw new Error(result && result.error ? result.error : 'TBIS102A save was not confirmed by Supabase.');
+              }
               var savedRecord = result.record;
               var index = rows.findIndex(function (x) { return String(x.id) === String(savedRecord.id); });
               if (index >= 0) rows[index] = savedRecord; else rows.unshift(savedRecord);
+              saving = false;
               clearForm();
               page = 1;
               renderRows();
-              if (typeof setSystemToast === 'function') setSystemToast('TBIS102A SAVED', 'The record has been saved to Supabase successfully.', 2800);
-              return loadRecords(true).then(function (freshRows) {
+              if (typeof setSystemToast === 'function') {
+                setSystemToast('TBIS102A SAVED', 'The record has been saved to Supabase successfully.', 2800);
+              }
+              loadRecords(true).then(function (freshRows) {
                 var persisted = freshRows.find(function (record) { return String(record.id) === String(savedRecord.id); });
                 if (!persisted) {
+                  if (!rows.some(function (record) { return String(record.id) === String(savedRecord.id); })) {
+                    rows.unshift(savedRecord);
+                  }
+                  renderRows();
+                }
+              }).catch(function (refreshError) {
+                console.warn('TBIS102A background refresh deferred:', refreshError);
+                if (!rows.some(function (record) { return String(record.id) === String(savedRecord.id); })) {
                   rows.unshift(savedRecord);
                   renderRows();
-                  showSaveError('Supabase confirmed the save, but the refreshed record list did not return this record.');
                 }
-                return persisted || savedRecord;
-              }).catch(function (refreshError) {
-                console.error('TBIS102A save was confirmed, but records could not be refreshed:', refreshError);
-                if (!rows.some(function (record) { return String(record.id) === String(savedRecord.id); })) rows.unshift(savedRecord);
-                renderRows();
-                showSaveError('Supabase confirmed the save, but the records list could not be refreshed: ' + (refreshError && refreshError.message ? refreshError.message : 'Unknown refresh error.'));
-                return savedRecord;
               });
+              return savedRecord;
             })
             .catch(function (error) {
               console.error('TBIS102A save failed:', error);
@@ -5806,9 +5995,10 @@ hoagApiRequest('logout', {
             })
             .finally(function () {
               saving = false;
-              if (saveButton) {
-                saveButton.disabled = false;
-                saveButton.textContent = editId ? 'SAVE CHANGES' : 'REGISTER TBIS102A';
+              var liveSaveBtn = document.getElementById('tbis102aSave');
+              if (liveSaveBtn) {
+                liveSaveBtn.disabled = false;
+                liveSaveBtn.textContent = editId ? 'SAVE CHANGES' : 'REGISTER TBIS102A';
               }
             });
         }
@@ -5817,15 +6007,26 @@ hoagApiRequest('logout', {
           var grid = $('moduleYearGrid'), title = $('moduleYearsTitle'), desc = $('moduleYearsDesc');
           if (!grid || !title || !desc) return;
 
+          updateMicrobiologySubBackButton('', null);
           grid.className = 'module-year-grid tbis102a-active-grid';
           grid.dataset.yearModule = 'TBIS102A';
           title.textContent = 'TBIS102A';
           desc.textContent = 'Registration and records for TBIS102A fluorescence microscopy screening.';
           grid.innerHTML = buildForm();
 
-          setVal('tbDate', today());
+          setVal('tbDate', getAppDateKey());
           if (window.LabNotification && typeof window.LabNotification.enhanceSelects === 'function') {
             window.LabNotification.enhanceSelects(grid);
+          }
+          if (window.initOutsourceNeumorphicDates) {
+            window.initOutsourceNeumorphicDates();
+          }
+          var tbBackBtn = document.getElementById('tbis102aBackBtn');
+          if (tbBackBtn) {
+            tbBackBtn.addEventListener('click', function (event) {
+              event.preventDefault();
+              renderMicrobiologyTbis();
+            });
           }
           var tbForm = document.getElementById('tbis102aForm');
           var tbSave = document.getElementById('tbis102aSave');
@@ -5842,11 +6043,6 @@ hoagApiRequest('logout', {
 
               var target = event.target;
               if (!target || target.closest('button:not(.notification-select-trigger)')) return;
-              var isSelectTrigger = target.classList && target.classList.contains('notification-select-trigger');
-              if (isSelectTrigger) {
-                var select = target.parentElement && target.parentElement.querySelector('select');
-                if (!select || !select.value) return;
-              }
               var fields = Array.prototype.slice.call(tbForm.querySelectorAll(
                 'input:not([type="hidden"]):not([disabled]), .notification-select-trigger:not([disabled]), select:not(.notification-native-select):not([disabled]), textarea:not([disabled])'
               )).filter(function (field) {
@@ -5860,7 +6056,9 @@ hoagApiRequest('logout', {
               if (next) {
                 next.focus();
                 if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'date' && next.type !== 'number') next.select();
-              } else if (tbSave) tbSave.focus();
+              } else if (tbSave) {
+                tbSave.focus();
+              }
             });
             tbForm.addEventListener('submit', function (event) { submit(event); });
           }
@@ -5873,6 +6071,12 @@ hoagApiRequest('logout', {
           if (tbResult) {
             tbResult.addEventListener('change', syncScantyField);
             tbResult.addEventListener('input', syncScantyField);
+          }
+          var tbScanty = document.getElementById('tbScanty');
+          if (tbScanty) {
+            tbScanty.addEventListener('input', function () {
+              tbScanty.setCustomValidity('');
+            });
           }
           syncScantyField();
 
@@ -5899,16 +6103,17 @@ hoagApiRequest('logout', {
         var desc = $('moduleYearsDesc');
         if (!grid || !title || !desc) return;
 
+        updateMicrobiologySubBackButton('MICROBIOLOGY', renderMicrobiologyHome);
         grid.className = 'module-year-grid microbiology-structure-grid tbis-structure-grid';
         grid.dataset.yearModule = 'TB INFORMATION SYSTEM';
         grid.textContent = '';
         title.textContent = 'TB INFORMATION SYSTEM';
-        desc.textContent = 'Select a TB Information System section. Content will be added after the structure is finalized.';
+        desc.textContent = 'Select a TB Information System section.';
 
         TBIS_CARDS.forEach(function (definition, index) {
           grid.appendChild(createMicrobiologyCard(definition, function () {
             if (index === 0) { TBIS102A.open(); return; }
-            showModuleNotice('Module Opened', definition.title + ' opened.');
+            renderMicrobiologySubmodulePlaceholder(definition, 'TB INFORMATION SYSTEM', renderMicrobiologyTbis);
           }));
         });
       }
@@ -5927,6 +6132,7 @@ hoagApiRequest('logout', {
           renderMicrobiologyHome();
           return;
         }
+        updateMicrobiologySubBackButton('', null);
         /* Modules with dedicated workspaces never render Year Cards. */
         if(displayName==='INVENTORY' && typeof Inventory!=='undefined' && Inventory.open){ Inventory.open(); return; }
         if(displayName==='TRANSFUSION' && typeof Transfusion!=='undefined' && Transfusion.open){ Transfusion.open(state.selectedModuleYear || (window.LabAppTime ? window.LabAppTime.nowParts().year : new Date().getFullYear())); return; }
@@ -5935,6 +6141,7 @@ hoagApiRequest('logout', {
            its display:block rules force every later module year card into one column. */
         if(displayName!=='OUTSOURCE') grid.classList.remove('outsource-active-grid');
         if(displayName!=='TRANSFUSION') grid.classList.remove('transfusion-active-grid');
+        grid.classList.remove('tbis102a-active-grid');
         if(displayName==='OUTSOURCE'){
           /* OUTSOURCE depends on the shared Inventory dataset, but Inventory is
              intentionally lazy. Initialize/load it when OUTSOURCE is opened,
@@ -12288,19 +12495,29 @@ if ("serviceWorker" in navigator) {
  function parse(v){if(!v)return null;var a=String(v).split('-').map(Number);if(a.length!==3||a.some(isNaN))return null;return new Date(a[0],a[1]-1,a[2]);}
  function fmt(v){var d=parse(v);return d?pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear():'';}
  function setup(hiddenId,visibleId){var h=document.getElementById(hiddenId),v=document.getElementById(visibleId);if(!h||!v||v._outsourceDateReady)return;v._outsourceDateReady=true;
-  var pop=document.createElement('div');pop.className='outsource-date-popover';pop.hidden=true;pop.innerHTML='<div class="outsource-date-head"><div class="outsource-date-month"></div><div class="outsource-date-nav"><button type="button" data-prev>‹</button><button type="button" data-next>›</button></div></div><div class="outsource-date-week"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div><div class="outsource-date-grid"></div><div class="outsource-date-foot"><button type="button" data-clear>Clear</button><button type="button" data-today>Today</button></div>';document.body.appendChild(pop);
+  var isNativeDate=(h===v||v.type==='date');
+  var oldPop=document.querySelector('.outsource-date-popover[data-date-target="'+visibleId+'"]');if(oldPop){if(typeof oldPop._cleanup==='function')oldPop._cleanup();oldPop.remove();}
+  var pop=document.createElement('div');pop.className='outsource-date-popover';pop.dataset.dateTarget=visibleId;pop.hidden=true;pop.innerHTML='<div class="outsource-date-head"><div class="outsource-date-month"></div><div class="outsource-date-nav"><button type="button" data-prev>‹</button><button type="button" data-next>›</button></div></div><div class="outsource-date-week"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div><div class="outsource-date-grid"></div><div class="outsource-date-foot"><button type="button" data-clear>Clear</button><button type="button" data-today>Today</button></div>';document.body.appendChild(pop);
   var view=parse(h.value)||new Date();
   function position(){var r=v.getBoundingClientRect(),w=pop.offsetWidth,hh=pop.offsetHeight,left=Math.min(Math.max(12,r.left),window.innerWidth-w-12),top=r.bottom+8;if(top+hh>window.innerHeight-12)top=Math.max(12,r.top-hh-8);pop.style.left=left+'px';pop.style.top=top+'px';}
-  function render(){pop.querySelector('.outsource-date-month').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});var g=pop.querySelector('.outsource-date-grid');g.innerHTML='';var first=new Date(view.getFullYear(),view.getMonth(),1),start=(first.getDay()+6)%7,days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate(),prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(),today=key(new Date());for(var i=0;i<42;i++){var n=i-start+1,d=new Date(view.getFullYear(),view.getMonth(),n),muted=false;if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);muted=true}else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);muted=true}var b=document.createElement('button');b.type='button';b.className='outsource-date-day'+(muted?' muted':'')+(key(d)===today?' today':'')+(key(d)===h.value?' selected':'');b.textContent=d.getDate();b.dataset.date=key(d);g.appendChild(b);}}
-  function open(){view=parse(h.value)||new Date();render();pop.hidden=false;position();}
+  function render(){pop.querySelector('.outsource-date-month').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});var g=pop.querySelector('.outsource-date-grid');g.innerHTML='';var first=new Date(view.getFullYear(),view.getMonth(),1),start=(first.getDay()+6)%7,days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate(),prevDays=new Date(view.getFullYear(),view.getMonth(),0).getDate(),todayKey=(window.LabAppTime&&typeof window.LabAppTime.todayKey==='function')?window.LabAppTime.todayKey():key(new Date());for(var i=0;i<42;i++){var n=i-start+1,d=new Date(view.getFullYear(),view.getMonth(),n),muted=false;if(n<1){d=new Date(view.getFullYear(),view.getMonth()-1,prevDays+n);muted=true}else if(n>days){d=new Date(view.getFullYear(),view.getMonth()+1,n-days);muted=true}var b=document.createElement('button');b.type='button';b.className='outsource-date-day'+(muted?' muted':'')+(key(d)===todayKey?' today':'')+(key(d)===h.value?' selected':'');b.textContent=d.getDate();b.dataset.date=key(d);g.appendChild(b);}}
+  function open(e){if(isNativeDate&&e&&e.type==='click')e.preventDefault();view=parse(h.value)||new Date();render();pop.hidden=false;position();}
   function close(){pop.hidden=true;}
-  function choose(k){h.value=k;v.value=fmt(k);h.dispatchEvent(new Event('input',{bubbles:true}));h.dispatchEvent(new Event('change',{bubbles:true}));close();}
-  v.value=fmt(h.value);v.addEventListener('click',open);v.addEventListener('focus',open);
-  pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-prev')){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position()}else if(b.hasAttribute('data-next')){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position()}else if(b.dataset.date){choose(b.dataset.date)}else if(b.hasAttribute('data-today')){choose(key(new Date()))}else if(b.hasAttribute('data-clear')){choose('')}});
-  document.addEventListener('mousedown',function(e){if(!pop.contains(e.target)&&e.target!==v)close()});window.addEventListener('resize',function(){if(!pop.hidden)position()});window.addEventListener('scroll',function(){if(!pop.hidden)position()},true);
-  v._syncDate=function(){v.value=fmt(h.value);};
+  function choose(k){h.value=k;if(!isNativeDate)v.value=fmt(k);h.dispatchEvent(new Event('input',{bubbles:true}));h.dispatchEvent(new Event('change',{bubbles:true}));close();}
+  if(!isNativeDate)v.value=fmt(h.value);
+  v.addEventListener('click',open);
+  if(!isNativeDate)v.addEventListener('focus',open);
+  else v.addEventListener('change',function(){if(!pop.hidden){view=parse(h.value)||new Date();render();}});
+  v.addEventListener('keydown',function(e){if(e.key==='Escape'||e.key==='Tab'||e.key==='Enter')close();});
+  pop.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-prev')){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();position()}else if(b.hasAttribute('data-next')){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();position()}else if(b.dataset.date){choose(b.dataset.date)}else if(b.hasAttribute('data-today')){choose((window.LabAppTime&&typeof window.LabAppTime.todayKey==='function')?window.LabAppTime.todayKey():key(new Date()))}else if(b.hasAttribute('data-clear')){choose('')}});
+  function onDocMouseDown(e){if(!pop.isConnected){cleanup();return;}if(!pop.contains(e.target)&&e.target!==v)close();}
+  function onWindowReflow(){if(!pop.isConnected){cleanup();return;}if(!pop.hidden)position();}
+  function cleanup(){document.removeEventListener('mousedown',onDocMouseDown);window.removeEventListener('resize',onWindowReflow);window.removeEventListener('scroll',onWindowReflow,true);}
+  pop._cleanup=cleanup;
+  document.addEventListener('mousedown',onDocMouseDown);window.addEventListener('resize',onWindowReflow);window.addEventListener('scroll',onWindowReflow,true);
+  v._syncDate=function(){if(!isNativeDate)v.value=fmt(h.value);};
  }
- window.initOutsourceNeumorphicDates=function(){[['osSampleDate','osSampleDateVisible'],['osDispatchDate','osDispatchDateVisible'],['outsourceModalResultDate','outsourceModalResultDateVisible'],['outsourceDetailResultDate','outsourceDetailResultDateVisible'],['trDate','trDateVisible']].forEach(function(x){setup(x[0],x[1]);});['osSampleDate','osDispatchDate','outsourceModalResultDate','outsourceDetailResultDate','trDate'].forEach(function(id){var h=document.getElementById(id),v=document.getElementById(id+'Visible');if(h&&v&&v._syncDate)v._syncDate();});};
+ window.initOutsourceNeumorphicDates=function(){[['osSampleDate','osSampleDateVisible'],['osDispatchDate','osDispatchDateVisible'],['outsourceModalResultDate','outsourceModalResultDateVisible'],['outsourceDetailResultDate','outsourceDetailResultDateVisible'],['trDate','trDateVisible'],['tbDate','tbDate'],['tbReleaseDate','tbReleaseDate']].forEach(function(x){setup(x[0],x[1]);});['osSampleDate','osDispatchDate','outsourceModalResultDate','outsourceDetailResultDate','trDate'].forEach(function(id){var h=document.getElementById(id),v=document.getElementById(id+'Visible');if(h&&v&&v._syncDate)v._syncDate();});};
 })();
 
 
@@ -12499,7 +12716,7 @@ if ("serviceWorker" in navigator) {
       for(var i=0;i<mutations.length;i++){
         var m=mutations[i];
         var t=m.target;
-        if(t && (t.id==='outsourceTableBody' || t.id==='trTableBody' || (t.closest && t.closest('#outsourceTableBody, #trTableBody')))) continue;
+        if(t && (t.id==='outsourceTableBody' || t.id==='trTableBody' || t.id==='tbisTableBody' || (t.closest && t.closest('#outsourceTableBody, #trTableBody, #tbisTableBody')))) continue;
         if((m.addedNodes && m.addedNodes.length) || m.type==='attributes'){
           relevant=true;
           break;

@@ -321,6 +321,7 @@ async function getTbis102aRows(limit = null, offset = 0) {
 function tbis102aOwnerMatches(session, record) {
   const ownerKeys = [record?.createdBy, record?.createdByUserId, record?.ownerId, record?.ownerUserId]
     .map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
+  if (!ownerKeys.length) return true;
   const userKeys = [session.userId, session.user?.userId, session.user?.id, session.user?.username, session.user?.displayName, session.user?.name]
     .map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
   return ownerKeys.some(v => userKeys.includes(v));
@@ -351,6 +352,9 @@ function normalizeTbis102aRecord(raw, existing, userId) {
   const sample = samples[0] && typeof samples[0] === 'object' ? samples[0] : {};
   const now = iso();
   const createdAt = previous.createdAt || source.createdAt || now;
+  const resultVal = clean(sample.result, 40);
+  const isScanty = resultVal.toUpperCase() === 'SCANTY';
+  const scantyVal = isScanty ? clean(sample.scanty, 40) : '';
   const record = {
     id,
     date: clean(source.date, 20),
@@ -364,11 +368,11 @@ function normalizeTbis102aRecord(raw, existing, userId) {
       afb: clean(sample.afb || 'x1', 20),
       sample: clean(sample.sample, 40),
       quality: clean(sample.quality, 40),
-      result: clean(sample.result, 40),
+      result: resultVal,
       observation: clean(sample.observation, 200),
-      scanty: clean(sample.scanty, 40),
+      scanty: scantyVal,
       slideResult: clean(sample.slideResult, 100),
-      patientResult: clean(sample.patientResult || sample.result, 40),
+      patientResult: resultVal,
       slide: clean(sample.slide, 100),
       releaseDate: clean(sample.releaseDate, 20),
       tat: clean(sample.tat, 40),
@@ -386,7 +390,9 @@ function normalizeTbis102aRecord(raw, existing, userId) {
   if (!record.date || !record.name) fail('Date and Name are required.');
   const s = record.samples[0];
   if (!s.result) fail('Result is required.');
-  if (s.result === 'SCANTY' && !s.scanty) fail('Numeric result is required when Result is SCANTY.');
+  if (isScanty && (!s.scanty || !/^[1-9]\d*$/.test(s.scanty))) {
+    fail('A positive integer numeric AFB count is required when Result is SCANTY.');
+  }
   return record;
 }
 

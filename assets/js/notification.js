@@ -1512,6 +1512,7 @@
       if (!trigger) return;
       var label = trigger.querySelector('[data-notification-select-label]'), opt = select.options[select.selectedIndex];
       if (label) label.textContent = opt ? opt.textContent : 'Select...';
+      trigger.classList.toggle('is-placeholder', !select.value);
       trigger.classList.toggle('is-disabled', !!select.disabled);
       trigger.disabled = !!select.disabled;
       if (notificationSelectState.select === select && notificationSelectState.menu) {
@@ -1540,10 +1541,8 @@
       if (label) trigger.setAttribute('aria-label', label);
       trigger.innerHTML = '<span data-notification-select-label></span><span class="notification-select-chevron">⌄</span>';
       wrap.insertBefore(trigger, select); sync(select);
-      trigger.addEventListener('click', function (event) {
-        event.preventDefault(); event.stopPropagation();
+      function openMenu() {
         if (select.disabled) return;
-        if (notificationSelectState.trigger === trigger) { close(); return; }
         close();
         var menu = document.createElement('div');
         menu.id = 'notificationSelectMenu'; menu.className = 'notification-select-menu'; menu.setAttribute('role', 'listbox');
@@ -1580,6 +1579,19 @@
         position();
         var initial = menu.querySelector('[aria-selected="true"]') || menu.querySelector('[role="option"]');
         if (initial) initial.focus();
+      }
+      trigger.addEventListener('click', function (event) {
+        event.preventDefault(); event.stopPropagation();
+        if (select.disabled) return;
+        if (notificationSelectState.trigger === trigger) { close(); return; }
+        openMenu();
+      });
+      trigger.addEventListener('keydown', function (event) {
+        if (select.disabled) return;
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === ' ') {
+          event.preventDefault(); event.stopPropagation();
+          openMenu();
+        }
       });
       select.addEventListener('change', function () { sync(select); });
     }

@@ -508,14 +508,14 @@ table.rt-responsive-table td,
    Keep all three record tables compact and consistent:
    Eye / Edit / Delete icons only. Never wrap action text.
    ========================================================= */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table .outsource-actions-cell {
   width: 1% !important;
   min-width: 92px !important;
   white-space: nowrap !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table .outsource-actions {
   display: inline-flex !important;
   align-items: center !important;
@@ -527,7 +527,7 @@ table.rt-responsive-table td,
   white-space: nowrap !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table .outsource-mini.icon-only {
   display: inline-flex !important;
   align-items: center !important;
@@ -548,7 +548,7 @@ table.rt-responsive-table td,
   overflow: hidden !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table .outsource-mini.icon-only svg {
   display: block !important;
   width: 14px !important;
@@ -561,7 +561,7 @@ table.rt-responsive-table td,
   pointer-events: none !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table .outsource-mini.action-delete {
   color: var(--danger) !important;
   background: var(--danger-bg) !important;
@@ -569,12 +569,12 @@ table.rt-responsive-table td,
 }
 
 @container outsource-record-card (max-width: 620px) {
-  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
     .outsource-table .outsource-actions-cell {
     min-width: 86px !important;
   }
 
-  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+  :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
     .outsource-table .outsource-mini.icon-only {
     flex-basis: 25px !important;
     width: 25px !important;
@@ -626,7 +626,7 @@ table.rt-responsive-table .notification-pill {
 }
 
 /* Outsource + Transfusion: same real-table model, with automatic row height. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table {
   display: table !important;
   width: 100% !important;
@@ -636,18 +636,18 @@ table.rt-responsive-table .notification-pill {
   border-collapse: separate !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table tbody tr.outsource-data-row,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table tbody tr.transfusion-data-row {
   height: auto !important;
   min-height: 36px !important;
   max-height: none !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table th {
   height: auto !important;
   min-height: 0 !important;
@@ -661,9 +661,9 @@ table.rt-responsive-table .notification-pill {
 }
 
 /* Patient names must wrap at spaces instead of being ellipsized. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td.patient strong,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td.patient span {
   display: block !important;
   max-width: 100% !important;
@@ -676,7 +676,7 @@ table.rt-responsive-table .notification-pill {
 }
 
 /* All three action columns use the same compact icon-only treatment. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-actions-cell {
   width: 1% !important;
   min-width: 88px !important;
@@ -685,7 +685,7 @@ table.rt-responsive-table .notification-pill {
   overflow: visible !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-actions {
   display: inline-flex !important;
   flex-wrap: nowrap !important;
@@ -695,7 +695,7 @@ table.rt-responsive-table .notification-pill {
   overflow: visible !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-mini.icon-only {
   flex: 0 0 25px !important;
   width: 25px !important;
@@ -965,7 +965,7 @@ table.rt-responsive-table .notification-pill,
 }
 
 /* Keep all table status/result values as text, never colored ovals. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-result-pill {
   background: transparent !important;
   border: 0 !important;
@@ -1122,20 +1122,20 @@ table.rt-responsive-table .notification-pill,
    Keep every header and data cell left-aligned. Action icons
    also start from the left edge of their cell for consistency.
    ========================================================= */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table th,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table th,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table td,
 #notification .notification-table.rt-responsive-table th,
 #notification .notification-table.rt-responsive-table td {
   text-align: left !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td.patient,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table td.patient,
 #notification .notification-table.rt-responsive-table td.patient {
   text-align: left !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions-cell,
 #notification .notification-table.rt-responsive-table .notification-actions,
 #notification .notification-table.rt-responsive-table .notification-actions-cell {
   justify-content: flex-start !important;
@@ -1143,8 +1143,8 @@ table.rt-responsive-table .notification-pill,
   text-align: left !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table .outsource-result-pill,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table .transfusion-status-pill,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table .outsource-result-pill,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table .transfusion-status-pill,
 #notification .notification-table.rt-responsive-table .notification-pill {
   justify-content: flex-start !important;
   text-align: left !important;
@@ -1156,33 +1156,33 @@ table.rt-responsive-table .notification-pill,
    cell is left-aligned across Outsource, Transfusion and
    Notification tables.
    ========================================================= */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table th,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table th,
 #notification .notification-table.rt-responsive-table th {
   text-align: center !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table td,
 #notification .notification-table.rt-responsive-table td {
   text-align: left !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td.patient,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table td.patient,
 #notification .notification-table.rt-responsive-table td.patient,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions-cell,
 #notification .notification-table.rt-responsive-table .notification-actions,
 #notification .notification-table.rt-responsive-table .notification-actions-cell {
   text-align: left !important;
   justify-content: flex-start !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td > *,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table td > *,
 #notification .notification-table.rt-responsive-table td > * {
   text-align: left !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td .outsource-result-pill,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-table td .transfusion-status-pill,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table td .outsource-result-pill,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table td .transfusion-status-pill,
 #notification .notification-table.rt-responsive-table td .notification-pill {
   justify-content: flex-start !important;
   text-align: left !important;
@@ -1193,8 +1193,8 @@ table.rt-responsive-table .notification-pill,
    Table headers stay centered; normal data cells stay left.
    Action columns are centered consistently for all tables.
    ========================================================= */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions-cell,
 #notification .notification-table.rt-responsive-table .notification-actions,
 #notification .notification-table.rt-responsive-table .notification-actions-cell {
   text-align: center !important;
@@ -1202,8 +1202,8 @@ table.rt-responsive-table .notification-pill,
   align-items: center !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions > *,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-actions-cell > *,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions > *,
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-actions-cell > *,
 #notification .notification-table.rt-responsive-table .notification-actions > *,
 #notification .notification-table.rt-responsive-table .notification-actions-cell > * {
   text-align: center !important;
@@ -1225,9 +1225,9 @@ table.rt-responsive-table .notification-pill,
    Actions remain icon-only and never wrap.
    ========================================================= */
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table th,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td,
 #notification .notification-table.rt-responsive-table th,
 #notification .notification-table.rt-responsive-table td {
@@ -1242,7 +1242,7 @@ table.rt-responsive-table .notification-pill,
 }
 
 /* Text-bearing elements inside cells must obey the cell boundary too. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td > *,
 #notification .notification-table.rt-responsive-table td > * {
   min-width: 0 !important;
@@ -1253,13 +1253,13 @@ table.rt-responsive-table .notification-pill,
   text-overflow: clip !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td strong,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td span,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td div,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table td p,
 #notification .notification-table.rt-responsive-table td strong,
 #notification .notification-table.rt-responsive-table td span,
@@ -1274,9 +1274,9 @@ table.rt-responsive-table .notification-pill,
 
 /* Status/result text may stay on one line when it fits, but can break
    at the cell boundary if the available width becomes too small. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-result-pill,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .transfusion-status-pill,
 #notification .notification-table.rt-responsive-table .notification-pill {
   width: auto !important;
@@ -1290,9 +1290,9 @@ table.rt-responsive-table .notification-pill,
 }
 
 /* Actions are the exception: icons must remain together and centered. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-actions-cell,
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-actions,
 #notification .notification-table.rt-responsive-table .notification-actions-cell,
 #notification .notification-table.rt-responsive-table .notification-actions {
@@ -1306,7 +1306,7 @@ table.rt-responsive-table .notification-pill,
   justify-content: center !important;
 }
 
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
   .outsource-table.rt-responsive-table .outsource-mini.icon-only,
 #notification .notification-table.rt-responsive-table .notification-action.icon-only {
   flex: 0 0 auto !important;
