@@ -261,6 +261,14 @@ async function upsertNotificationRow(input, existing = null, userId = '') {
   // Keep the Notification table contract explicit. Do not pass arbitrary
   // client fields into Supabase; this also makes Save independent from any
   // UI-only properties added to the form object.
+  const allowedAfb = new Set(['X1', 'X2', 'X3']);
+  const seenAfb = new Set();
+  resultSamples.forEach(s => {
+    if (!allowedAfb.has(s.afb)) fail('SPUTUM AFB must be X1, X2, or X3.');
+    if (seenAfb.has(s.afb)) fail('Duplicate SPUTUM AFB sample: ' + s.afb + '.');
+    seenAfb.add(s.afb);
+  });
+
   const record = {
     id,
     notification_datetime: notificationDatetime,
@@ -361,7 +369,10 @@ function normalizeTbis102aRecord(raw, existing, userId) {
     else mergedSamples.push({ ...incoming, afb });
   });
 
-  const samples = mergedSamples.slice(0, 3);
+  const samples = mergedSamples.slice(0, 3).sort((a, b) => {
+    const order = { x1: 1, x2: 2, x3: 3 };
+    return (order[clean(a?.afb || '', 20).toLowerCase()] || 99) - (order[clean(b?.afb || '', 20).toLowerCase()] || 99);
+  });
   const now = iso();
   const createdAt = previous.createdAt || source.createdAt || now;
   const resultSamples = samples.map(sample => {
