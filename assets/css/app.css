@@ -11320,7 +11320,7 @@ body.auth-resolving #authResolvingPanel {
 
 
 
-/* TBIS102A V27 — form-aligned grouped case/sample table.
+/* TBIS102A V28 — form-aligned grouped case/sample table; BIL hidden from display.
  * Table columns are limited to fields present in the registration form.
  * One BIL always renders X1/X2/X3; case identity cells span 3 rows; Actions do not.
  */

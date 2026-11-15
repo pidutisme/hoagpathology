@@ -5682,7 +5682,7 @@ hoagApiRequest('logout', {
             '<select id="tbisYearFilter" aria-label="Filter by year"><option value="ALL">All years</option></select>' +
             '<select id="tbisMonthFilter" aria-label="Filter by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
             '<div class="outsource-table-wrap notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table rt-responsive-table"><thead><tr>' +
-            '<th>BIL</th><th>DATE</th><th>LAB NO.</th><th>BARCODE</th><th>NAME</th><th>IC / ID NO.</th><th>UNIT</th><th>PATIENT</th><th>SAMPLE</th><th>SAMPLE QUALITY</th><th>SPUTUM AFB</th><th>RESULT</th><th>RELEASE DATE</th><th>TAT</th><th>VALIDATED BY</th><th>REVIEWED BY</th><th>ACTIONS</th>' +
+            '<th>DATE</th><th>LAB NO.</th><th>BARCODE</th><th>NAME</th><th>IC / ID NO.</th><th>UNIT</th><th>PATIENT</th><th>SAMPLE</th><th>SAMPLE QUALITY</th><th>SPUTUM AFB</th><th>RESULT</th><th>RELEASE DATE</th><th>TAT</th><th>VALIDATED BY</th><th>REVIEWED BY</th><th>ACTIONS</th>' +
             '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
             '<div class="outsource-pager tbis102a-pager" id="tbisPager">Showing 0–0 of 0</div>' +
             '</section></div></div>';
@@ -5759,8 +5759,7 @@ hoagApiRequest('logout', {
           body.innerHTML = visible.map(function (r) {
             var samples = fixedSamples(r);
             var canModify = canModifyRecord(r);
-            var bil = r.bil || '—';
-            var caseCells = '<td rowspan="3" class="tbis-case-cell tbis-bil-cell">' + outsourceEsc(bil) + '</td>';
+            var caseCells = '';
             var identityCells = [
               '<td rowspan="3" class="tbis-case-cell"><strong>' + outsourceEsc(r.name || '—') + '</strong></td>',
               '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.idNo || '—') + '</td>',
