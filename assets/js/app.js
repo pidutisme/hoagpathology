@@ -5682,7 +5682,7 @@ hoagApiRequest('logout', {
             '<select id="tbisYearFilter" aria-label="Filter by year"><option value="ALL">All years</option></select>' +
             '<select id="tbisMonthFilter" aria-label="Filter by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
             '<div class="outsource-table-wrap notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table rt-responsive-table"><thead><tr>' +
-            '<th>BIL</th><th>Tarikh</th><th>No. Siri Makmal</th><th>No. Barcode</th><th>Nama</th><th>No. Kad Pengenalan</th><th>Unit</th><th>Pesakit</th><th>SPUTUM AFB</th><th>Jenis Sample</th><th>Kualiti Sample</th><th>Observation in 1L</th><th>No. of AFB Found in Scanty</th><th>Result</th><th>Final Result (Slide)</th><th>Final Keputusan Pesakit</th><th>Tarikh Keputusan Dikeluarkan</th><th>Tempoh Masa Keputusan Dikeluarkan (Jam)</th><th>Staff Makmal yang Mengeluarkan Keputusan</th><th>Review</th><th>Actions</th>' +
+            '<th>BIL</th><th>DATE</th><th>LAB NO.</th><th>BARCODE</th><th>NAME</th><th>IC / ID NO.</th><th>UNIT</th><th>PATIENT</th><th>SAMPLE</th><th>SAMPLE QUALITY</th><th>SPUTUM AFB</th><th>RESULT</th><th>RELEASE DATE</th><th>TAT</th><th>VALIDATED BY</th><th>REVIEWED BY</th><th>ACTIONS</th>' +
             '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
             '<div class="outsource-pager tbis102a-pager" id="tbisPager">Showing 0–0 of 0</div>' +
             '</section></div></div>';
@@ -5781,14 +5781,10 @@ hoagApiRequest('logout', {
               var labCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.labNo || '') : (s.labNo || '')) + '</td>';
               var barcodeCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.barcode || '') : (s.barcode || '')) + '</td>';
               var details = [
-                '<td><strong>' + outsourceEsc(afbDisplay) + '</strong></td>',
                 '<td>' + outsourceEsc(s.sample || '') + '</td>',
                 '<td>' + outsourceEsc(s.quality || '') + '</td>',
-                '<td>' + outsourceEsc(s.observation || '') + '</td>',
-                '<td>' + outsourceEsc(s.scanty || '') + '</td>',
+                '<td><strong>' + outsourceEsc(afbDisplay) + '</strong></td>',
                 '<td class="outsource-result">' + (resultLabel ? '<span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span>' : '') + '</td>',
-                '<td>' + outsourceEsc(s.slideResult || '') + '</td>',
-                '<td>' + outsourceEsc(s.patientResult || '') + '</td>',
                 '<td>' + outsourceEsc(s.releaseDate || '') + '</td>',
                 '<td>' + outsourceEsc(s.tat || '') + '</td>',
                 '<td>' + outsourceEsc(s.staff || '') + '</td>',
