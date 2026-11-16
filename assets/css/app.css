@@ -11348,7 +11348,6 @@ body.auth-resolving #authResolvingPanel {
   border-top: 1px dashed var(--line);
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-virtual-spacer {
-  height: 0;
   padding: 0 !important;
   margin: 0 !important;
   border: 0 !important;
@@ -11359,7 +11358,6 @@ body.auth-resolving #authResolvingPanel {
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-virtual-spacer td {
   display: table-cell !important;
-  height: 0;
   padding: 0 !important;
   margin: 0 !important;
   border: 0 !important;

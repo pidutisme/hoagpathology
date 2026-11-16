@@ -60,9 +60,32 @@
     });
   }
 
+  function applyLabelsToRows(table, rows) {
+    if (!table || !rows || !rows.length) return;
+    var headerRow = table.tHead && table.tHead.rows && table.tHead.rows[0];
+    if (!headerRow) headerRow = table.querySelector('thead tr');
+    if (!headerRow) return;
+    var headers = Array.prototype.map.call(headerRow.cells || [], function (cell) {
+      return cleanLabel(cell.textContent);
+    });
+    if (!headers.length) return;
+    Array.prototype.forEach.call(rows, function (row) {
+      if (!row || row.nodeType !== 1 || row.matches('.rt-spanning-row, .outsource-virtual-spacer, .tbis-virtual-spacer')) return;
+      var cells = Array.prototype.slice.call(row.cells || []);
+      if (cells.some(function (cell) { return cell.hasAttribute('colspan') || cell.hasAttribute('rowspan'); })) {
+        row.classList.add('rt-spanning-row');
+        return;
+      }
+      cells.forEach(function (cell, index) {
+        cell.setAttribute('data-label', headers[index] || ('Column ' + (index + 1)));
+      });
+    });
+  }
+
   function scan(root) {
     var scope = root && root.querySelectorAll ? root : document;
-    var tables = scope.querySelectorAll(TABLE_SELECTOR);
+    if (scope.nodeType === 1 && scope.matches && scope.matches(TABLE_SELECTOR)) prepareTable(scope);
+    var tables = scope.querySelectorAll ? scope.querySelectorAll(TABLE_SELECTOR) : [];
     Array.prototype.forEach.call(tables, prepareTable);
   }
 
@@ -75,15 +98,28 @@
     });
   }
 
+  function scanAddedNode(node) {
+    if (!node || node.nodeType !== 1) return;
+    if (node.matches && node.matches('table:not([data-rt-ignore="1"])')) {
+      prepareTable(node);
+      return;
+    }
+    if (node.matches && node.matches('tr')) {
+      var table = node.closest('table:not([data-rt-ignore="1"])');
+      if (table) applyLabelsToRows(table, [node]);
+      return;
+    }
+    scan(node);
+  }
+
   function init() {
     scan(document);
 
     if (window.MutationObserver) {
       new MutationObserver(function (mutations) {
-        var relevant = mutations.some(function (mutation) {
-          return mutation.addedNodes && mutation.addedNodes.length;
+        mutations.forEach(function (mutation) {
+          Array.prototype.forEach.call(mutation.addedNodes || [], scanAddedNode);
         });
-        if (relevant) scheduleScan();
       }).observe(document.body, { childList: true, subtree: true });
     }
 
