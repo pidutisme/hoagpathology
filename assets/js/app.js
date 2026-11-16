@@ -5426,7 +5426,6 @@ hoagApiRequest('logout', {
             .then(function (result) {
               if (!result || result.ok === false) throw new Error(result && result.error ? result.error : 'Unable to load TBIS102A records.');
               rows = Array.isArray(result.records) ? result.records.slice() : [];
-              page = 1;
               renderRows();
               return rows.slice();
             })
@@ -5996,7 +5995,6 @@ function submit(e) {
               if (index >= 0) rows[index] = savedRecord; else rows.unshift(savedRecord);
               saving = false;
               clearForm();
-              page = 1;
               renderRows();
               if (typeof setSystemToast === 'function') {
                 setSystemToast('TBIS102A SAVED', 'The record has been saved to Supabase successfully.', 2800);
