@@ -5394,10 +5394,8 @@ hoagApiRequest('logout', {
         }
       }
 
-      var TBIS102A_PAGE_SIZE = 12;
       var TBIS102A = (function () {
         var editId = null;
-        var page = 1;
 
         var rows = [];
         var loadingPromise = null;
@@ -5428,7 +5426,6 @@ hoagApiRequest('logout', {
             .then(function (result) {
               if (!result || result.ok === false) throw new Error(result && result.error ? result.error : 'Unable to load TBIS102A records.');
               rows = Array.isArray(result.records) ? result.records.slice() : [];
-              page = 1;
               renderRows();
               return rows.slice();
             })
@@ -5751,10 +5748,10 @@ hoagApiRequest('logout', {
             }
           }
 
-          var pages = Math.max(1, Math.ceil(filtered.length / TBIS102A_PAGE_SIZE));
-          if (page > pages) page = pages;
-          var start = (page - 1) * TBIS102A_PAGE_SIZE;
-          var visible = filtered.slice(start, start + TBIS102A_PAGE_SIZE);
+          // TBIS102A is a single scrollable register. Render every filtered case
+          // so the table continues naturally when the user scrolls down.
+          var start = 0;
+          var visible = filtered;
 
           body.innerHTML = visible.map(function (r) {
             var samples = fixedSamples(r);
@@ -5805,23 +5802,9 @@ hoagApiRequest('logout', {
 
           var pager = document.getElementById('tbisPager');
           if (pager) {
-            var rangeText = filtered.length
-              ? 'Showing cases ' + (start + 1) + '–' + Math.min(start + visible.length, filtered.length) + ' of ' + filtered.length
+            pager.textContent = filtered.length
+              ? 'Showing cases 1–' + filtered.length + ' of ' + filtered.length
               : 'Showing cases 0–0 of 0';
-            if (pages > 1) {
-              pager.innerHTML = '<span>' + rangeText + '</span>' +
-                '<div class="tbis102a-pager-btns">' +
-                '<button type="button" class="outsource-mini" id="tbisPagePrev"' + (page <= 1 ? ' disabled' : '') + '>‹ Prev</button>' +
-                '<span class="tbis102a-page-indicator">' + page + ' / ' + pages + '</span>' +
-                '<button type="button" class="outsource-mini" id="tbisPageNext"' + (page >= pages ? ' disabled' : '') + '>Next ›</button>' +
-                '</div>';
-              var prevBtn = document.getElementById('tbisPagePrev');
-              var nextBtn = document.getElementById('tbisPageNext');
-              if (prevBtn) prevBtn.addEventListener('click', function () { if (page > 1) { page -= 1; renderRows(); } });
-              if (nextBtn) nextBtn.addEventListener('click', function () { if (page < pages) { page += 1; renderRows(); } });
-            } else {
-              pager.textContent = rangeText;
-            }
           }
 
           body.querySelectorAll('.tbis-edit').forEach(function (b) {
@@ -6007,7 +5990,6 @@ function submit(e) {
               if (index >= 0) rows[index] = savedRecord; else rows.unshift(savedRecord);
               saving = false;
               clearForm();
-              page = 1;
               renderRows();
               if (typeof setSystemToast === 'function') {
                 setSystemToast('TBIS102A SAVED', 'The record has been saved to Supabase successfully.', 2800);
@@ -6139,7 +6121,6 @@ function submit(e) {
           ['tbisSearch', 'tbisYearFilter', 'tbisMonthFilter'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener(id === 'tbisSearch' ? 'input' : 'change', function () {
-              page = 1;
               renderRows();
             });
           });
