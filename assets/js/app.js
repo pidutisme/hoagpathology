@@ -5598,25 +5598,12 @@ hoagApiRequest('logout', {
           return 'status-pending';
         }
 
-        function resolveSampleMeta(r, s, sampleIndex) {
-          var afb = String((s && s.afb) || ('X' + (sampleIndex + 1))).toUpperCase();
-          var isFirstSample = afb === 'X1' || sampleIndex === 0;
-          var hasOwnMeta = !!(s && (s.date !== undefined || s.labNo !== undefined || s.barcode !== undefined));
-          if (hasOwnMeta) {
-            return {
-              date: String(s.date || ''),
-              labNo: String(s.labNo || ''),
-              barcode: String(s.barcode || '')
-            };
-          }
-          if (isFirstSample) {
-            return {
-              date: String((r && r.date) || ''),
-              labNo: String((r && r.labNo) || ''),
-              barcode: String((r && r.barcode) || '')
-            };
-          }
-          return { date: '', labNo: '', barcode: '' };
+        function resolveSampleMeta(_r, s, _sampleIndex) {
+          return {
+            date: String(s && s.date ? s.date : ''),
+            labNo: String(s && s.labNo ? s.labNo : ''),
+            barcode: String(s && s.barcode ? s.barcode : '')
+          };
         }
 
         function fillForm(r, preferredAfb) {
