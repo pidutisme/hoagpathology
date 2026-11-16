@@ -375,6 +375,10 @@ function normalizeTbis102aRecord(raw, existing, userId) {
     };
   });
 
+  // TBIS102A: preserve each X1/X2/X3 sample exactly as supplied.
+  // Date, labNo, barcode, sample, and quality are sample-level values and
+  // must not be overwritten from X1 when X2/X3 already have their own data.
+
   const allowedAfb = new Set(['X1', 'X2', 'X3']);
   const seenAfb = new Set();
   resultSamples.forEach(s => {
@@ -383,12 +387,13 @@ function normalizeTbis102aRecord(raw, existing, userId) {
     seenAfb.add(s.afb);
   });
 
+  const x1RecordSample = resultSamples.find(sample => sample.afb === 'X1') || resultSamples[0] || null;
   const record = {
     id,
     bil: clean(previous.bil || source.bil, 20),
-    date: clean(source.date || previous.date, 20),
-    labNo: clean(source.labNo || previous.labNo, 100),
-    barcode: clean(source.barcode || previous.barcode, 160),
+    date: clean((x1RecordSample && x1RecordSample.date) || source.date || previous.date, 20),
+    labNo: clean((x1RecordSample && x1RecordSample.labNo) || source.labNo || previous.labNo, 100),
+    barcode: clean((x1RecordSample && x1RecordSample.barcode) || source.barcode || previous.barcode, 160),
     name: clean(source.name || previous.name, 200),
     idNo: clean(source.idNo || previous.idNo, 100),
     unit: clean(source.unit || previous.unit, 120),

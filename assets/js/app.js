@@ -5531,8 +5531,17 @@ hoagApiRequest('logout', {
 
         function fixedSamples(r) {
           var source = Array.isArray(r && r.samples) ? r.samples : [];
+
+          /*
+           * TBIS102A display rule: render each AFB sample exactly as stored
+           * in Supabase. X1/X2/X3 may legitimately have different date,
+           * labNo, barcode, sample, and quality values, so the table must
+           * never copy X1 values into X2/X3. Missing fields remain blank.
+           */
           return ['X1', 'X2', 'X3'].map(function (afb) {
-            var found = source.find(function (sample) { return String(sample && sample.afb || '').toUpperCase() === afb; });
+            var found = source.find(function (sample) {
+              return String(sample && sample.afb || '').toUpperCase() === afb;
+            });
             return found ? Object.assign({}, found, { afb: afb }) : { afb: afb };
           });
         }
@@ -5565,15 +5574,16 @@ hoagApiRequest('logout', {
           var next = samples.find(function (sample) { return !sample.result && !sample.sample && !sample.quality; });
           if (!next) { showSaveError('This BIL already has X1, X2 and X3. Create a NEW CASE instead.'); return; }
           editId = r.id;
-          setVal('tbDate', r.date);
-          setVal('tbLabNo', '');
-          setVal('tbBarcode', '');
+          var x1 = samples.find(function (sample) { return String(sample && sample.afb || '').toUpperCase() === 'X1'; }) || samples[0] || {};
+          setVal('tbDate', x1.date || r.date);
+          setVal('tbLabNo', x1.labNo || r.labNo || '');
+          setVal('tbBarcode', x1.barcode || r.barcode || '');
           setVal('tbName', r.name);
           setVal('tbIdNo', r.idNo);
           setVal('tbUnit', r.unit);
           setVal('tbPatient', r.patient);
           setVal('tbSputumAfb', next.afb);
-          setVal('tbSample', ''); setVal('tbQuality', ''); setVal('tbResult', ''); setVal('tbScanty', '');
+          setVal('tbSample', x1.sample || ''); setVal('tbQuality', x1.quality || ''); setVal('tbResult', ''); setVal('tbScanty', '');
           setVal('tbReleaseDate', ''); setVal('tbTat', ''); setVal('tbValidatedBy', ''); setVal('tbReviewedBy', '');
           syncScantyField();
           var hint = document.getElementById('tbis102aEditHint');
@@ -5599,26 +5609,16 @@ hoagApiRequest('logout', {
         }
 
         function resolveSampleMeta(r, s, sampleIndex) {
-          var hasOwnMeta = !!(s && (s.date !== undefined || s.labNo !== undefined || s.barcode !== undefined));
-          if (hasOwnMeta) {
-            return {
-              date: String(s.date || r.date || ''),
-              labNo: String(s.labNo || r.labNo || ''),
-              barcode: String(s.barcode || r.barcode || '')
-            };
-          }
-          var hasSampleData = !!(s && (s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty));
-          if (hasSampleData || sampleIndex === 0) {
-            return {
-              date: String((r && r.date) || ''),
-              labNo: String((r && r.labNo) || ''),
-              barcode: String((r && r.barcode) || '')
-            };
-          }
+          /*
+           * The data table is a Supabase view, not a derived case view.
+           * Read metadata from the selected sample itself. Do not fall back
+           * to r.date/r.labNo/r.barcode because those top-level values are
+           * case-level legacy fields and can differ from X2/X3 sample data.
+           */
           return {
-            date: String((r && r.date) || ''),
-            labNo: String((r && r.labNo) || ''),
-            barcode: String((r && r.barcode) || '')
+            date: String(s && s.date || ''),
+            labNo: String(s && s.labNo || ''),
+            barcode: String(s && s.barcode || '')
           };
         }
 
@@ -6064,6 +6064,10 @@ function submit(e) {
                 return clone;
               })
             : [];
+
+          // Preserve each AFB sample exactly as stored. X1/X2/X3 can have
+          // different date, labNo, barcode, sample, and quality values.
+          // No cross-sample inheritance is performed here.
           var selectedAfb = String(sample.afb || 'X1').toUpperCase();
           var selectedIndex = mergedSamples.findIndex(function (item) {
             return String(item && item.afb || '').toUpperCase() === selectedAfb;
