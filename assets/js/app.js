@@ -5598,11 +5598,27 @@ hoagApiRequest('logout', {
           return 'status-pending';
         }
 
-        function resolveSampleMeta(_r, s, _sampleIndex) {
+        function resolveSampleMeta(r, s, sampleIndex) {
+          var hasOwnMeta = !!(s && (s.date !== undefined || s.labNo !== undefined || s.barcode !== undefined));
+          if (hasOwnMeta) {
+            return {
+              date: String(s.date || r.date || ''),
+              labNo: String(s.labNo || r.labNo || ''),
+              barcode: String(s.barcode || r.barcode || '')
+            };
+          }
+          var hasSampleData = !!(s && (s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty));
+          if (hasSampleData || sampleIndex === 0) {
+            return {
+              date: String((r && r.date) || ''),
+              labNo: String((r && r.labNo) || ''),
+              barcode: String((r && r.barcode) || '')
+            };
+          }
           return {
-            date: String(s && s.date ? s.date : ''),
-            labNo: String(s && s.labNo ? s.labNo : ''),
-            barcode: String(s && s.barcode ? s.barcode : '')
+            date: String((r && r.date) || ''),
+            labNo: String((r && r.labNo) || ''),
+            barcode: String((r && r.barcode) || '')
           };
         }
 
