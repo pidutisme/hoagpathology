@@ -5609,9 +5609,9 @@ hoagApiRequest('logout', {
             ? r.samples.find(function (item) { return String(item && item.afb || '').toUpperCase() === targetAfb; })
             : null) || (targetAfb ? { afb: targetAfb } : getSingleSample(r));
 
-          setVal('tbDate', r.date);
-          setVal('tbLabNo', r.labNo);
-          setVal('tbBarcode', r.barcode);
+          setVal('tbDate', s.date || r.date);
+          setVal('tbLabNo', s.labNo || r.labNo);
+          setVal('tbBarcode', s.barcode || r.barcode);
           setVal('tbName', r.name);
           setVal('tbIdNo', r.idNo);
           setVal('tbUnit', r.unit);
@@ -5748,6 +5748,9 @@ hoagApiRequest('logout', {
             return '<div style="margin-top:12px;">' +
               '<div class="notification-section-title" style="margin-bottom:8px;">SPUTUM AFB ' + outsourceEsc(afb) + '</div>' +
               '<div class="tbis102a-detail-grid">' +
+                '<div><label>DATE</label><div>' + outsourceEsc(s.date || r.date || '—') + '</div></div>' +
+                '<div><label>LAB NO.</label><div>' + outsourceEsc(s.labNo || r.labNo || '—') + '</div></div>' +
+                '<div><label>BARCODE</label><div>' + outsourceEsc(s.barcode || r.barcode || '—') + '</div></div>' +
                 '<div><label>SAMPLE</label><div>' + outsourceEsc(s.sample || '—') + '</div></div>' +
                 '<div><label>SAMPLE QUALITY</label><div>' + outsourceEsc(s.quality || '—') + '</div></div>' +
                 '<div><label>RESULT</label><strong>' + outsourceEsc(resText) + '</strong></div>' +
@@ -5832,10 +5835,7 @@ hoagApiRequest('logout', {
           body.innerHTML = filtered.map(function (r) {
             var samples = fixedSamples(r);
             var canModify = canModifyRecord(r);
-            var caseCells = [
-              '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.date || '—') + '</td>',
-              '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.labNo || '—') + '</td>',
-              '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.barcode || '—') + '</td>',
+            var identityCells = [
               '<td rowspan="3" class="tbis-case-cell tbis-name-cell"><strong>' + outsourceEsc(r.name || '—') + '</strong></td>',
               '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.idNo || '—') + '</td>',
               '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.unit || '—') + '</td>',
@@ -5848,6 +5848,9 @@ hoagApiRequest('logout', {
               var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty);
               var resultLabel = hasData ? formatResultDisplay(s) : '';
               var pillClass = hasData ? getResultPillClass(s) : '';
+              var dateCell = '<td>' + outsourceEsc(s.date || r.date || '') + '</td>';
+              var labCell = '<td>' + outsourceEsc(s.labNo || r.labNo || '') + '</td>';
+              var barcodeCell = '<td>' + outsourceEsc(s.barcode || r.barcode || '') + '</td>';
               var actionCell = '<td class="outsource-actions-cell"><div class="outsource-actions">' +
                 '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
                 '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit ' + outsourceEsc(afbDisplay) + '" aria-label="Edit ' + outsourceEsc(afbDisplay) + '" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
@@ -5860,7 +5863,7 @@ hoagApiRequest('logout', {
                 '<td class="outsource-result">' + (resultLabel ? '<span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span>' : '') + '</td>'
               ].join('');
               return '<tr class="outsource-data-row tbis-case-row' + (sampleIndex > 0 ? ' tbis-sample-row' : ' tbis-case-first-row') + '" data-id="' + outsourceEsc(r.id) + '">' +
-                (sampleIndex === 0 ? caseCells : '') +
+                (sampleIndex === 0 ? dateCell + labCell + barcodeCell + identityCells : dateCell + labCell + barcodeCell) +
                 details + actionCell +
               '</tr>';
             }).join('');
@@ -5998,6 +6001,9 @@ function submit(e) {
 
           var sample = {
             afb: (val('tbSputumAfb') || 'X1').toUpperCase(),
+            date: date,
+            labNo: val('tbLabNo'),
+            barcode: val('tbBarcode'),
             sample: val('tbSample'),
             quality: val('tbQuality'),
             result: resultValue,
@@ -6030,12 +6036,13 @@ function submit(e) {
             return String(a && a.afb || 'X1').localeCompare(String(b && b.afb || 'X1'));
           });
 
+          var isExistingAppend = caseMode === 'EXISTING' && !!existing;
           var row = {
             id: targetId,
             bil: existing && existing.bil ? String(existing.bil) : '',
-            date: date,
-            labNo: val('tbLabNo'),
-            barcode: val('tbBarcode'),
+            date: isExistingAppend && existing.date ? existing.date : date,
+            labNo: isExistingAppend && existing.labNo ? existing.labNo : val('tbLabNo'),
+            barcode: isExistingAppend && existing.barcode ? existing.barcode : val('tbBarcode'),
             name: name,
             idNo: val('tbIdNo'),
             unit: val('tbUnit'),
