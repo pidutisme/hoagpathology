@@ -5807,22 +5807,27 @@ hoagApiRequest('logout', {
               : 'Showing cases 0–0 of 0';
           }
 
-          body.querySelectorAll('.tbis-edit').forEach(function (b) {
-            b.addEventListener('click', function () {
-              var r = records().find(function (x) { return String(x.id) === String(b.dataset.id); });
-              if (r) fillForm(r);
-            });
-          });
-
-          body.querySelectorAll('.tbis-view').forEach(function (b) {
-            b.addEventListener('click', function () { openDetails(b.dataset.id); });
-          });
-
-          body.querySelectorAll('.tbis-delete').forEach(function (b) {
-            b.addEventListener('click', function () {
-              var rid = String(b.dataset.id || '');
+          // Event delegation keeps 827 cases / 2,481 sample rows lightweight.
+          // Do not attach one listener per action button; one listener handles the whole table.
+          if (!body.dataset.tbisDelegated) {
+            body.dataset.tbisDelegated = '1';
+            body.addEventListener('click', function (event) {
+              var button = event.target && event.target.closest ? event.target.closest('button[data-id]') : null;
+              if (!button || !body.contains(button)) return;
+              var rid = String(button.dataset.id || '');
               if (!rid) return;
+
               var r = records().find(function (x) { return String(x.id) === rid; });
+              if (button.classList.contains('tbis-edit')) {
+                if (r) fillForm(r);
+                return;
+              }
+              if (button.classList.contains('tbis-view')) {
+                openDetails(rid);
+                return;
+              }
+              if (!button.classList.contains('tbis-delete')) return;
+
               if (!canModifyRecord(r)) {
                 showSaveError('You can only delete TBIS102A records created by your own account.');
                 return;
@@ -5834,7 +5839,7 @@ hoagApiRequest('logout', {
                 'DELETE TBIS102A RECORD?',
                 'Delete TBIS102A case for ' + itemLabel + (sampleLabel ? ' · ' + sampleLabel : '') + '? This cannot be undone.',
                 function () {
-                  b.disabled = true;
+                  button.disabled = true;
                   showSaveError('');
                   hoagApiRequest('action', { method: 'deleteTbis102aRecord', args: [rid] })
                     .then(function (result) {
@@ -5848,12 +5853,12 @@ hoagApiRequest('logout', {
                     .catch(function (error) {
                       console.error('TBIS102A delete failed:', error);
                       showSaveError(error && error.message ? error.message : 'Unable to delete TBIS102A record.');
-                      b.disabled = false;
+                      button.disabled = false;
                     });
                 }
               );
             });
-          });
+          }
         }
 
 function submit(e) {
