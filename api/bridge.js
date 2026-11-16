@@ -356,6 +356,9 @@ function normalizeTbis102aRecord(raw, existing, userId) {
     const scantyVal = isScanty ? clean(sample && sample.scanty, 40) : '';
     return {
       afb: clean(sample && sample.afb || 'x1', 20).toUpperCase(),
+      date: clean(sample && sample.date, 20),
+      labNo: clean(sample && sample.labNo, 100),
+      barcode: clean(sample && sample.barcode, 160),
       sample: clean(sample && sample.sample, 40),
       quality: clean(sample && sample.quality, 40),
       result: resultVal,
