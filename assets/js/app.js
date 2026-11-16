@@ -5609,9 +5609,11 @@ hoagApiRequest('logout', {
             ? r.samples.find(function (item) { return String(item && item.afb || '').toUpperCase() === targetAfb; })
             : null) || (targetAfb ? { afb: targetAfb } : getSingleSample(r));
 
-          setVal('tbDate', s.date || r.date);
-          setVal('tbLabNo', s.labNo || r.labNo);
-          setVal('tbBarcode', s.barcode || r.barcode);
+          var hasSampleData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty || s.date || s.labNo || s.barcode);
+          var hasOwnMeta = s.date !== undefined || s.labNo !== undefined || s.barcode !== undefined;
+          setVal('tbDate', hasOwnMeta ? (s.date || r.date || getAppDateKey()) : (r.date || getAppDateKey()));
+          setVal('tbLabNo', hasOwnMeta ? (s.labNo || '') : (hasSampleData ? (r.labNo || '') : ''));
+          setVal('tbBarcode', hasOwnMeta ? (s.barcode || '') : (hasSampleData ? (r.barcode || '') : ''));
           setVal('tbName', r.name);
           setVal('tbIdNo', r.idNo);
           setVal('tbUnit', r.unit);
@@ -5743,14 +5745,18 @@ hoagApiRequest('logout', {
           var samples = fixedSamples(r);
           var samplesHtml = samples.map(function (s, idx) {
             var afb = String(s.afb || ('X' + (idx + 1))).toUpperCase();
-            var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty);
+            var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty || s.date || s.labNo || s.barcode);
+            var hasOwnMeta = s.date !== undefined || s.labNo !== undefined || s.barcode !== undefined;
+            var sDate = hasOwnMeta ? (s.date || '—') : (hasData ? (r.date || '—') : '—');
+            var sLabNo = hasOwnMeta ? (s.labNo || '—') : (hasData ? (r.labNo || '—') : '—');
+            var sBarcode = hasOwnMeta ? (s.barcode || '—') : (hasData ? (r.barcode || '—') : '—');
             var resText = hasData ? formatResultDisplay(s) : 'Not recorded';
             return '<div style="margin-top:12px;">' +
               '<div class="notification-section-title" style="margin-bottom:8px;">SPUTUM AFB ' + outsourceEsc(afb) + '</div>' +
               '<div class="tbis102a-detail-grid">' +
-                '<div><label>DATE</label><div>' + outsourceEsc(s.date || r.date || '—') + '</div></div>' +
-                '<div><label>LAB NO.</label><div>' + outsourceEsc(s.labNo || r.labNo || '—') + '</div></div>' +
-                '<div><label>BARCODE</label><div>' + outsourceEsc(s.barcode || r.barcode || '—') + '</div></div>' +
+                '<div><label>DATE</label><div>' + outsourceEsc(sDate) + '</div></div>' +
+                '<div><label>LAB NO.</label><div>' + outsourceEsc(sLabNo) + '</div></div>' +
+                '<div><label>BARCODE</label><div>' + outsourceEsc(sBarcode) + '</div></div>' +
                 '<div><label>SAMPLE</label><div>' + outsourceEsc(s.sample || '—') + '</div></div>' +
                 '<div><label>SAMPLE QUALITY</label><div>' + outsourceEsc(s.quality || '—') + '</div></div>' +
                 '<div><label>RESULT</label><strong>' + outsourceEsc(resText) + '</strong></div>' +
@@ -5845,12 +5851,16 @@ hoagApiRequest('logout', {
             var rowsHtml = samples.map(function (sample, sampleIndex) {
               var s = sample || {};
               var afbDisplay = String(s.afb || ('X' + (sampleIndex + 1))).toUpperCase();
-              var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty);
+              var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty || s.date || s.labNo || s.barcode);
+              var hasOwnMeta = s.date !== undefined || s.labNo !== undefined || s.barcode !== undefined;
+              var rowDate = hasOwnMeta ? (s.date || '') : (hasData ? (r.date || '') : '');
+              var rowLabNo = hasOwnMeta ? (s.labNo || '') : (hasData ? (r.labNo || '') : '');
+              var rowBarcode = hasOwnMeta ? (s.barcode || '') : (hasData ? (r.barcode || '') : '');
               var resultLabel = hasData ? formatResultDisplay(s) : '';
               var pillClass = hasData ? getResultPillClass(s) : '';
-              var dateCell = '<td>' + outsourceEsc(s.date || r.date || '') + '</td>';
-              var labCell = '<td>' + outsourceEsc(s.labNo || r.labNo || '') + '</td>';
-              var barcodeCell = '<td>' + outsourceEsc(s.barcode || r.barcode || '') + '</td>';
+              var dateCell = '<td>' + outsourceEsc(rowDate) + '</td>';
+              var labCell = '<td>' + outsourceEsc(rowLabNo) + '</td>';
+              var barcodeCell = '<td>' + outsourceEsc(rowBarcode) + '</td>';
               var actionCell = '<td class="outsource-actions-cell"><div class="outsource-actions">' +
                 '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
                 '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit ' + outsourceEsc(afbDisplay) + '" aria-label="Edit ' + outsourceEsc(afbDisplay) + '" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
