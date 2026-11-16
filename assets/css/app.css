@@ -11320,97 +11320,6 @@ body.auth-resolving #authResolvingPanel {
 
 
 
-/* TBIS102A V33 — true virtual body using positioned case blocks. */
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table-wrap {
-  overflow: auto;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table-wrap > .tbis102a-table {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: table;
-  width: 100% !important;
-  min-width: 2100px !important;
-  background: var(--surface-inset);
-}
-#moduleYearGrid.tbis102a-active-grid .tbis102a-virtual-body {
-  position: relative;
-  width: 100%;
-  min-width: 2100px;
-  height: 0;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-virtual-case {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  min-width: 2100px;
-  height: 108px;
-  display: grid;
-  grid-template-columns: 4% 6% 6% 7% 11% 8% 5% 6% 6% 7% 5% 7% 7% 5% 7% 8%;
-  grid-template-rows: repeat(3, 36px);
-  contain: layout paint style;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-row {
-  display: contents;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell {
-  min-width: 0;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 6px;
-  text-align: center;
-  vertical-align: middle;
-  font-size: 11.5px;
-  line-height: 1.2;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  border-top: 1px dashed var(--line);
-  overflow: hidden;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-row:first-child .tbis-grid-cell,
-#moduleYearGrid.tbis102a-active-grid .tbis-case-first-row .tbis-grid-cell {
-  border-top: 1px solid var(--line-strong, var(--line));
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell.tbis-case-placeholder {
-  background: transparent;
-  border-top-color: transparent;
-  border-bottom-color: transparent;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-actions-grid-cell {
-  padding: 0;
-  overflow: visible;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell.tbis-case-cell {
-  background: var(--neo-surface-soft);
-  font-weight: 700;
-  border-top: 1px solid var(--line-strong, var(--line));
-  border-bottom: 1px dashed var(--line);
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell strong {
-  font-weight: 800;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell.outsource-result {
-  overflow: visible;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell .outsource-result-pill {
-  max-width: 100%;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell .outsource-actions-cell {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  padding: 0;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis-grid-cell .outsource-actions {
-  width: 100%;
-  justify-content: center;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis102a-virtual-body .tbis-grid-cell:nth-child(16n+16) {
-  border-left: 0;
-}
-
 /* TBIS102A V28 — form-aligned grouped case/sample table; BIL hidden from display.
  * Table columns are limited to fields present in the registration form.
  * One BIL always renders X1/X2/X3; case identity cells span 3 rows; Actions do not.
@@ -11438,24 +11347,11 @@ body.auth-resolving #authResolvingPanel {
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-sample-row td {
   border-top: 1px dashed var(--line);
 }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-virtual-spacer {
-  padding: 0 !important;
-  margin: 0 !important;
-  border: 0 !important;
-  line-height: 0 !important;
-  font-size: 0 !important;
-  background: transparent !important;
-  pointer-events: none !important;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-virtual-spacer td {
-  display: table-cell !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: 0 !important;
-  line-height: 0 !important;
-  font-size: 0 !important;
-  background: transparent !important;
-  pointer-events: none !important;
+/* TBIS102A scroll performance: keep the exact real-table layout, but let
+ * Chromium skip rendering case groups that are outside the viewport. */
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table > tbody.tbis-case-group {
+  content-visibility: auto;
+  contain-intrinsic-size: 108px;
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-case-first-row td {
   border-top: 1px solid var(--line-strong, var(--line));
