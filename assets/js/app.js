@@ -5404,17 +5404,17 @@ hoagApiRequest('logout', {
         function records() { return rows.slice(); }
 
         function canModifyRecord(record) {
+          /*
+           * TBIS102A rule:
+           * - VISITOR: read-only
+           * - USER: may edit any existing TBIS102A case
+           * - ADMIN: may edit any existing TBIS102A case
+           *
+           * Ownership is intentionally NOT used for edit permission.
+           * Delete permission remains separately enforced by the backend.
+           */
           if (typeof isVisitorAccessRestricted === 'function' && isVisitorAccessRestricted()) return false;
-          if (typeof isAdminRole === 'function' && isAdminRole()) return true;
-          if (!record) return true;
-          var ownerKeys = [record.createdBy, record.createdByUserId, record.ownerId, record.ownerUserId]
-            .map(function (v) { return String(v || '').trim().toLowerCase(); })
-            .filter(Boolean);
-          if (!ownerKeys.length) return true;
-          var userKeys = [state.authUserId, state.authUserDisplayName]
-            .map(function (v) { return String(v || '').trim().toLowerCase(); })
-            .filter(Boolean);
-          return ownerKeys.some(function (owner) { return userKeys.indexOf(owner) >= 0; });
+          return true;
         }
 
         function loadRecords(forceAfterPendingLoad) {
@@ -5624,7 +5624,7 @@ hoagApiRequest('logout', {
 
         function fillForm(r, preferredAfb) {
           if (!canModifyRecord(r)) {
-            showSaveError('You can only edit TBIS102A records created by your own account.');
+            showSaveError('You are not authorized to edit TBIS102A records.');
             return;
           }
           editId = r.id;
@@ -6025,7 +6025,7 @@ function submit(e) {
           var targetId = editId || uid();
           var existing = rows.find(function (x) { return String(x.id) === String(targetId); });
           if (existing && !canModifyRecord(existing)) {
-            showSaveError('You can only update TBIS102A records created by your own account.');
+            showSaveError('You are not authorized to update TBIS102A records.');
             return Promise.resolve(null);
           }
           showSaveError('');

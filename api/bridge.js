@@ -311,9 +311,15 @@ function tbis102aOwnerMatches(session, record) {
 }
 
 function requireTbis102aUpdatePermission(session, record) {
-  if (session.role === 'ADMIN' && hasPermission(session, 'tbis102a.update.all')) return session;
-  if (!hasPermission(session, 'tbis102a.update.own') || !tbis102aOwnerMatches(session, record)) {
-    fail('You can only update TBIS102A records created by your own account.', 403);
+  /*
+   * TBIS102A editing is available to all authenticated normal users and admins.
+   * Ownership restrictions apply to DELETE, not UPDATE.
+   */
+  if (session.role === 'VISITOR') {
+    fail('Visitor accounts have read-only access to TBIS102A records.', 403);
+  }
+  if (!hasPermission(session, 'tbis102a.read')) {
+    fail('You are not authorized to edit TBIS102A records.', 403);
   }
   return session;
 }
