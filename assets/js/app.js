@@ -5680,7 +5680,7 @@ hoagApiRequest('logout', {
             '<select id="tbisMonthFilter" aria-label="Filter by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>' +
             '<div class="outsource-table-wrap notification-table-wrap tbis102a-table-wrap"><table class="outsource-table tbis102a-table rt-responsive-table"><thead><tr>' +
             '<th>DATE</th><th>LAB NO.</th><th>BARCODE</th><th>NAME</th><th>IC / ID NO.</th><th>UNIT</th><th>PATIENT</th><th>SAMPLE</th><th>SAMPLE QUALITY</th><th>SPUTUM AFB</th><th>RESULT</th><th>RELEASE DATE</th><th>TAT</th><th>VALIDATED BY</th><th>REVIEWED BY</th><th>ACTIONS</th>' +
-            '</tr></thead><tbody id="tbisTableBody"></tbody></table><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
+            '</tr></thead></table><div class="tbis102a-virtual-body" id="tbisTableBody"></div><div class="outsource-empty" id="tbisEmpty" hidden>No TBIS102A record registered yet.</div></div>' +
             '<div class="outsource-pager tbis102a-pager" id="tbisPager">Showing 0–0 of 0</div>' +
             '</section></div></div>';
         }
@@ -5705,44 +5705,52 @@ hoagApiRequest('logout', {
         var tbisLastEnd = -1;
         var tbisLastTotal = -1;
 
-        function buildTbisCaseHtml(r) {
+        function buildTbisCaseHtml(r, caseIndex) {
           var samples = fixedSamples(r);
           var canModify = canModifyRecord(r);
-          var identityCells = [
-            '<td rowspan="3" class="tbis-case-cell"><strong>' + outsourceEsc(r.name || '—') + '</strong></td>',
-            '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.idNo || '—') + '</td>',
-            '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.unit || '—') + '</td>',
-            '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.patient || '—') + '</td>'
-          ].join('');
-          var actionCell = '<td class="outsource-actions-cell"><div class="outsource-actions">' +
-            '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
-            '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit" aria-label="Edit" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
-            '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="Delete" aria-label="Delete" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
-            '</div></td>';
+          var gridRows = [];
+          var actionCell = function () {
+            return '<div class="tbis-grid-cell tbis-actions-grid-cell"><div class="outsource-actions-cell"><div class="outsource-actions">' +
+              '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
+              '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit" aria-label="Edit" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
+              '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="Delete" aria-label="Delete" data-id="' + outsourceEsc(r.id) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
+              '</div></div></div>';
+          };
 
-          return samples.map(function (s, sampleIndex) {
+          samples.forEach(function (s, sampleIndex) {
             var afbDisplay = String(s.afb || ('X' + (sampleIndex + 1))).toUpperCase();
             var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty);
             var resultLabel = hasData ? formatResultDisplay(s) : '';
             var pillClass = hasData ? getResultPillClass(s) : '';
-            var dateCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.date || '') : (s.date || '')) + '</td>';
-            var labCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.labNo || '') : (s.labNo || '')) + '</td>';
-            var barcodeCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.barcode || '') : (s.barcode || '')) + '</td>';
-            var details = [
-              '<td>' + outsourceEsc(s.sample || '') + '</td>',
-              '<td>' + outsourceEsc(s.quality || '') + '</td>',
-              '<td><strong>' + outsourceEsc(afbDisplay) + '</strong></td>',
-              '<td class="outsource-result">' + (resultLabel ? '<span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span>' : '') + '</td>',
-              '<td>' + outsourceEsc(s.releaseDate || '') + '</td>',
-              '<td>' + outsourceEsc(s.tat || '') + '</td>',
-              '<td>' + outsourceEsc(s.staff || '') + '</td>',
-              '<td>' + outsourceEsc(s.review || '') + '</td>'
-            ].join('');
-            return '<tr class="outsource-data-row tbis-case-row' + (sampleIndex > 0 ? ' tbis-sample-row' : ' tbis-case-first-row') + '" data-id="' + outsourceEsc(r.id) + '">' +
-              (sampleIndex === 0 ? dateCell + labCell + barcodeCell + identityCells : dateCell + labCell + barcodeCell) +
-              details + actionCell +
-            '</tr>';
-          }).join('');
+            var first = sampleIndex === 0;
+            var cells = [];
+            cells.push('<div class="tbis-grid-cell tbis-cell-date">' + outsourceEsc(first ? (r.date || '') : (s.date || '')) + '</div>');
+            cells.push('<div class="tbis-grid-cell tbis-cell-lab">' + outsourceEsc(first ? (r.labNo || '') : (s.labNo || '')) + '</div>');
+            cells.push('<div class="tbis-grid-cell tbis-cell-barcode">' + outsourceEsc(first ? (r.barcode || '') : (s.barcode || '')) + '</div>');
+            if (first) {
+              cells.push('<div class="tbis-grid-cell tbis-case-cell" style="grid-row:1 / span 3"><strong>' + outsourceEsc(r.name || '—') + '</strong></div>');
+              cells.push('<div class="tbis-grid-cell tbis-case-cell" style="grid-row:1 / span 3">' + outsourceEsc(r.idNo || '—') + '</div>');
+              cells.push('<div class="tbis-grid-cell tbis-case-cell" style="grid-row:1 / span 3">' + outsourceEsc(r.unit || '—') + '</div>');
+              cells.push('<div class="tbis-grid-cell tbis-case-cell" style="grid-row:1 / span 3">' + outsourceEsc(r.patient || '—') + '</div>');
+            } else {
+              cells.push('<div class="tbis-grid-cell tbis-case-placeholder" aria-hidden="true"></div>');
+              cells.push('<div class="tbis-grid-cell tbis-case-placeholder" aria-hidden="true"></div>');
+              cells.push('<div class="tbis-grid-cell tbis-case-placeholder" aria-hidden="true"></div>');
+              cells.push('<div class="tbis-grid-cell tbis-case-placeholder" aria-hidden="true"></div>');
+            }
+            cells.push('<div class="tbis-grid-cell">' + outsourceEsc(s.sample || '') + '</div>');
+            cells.push('<div class="tbis-grid-cell">' + outsourceEsc(s.quality || '') + '</div>');
+            cells.push('<div class="tbis-grid-cell"><strong>' + outsourceEsc(afbDisplay) + '</strong></div>');
+            cells.push('<div class="tbis-grid-cell outsource-result">' + (resultLabel ? '<span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span>' : '') + '</div>');
+            cells.push('<div class="tbis-grid-cell">' + outsourceEsc(s.releaseDate || '') + '</div>');
+            cells.push('<div class="tbis-grid-cell">' + outsourceEsc(s.tat || '') + '</div>');
+            cells.push('<div class="tbis-grid-cell">' + outsourceEsc(s.staff || '') + '</div>');
+            cells.push('<div class="tbis-grid-cell">' + outsourceEsc(s.review || '') + '</div>');
+            cells.push(actionCell());
+            gridRows.push('<div class="tbis-grid-row' + (first ? ' tbis-case-first-row' : ' tbis-sample-row') + '">' + cells.join('') + '</div>');
+          });
+
+          return '<div class="tbis-virtual-case" data-id="' + outsourceEsc(r.id) + '" style="top:' + (caseIndex * TBIS102A_CASE_ROW_HEIGHT) + 'px">' + gridRows.join('') + '</div>';
         }
 
         function renderTbisViewport(force) {
@@ -5763,17 +5771,10 @@ hoagApiRequest('logout', {
           tbisLastEnd = endCase;
           tbisLastTotal = total;
 
-          var topSpacer = startCase * TBIS102A_CASE_ROW_HEIGHT;
-          var bottomSpacer = Math.max(0, totalCasesHeight - (endCase * TBIS102A_CASE_ROW_HEIGHT));
+          body.style.height = totalCasesHeight + 'px';
           var html = '';
-          if (topSpacer > 0) {
-            html += '<tr class="outsource-virtual-spacer tbis-virtual-spacer top"><td colspan="16" style="height:' + topSpacer + 'px"></td></tr>';
-          }
           for (var i = startCase; i < endCase; i += 1) {
-            html += buildTbisCaseHtml(tbisFilteredRows[i]);
-          }
-          if (bottomSpacer > 0) {
-            html += '<tr class="outsource-virtual-spacer tbis-virtual-spacer bottom"><td colspan="16" style="height:' + bottomSpacer + 'px"></td></tr>';
+            html += buildTbisCaseHtml(tbisFilteredRows[i], i);
           }
           body.innerHTML = html;
 
