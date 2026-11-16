@@ -5974,6 +5974,11 @@ function submit(e) {
           }
           var form = document.getElementById('tbis102aForm');
           var name = val('tbName'), date = val('tbDate');
+          var caseMode = String(val('tbCaseMode') || 'NEW').toUpperCase();
+          var targetId = editId || uid();
+          var existing = rows.find(function (x) { return String(x.id) === String(targetId); });
+          var targetAfb = String(val('tbSputumAfb') || 'X1').toUpperCase();
+          var isEditingExistingSample = !!existing && !!editId && caseMode !== 'EXISTING';
           var resultValue = val('tbResult');
           var isScanty = resultValue.toUpperCase() === 'SCANTY';
           var scantyValue = isScanty ? val('tbScanty') : '';
@@ -5990,7 +5995,10 @@ function submit(e) {
             showSaveError('Patient Name is required.');
             return Promise.resolve(null);
           }
-          if (!resultValue) {
+          // A brand-new sample must have a result. When editing an already
+          // existing AFB row, however, an empty result is valid because the
+          // Supabase record may intentionally have X1/X2/X3 still pending.
+          if (!resultValue && !isEditingExistingSample) {
             var resultTrigger = document.querySelector('#tbResultSelectWrap .notification-select-trigger');
             if (resultTrigger) resultTrigger.focus();
             showSaveError('Select a Result before registration.');
@@ -6017,13 +6025,10 @@ function submit(e) {
             return Promise.resolve(null);
           }
 
-          var caseMode = String(val('tbCaseMode') || 'NEW').toUpperCase();
           if (caseMode === 'EXISTING' && !editId) {
             showSaveError('Select an existing BIL / case before adding a sample.');
             return Promise.resolve(null);
           }
-          var targetId = editId || uid();
-          var existing = rows.find(function (x) { return String(x.id) === String(targetId); });
           if (existing && !canModifyRecord(existing)) {
             showSaveError('You are not authorized to update TBIS102A records.');
             return Promise.resolve(null);
