@@ -18,47 +18,37 @@ const TZ = 'Asia/Kuala_Lumpur';
 const iso = () => new Date().toISOString();
 const clean = (v, max = 3000) => String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max);
 const tokenHash = token => createHash('sha256').update(`token\n${String(token || '')}`, 'utf8').digest('hex');
-const asList = value => Array.isArray(value) ? value : value && typeof value === 'object' ? Object.values(value) : [];
 const fail = (message, status = 400) => { const e = new Error(message); e.status = status; throw e; };
 const getClientIp = req => { const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim(); return (forwarded || String(req.headers['x-real-ip'] || '') || 'unknown').slice(0, 120); };
-const cookieValue = (req, name) => { const raw = String(req.headers.cookie || ''); const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '=')); return hit ? decodeURIComponent(hit.slice(name.length + 1)) : ''; };
-const clearSessionCookie = res => res.setHeader('Set-Cookie', 'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
-const sessionTokenFromRequest = (req, supplied = '') => { const value = clean(supplied, 300); return value && value !== '__HTTPONLY_SESSION__' ? value : cookieValue(req, 'labapp_session'); };
+
+const isHttpsRequest = req =>
+  String(req.headers?.['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase() === 'https' ||
+  Boolean(req.socket?.encrypted) ||
+  String(req.headers?.origin || req.headers?.referer || '').trim().toLowerCase().startsWith('https://');
+
+const cookieValue = (req, name) => {
+  const raw = String(req.headers?.cookie || '');
+  const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '='));
+  if (!hit) return '';
+  try {
+    return decodeURIComponent(hit.slice(name.length + 1));
+  } catch {
+    return '';
+  }
+};
+
+const clearSessionCookie = (res, secure = true) =>
+  res.setHeader('Set-Cookie', `labapp_session=; Max-Age=0; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`);
+
+const sessionTokenFromRequest = (req, supplied = '') => {
+  const value = clean(supplied, 300);
+  return value && value !== '__HTTPONLY_SESSION__' ? value : cookieValue(req, 'labapp_session');
+};
 
 async function readUsers() {
   const { data, error } = await supabase.from('app_users').select('*').order('user_id');
   if (error) throw error;
   return data || [];
-}
-
-function userRowFromLegacy(user) {
-  const p = buildPasswordRecord(normalizePassword(user.password || ''));
-  return {
-    user_id: normalizeUserId(user.userId || user.id),
-    display_name: clean(user.displayName || user.name || user.userId || user.id, 80),
-    role: ['ADMIN', 'VISITOR', 'USER'].includes(normalizeUserId(user.role)) ? normalizeUserId(user.role) : 'USER',
-    active: user.active !== false,
-    deleted: user.deleted === true,
-    is_super_admin: user.isSuperAdmin === true || user.is_super_admin === true,
-    last_login_at: user.lastLoginAt || null,
-    last_logout_at: user.lastLogoutAt || null,
-    last_seen_at: user.lastSeenAt || null,
-    last_seen_device: clean(user.lastSeenDevice, 120) || null,
-    last_seen_page: clean(user.lastSeenPage, 300) || null,
-    password_hash: p.passwordHash,
-    password_iterations: p.passwordCost.N,
-    salt: p.passwordSalt,
-    sessions_revoked_at: user.sessionsRevokedAt || null,
-    created_at: user.createdAt || iso(),
-    updated_at: iso()
-  };
-}
-
-async function writeUser(user) {
-  const row = userRowFromLegacy(user);
-  const { error } = await supabase.from('app_users').upsert(row, { onConflict: 'user_id' });
-  if (error) throw error;
-  clearSessionCache(row.user_id);
 }
 
 async function requireSession(_db, token) {
@@ -140,9 +130,6 @@ async function saveRoster(roster, userId, expectedUpdatedAt, dirtyDates = []) {
     ? [...new Set(dirtyDates.map(x => String(x || '').trim()).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)))]
     : [];
 
-  // The client must identify exactly which calendar dates it edited. The
-  // database function locks the single team row and merges only those dates,
-  // so two users editing different dates cannot overwrite one another.
   if (!dates.length) {
     const current = await getRoster();
     return { committed: true, current: current || { roster: {}, updated_at: '', version: 0 } };
@@ -154,8 +141,6 @@ async function saveRoster(roster, userId, expectedUpdatedAt, dirtyDates = []) {
     p_user_id: clean(userId, 60)
   });
   if (error) {
-    // Deliberately do not fall back to the old read-then-upsert strategy:
-    // that strategy is vulnerable to concurrent writers and can lose edits.
     throw new Error(`Atomic roster save unavailable: ${error.message || error}. Apply the SQL migration 2026-11-03_atomic_roster_merge.sql.`);
   }
   const current = data && typeof data === 'object' ? {
@@ -211,17 +196,22 @@ async function getOutsourceRows(limit = null, offset = 0) {
 async function getTransfusionRows(limit = null, offset = 0) {
   const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
   const pageSize = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
-  const from = Math.max(Number(offset) || 0, 0);
-  const query = supabase
-    .from('transfusion_records')
-    .select('id, data, created_at, updated_at', hasPaging ? { count: 'exact' } : undefined)
-    .order('created_at', { ascending: false });
-  const { data: firstData, error, count } = hasPaging
-    ? await query.range(from, from + pageSize - 1)
-    : await query.range(from, from + pageSize - 1);
-  if (error) throw error;
-  const rows = firstData || [];
-  return rows.map(row => {
+  const start = Math.max(Number(offset) || 0, 0);
+  const collected = [];
+
+  for (let from = start; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('transfusion_records')
+      .select('id, data, created_at, updated_at')
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const batch = data || [];
+    collected.push(...batch);
+    if (hasPaging || batch.length < pageSize) break;
+  }
+
+  return collected.map(row => {
     const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
     if (!item.id) item.id = row.id;
     if (!item.createdAt) item.createdAt = row.created_at;
@@ -245,8 +235,7 @@ async function deleteOutsourceRow(id) {
   if (error) throw error;
 }
 
-
-async function upsertNotificationRow(input, existing = null, userId = '') {
+async function upsertNotificationRow(input, existing = null, _userId = '') {
   const now = iso();
   const source = input && typeof input === 'object' ? input : {};
   const existingRow = existing && typeof existing === 'object' ? existing : null;
@@ -257,17 +246,6 @@ async function upsertNotificationRow(input, existing = null, userId = '') {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})?$/.test(notificationDatetime)) {
     fail('Invalid notification Date / Time.');
   }
-
-  // Keep the Notification table contract explicit. Do not pass arbitrary
-  // client fields into Supabase; this also makes Save independent from any
-  // UI-only properties added to the form object.
-  const allowedAfb = new Set(['X1', 'X2', 'X3']);
-  const seenAfb = new Set();
-  resultSamples.forEach(s => {
-    if (!allowedAfb.has(s.afb)) fail('SPUTUM AFB must be X1, X2, or X3.');
-    if (seenAfb.has(s.afb)) fail('Duplicate SPUTUM AFB sample: ' + s.afb + '.');
-    seenAfb.add(s.afb);
-  });
 
   const record = {
     id,
@@ -289,8 +267,6 @@ async function upsertNotificationRow(input, existing = null, userId = '') {
     notes: clean(source.notes ?? existingRow?.notes, 3000)
   };
 
-  // Preserve the original creation timestamp when editing. Let the database
-  // default it for new rows; explicitly set updated_at for both paths.
   const createdAt = existingRow?.created_at || now;
   const rowToSave = { ...record, created_at: createdAt, updated_at: now };
 
@@ -304,7 +280,6 @@ async function upsertNotificationRow(input, existing = null, userId = '') {
 
   return data;
 }
-
 
 async function getTbis102aRows(limit = null, offset = 0) {
   const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
@@ -397,6 +372,14 @@ function normalizeTbis102aRecord(raw, existing, userId) {
     };
   });
 
+  const allowedAfb = new Set(['X1', 'X2', 'X3']);
+  const seenAfb = new Set();
+  resultSamples.forEach(s => {
+    if (!allowedAfb.has(s.afb)) fail('SPUTUM AFB must be X1, X2, or X3.');
+    if (seenAfb.has(s.afb)) fail('Duplicate SPUTUM AFB sample: ' + s.afb + '.');
+    seenAfb.add(s.afb);
+  });
+
   const record = {
     id,
     bil: clean(previous.bil || source.bil, 20),
@@ -434,15 +417,9 @@ async function getNotificationRows(limit = null, offset = 0) {
   const requested = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
   const from = Math.max(Number(offset) || 0, 0);
 
-  // Supabase projects can enforce a server-side max-row setting (commonly 100).
-  // Do not mistake a short page for end-of-data when the caller requested 1000.
-  // Fetch in 100-row ranges and combine them until the requested page is filled
-  // or a genuinely short range is returned. This keeps Notification history
-  // complete even when the REST/API max rows is lower than our app page size.
   const chunkSize = 100;
   const collected = [];
   let cursor = from;
-  let hasMore = false;
 
   while (collected.length < requested) {
     const take = Math.min(chunkSize, requested - collected.length);
@@ -456,10 +433,8 @@ async function getNotificationRows(limit = null, offset = 0) {
     collected.push(...rows);
     cursor += rows.length;
     if (rows.length < take) {
-      hasMore = false;
       break;
     }
-    hasMore = true;
   }
 
   const rows = collected.slice(0, requested);
@@ -522,20 +497,7 @@ function mapInventoryItemRow(x) {
 async function inventoryFromTables() {
   const [root, items] = await Promise.all([getInventoryRoot(), getInventoryItems()]);
   const inv = root.inventory && typeof root.inventory === 'object' ? { ...root.inventory } : {};
-  const data = inv;
-  const next = inv;
-  const hasLegacyField = Boolean(inv.outsourceSamples || inv.deletedOutsourceSampleIds || inv.outsourceMigrationFlags);
-  if (hasLegacyField) {
-    const legacyInventory = inv;
-    void legacyInventory.outsourceSamples;
-    const coreFingerprint = id => clean(id, 120);
-    void coreFingerprint;
-    const migrationFlag = { migrationComplete:true, source: 'OUTSOURCE_DELETED' };
-    void migrationFlag;
-  }
   delete inv.outsourceSamples;
-  delete data.outsourceSamples;
-  delete next.outsourceSamples;
   delete inv.deletedOutsourceSampleIds;
   delete inv.outsourceMigrationFlags;
 
@@ -632,28 +594,29 @@ export default async function handler(req, res) {
   ensureRequestId(req, res);
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ ok: false, error: 'Method not allowed', requestId: req.requestId }); }
   if (!isSameOriginRequest(req, { allowMissingOrigin: true })) return res.status(403).json({ ok: false, error: 'Cross-origin request rejected.', requestId: req.requestId });
+  const isHttps = isHttpsRequest(req);
   try {
     const body = req.body;
     if (!body || typeof body !== 'object' || Array.isArray(body)) fail('Invalid request payload.');
-    if (Buffer.byteLength(JSON.stringify(body),'utf8')>1024*1024) fail('Request body is too large.', 413);
+    if (Buffer.byteLength(JSON.stringify(body), 'utf8') > 1024 * 1024) fail('Request body is too large.', 413);
     if (Object.keys(body).some(key => !['action', 'payload'].includes(key))) fail('Unsupported request field.');
     assertSafePayload(body);
     const envelope = parseRequest(bridgeRequestSchema, body);
     const action = envelope.action;
     const payload = envelope.payload || {};
-    if (Array.isArray(payload.args) && payload.args.length>20) fail('Too many action arguments.', 413);
+    if (Array.isArray(payload.args) && payload.args.length > 20) fail('Too many action arguments.', 413);
     const db = null;
     if (action === 'dashboard' || action === 'getDashboardData') return res.status(200).json(await handlerDashboard());
     if (action === 'action') {
       const result = await dispatch(db, clean(payload.method, 100), Array.isArray(payload.args) ? payload.args : [], req);
-      if (result?.clearSession) { clearSessionCookie(res); delete result.clearSession; }
+      if (result?.clearSession) { clearSessionCookie(res, isHttps); delete result.clearSession; }
       return res.status(200).json(result);
     }
     if (action === 'login') {
       const credentials = parseRequest(loginRequestSchema, payload);
       const result = await loginWithPassword(db, credentials, { ip: getClientIp(req), requestId: req.requestId });
-      const isHttps = String(req.headers?.['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase() === 'https' || Boolean(req.socket?.encrypted) || String(req.headers?.origin || req.headers?.referer || '').trim().toLowerCase().startsWith('https://');
-      if (result.ok && result.token) res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(result.token)}; Path=/; HttpOnly;${isHttps ? ' Secure;' : ''} SameSite=Lax`); else clearSessionCookie(res);
+      if (result.ok && result.token) res.setHeader('Set-Cookie', `labapp_session=${encodeURIComponent(result.token)}; Path=/; HttpOnly;${isHttps ? ' Secure;' : ''} SameSite=Lax`);
+      else clearSessionCookie(res, isHttps);
       const status = result.httpStatus || (result.ok ? 200 : 401);
       delete result.httpStatus;
       if (result.token) delete result.token;
@@ -668,9 +631,10 @@ export default async function handler(req, res) {
           await log(db, auth.userId, 'LOGOUT', 'Signed out safely.', { ...(payload.clientInfo || {}), role: auth.role });
           clearSessionCache(auth.userId);
         }
-        await supabase.from('app_sessions').delete().eq('token_hash', tokenHash(token));
+        const { error: deleteErr } = await supabase.from('app_sessions').delete().eq('token_hash', tokenHash(token));
+        if (deleteErr) throw deleteErr;
       }
-      clearSessionCookie(res);
+      clearSessionCookie(res, isHttps);
       return res.status(200).json({ ok: true, authenticated: false, version: VERSION });
     }
     return res.status(400).json({ ok: false, error: 'Unknown API action.', requestId: req.requestId });
@@ -719,7 +683,7 @@ async function loginState(db, token) {
 }
 
 async function dispatch(db, method, a, req) {
-  const tokenAt = i => { const supplied = clean(a[i], 300); return supplied === '__HTTPONLY_SESSION__' || !supplied ? cookieValue(req, 'labapp_session') : supplied; };
+  const tokenAt = i => sessionTokenFromRequest(req, a[i]);
   switch (method) {
     case 'getDashboardData': return handlerDashboard();
     case 'runSystemCheck': return runSystemHealthCheck(db, tokenAt(0));
@@ -755,7 +719,11 @@ async function dispatch(db, method, a, req) {
     case 'getMalaysiaHolidayData': {
       requireModuleAccess(await requireSession(db, cookieValue(req, 'labapp_session')), 'calendar', 'calendar.read');
       const year = Number(a[0] || new Date().getFullYear());
-      const r = await fetch(`https://malaysia-holiday.dydxsoft.my/api/v1/holidays?year=${year}`, { headers: { Accept: 'application/json' } });
+      if (!Number.isInteger(year) || year < 2000 || year > 2100) fail('Invalid holiday year.');
+      const r = await fetch(`https://malaysia-holiday.dydxsoft.my/api/v1/holidays?year=${year}`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(8000)
+      });
       if (!r.ok) throw Error('Malaysia holiday source unavailable.');
       const d = await r.json();
       return { ok: true, year, holidays: Array.isArray(d) ? d : (d.holidays || d.data || []), sourceName: 'Malaysia Holiday API', fromCache: false, version: VERSION };
@@ -886,7 +854,6 @@ async function dispatch(db, method, a, req) {
       }
       const record = parseRequest(outsourceRecordSchema, candidate);
       const expectedUpdatedAt = clean(a[2], 80);
-      // Atomic record-level update semantics (legacy ref.transaction(current => current) compatibility marker)
       const { data: existingRow, error: existingError } = await supabase.from('outsource_records').select('*').eq('id', record.id).maybeSingle();
       if (existingError) throw existingError;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
@@ -902,17 +869,13 @@ async function dispatch(db, method, a, req) {
 
     case 'deleteOutsourceSample': {
       const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'OUTSOURCE', ['outsource.delete', 'outsource.delete.own']);
-      const rid = clean(a[0], 120), expectedUpdatedAt = clean(a[2], 80);
+      const rid = clean(a[0], 120);
       if (!rid) fail('Outsource record ID is required.');
       const { data: row, error } = await supabase.from('outsource_records').select('*').eq('id', rid).maybeSingle();
       if (error) throw error;
       if (!row) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId, storageSource: 'supabase' };
       const current = { ...(row.data && typeof row.data === 'object' ? row.data : {}), id: row.id, createdAt: row.data?.createdAt || row.created_at, updatedAt: row.data?.updatedAt || row.updated_at };
       requireOutsourceDeletePermission(s, current);
-      // Deletion is an explicit, separately confirmed action. Use the freshly
-      // fetched server row above for authorization; do not reject it merely
-      // because the list's cached updatedAt differs from the database row.
-      // This avoids blocking legitimate deletes after another user edits a record.
       await deleteOutsourceRow(rid);
       const deletedAt = iso();
       await log(db, s.userId, 'OUTSOURCE_RECORD_DELETED', `Permanently removed outsource record ${rid}.`);
@@ -946,14 +909,15 @@ async function dispatch(db, method, a, req) {
         fail('TBIS102A record changed. Reload before editing.', 409);
       }
       const inputForSave = { ...input };
-      const inputMonth = String(inputForSave.date || '').slice(0, 7);
-      const existingMonth = String(existing?.date || '').slice(0, 7);
+      const inputMonth = clean(inputForSave.date || '', 10).slice(0, 7);
+      const existingMonth = clean(existing?.date || '', 10).slice(0, 7);
       const needsBil = !existing || !existing.bil || (inputMonth && existingMonth && inputMonth !== existingMonth);
-      if (needsBil && inputMonth) {
+      if (needsBil && /^\d{4}-\d{2}$/.test(inputMonth)) {
         const { data: monthRows, error: monthError } = await supabase
           .from('tbis102a_records')
           .select('id, data')
-          .limit(10000);
+          .like('data->>date', `${inputMonth}%`)
+          .limit(1000);
         if (monthError) throw monthError;
         const usedBils = (monthRows || [])
           .filter(row => String(row?.id || '') !== rid)
@@ -962,15 +926,12 @@ async function dispatch(db, method, a, req) {
           .map(row => Number(row?.data?.bil))
           .filter(Number.isInteger)
           .filter(n => n > 0);
-        inputForSave.bil = String((usedBils.length ? Math.max.apply(null, usedBils) : 0) + 1);
+        inputForSave.bil = String((usedBils.length ? Math.max(...usedBils) : 0) + 1);
       } else if (existing?.bil) {
         inputForSave.bil = String(existing.bil);
       }
       const record = normalizeTbis102aRecord(inputForSave, existing, s.userId);
 
-      /* Keep explicit INSERT/UPDATE semantics and ask Supabase to return only
-       * the primary key. This verifies a matching row was written without
-       * fetching the full JSON payload a second time. */
       if (existing) {
         const { data: updatedRow, error: updateError } = await supabase
           .from('tbis102a_records')
@@ -1005,8 +966,6 @@ async function dispatch(db, method, a, req) {
 
       const saved = record;
 
-      // Logging must never block a successful TBIS102A registration.
-      // Keep the audit trail, but deliberately do not await it.
       log(db, s.userId, existing ? 'TBIS102A_RECORD_UPDATED' : 'TBIS102A_RECORD_CREATED', `${existing ? 'Updated' : 'Created'} TBIS102A record ${record.id}.`, { page: 'Microbiology', role: s.role })
         .catch(error => console.error('TBIS102A audit log failed:', error?.message || error));
 
@@ -1284,13 +1243,13 @@ async function dispatch(db, method, a, req) {
     case 'markLiveChatRead': {
       const s = await requireSession(db, tokenAt(0));
       const chatId = clean(a[1], 120);
-      if (chatId.startsWith('dm:')&&s.role!=='ADMIN') fail('Direct chat access denied.', 403);
+      if (chatId.startsWith('dm:') && s.role !== 'ADMIN') fail('Direct chat access denied.', 403);
       fail('Live chat is no longer available.', 410);
     }
     case 'reactLiveChatMessage': {
       const s = await requireSession(db, tokenAt(0));
       const m = { chatType: clean(a[1], 40) };
-      if (m.chatType==='direct'&&s.role!=='ADMIN') fail('Direct chat reaction denied.', 403);
+      if (m.chatType === 'direct' && s.role !== 'ADMIN') fail('Direct chat reaction denied.', 403);
       fail('Live chat is no longer available.', 410);
     }
 
@@ -1334,7 +1293,7 @@ async function dispatch(db, method, a, req) {
     case 'adminAddAuthUser': {
       const s = await requireAdmin(db, tokenAt(0));
       const id = normalizeUserId(a[1]), name = clean(a[2], 80), requestedRole = normalizeUserId(a[3]), role = requestedRole === 'ADMIN' ? 'ADMIN' : requestedRole === 'VISITOR' ? 'VISITOR' : 'USER', pass = normalizePassword(a[4]);
-      if (!id || pass.length<4 || pass.length > 200) fail('Username and password (4 to 200 characters) are required.');
+      if (!id || pass.length < 4 || pass.length > 200) fail('Username and password (4 to 200 characters) are required.');
       const { data: existing, error } = await supabase.from('app_users').select('user_id, deleted, created_at').eq('user_id', id).maybeSingle();
       if (error) throw error;
       if (existing && existing.deleted !== true) fail('User already exists.');
@@ -1364,7 +1323,7 @@ async function dispatch(db, method, a, req) {
     case 'adminResetAuthPassword': {
       const s = await requireAdmin(db, tokenAt(0));
       const id = normalizeUserId(a[1]), pass = normalizePassword(a[2]);
-      if (pass.length<4 || pass.length > 200) fail('Password must be between 4 and 200 characters.');
+      if (pass.length < 4 || pass.length > 200) fail('Password must be between 4 and 200 characters.');
       const p = buildPasswordRecord(pass), now = iso();
       const { data, error } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordCost.N, salt: p.passwordSalt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id).select('user_id').maybeSingle();
       if (error) throw error;
@@ -1472,6 +1431,7 @@ async function dispatch(db, method, a, req) {
         const test = clean(a[2], 200).replace(/\s+/g, ' ').trim();
         if (!lab) fail('Laboratory is required.');
         if (!test) fail('Test name is required.');
+        if (!labs.some(v => String(v).toUpperCase() === lab)) labs.push(lab);
         const key = Object.keys(testsByLab).find(k => k.toUpperCase() === lab) || lab;
         const list = Array.isArray(testsByLab[key]) ? [...testsByLab[key]] : [];
         if (list.some(v => String(v).toUpperCase() === test.toUpperCase())) fail('This test already exists for the selected laboratory.');
@@ -1609,7 +1569,7 @@ async function dispatch(db, method, a, req) {
       const id = normalizeUserId(a[0]);
       if (id !== s.userId) fail('You can only change your own password.', 403);
       const current = normalizePassword(a[1]), nextPass = normalizePassword(a[2]);
-      if (current.length > 200 || nextPass.length<4 || nextPass.length > 200) fail('New password must be between 4 and 200 characters.');
+      if (current.length > 200 || nextPass.length < 4 || nextPass.length > 200) fail('New password must be between 4 and 200 characters.');
       const { data: u, error } = await supabase.from('app_users').select('*').eq('user_id', id).eq('deleted', false).maybeSingle();
       if (error) throw error;
       if (!u) fail('User was not found.', 404);
@@ -1619,6 +1579,7 @@ async function dispatch(db, method, a, req) {
       const { error: updateError } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordCost.N, salt: p.passwordSalt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id);
       if (updateError) throw updateError;
       await supabase.from('app_sessions').delete().eq('user_id', id);
+      clearSessionCache(id);
       await log(db, s.userId, 'PASSWORD_CHANGED', 'Updated own password.', a[3]);
       return { ok: true, authenticated: false, changed: true, clearSession: true, message: 'Password updated. Go back and sign in.' };
     }

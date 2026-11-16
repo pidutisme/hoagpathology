@@ -2,7 +2,6 @@ import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
-import { consumeRecoveryCode, consumeTotpCode } from '../lib/mfa.js';
 import { appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
@@ -56,11 +55,6 @@ const ipKeyFor = ip =>
     .digest('hex')
     .slice(0, 32);
 
-const mfaKeyFor = userId =>
-  normalizeUserId(userId)
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '_');
-
 async function getSettings() {
   const { data, error } = await supabase
     .from('app_settings')
@@ -94,14 +88,26 @@ async function saveSettings(settings) {
   if (error) throw error;
 }
 
+function pruneLoginFailures(rawFailures, nowMs) {
+  const next = {};
+  if (!rawFailures || typeof rawFailures !== 'object') return next;
+  const staleCutoff = nowMs - 60 * 60 * 1000;
+  for (const [k, v] of Object.entries(rawFailures)) {
+    if (!v || typeof v !== 'object') continue;
+    const until = Number(v.until || 0);
+    const updatedMs = Date.parse(String(v.updatedAt || '')) || 0;
+    if (until > nowMs || updatedMs > staleCutoff) {
+      next[k] = v;
+    }
+  }
+  return next;
+}
+
 async function recordLoginFailures(baseSettings, entries) {
   const settings = baseSettings && typeof baseSettings === 'object' ? baseSettings : await getSettings();
-  const loginFailures =
-    settings?.loginFailures && typeof settings.loginFailures === 'object'
-      ? { ...settings.loginFailures }
-      : {};
-  const nowIso = new Date().toISOString();
   const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+  const loginFailures = pruneLoginFailures(settings?.loginFailures, nowMs);
 
   for (const { key, kind, lockAfter } of entries) {
     if (!key) continue;
@@ -196,9 +202,8 @@ async function findUser(username) {
   ).find(user => matchesLoginUser(user, username)) || null;
 }
 
-async function getMfaRecord(canonicalUserId) {
+async function getMfaRecord(_canonicalUserId) {
   /*
-
    * Keep the existing MFA flow isolated until its data source is migrated.
    */
   return null;

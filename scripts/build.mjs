@@ -56,3 +56,4 @@ if (!rx.test(html)) {
 html = html.replace(rx, '$1' + id + '$2');
 fs.writeFileSync(ip, html);
 console.log('LabPortal build PASS - local Build ID ' + id);
+

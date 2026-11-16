@@ -1,14 +1,21 @@
 import { createRequire } from "node:module";
+import { ensureRequestId } from "../lib/request-security.js";
 
 const require = createRequire(import.meta.url);
 const VERSION = require("../package.json").version;
 
-
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  ensureRequestId(req, res);
+
   if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
     return res.status(405).json({
       ok: false,
-      error: "Method not allowed"
+      error: "Method not allowed",
+      requestId: req.requestId
     });
   }
 
@@ -34,6 +41,7 @@ export default async function handler(req, res) {
       second: "2-digit",
       hour12: true
     }).format(now),
-    timeZone: "Asia/Kuala_Lumpur"
+    timeZone: "Asia/Kuala_Lumpur",
+    requestId: req.requestId
   });
 }

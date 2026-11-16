@@ -25,12 +25,19 @@ const schema = z.object({
   recoveryCode: z.string().regex(/^[A-Z0-9-]{8,32}$/i).optional()
 }).strict();
 
-const cookieValue = (req, name) =>
-  String(req.headers.cookie || '')
+const cookieValue = (req, name) => {
+  const raw = String(req.headers?.cookie || '')
     .split(';')
     .map(v => v.trim())
     .find(v => v.startsWith(name + '='))
     ?.slice(name.length + 1) || '';
+  if (!raw) return '';
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return '';
+  }
+};
 
 const ipFor = req =>
   (
@@ -81,6 +88,21 @@ async function saveSettings(settings) {
   if (error) throw error;
 }
 
+function pruneFailures(rawFailures, nowMs) {
+  const next = {};
+  if (!rawFailures || typeof rawFailures !== 'object') return next;
+  const staleCutoff = nowMs - 60 * 60 * 1000;
+  for (const [k, v] of Object.entries(rawFailures)) {
+    if (!v || typeof v !== 'object') continue;
+    const until = Number(v.until || 0);
+    const updatedMs = Date.parse(String(v.updatedAt || '')) || 0;
+    if (until > nowMs || updatedMs > staleCutoff) {
+      next[k] = v;
+    }
+  }
+  return next;
+}
+
 async function throttled(keys) {
   const settings = await getSettings();
   const failures = settings.loginFailures || {};
@@ -93,7 +115,8 @@ async function throttled(keys) {
 
 async function recordFailure(keys, kind) {
   const settings = await getSettings();
-  const failures = { ...(settings.loginFailures || {}) };
+  const nowMs = Date.now();
+  const failures = pruneFailures(settings.loginFailures, nowMs);
 
   for (const [key, scope, lockAfter] of [
     [keys.userKey, 'user', 5],
@@ -104,9 +127,9 @@ async function recordFailure(keys, kind) {
 
     failures[key] = {
       count,
-      until: count >= lockAfter ? Date.now() + 300000 : 0,
+      until: count >= lockAfter ? nowMs + 300000 : 0,
       kind: `${kind}-${scope}`,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date(nowMs).toISOString()
     };
   }
 
@@ -140,6 +163,14 @@ const audit = (actorId, action, requestId) =>
     metadata: {}
   });
 
+const normalizeUserPasswordFields = user => ({
+  ...user,
+  passwordHash: user.passwordHash || user.password_hash,
+  passwordIterations: user.passwordIterations || user.password_iterations,
+  passwordSalt: user.passwordSalt || user.password_salt || user.salt,
+  salt: user.salt || user.passwordSalt || user.password_salt
+});
+
 async function authenticateAdmin(username, password) {
   const normalized = normalizeUserId(username);
 
@@ -157,7 +188,7 @@ async function authenticateAdmin(username, password) {
   return user &&
     user.active !== false &&
     normalizeUserId(user.role) === 'ADMIN' &&
-    verifyPassword(user, normalizePassword(password))
+    verifyPassword(normalizeUserPasswordFields(user), normalizePassword(password))
     ? user
     : null;
 }
@@ -181,13 +212,14 @@ async function saveMfa(userId, values) {
       user_id: userId,
       ...values,
       updated_at: new Date().toISOString()
-    });
+    }, { onConflict: 'user_id' });
 
   if (error) throw error;
 }
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   ensureRequestId(req, res);
 
   if (req.method !== 'POST') {
@@ -325,9 +357,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const sessionToken = decodeURIComponent(
-      cookieValue(req, 'labapp_session')
-    ).slice(0, 300);
+    const sessionToken = cookieValue(req, 'labapp_session').slice(0, 300);
 
     const session = await sessionFor(null, sessionToken);
 
@@ -359,7 +389,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const user = session.user;
+    const user = normalizeUserPasswordFields(session.user || {});
 
     const factorVerified = body.code
       ? await consumeTotpCode(session.userId, body.code)

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { sessionFor, VISITOR_PAGE_CATALOG } from '../lib/session.js';
+import { sessionFor, clearSessionCache, VISITOR_PAGE_CATALOG } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { loginStateRequestSchema } from '../lib/schemas/api.js';
@@ -9,6 +9,17 @@ const require = createRequire(import.meta.url);
 const VERSION = require('../package.json').version;
 
 const COOKIE_NAME = 'labapp_session';
+
+const isHttpsRequest = req =>
+  String(req.headers?.['x-forwarded-proto'] || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase() === 'https' ||
+  Boolean(req.socket?.encrypted) ||
+  String(req.headers?.origin || req.headers?.referer || '')
+    .trim()
+    .toLowerCase()
+    .startsWith('https://');
 
 const cookieValue = (req, name) => {
   const raw = String(req.headers?.cookie || '');
@@ -26,10 +37,10 @@ const cookieValue = (req, name) => {
   }
 };
 
-const clearSessionCookie = res =>
+const clearSessionCookie = (res, secure = true) =>
   res.setHeader(
     'Set-Cookie',
-    `${COOKIE_NAME}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`
+    `${COOKIE_NAME}=; Max-Age=0; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`
   );
 
 const tokenHash = token =>
@@ -39,9 +50,11 @@ const tokenHash = token =>
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
   ensureRequestId(req, res);
+  const isHttps = isHttpsRequest(req);
 
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -79,6 +92,11 @@ export default async function handler(req, res) {
     ).slice(0, 300);
 
     if (body.freshSession === true && token) {
+      const existing = await sessionFor(null, token);
+      if (existing) {
+        clearSessionCache(existing.userId);
+      }
+
       const { supabase } = await import('../lib/supabase-admin.js');
 
       const hash = tokenHash(token);
@@ -90,7 +108,7 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
-      clearSessionCookie(res);
+      clearSessionCookie(res, isHttps);
 
       return res.status(200).json({
         ok: true,
@@ -110,7 +128,7 @@ export default async function handler(req, res) {
     const session = await sessionFor(null, token);
 
     if (!session) {
-      clearSessionCookie(res);
+      clearSessionCookie(res, isHttps);
 
       return res.status(200).json({
         ok: true,

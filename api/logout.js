@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { supabase } from '../lib/supabase-admin.js';
-import { sessionFor, appendSystemLog } from '../lib/session.js';
+import { sessionFor, appendSystemLog, clearSessionCache } from '../lib/session.js';
 import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
 import { z } from 'zod';
 import { parseRequest, assertSafePayload } from '../lib/schemas/common.js';
@@ -11,17 +11,28 @@ const bodySchema = z
   })
   .strict();
 
+const isHttpsRequest = req =>
+  String(req.headers?.['x-forwarded-proto'] || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase() === 'https' ||
+  Boolean(req.socket?.encrypted) ||
+  String(req.headers?.origin || req.headers?.referer || '')
+    .trim()
+    .toLowerCase()
+    .startsWith('https://');
+
 const cookieValue = (req, name) =>
-  String(req.headers.cookie || '')
+  String(req.headers?.cookie || '')
     .split(';')
     .map(v => v.trim())
     .find(v => v.startsWith(name + '='))
     ?.slice(name.length + 1) || '';
 
-const clearCookie = res =>
+const clearCookie = (res, secure = true) =>
   res.setHeader(
     'Set-Cookie',
-    'labapp_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax'
+    `labapp_session=; Max-Age=0; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`
   );
 
 const tokenHash = token =>
@@ -31,8 +42,11 @@ const tokenHash = token =>
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
 
   ensureRequestId(req, res);
+  const isHttps = isHttpsRequest(req);
 
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -80,21 +94,22 @@ export default async function handler(req, res) {
       token = '';
     }
 
-    const session = token
-      ? await sessionFor(null, token)
-      : null;
+    if (token) {
+      const session = await sessionFor(null, token);
 
-    if (session) {
-      await appendSystemLog(null, {
-        at: new Date().toISOString(),
-        actorId: session.userId,
-        userId: session.userId,
-        action: 'LOGOUT',
-        details: 'Signed out safely.',
-        result: 'SUCCESS',
-        requestId: req.requestId,
-        metadata: {}
-      });
+      if (session) {
+        await appendSystemLog(null, {
+          at: new Date().toISOString(),
+          actorId: session.userId,
+          userId: session.userId,
+          action: 'LOGOUT',
+          details: 'Signed out safely.',
+          result: 'SUCCESS',
+          requestId: req.requestId,
+          metadata: {}
+        });
+        clearSessionCache(session.userId);
+      }
 
       const { error } = await supabase
         .from('app_sessions')
@@ -106,7 +121,7 @@ export default async function handler(req, res) {
       }
     }
 
-    clearCookie(res);
+    clearCookie(res, isHttps);
 
     return res.status(200).json({
       ok: true,
@@ -123,7 +138,7 @@ export default async function handler(req, res) {
       error?.message || 'Unknown error'
     );
 
-    clearCookie(res);
+    clearCookie(res, isHttps);
 
     return res.status(status).json({
       ok: false,

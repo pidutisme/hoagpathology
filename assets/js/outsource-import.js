@@ -1,7 +1,7 @@
 /* One-time Outsource CSV importer. Admin-only UI; no live spreadsheet sync. */
 (function(){
   'use strict';
-  var mounted=false, selectedRows=[], selectedFiles=[];
+  var selectedRows=[], selectedFiles=[];
   var HEADER_ALIASES={
     bil:'bil',
     'sample date':'sampleDate','date':'sampleDate',
@@ -203,3 +203,4 @@
   window.OutsourceCsvImporter={mount:mount,open:function(){ensureModal();openModal();}};
   document.addEventListener('DOMContentLoaded',function(){setTimeout(mount,200);});
 })();
+

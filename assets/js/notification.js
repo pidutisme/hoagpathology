@@ -1896,3 +1896,4 @@
   window.LabNotification = { open: open, render: render, loadRecords: loadRecords, syncInteractiveState: syncInteractiveState, enhanceSelects: initNotificationNeumorphicSelects, getRecords: function () { return records.slice(); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }); else { bind(); initNotificationNeumorphicDateTime(); initNotificationNeumorphicSelects(); }
 })(window, document);
+

@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
 import { put } from '@vercel/blob';
 import { encryptBackup } from '../../lib/backup-crypto.js';
 import { ensureRequestId } from '../../lib/request-security.js';
@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase-admin.js';
 const PREFIX = 'backups/hoagpathology/';
 const dayKey = date => date.toISOString().slice(0, 10);
 const audit = (action, requestId, detail = '') => appendSystemLog(null, { at: new Date().toISOString(), actorId: 'SYSTEM', action, details: detail, result: action.endsWith('FAILED') ? 'FAILURE' : 'SUCCESS', requestId, metadata: {} });
+
 function authorized(req) {
   const expected = Buffer.from(process.env.CRON_SECRET || '');
   const supplied = Buffer.from(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
@@ -22,41 +23,44 @@ export default async function handler(req, res) {
   if (!process.env.BLOB_READ_WRITE_TOKEN || !process.env.BACKUP_ENCRYPTION_KEY) return res.status(503).json({ ok: false, error: 'Backup storage is not configured.', requestId: req.requestId });
   try {
     const tables = {};
-const readAll = async table => {
-  const pageSize = 1000;
-  const rows = [];
+    const readAll = async table => {
+      const pageSize = 1000;
+      const rows = [];
 
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      .range(from, from + pageSize - 1);
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from(table)
+          .select('*')
+          .range(from, from + pageSize - 1);
 
-    if (error) throw error;
+        if (error) throw error;
 
-    rows.push(...(data || []));
+        rows.push(...(data || []));
 
-    if (!data || data.length < pageSize) break;
-  }
+        if (!data || data.length < pageSize) break;
+      }
 
-  return rows;
-};
+      return rows;
+    };
 
-for (const table of [
-  'app_users',
-  'app_sessions',
-  'app_settings',
-  'app_roster',
-  'inventory_items',
-  'app_inventory',
-  'outsource_records',
-  'transfusion_records',
-  'system_logs',
-  'user_mfa'
-]) {
-  tables[table] = await readAll(table);
-}
-const raw = Buffer.from(JSON.stringify({ version: 1, source: 'supabase', tables }), 'utf8');
+    for (const table of [
+      'app_users',
+      'app_sessions',
+      'app_settings',
+      'app_roster',
+      'inventory_items',
+      'app_inventory',
+      'outsource_records',
+      'transfusion_records',
+      'notification_records',
+      'tbis102a_records',
+      'system_logs',
+      'user_mfa'
+    ]) {
+      tables[table] = await readAll(table);
+    }
+
+    const raw = Buffer.from(JSON.stringify({ version: 1, source: 'supabase', tables }), 'utf8');
     const encrypted = encryptBackup(raw);
     const now = new Date();
     const timestamp = now.toISOString().replace(/[:.]/g, '-');

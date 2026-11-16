@@ -1218,23 +1218,6 @@
       padding: 14px 16px;
     }
 
-    #settings .setting-box::before {
-      content: attr(data-icon);
-      grid-column: 1;
-      grid-row: 1 / span 2;
-      width: 42px;
-      height: 42px;
-      display: grid;
-      place-items: center;
-      border: 1px solid rgba(95, 126, 255, .18);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, .28);
-      color: var(--primary);
-      font-size: 21px;
-      font-weight: 800;
-      line-height: 1;
-    }
-
     #settings .setting-box strong,
     #settings .setting-box span {
       grid-column: 2;
@@ -1248,11 +1231,6 @@
 
     #settings .setting-box span {
       align-self: start;
-    }
-
-    body.dark-mode #settings .setting-box::before {
-      background: rgba(255, 255, 255, .045);
-      border-color: rgba(143, 176, 255, .18);
     }
 
     .settings-extra-grid {
@@ -2863,20 +2841,6 @@
       to {
         opacity: 1;
         transform: translateY(0) scale(1);
-      }
-    }
-
-    @keyframes meshPan {
-      0% {
-        background-position: 0% 0%;
-      }
-
-      50% {
-        background-position: 100% 100%;
-      }
-
-      100% {
-        background-position: 0% 0%;
       }
     }
 
@@ -11387,3 +11351,4 @@ body.auth-resolving #authResolvingPanel {
   #moduleYearGrid.tbis102a-active-grid .tbis102a-case-mode-grid { grid-template-columns: 1fr; }
   #moduleYearGrid.tbis102a-active-grid .tbis102a-table { min-width: 1900px !important; }
 }
+

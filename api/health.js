@@ -1,4 +1,3 @@
-
 export default function handler(req, res) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.setHeader("Allow", "GET, HEAD");
@@ -8,6 +7,7 @@ export default function handler(req, res) {
     });
   }
   res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Content-Type", "application/json");
   return res.status(200).json({
     ok: true,
