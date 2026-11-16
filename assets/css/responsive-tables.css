@@ -626,7 +626,7 @@ table.rt-responsive-table .notification-pill {
 }
 
 /* Outsource + Transfusion: same real-table model, with automatic row height. */
-:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid)
+:is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid)
   .outsource-table.rt-responsive-table {
   display: table !important;
   width: 100% !important;

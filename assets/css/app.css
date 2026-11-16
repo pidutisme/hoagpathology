@@ -8195,30 +8195,6 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 #moduleYearGrid.transfusion-active-grid .outsource-table th:nth-child(8),
 #moduleYearGrid.transfusion-active-grid .outsource-table td:nth-child(8) { width: 13.5%; overflow: visible; }
 
-/* TBIS102A 11-column proportional layout (sums to 100%) */
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(1),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(1) { width: 8%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(2),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(2) { width: 8%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(3),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(3) { width: 8.5%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(4),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(4) { width: 14%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(5),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(5) { width: 10%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(6),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(6) { width: 8%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(7),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(7) { width: 8.5%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(8),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(8) { width: 7.5%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(9),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(9) { width: 8%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(10),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(10) { width: 9%; }
-#moduleYearGrid.tbis102a-active-grid .outsource-table th:nth-child(11),
-#moduleYearGrid.tbis102a-active-grid .outsource-table td:nth-child(11) { width: 10.5%; overflow: visible; }
-
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table tbody tr.outsource-data-row,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table tbody tr.transfusion-data-row {
   height: 36px;
@@ -11284,71 +11260,92 @@ body.auth-resolving #authResolvingPanel {
 
 
 
-/* TBIS102A V28 — form-aligned grouped case/sample table; BIL hidden from display.
- * Table columns are limited to fields present in the registration form.
- * One BIL always renders X1/X2/X3; case identity cells span 3 rows; Actions do not.
- */
+/* TBIS102A V37 — 12-column grouped case/sample table (Release Date, TAT, Validated By, Reviewed By shown in Details Modal). */
 #moduleYearGrid.tbis102a-active-grid .tbis102a-case-mode-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 12px;
 }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table {
-  min-width: 2100px !important;
-  table-layout: fixed;
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table-wrap {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  contain: paint;
+  isolation: isolate;
 }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th,
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table td {
-  text-align: center;
-  vertical-align: middle;
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table {
+  display: table !important;
+  width: 100% !important;
+  min-width: 1320px !important;
+  max-width: none !important;
+  table-layout: fixed !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table th,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table td {
+  padding: 7px 8px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table td.tbis-name-cell,
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table td.tbis-name-cell strong {
+  text-align: left !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  line-height: 1.3 !important;
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table td.tbis-case-cell {
   background: var(--neo-surface-soft);
   font-weight: 700;
-}
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table td.tbis-bil-cell {
-  font-weight: 900;
+  border-right: 1px solid var(--line);
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-sample-row td {
   border-top: 1px dashed var(--line);
 }
-/* TBIS102A scroll performance: keep the exact real-table layout, but let
- * Chromium skip rendering case groups that are outside the viewport. */
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table-wrap {
-  contain: paint;
-  isolation: isolate;
-}
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table > tbody.tbis-case-group {
   content-visibility: auto;
   contain: paint;
-  contain-intrinsic-size: 108px;
+  contain-intrinsic-size: 114px;
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-case-first-row td {
-  border-top: 1px solid var(--line-strong, var(--line));
+  border-top: 1.5px solid var(--year-page-card-border);
 }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table .outsource-actions-cell {
-  vertical-align: middle;
-  white-space: nowrap;
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table .outsource-actions-cell {
+  min-width: 102px !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-align: center !important;
 }
-/* 17 columns: BIL, DATE, LAB NO, BARCODE, NAME, IC/ID, UNIT, PATIENT, SAMPLE, QUALITY, AFB, RESULT, RELEASE, TAT, VALIDATED, REVIEWED, ACTIONS */
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(1), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(1) { width: 4%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(2), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(2) { width: 6%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(3), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(3) { width: 6%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(4), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(4) { width: 7%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(5), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(5) { width: 11%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(6), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(6) { width: 8%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(7), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(7) { width: 5%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(8), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(8) { width: 6%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(9), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(9) { width: 6%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(10), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(10) { width: 7%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(11), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(11) { width: 5%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(12), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(12) { width: 7%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(13), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(13) { width: 7%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(14), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(14) { width: 5%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(15), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(15) { width: 7%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(16), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(16) { width: 7%; }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table th:nth-child(17), #moduleYearGrid.tbis102a-active-grid .tbis102a-table td:nth-child(17) { width: 8%; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table .outsource-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  width: max-content !important;
+}
+/* 12 columns: 1:DATE, 2:LAB NO., 3:BARCODE, 4:NAME, 5:IC/ID NO., 6:UNIT, 7:PATIENT, 8:SAMPLE, 9:SAMPLE QUALITY, 10:SPUTUM AFB, 11:RESULT, 12:ACTIONS */
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(1) { width: 7.5% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(2) { width: 5.5% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(3) { width: 7.5% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(4) { width: 15.5% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(5) { width: 9.5% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(6) { width: 6% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(7) { width: 8.5% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(8) { width: 7% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(9) { width: 9.5% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(10) { width: 7% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(11) { width: 9% !important; }
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table thead th:nth-child(12) { width: 7.5% !important; }
 @media (max-width: 900px) {
   #moduleYearGrid.tbis102a-active-grid .tbis102a-case-mode-grid { grid-template-columns: 1fr; }
-  #moduleYearGrid.tbis102a-active-grid .tbis102a-table { min-width: 1900px !important; }
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-table,
+  #moduleYearGrid.tbis102a-active-grid .tbis102a-table.rt-responsive-table { min-width: 1320px !important; width: 1320px !important; }
 }
 

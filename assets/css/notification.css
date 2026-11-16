@@ -1520,11 +1520,13 @@
    grid cards as Outsource / Transfusion / Inventory modals.
    ========================================================= */
 #notificationDetailModal.notification-modal[hidden],
+#tbis102aDetailsModal.notification-modal[hidden],
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal[hidden] {
   display: none !important;
 }
 
 #notificationDetailModal.notification-modal,
+#tbis102aDetailsModal.notification-modal,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal {
   position: fixed;
   inset: 0;
@@ -1540,6 +1542,7 @@
 }
 
 #notificationDetailModal .notification-modal-dialog,
+#tbis102aDetailsModal .notification-modal-dialog,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-dialog {
   width: min(760px, 95vw);
   max-height: min(88vh, 780px);
@@ -1557,6 +1560,7 @@
 }
 
 #notificationDetailModal .notification-modal-head,
+#tbis102aDetailsModal .notification-modal-head,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-head {
   display: flex;
   align-items: flex-start;
@@ -1567,6 +1571,7 @@
 }
 
 #notificationDetailModal .notification-modal-head h3,
+#tbis102aDetailsModal .notification-modal-head h3,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-head h3 {
   margin: 2px 0 0;
   color: var(--text);
@@ -1576,6 +1581,7 @@
 }
 
 #notificationDetailModal .notification-modal-close,
+#tbis102aDetailsModal .notification-modal-close,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-close {
   width: 36px;
   height: 36px;
@@ -1594,12 +1600,14 @@
 }
 
 #notificationDetailModal .notification-modal-close:hover,
+#tbis102aDetailsModal .notification-modal-close:hover,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-close:hover {
   transform: translateY(-1px);
   border-color: var(--primary);
 }
 
 #notificationDetailModal .notification-modal-body,
+#tbis102aDetailsModal .notification-modal-body,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-body {
   padding: 0;
 }
@@ -1732,6 +1740,7 @@
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-time-list,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-select-menu,
 #notificationDetailModal .notification-modal-dialog,
+#tbis102aDetailsModal .notification-modal-dialog,
 :is(#notification, #moduleYearGrid.tbis102a-active-grid) .notification-modal-dialog {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
@@ -2440,4 +2449,22 @@
   .tbis102a-detail-grid {
     grid-template-columns: 1fr;
   }
+}
+
+#tbis102aDetailsModal .notification-kicker {
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+#tbis102aDetailsModal .notification-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
 }
