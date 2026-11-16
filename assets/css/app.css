@@ -11347,11 +11347,26 @@ body.auth-resolving #authResolvingPanel {
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-sample-row td {
   border-top: 1px dashed var(--line);
 }
-#moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-case-row {
-  /* Keep the full register in the DOM, but let the browser skip paint/layout work
-     for rows far outside the viewport while scrolling. */
-  content-visibility: auto;
-  contain-intrinsic-size: 28px;
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-virtual-spacer {
+  height: 0;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-virtual-spacer td {
+  display: table-cell !important;
+  height: 0;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-case-first-row td {
   border-top: 1px solid var(--line-strong, var(--line));
