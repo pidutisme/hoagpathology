@@ -11349,8 +11349,13 @@ body.auth-resolving #authResolvingPanel {
 }
 /* TBIS102A scroll performance: keep the exact real-table layout, but let
  * Chromium skip rendering case groups that are outside the viewport. */
+#moduleYearGrid.tbis102a-active-grid .tbis102a-table-wrap {
+  contain: paint;
+  isolation: isolate;
+}
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table > tbody.tbis-case-group {
   content-visibility: auto;
+  contain: paint;
   contain-intrinsic-size: 108px;
 }
 #moduleYearGrid.tbis102a-active-grid .tbis102a-table tbody tr.tbis-case-first-row td {

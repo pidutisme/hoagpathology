@@ -5776,9 +5776,9 @@ hoagApiRequest('logout', {
               var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty);
               var resultLabel = hasData ? formatResultDisplay(s) : '';
               var pillClass = hasData ? getResultPillClass(s) : '';
-              var dateCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.date || '') : (s.date || '')) + '</td>';
-              var labCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.labNo || '') : (s.labNo || '')) + '</td>';
-              var barcodeCell = '<td>' + outsourceEsc(sampleIndex === 0 ? (r.barcode || '') : (s.barcode || '')) + '</td>';
+              var dateCell = '<td>' + outsourceEsc(r.date || '') + '</td>';
+              var labCell = '<td>' + outsourceEsc(r.labNo || '') + '</td>';
+              var barcodeCell = '<td>' + outsourceEsc(r.barcode || '') + '</td>';
               var details = [
                 '<td>' + outsourceEsc(s.sample || '') + '</td>',
                 '<td>' + outsourceEsc(s.quality || '') + '</td>',
@@ -6126,7 +6126,6 @@ function submit(e) {
           ['tbisSearch', 'tbisYearFilter', 'tbisMonthFilter'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener(id === 'tbisSearch' ? 'input' : 'change', function () {
-              page = 1;
               renderRows();
             });
           });
