@@ -1664,7 +1664,7 @@
       padding: 8px 12px;
       box-sizing: border-box;
       color: var(--text);
-      background-color: var(--surface-inset);
+      background: var(--surface-inset);
       border: 1px solid var(--year-page-card-border);
       box-shadow: var(--shadow-inset);
       outline: none;
@@ -2022,7 +2022,7 @@
 
     .system-notice-toast {
       position: fixed;
-      z-index: 70;
+      z-index: var(--z-toast);
       right: clamp(14px, 1.5vw, 26px);
       top: clamp(14px, 1.5vw, 26px);
       max-width: min(420px, calc(100vw - 28px));
@@ -2140,7 +2140,7 @@
     body.dark-mode #settings .admin-input,
     body.dark-mode #settings .admin-select,
     body.dark-mode #settings .admin-textarea {
-      background-color: var(--surface-inset);
+      background: var(--surface-inset);
       border-color: var(--year-page-card-border);
     }
 
@@ -2490,7 +2490,7 @@
       padding: 8px 12px;
       box-sizing: border-box;
       color: var(--text);
-      background-color: var(--surface-inset);
+      background: var(--surface-inset);
       border: 1px solid var(--year-page-card-border);
       box-shadow: var(--shadow-inset);
       outline: none;
@@ -4440,7 +4440,7 @@
       border-color: var(--year-page-card-border);
       color: var(--text);
       -webkit-text-fill-color: var(--text);
-      background-color: var(--surface-inset);
+      background: var(--surface-inset);
       box-shadow: var(--shadow-inset);
     }
 
@@ -4450,7 +4450,7 @@
       border-color: var(--year-page-card-border);
       color: var(--text);
       -webkit-text-fill-color: var(--text);
-      background-color: var(--surface-inset);
+      background: var(--surface-inset);
       box-shadow: var(--shadow-inset);
     }
 
@@ -8042,7 +8042,7 @@ select.outsource-native-select,
   padding: 0 30px 0 11px;
   border-radius: 12px;
   border: 1px solid var(--year-page-card-border);
-  background-color: var(--surface-inset);
+  background: var(--surface-inset);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%235e6d85' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -8527,7 +8527,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 .inventory-filter-menu,
 .inventory-month-menu {
   position: fixed !important;
-  z-index: 2147483647 !important;
+  z-index: var(--z-popover);
   display: block !important;
   min-width: 180px;
   max-height: 300px;
@@ -8603,7 +8603,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 .outsource-date-popover,
 .inventory-date-popover {
   position: fixed !important;
-  z-index: 2147483647 !important;
+  z-index: var(--z-popover);
   width: 284px;
   padding: 14px;
   border-radius: 20px;
@@ -9008,7 +9008,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
 #outsourcePostSaveModal.outsource-post-save-modal {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 2147483647 !important;
+  z-index: var(--z-popover);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9955,7 +9955,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   box-sizing: border-box;
   border-radius: 12px;
   border: 1px solid var(--year-page-card-border);
-  background-color: var(--surface-inset);
+  background: var(--surface-inset);
   box-shadow: var(--shadow-inset);
   color: var(--text);
   font: inherit;

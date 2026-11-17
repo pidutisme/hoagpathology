@@ -649,8 +649,8 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'getMalaysiaHolidayData': {
-      requireModuleAccess(await requireSession(db, cookieValue(req, 'labapp_session')), 'calendar', 'calendar.read');
-      const year = Number(a[0] || new Date().getFullYear());
+      requireModuleAccess(await requireSession(db, tokenAt(0) || cookieValue(req, 'labapp_session')), 'calendar', 'calendar.read');
+      const year = Number(a[1] || a[0] || new Date().getFullYear());
       if (!Number.isInteger(year) || year < 2000 || year > 2100) fail('Invalid holiday year.');
       const r = await fetch(`https://malaysia-holiday.dydxsoft.my/api/v1/holidays?year=${year}`, {
         headers: { Accept: 'application/json' },
@@ -1162,8 +1162,13 @@ async function dispatch(db, method, a, req) {
       const oldItems = Array.isArray(oldInventory.items) ? oldInventory.items : [];
       const newItems = Array.isArray(requestedInventory.items) ? requestedInventory.items : oldItems;
       if (s.role !== 'ADMIN') {
-        const a1 = JSON.stringify(oldItems.slice().sort((x, y) => String(x?.id || '').localeCompare(String(y?.id || ''))));
-        const a2 = JSON.stringify(newItems.slice().sort((x, y) => String(x?.id || '').localeCompare(String(y?.id || ''))));
+        const canonicalItems = items => items.map(item => ({
+          id: clean(item?.id, 120), name: clean(item?.name, 200), category: clean(item?.category, 120),
+          type: clean(item?.type, 80), active: item?.active !== false,
+          minStock: Number(item?.minStock || 0), openingStock: Number(item?.openingStock || 0), price: Number(item?.price || 0)
+        })).sort((x, y) => x.id.localeCompare(y.id));
+        const a1 = JSON.stringify(canonicalItems(oldItems));
+        const a2 = JSON.stringify(canonicalItems(newItems));
         if (a1 !== a2) fail('Administrator access is required to add, edit or delete inventory items.', 403);
       }
       const oldTx = Array.isArray(oldInventory.transactions) ? oldInventory.transactions : [];
@@ -1471,16 +1476,13 @@ async function dispatch(db, method, a, req) {
       const id = clean(item.id, 120) || `item-${randomUUID()}`;
       const now = iso();
       const [
-        { data: duplicate, error: duplicateError },
         { data: existing },
         { root, inventory }
       ] = await Promise.all([
-        supabase.from('inventory_items').select('id').ilike('name', name).neq('id', id).eq('active', true).maybeSingle(),
         supabase.from('inventory_items').select('created_at, created_by').eq('id', id).maybeSingle(),
         inventoryFromTables()
       ]);
-      if (duplicateError) throw duplicateError;
-      if (duplicate) fail('An item with this name already exists.');
+      if ((inventory.items || []).some(row => row?.active !== false && String(row.id) !== id && String(row.name || '').trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase())) fail('An item with this name already exists.');
       const row = {
         id,
         name,
@@ -1507,7 +1509,7 @@ async function dispatch(db, method, a, req) {
       const deletedMap = inventory.deletedItemIds && typeof inventory.deletedItemIds === 'object' ? { ...inventory.deletedItemIds } : {};
       delete deletedMap[id];
       const nextInventory = { ...inventory, items: nextItems, deletedItemIds: deletedMap };
-      const saved = await saveInventoryRoot(nextInventory, s.userId, undefined, root);
+      const saved = await saveInventoryRoot(nextInventory, s.userId, a[2], root);
       await log(db, s.userId, existing ? 'ADMIN_UPDATE_INVENTORY_ITEM' : 'ADMIN_ADD_INVENTORY_ITEM', `${existing ? 'Updated' : 'Added'} item ${name}.`, a[3]);
       return { ok: true, item: mapped, inventory: inventoryView(nextInventory), updatedAt: saved.current.updated_at, version: VERSION };
     }
@@ -1548,28 +1550,55 @@ async function dispatch(db, method, a, req) {
         monthlyPrices,
         deletedItemIds: deletedMap
       };
-      const saved = await saveInventoryRoot(nextInventory, s.userId, undefined, root);
+      const saved = await saveInventoryRoot(nextInventory, s.userId, a[2], root);
       await log(db, s.userId, 'ADMIN_DELETE_INVENTORY_ITEM', `Deleted item ${clean((target && target.name) || (fallbackItem && fallbackItem.name) || itemId, 300)}.`, a[3]);
       return { ok: true, deletedItemId: itemId, inventory: inventoryView(nextInventory), updatedAt: saved.current.updated_at, version: VERSION };
     }
 
     case 'changeAuthPassword': {
-      const s = await requireSession(db, tokenAt(4));
+      const suppliedToken = tokenAt(4);
       const id = normalizeUserId(a[0]);
-      if (id !== s.userId) fail('You can only change your own password.', 403);
       const current = normalizePassword(a[1]), nextPass = normalizePassword(a[2]);
       if (current.length > 200 || nextPass.length < 4 || nextPass.length > 200) fail('New password must be between 4 and 200 characters.');
-      const { data: u, error } = await supabase.from('app_users').select('*').eq('user_id', id).eq('deleted', false).maybeSingle();
+      const s = suppliedToken ? await requireSession(db, suppliedToken) : null;
+      if (s && id !== s.userId) fail('You can only change your own password.', 403);
+      const throttleIds = [
+        createHash('sha256').update(`login-user\n${id}`).digest('hex').slice(0, 32),
+        createHash('sha256').update(`login-ip\n${getClientIp(req)}`).digest('hex').slice(0, 32)
+      ];
+      let throttleSettings = null;
+      if (!s) {
+        throttleSettings = await getSettings();
+        const failures = throttleSettings.loginFailures && typeof throttleSettings.loginFailures === 'object' ? throttleSettings.loginFailures : {};
+        if (throttleIds.some(key => Number(failures[key]?.until || 0) > Date.now())) fail('Too many attempts. Please wait before trying again.', 429);
+      }
+      const { data: u, error } = await supabase.from('app_users').select('*').eq('user_id', id).maybeSingle();
       if (error) throw error;
-      if (!u) fail('User was not found.', 404);
+      if (!u || u.active === false || u.deleted === true) fail('User was not found.', 404);
       const legacyUser = { userId: u.user_id, displayName: u.display_name, role: u.role, active: u.active, deleted: u.deleted, passwordHash: u.password_hash, passwordIterations: u.password_iterations, salt: u.salt };
-      if (!verifyPassword(legacyUser, current)) fail('Invalid current password.', 401);
+      if (!verifyPassword(legacyUser, current)) {
+        if (!s) {
+          const now = Date.now(), failures = { ...(throttleSettings.loginFailures || {}) };
+          for (const [index, key] of throttleIds.entries()) {
+            const count = Number(failures[key]?.count || 0) + 1;
+            failures[key] = { count, until: count >= (index === 0 ? 5 : 20) ? now + 300000 : 0, kind: index === 0 ? 'password-change-user' : 'password-change-ip', updatedAt: new Date(now).toISOString() };
+          }
+          await saveSettings({ ...throttleSettings, loginFailures: failures });
+        }
+        fail('Invalid current password.', 401);
+      }
+      if (!s && String(u.role || '').toUpperCase() === 'ADMIN' && (u.mfa_enabled === true || u.mfaEnabled === true)) fail('Sign in and complete MFA before changing this administrator password.', 401);
       const p = buildPasswordRecord(nextPass), now = iso();
+      if (!s && throttleSettings?.loginFailures) {
+        const failures = { ...throttleSettings.loginFailures };
+        throttleIds.forEach(key => delete failures[key]);
+        await saveSettings({ ...throttleSettings, loginFailures: failures });
+      }
       const { error: updateError } = await supabase.from('app_users').update({ password_hash: p.passwordHash, password_iterations: p.passwordCost.N, salt: p.passwordSalt, sessions_revoked_at: now, updated_at: now }).eq('user_id', id);
       if (updateError) throw updateError;
       await supabase.from('app_sessions').delete().eq('user_id', id);
       clearSessionCache(id);
-      await log(db, s.userId, 'PASSWORD_CHANGED', 'Updated own password.', a[3]);
+      await log(db, id, 'PASSWORD_CHANGED', 'Updated password.', a[3]);
       return { ok: true, authenticated: false, changed: true, clearSession: true, message: 'Password updated. Go back and sign in.' };
     }
 

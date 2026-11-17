@@ -133,7 +133,7 @@
   function getExisting(){
     var osApi=(window.LabApp&&window.LabApp.OutSource)||window.OutSource;
     if(osApi&&typeof osApi.getSamples==='function')return osApi.getSamples();
-    return (window.Inventory&&Inventory.getOutsourceSamples)?Inventory.getOutsourceSamples():[];
+    return [];
   }
   function buildPreview(){
     var existing=getExisting(), existingKeys={}; existing.forEach(function(r){existingKeys[rowKey(r)]=true;});
@@ -176,11 +176,7 @@
         closeModal();
         return;
       }
-      var inventoryApi=window.LabApp&&window.LabApp.Inventory;
-      if(!inventoryApi||typeof inventoryApi.bulkUpsertOutsourceSamples!=='function')throw new Error('Import function is unavailable. Please reload the app and try again.');
-      var added=await inventoryApi.bulkUpsertOutsourceSamples(rows);
-      alert(added+' historical Outsource record(s) imported. Existing records were kept unchanged.');
-      closeModal();
+      throw new Error('Import function is unavailable. Please reload the app and try again.');
     }catch(error){
       console.error('OUTSOURCE bulk import failed:',error);
       alert(error&&error.message?error.message:'Outsource import failed. No existing records were changed.');

@@ -1,93 +1,3 @@
-/* ===== ORIGINAL SCRIPT BLOCK: outsource-filter-clean-final-js ===== */
-(function(){
-  'use strict';
-  var IDS=['outsourceYearFilter','outsourceMonthFilter','outsourceStatusFilter','outsourceReferralFilter','outsourceLabFilter','outsourceTestFilter','outsourceUnitFilter','trYearFilter','trMonthFilter','trStatusFilter'];
-  var active={menu:null,trigger:null,select:null};
-  function closeMenu(){
-    if(active.menu) active.menu.remove();
-    if(active.trigger){active.trigger.classList.remove('is-open');active.trigger.setAttribute('aria-expanded','false');}
-    active={menu:null,trigger:null,select:null};
-  }
-  function positionMenu(){
-    if(!active.menu||!active.trigger)return;
-    var r=active.trigger.getBoundingClientRect(), w=Math.max(r.width,180), h=active.menu.offsetHeight;
-    var left=Math.min(Math.max(8,r.left),Math.max(8,window.innerWidth-w-8));
-    var top=r.bottom+6;
-    if(top+h>window.innerHeight-8) top=Math.max(8,r.top-h-6);
-    active.menu.style.width=w+'px';active.menu.style.left=left+'px';active.menu.style.top=top+'px';
-  }
-  function sync(trigger,select){
-    var label=trigger.querySelector('.outsource-filter-neo-label'), opt=select.options[select.selectedIndex];
-    if(label)label.textContent=opt?opt.textContent:'All';
-    trigger.setAttribute('aria-label',opt?opt.textContent:'All');
-  }
-  function openMenu(trigger,select){
-    closeMenu();
-    var menu=document.createElement('div'); menu.className='outsource-filter-neo-menu is-open'; menu.setAttribute('role','listbox');
-    Array.prototype.forEach.call(select.options,function(opt){
-      var b=document.createElement('button'); b.type='button'; b.textContent=opt.textContent; b.dataset.value=opt.value;
-      if(opt.value===select.value)b.classList.add('is-selected');
-      b.addEventListener('click',function(e){
-        e.preventDefault();e.stopPropagation();
-        if(select.value!==opt.value){select.value=opt.value;select.dispatchEvent(new Event('change',{bubbles:true}));}
-        sync(trigger,select);closeMenu();
-      });
-      menu.appendChild(b);
-    });
-    document.body.appendChild(menu);active={menu:menu,trigger:trigger,select:select};
-    trigger.classList.add('is-open');trigger.setAttribute('aria-expanded','true');positionMenu();
-  }
-  function setup(select){
-    if(!select||IDS.indexOf(select.id)<0)return;
-    var search=select.closest('.outsource-search'); if(!search)return;
-    var existing=select.closest('.outsource-filter-neo-wrap');
-    if(existing){var t=existing.querySelector('.outsource-filter-neo-trigger');if(t)sync(t,select);return;}
-    /* Remove legacy wrappers/triggers only for the seven Outsource filters. */
-    var parent=select.parentElement;
-    if(parent && parent!==search && /outsource-(custom-select-wrap|filter-custom-wrap|select-wrap)/.test(parent.className||'')){
-      var old=parent.querySelector('.outsource-select-trigger,.inventory-filter-trigger,.outsource-filter-trigger');
-      if(old)old.remove(); parent.parentNode.insertBefore(select,parent); parent.remove();
-    }
-    search.querySelectorAll('.outsource-select-trigger,.inventory-filter-trigger,.outsource-filter-trigger').forEach(function(el){el.remove();});
-    var wrap=document.createElement('div');wrap.className='outsource-filter-neo-wrap';
-    var trigger=document.createElement('button');trigger.type='button';trigger.className='outsource-filter-neo-trigger';
-    trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');
-    var label=document.createElement('span');label.className='outsource-filter-neo-label';
-    var chev=document.createElement('span');chev.className='outsource-filter-neo-chevron';chev.textContent='⌄';
-    trigger.append(label,chev);select.classList.add('outsource-filter-neo-native');
-    select.parentNode.insertBefore(wrap,select);wrap.append(trigger,select);sync(trigger,select);
-    trigger.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(active.trigger===trigger)closeMenu();else openMenu(trigger,select);});
-    select.addEventListener('change',function(){sync(trigger,select);});
-  }
-  function init(){
-    var grid=document.getElementById('moduleYearGrid');
-    if(!grid||(!grid.classList.contains('outsource-active-grid')&&!grid.classList.contains('transfusion-active-grid')))return;
-    IDS.forEach(function(id){setup(document.getElementById(id));});
-  }
-  document.addEventListener('click',function(e){if(active.menu&&!e.target.closest('.outsource-filter-neo-menu')&&!e.target.closest('.outsource-filter-neo-trigger'))closeMenu();},true);
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenu();},true);
-  window.addEventListener('resize',positionMenu);window.addEventListener('scroll',positionMenu,true);
-  function start(){
-    init();
-    var grid=document.getElementById('moduleYearGrid');
-    if(grid && window.MutationObserver){
-      var pending=false;
-      new MutationObserver(function(mutations){
-        var added=false;
-        for(var i=0;i<mutations.length;i++){
-          if(mutations[i].addedNodes && mutations[i].addedNodes.length){added=true;break;}
-        }
-        if(!added || pending)return;
-        pending=true;
-        window.setTimeout(function(){pending=false;init();},40);
-      }).observe(grid,{childList:true,subtree:true});
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
-  window.setTimeout(init,100);
-})();
-
-
 /* ===== ORIGINAL SCRIPT BLOCK: inline-script-02 ===== */
 /* +----------------------------------+
      * + LOGIN-SAFE THEME GUARD           +
@@ -651,6 +561,7 @@
      * +----------------------------------+ */
     function isSensitiveBrowserStorageKey(key) {
       var value = String(key || '').toLowerCase();
+      if (value === 'neotheme' || value === 'labapptodayfloatingrostercardpositionv1') return false;
       var protectedPrefixes = ['labDailyRosterV26', 'labAppInventory', 'labAppUserNotesLocalPreviewV1'];
       return protectedPrefixes.some(function (prefix) {
         return value.indexOf(prefix.toLowerCase()) === 0;
@@ -1002,7 +913,7 @@
       });
       state.rosterCloudStore = normalizeRoster(combinedMemory);
       if (shouldReadLegacyLocalRoster()) safeStorageRemove(config.rosterKey);
-      if (!ok) setSyncStatus('Cloud sync active', 'warning');
+        if (!ok && Object.keys(touchedYears).some(function (year) { return !isSensitiveBrowserStorageKey(getRosterPartitionKey(year)); })) setSyncStatus('Cloud sync active', 'warning');
       return ok;
     }
   
@@ -2242,7 +2153,6 @@
         nodes.mfaCode = $('loginMfaCode');
         nodes.passwordToggle = $('loginPasswordToggle');
         nodes.submit = $('loginSubmit');
-        nodes.resume = $('resumeSessionButton');
         nodes.message = $('loginMessage');
         nodes.showChangePassword = $('showChangePassword');
         nodes.backToLogin = $('backToLogin');
@@ -3142,7 +3052,6 @@
   
         setBusy(false);
         setLoginMessage('', '');
-        updateResumeSessionButton_();
         if (nodes.greeting) {
           var hour = Number(getAppNowParts().hour);
           var greeting = hour < 12 ? 'Good Morning' : (hour < 18 ? 'Good Afternoon' : 'Good Evening');
@@ -3229,7 +3138,6 @@
       function checkStoredSession() {
         /* Only a same-tab refresh can reuse authentication. The sessionStorage
          * marker survives reloads, but not a closed tab or terminated app. */
-        updateResumeSessionButton_();
         var tabAuthenticated = hasTabAuthenticated_() && getNavigationType_() === 'reload';
         if (!tabAuthenticated) {
           clearTabAuthenticated_();
@@ -3284,11 +3192,6 @@
       /* +----------------------------------+
        * + submitLogin                      +
        * +----------------------------------+ */
-      function updateResumeSessionButton_() {
-        // Continue Session UI is intentionally disabled. Session restoration is automatic on refresh.
-        if (nodes.resume) nodes.resume.hidden = true;
-      }
-
       function submitLogin(event) {
         if (event && typeof event.preventDefault === 'function') event.preventDefault();
         if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
@@ -3565,7 +3468,6 @@ hoagApiRequest('logout', {
           nodes.changeForm.addEventListener('keydown', submitOnEnter);
         }
         if (nodes.passwordToggle) nodes.passwordToggle.addEventListener('click', togglePassword);
-        if (nodes.submit) nodes.submit.addEventListener('click', submitLogin);
         if (nodes.showChangePassword) nodes.showChangePassword.addEventListener('click', showChangePanel);
 
         // CSP-safe replacements for legacy inline handlers.
@@ -3595,7 +3497,6 @@ hoagApiRequest('logout', {
           });
         }
   
-        updateResumeSessionButton_();
         checkStoredSession();
       }
   
@@ -4569,7 +4470,7 @@ hoagApiRequest('logout', {
           persistentPostSaveModal.style.display='flex';
           persistentPostSaveModal.style.visibility='visible';
           persistentPostSaveModal.style.opacity='1';
-          persistentPostSaveModal.style.zIndex='2147483647';
+          persistentPostSaveModal.style.zIndex='var(--z-modal)';
         }
         renderOutsourceFilterYears(rows);
         renderOutsourceRows();
@@ -4619,7 +4520,7 @@ hoagApiRequest('logout', {
         initOutsourceFilterDropdowns();
         var body=$('outsourceTableBody'); if(body&&!body._outsourceActionsBound){body._outsourceActionsBound=true;body.addEventListener('click',function(e){var btn=e.target.closest('[data-outsource-action]');if(!btn)return;e.preventDefault();e.stopPropagation();var id=btn.getAttribute('data-id');var action=btn.getAttribute('data-outsource-action');if(action==='view')openOutsourceDetailModal(id);else if(action==='edit')editOutsourceSample(id);else if(action==='delete')deleteOutsourceSample(id);});}
         bindOutsourceResultModal();
-        bindOutsourceNotesEditing();
+
       }
       function initOutsourceFilterDropdowns(){
         /* OUTSOURCE FILTER FIX v2: use the native select controls.
@@ -4640,12 +4541,6 @@ hoagApiRequest('logout', {
           select.style.removeProperty('top');
         });
       }
-      function syncOutsourceFilterTrigger(select){
-        if(!select)return;
-        var wrap=select.parentElement, trigger=wrap&&wrap.querySelector('.inventory-filter-trigger'), label=trigger&&trigger.querySelector('[data-filter-label]');
-        var opt=select.options[select.selectedIndex];
-        if(label)label.textContent=opt?opt.textContent:'Select...';
-      }
       function getOutsourceDateParts(value){
         var d=String(value||'').trim();
         var iso=d.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
@@ -4662,7 +4557,6 @@ hoagApiRequest('logout', {
         var list=Object.keys(values).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});});
         select.innerHTML='<option value="ALL">'+label+'</option>'+list.map(function(v){return '<option value="'+outsourceEsc(v)+'">'+outsourceEsc(v)+'</option>';}).join('');
         select.value=list.some(function(v){return v.toLowerCase()===chosen.toLowerCase();})?list.find(function(v){return v.toLowerCase()===chosen.toLowerCase();}):'ALL';
-        syncOutsourceFilterTrigger(select);
       }
       function renderOutsourceFilterYears(sourceRows){
         var rows=Array.isArray(sourceRows)?sourceRows:((typeof OutSource!=='undefined'&&OutSource.getSamples)?OutSource.getSamples():[]);
@@ -4863,13 +4757,13 @@ hoagApiRequest('logout', {
 
         var html='';
         if(topSpacer>0){
-          html+='<tr class="outsource-virtual-spacer top" style="height:'+topSpacer+'px"><td colspan="18" style="height:'+topSpacer+'px"></td></tr>';
+          html+='<tr class="outsource-virtual-spacer top" style="height:'+topSpacer+'px"><td colspan="9" style="height:'+topSpacer+'px"></td></tr>';
         }
         for(var i=start;i<end;i++){
           html+=buildOutsourceRowHtml(rows[i],i);
         }
         if(bottomSpacer>0){
-          html+='<tr class="outsource-virtual-spacer bottom" style="height:'+bottomSpacer+'px"><td colspan="18" style="height:'+bottomSpacer+'px"></td></tr>';
+          html+='<tr class="outsource-virtual-spacer bottom" style="height:'+bottomSpacer+'px"><td colspan="9" style="height:'+bottomSpacer+'px"></td></tr>';
         }
 
         body.innerHTML=html;
@@ -4984,7 +4878,7 @@ hoagApiRequest('logout', {
             if(e.key!=='Enter')return;
             e.preventDefault();
             e.stopPropagation();
-            if(index<flow.length-1){var next=$(flow[index+1]);if(next){next.focus();if(next.select)next.select();}}
+            if(index<flow.length-1){var next=$(flow[index+1]);if(next){var trigger=next.id==='osTest'?next.parentElement&&next.parentElement.querySelector('.outsource-select-trigger'):null;(trigger||next).focus();if(!trigger&&next.select)next.select();}}
             else {el.blur();}
           });
         });
@@ -5109,7 +5003,7 @@ hoagApiRequest('logout', {
         modal.style.display='flex';
         modal.style.visibility='visible';
         modal.style.opacity='1';
-        modal.style.zIndex='2147483647';
+        modal.style.zIndex='var(--z-modal)';
         bindOutsourcePostSaveModalEvents();
         try{modal.querySelector('#outsourceNewSampleBtn')?.focus();}catch(_e){}
       }
@@ -5217,7 +5111,7 @@ hoagApiRequest('logout', {
           Object.assign(r,prevSnapshot);
           alert('Unable to save outsource result: '+(error&&error.message?error.message:'Please try again.'));
         }finally{
-          if(btn){btn.disabled=false;btn.textContent='SAVE';}
+          if(btn){btn.disabled=false;btn.textContent='UPDATE RESULT';}
         }
       }
       function deleteOutsourceSample(id){
@@ -7942,95 +7836,18 @@ function submit(e) {
       /* +----------------------------------+
        * + fetchPublicHolidayReaderSource   +
        * +----------------------------------+ */
-      function fetchPublicHolidayReaderSource(year, source) {
-        var readerUrl = 'https://r.jina.ai/' + source.url;
-        return fetch(readerUrl, { cache: 'default' })
-          .then(function (response) {
-            if (!response.ok) throw new Error('PublicHolidays reader HTTP ' + response.status);
-            return response.text();
-          })
-          .then(function (text) {
-            return mergeHolidayData(buildPublicHolidayBrowserEnvelope(year, text, source.region), year);
-          })
-          .catch(function (error) {
-            console.warn('PublicHolidays browser fallback skipped:', source.url, error && error.message ? error.message : error);
-            return false;
-          });
-      }
-  
-      /* +------------------------------------------+
-       * + loadPublicHolidaysDataForYearFromBrowser +
-       * +------------------------------------------+ */
-      function loadPublicHolidaysDataForYearFromBrowser(year) {
-        if (typeof window.fetch === 'undefined') {
-          return Promise.resolve(false);
-        }
-        var sources = [
-          { url: 'https://publicholidays.com.my/', region: '' },
-          { url: 'https://publicholidays.com.my/selangor/', region: 'Selangor' },
-          { url: 'https://publicholidays.com.my/kuala-lumpur/', region: 'WP Kuala Lumpur' }
-        ];
-        return Promise.all(sources.map(function (source) {
-          return fetchPublicHolidayReaderSource(year, source);
-        })).then(function (results) {
-          return results.some(Boolean);
-        });
-      }
-  
-      /* +-----------------------------------+
-       * + loadHolidayDataForYearFromBrowser +
-       * +-----------------------------------+ */
       function loadHolidayDataForYearFromBrowser(year) {
         var supplementalAdded = mergeOfficialHolidaySupplementalData(year);
-
-        if (!window.fetch) {
-          state.holidayYearsLoading[year] = false;
-          state.holidayYearsLoaded[year] = supplementalAdded;
-          if (supplementalAdded) {
-            rememberHolidayLoadSource(year, 'Official holiday supplement table');
-            writeHolidayDataToClientCache(year, buildHolidayEnvelopeFromState(year, 'Official holiday supplement table'));
-            buildMonthCalendar();
-          } else {
-            state.holidayLoadSources[year] = 'Browser fallback unavailable';
-            console.warn('Holiday browser fallback is not available in this WebView.');
-          }
-          return;
+        state.holidayYearsLoading[year] = false;
+        state.holidayYearsLoaded[year] = supplementalAdded;
+        if (supplementalAdded) {
+          rememberHolidayLoadSource(year, 'Official holiday supplement table');
+          writeHolidayDataToClientCache(year, buildHolidayEnvelopeFromState(year, 'Official holiday supplement table'));
+          buildMonthCalendar();
+        } else {
+          state.holidayLoadSources[year] = 'No matching holiday rows';
         }
-
-        fetch('https://malaysia-holiday.dydxsoft.my/api/v1/holidays?year=' + encodeURIComponent(year), { cache: 'default' })
-          .then(function (response) {
-            if (!response.ok) throw new Error('Malaysia Holiday API browser fallback HTTP ' + response.status);
-            return response.json();
-          })
-          .then(function (payload) {
-            var envelope = buildBrowserHolidayEnvelope(year, payload);
-            var malaysiaApiAdded = mergeHolidayData(envelope, year);
-            var loaded = malaysiaApiAdded || supplementalAdded;
-            state.holidayYearsLoading[year] = false;
-            state.holidayYearsLoaded[year] = loaded;
-            if (loaded) {
-              rememberHolidayLoadSource(year, malaysiaApiAdded ? envelope.sourceName + ' + official supplement table' : 'Official holiday supplement table');
-              writeHolidayDataToClientCache(year, buildHolidayEnvelopeFromState(year, state.holidayLoadSources[year]));
-              buildMonthCalendar();
-            } else {
-              state.holidayLoadSources[year] = 'No matching holiday rows';
-              console.warn('Holiday browser fallback returned no matching holiday rows.');
-            }
-          })
-          .catch(function (error) {
-            console.warn('Malaysia Holiday API browser fallback failed:', error && error.message ? error.message : error);
-            state.holidayYearsLoading[year] = false;
-            state.holidayYearsLoaded[year] = supplementalAdded;
-            if (supplementalAdded) {
-              rememberHolidayLoadSource(year, 'Official holiday supplement table');
-              writeHolidayDataToClientCache(year, buildHolidayEnvelopeFromState(year, 'Official holiday supplement table'));
-              buildMonthCalendar();
-            } else {
-              state.holidayLoadSources[year] = 'No matching holiday rows';
-            }
-          });
       }
-  
       /* +----------------------------------+
        * + loadHolidayDataForYear           +
        * +----------------------------------+ */
@@ -8072,7 +7889,7 @@ function submit(e) {
             console.warn('Holiday server load failed, trying browser fallback:', error && error.message ? error.message : error);
             loadHolidayDataForYearFromBrowser(year);
           })
-          .getMalaysiaHolidayData(year);
+          .getMalaysiaHolidayData(Auth.getToken(), year);
       }
   
       /* +----------------------------------+
@@ -8385,7 +8202,7 @@ function submit(e) {
        * + estimatePdfTextWidth             +
        * +----------------------------------+ */
       function estimatePdfTextWidth(text, size, bold) {
-        text = pdfExportEscapeText(text);
+        text = escapePdfText(text);
         try {
           if (document && document.createElement) {
             estimatePdfTextWidth._canvas = estimatePdfTextWidth._canvas || document.createElement('canvas');
@@ -8410,7 +8227,7 @@ function submit(e) {
        * +----------------------------------+ */
       function appendPdfText(commands, text, x, y, size, options) {
         options = options || {};
-        text = pdfExportEscapeText(text);
+        text = escapePdfText(text);
         if (!text) return;
         if (options.align === 'center') x -= estimatePdfTextWidth(text, size, options.bold) / 2;
         if (options.align === 'right') x -= estimatePdfTextWidth(text, size, options.bold);
@@ -8445,7 +8262,7 @@ function submit(e) {
        * + wrapPdfText                      +
        * +----------------------------------+ */
       function wrapPdfText(text, maxChars, maxLines) {
-        var words = pdfExportEscapeText(text).split(/\s+/).filter(Boolean);
+        var words = escapePdfText(text).split(/\s+/).filter(Boolean);
         var lines = [];
         var current = '';
         words.forEach(function (word) {
@@ -10728,7 +10545,7 @@ function exportMonthlySchedulePdfs() {
        * + resolveLogMetadata               +
        * +----------------------------------+ */
       function resolveLogMetadata(log) {
-        var actor = cleanText(log.actor || log.userId || 'SYSTEM') || 'SYSTEM';
+        var actor = cleanText(log.actor || log.actorId || log.userId || 'SYSTEM') || 'SYSTEM';
         var extra = log.extra && typeof log.extra === 'object' ? log.extra : {};
         var role = cleanText(log.role || extra.role || '');
         if (!role && lastAdminData && Array.isArray(lastAdminData.users)) {
@@ -11436,7 +11253,7 @@ function exportMonthlySchedulePdfs() {
                 var ot=Date.parse(String(old&&old.updatedAt||old&&old.createdAt||''))||0;
                 if(!old||rt>=ot)displayMap[id]=r;
               });
-              if(!result.hasMore || pageRows.length<pageSize)stop=true;
+              if(!result.hasMore || Number(result.rawCount || 0) < pageSize)stop=true;
             });
             rows=Object.keys(displayMap).map(function(k){return displayMap[k];});
             normalize();

@@ -70,6 +70,7 @@ export default async function handler(req, res) {
       if (session) {
         await appendSystemLog(null, {
           at: new Date().toISOString(),
+          actor: session.userId,
           actorId: session.userId,
           userId: session.userId,
           action: 'LOGOUT',
@@ -78,6 +79,7 @@ export default async function handler(req, res) {
           requestId: req.requestId,
           metadata: {}
         });
+        await supabase.from('app_users').update({ last_logout_at: new Date().toISOString() }).eq('user_id', session.userId).then(() => {}, () => {});
         clearSessionCache(session.userId);
       }
 

@@ -1922,8 +1922,8 @@
          var id = del.dataset.notificationDelete;
          var row = records.find(function (x) { return String(x.id) === String(id); });
          if (!row) return;
-         var itemLabel = String(row.patient || row.patientName || row.name || 'this patient');
-         var detailLabel = [row.dateTime || row.date || row.createdAt, row.test || row.testName, row.discipline || row.department].filter(Boolean).join(' · ');
+         var itemLabel = String(row.patient_name || 'this patient');
+         var detailLabel = [row.notification_datetime || row.updated_at || row.created_at, row.test_name, row.discipline].filter(Boolean).join(' · ');
          var confirmDelete = function () {
            del.disabled = true;
            deleteNotificationRecord(id).catch(function(error){ del.disabled = false; window.alert(error && error.message ? error.message : 'Unable to delete notification record.'); });

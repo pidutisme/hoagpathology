@@ -14,14 +14,12 @@
 <link href="/icon-192.png" rel="apple-touch-icon"/>
 <title>LabPortal - Laboratory Management System</title>
 <meta name="labportal-release-version" content="3.0.2"/>
-<meta name="labportal-build-id" content="6F9A61BA1E1A"/>
+<meta name="labportal-build-id" content="B83F552237A5"/>
 <base target="_top"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link crossorigin="" href="https://www.gstatic.com" rel="preconnect">
 <link href="https://fonts.googleapis.com" rel="dns-prefetch">
 <link href="https://fonts.gstatic.com" rel="dns-prefetch"/>
-<link href="https://www.gstatic.com" rel="dns-prefetch"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <meta content="#e6edf6" name="theme-color"/>
 <meta content="light dark" name="color-scheme"/>
@@ -356,14 +354,14 @@
 </div>
 <div aria-live="polite" class="calendar-full-grid" id="calendarMiniGrid"></div>
 </aside>
-<main class="daily-roster-panel">
+<section class="daily-roster-panel">
 <div class="daily-roster-toolbar">
 <div class="calendar-selected-hero">
 <div class="calendar-selected-label" id="calendarSelectedDateLabel">WED, 04 JUNE 2026</div>
 <div class="calendar-selected-sub" id="calendarSelectedDateSub">Daily roster editor</div>
 </div>
 <div class="daily-roster-actions">
-<button aria-label="Add roster row" class="calendar-toolbar-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button aria-label="Add roster row" class="calendar-toolbar-btn" type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
 </div>
 </div>
 <div class="daily-roster-card">
@@ -376,7 +374,7 @@
 </div>
 <div class="daily-roster-list" id="dailyRosterList"></div>
 </div>
-</main>
+</section>
 </div>
 </div>
 </div>
@@ -637,11 +635,11 @@
 <form autocomplete="off" class="inventory-form" id="inventoryMovementForm">
 <input id="inventoryMovementType" type="hidden" value="IN"/>
 <input id="inventoryEditingId" type="hidden" value=""/>
-<label for="inventoryItemTrigger">ITEM<div class="inventory-custom-select" id="inventoryItemCustomWrap">
+<div class="inventory-field"><label for="inventoryItemTrigger">ITEM</label><div class="inventory-custom-select" id="inventoryItemCustomWrap">
 <select aria-hidden="true" aria-label="Inventory movement item" id="inventoryItemInput" tabindex="-1"></select>
 <button aria-expanded="false" aria-haspopup="listbox" aria-label="Select inventory item" class="inventory-custom-trigger" id="inventoryItemTrigger" type="button"><span id="inventoryItemTriggerText">Select item...</span><span class="inventory-custom-chevron" aria-hidden="true">⌄</span></button>
 <div class="inventory-custom-menu" id="inventoryItemMenu" role="listbox" tabindex="-1"></div>
-</div></label>
+</div></div>
 <div class="inventory-form-grid">
 <label for="inventoryQtyInput">QUANTITY<input aria-label="Movement quantity" id="inventoryQtyInput" min="1" placeholder="e.g. 10" required="" step="1" type="number"/></label>
 <label for="inventoryLotInput">LOT NO.<input aria-label="Stock In lot number" id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/><select id="inventoryLotSelect" hidden aria-label="Stock Out lot number"></select></label>

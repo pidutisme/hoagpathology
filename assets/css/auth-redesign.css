@@ -17,7 +17,7 @@
     radial-gradient(circle at 8% 18%, rgba(62, 157, 255, 0.16), transparent 27%),
     radial-gradient(circle at 92% 84%, rgba(0, 205, 255, 0.13), transparent 30%),
     linear-gradient(135deg, #dbeafd 0%, #edf6ff 52%, #d8ecfb 100%);
-  font-family: Inter, "Nunito Sans", Arial, sans-serif;
+  font-family: Poppins, "Nunito Sans", Arial, sans-serif;
 }
 
 #authScreen::before {
@@ -372,17 +372,15 @@
   margin: 0 0 34px;
 }
 
-#authScreen .auth-badge,
-#authScreen .auth-title-block,
-#authScreen .auth-title-block[hidden],
-#authScreen #authLoginPanel > .auth-badge {
+#authScreen #authLoginPanel > .auth-badge,
+#authScreen #authLoginPanel > .auth-title-block {
   display: none !important;
 }
 
 #authScreen .auth-title {
   margin: 0;
   color: #132d58;
-  font-family: Inter, "Nunito Sans", Arial, sans-serif;
+  font-family: Poppins, "Nunito Sans", Arial, sans-serif;
   font-size: clamp(32px, 2.8vw, 44px);
   line-height: 1;
   font-weight: 900;

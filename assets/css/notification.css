@@ -1213,7 +1213,7 @@
 
 .notification-datetime-popover {
   position: fixed !important;
-  z-index: 2147483647 !important;
+  z-index: var(--z-popover);
   width: 480px;
   max-width: calc(100vw - 20px);
   padding: 14px;
@@ -1526,7 +1526,7 @@
 
 .notification-select-menu {
   position: fixed !important;
-  z-index: 2147483647 !important;
+  z-index: var(--z-popover);
   min-width: 180px;
   max-height: min(280px, calc(100vh - 24px));
   overflow-y: auto;

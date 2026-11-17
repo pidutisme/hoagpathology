@@ -24,7 +24,7 @@ self.addEventListener("fetch", (event) => {
   // Never cache the SPA document. This prevents old deployments from surviving
   // a Vercel rollout. Fingerprinted/static assets can still use stale-while-revalidate.
   if (request.mode === "navigate" || url.pathname === "/" || url.pathname.endsWith("/index.html")) {
-    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    event.respondWith(fetch(request));
     return;
   }
 
