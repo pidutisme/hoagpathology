@@ -930,32 +930,40 @@ async function dispatch(db, method, a, req) {
       return { ok: true, record: saved, updatedAt: saved.updatedAt || record.updatedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
 
-    case 'deleteTbis102aRecord': {
+    case 'deleteTbis102aSample': {
       const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'Microbiology', ['tbis102a.delete.own', 'tbis102a.delete.all']);
       const rid = clean(a[0], 160);
+      const afb = clean(a[1], 20).toUpperCase();
       if (!rid) fail('TBIS102A record ID is required.');
-      const { data: existingRow, error: existingError } = await supabase.from('tbis102a_records').select('*').eq('id', rid).maybeSingle();
-      if (existingError) throw existingError;
-      if (!existingRow) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId, storageSource: 'supabase' };
-      const current = existingRow.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id } : { id: rid };
-      if (current.deletedAt) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+      if (!['X1', 'X2', 'X3'].includes(afb)) fail('SPUTUM AFB must be X1, X2, or X3.');
+      const { data: row, error } = await supabase.from('tbis102a_records').select('*').eq('id', rid).maybeSingle();
+      if (error) throw error;
+      if (!row) fail('TBIS102A record was not found.', 404);
+      const current = row.data && typeof row.data === 'object' ? { ...row.data, id: row.id } : { id: rid };
+      if (current.deletedAt) fail('TBIS102A record was already deleted.', 409);
       requireTbis102aDeletePermission(s, current);
+      const samples = Array.isArray(current.samples) ? current.samples : [];
+      const sampleFields = ['date','labNo','barcode','sample','quality','result','observation','scanty','slideResult','patientResult','slide','releaseDate','tat','staff','review','notes'];
+      const hasTargetSample = samples.some(sample => String(sample?.afb || '').trim().toUpperCase() === afb);
+      const blankTarget = { afb, ...Object.fromEntries(sampleFields.map(key => [key, ''])) };
+      const clearedSamples = samples.map(sample => String(sample?.afb || '').trim().toUpperCase() === afb
+        ? blankTarget
+        : sample);
+      if (!hasTargetSample) clearedSamples.push({ afb, ...Object.fromEntries(sampleFields.map(key => [key, ''])) });
+      clearedSamples.sort((left, right) => ['X1', 'X2', 'X3'].indexOf(left.afb) - ['X1', 'X2', 'X3'].indexOf(right.afb));
       const now = iso();
-      const deleted = { ...current, deletedAt: now, deletedBy: s.userId, updatedAt: now, updatedBy: s.userId, version: Number(current.version || 0) + 1 || 1 };
-      let deleteQuery = supabase.from('tbis102a_records')
-        .update({ data: deleted, updated_at: now })
-        .eq('id', rid);
-      deleteQuery = existingRow.updated_at === null || existingRow.updated_at === undefined
-        ? deleteQuery.is('updated_at', null)
-        : deleteQuery.eq('updated_at', existingRow.updated_at);
-      const { data: deletedRow, error: deleteError } = await deleteQuery
-        .select('id')
-        .maybeSingle();
-      if (deleteError) throw deleteError;
-      if (!deletedRow || String(deletedRow.id) !== rid) fail('TBIS102A record changed on another device. Reload and try again.', 409);
-      log(db, s.userId, 'TBIS102A_RECORD_DELETED', `Deleted TBIS102A record ${rid}.`, { page: 'Microbiology', role: s.role })
-        .catch(error => console.error('TBIS102A delete audit log failed:', error?.message || error));
-      return { ok: true, deleted: true, recordId: rid, deletedAt: now, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+      const updated = { ...current, samples: clearedSamples, updatedAt: now, updatedBy: s.userId, version: Number(current.version || 0) + 1 || 1 };
+      let query = supabase.from('tbis102a_records').update({ data: updated, updated_at: now }).eq('id', rid);
+      query = row.updated_at == null ? query.is('updated_at', null) : query.eq('updated_at', row.updated_at);
+      const { data: saved, error: saveError } = await query.select('id').maybeSingle();
+      if (saveError) throw saveError;
+      if (!saved || String(saved.id) !== rid) fail('TBIS102A record changed on another device. Reload and try again.', 409);
+      await log(db, s.userId, 'TBIS102A_SAMPLE_DELETED', `Deleted ${afb} sample from TBIS102A record ${rid}.`, { page: 'Microbiology', role: s.role });
+      return { ok: true, deleted: true, record: updated, recordId: rid, afb, deletedAt: now, version: updated.version, userId: s.userId, storageSource: 'supabase' };
+    }
+
+    case 'deleteTbis102aRecord': {
+      fail('Delete a specific X1, X2, or X3 sample instead of deleting the whole TBIS102A case.', 400);
     }
 
     case 'getNotificationRecords': {

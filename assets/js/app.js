@@ -5985,7 +5985,7 @@ hoagApiRequest('logout', {
               var actionCell = '<td class="outsource-actions-cell"><div class="outsource-actions">' +
                 '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
                 '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit ' + outsourceEsc(afbDisplay) + '" aria-label="Edit ' + outsourceEsc(afbDisplay) + '" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canEdit ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
-                '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="' + (canDelete ? 'Delete case' : 'Only creator or Admin can delete') + '" aria-label="Delete case" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canDelete ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
+                '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="' + (canDelete ? 'Delete ' + afbDisplay + ' sample' : 'Only creator or Admin can delete') + '" aria-label="Delete ' + outsourceEsc(afbDisplay) + ' sample" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canDelete ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
                 '</div></td>';
               var details = [
                 '<td>' + outsourceEsc(s.sample || '') + '</td>',
@@ -6036,28 +6036,33 @@ hoagApiRequest('logout', {
                 showSaveError('You can only delete TBIS102A records created by your own account.');
                 return;
               }
-              var samples = Array.isArray(r && r.samples) ? r.samples : [];
+              var targetAfb = normalizeAfbCode(button.dataset.afb);
+              if (!targetAfb) return;
               var itemLabel = r && r.name ? String(r.name) : 'this patient';
-              var sampleLabel = [r && r.date, r && r.bil ? 'BIL ' + r.bil : '', samples.length ? samples.map(function (s) { return String(s && s.afb || '').toUpperCase(); }).join('/') : ''].filter(Boolean).join(' · ');
+              var sampleLabel = [r && r.date, r && r.bil ? 'BIL ' + r.bil : ''].filter(Boolean).join(' · ');
               requestAppConfirm(
-                'DELETE TBIS102A RECORD?',
-                'Delete TBIS102A case for ' + itemLabel + (sampleLabel ? ' · ' + sampleLabel : '') + '? This cannot be undone.',
+                'DELETE ' + targetAfb + ' SAMPLE?',
+                'Delete only the ' + targetAfb + ' sample for ' + itemLabel + (sampleLabel ? ' · ' + sampleLabel : '') + '? Other samples in this case will be kept.',
                 function () {
                   button.disabled = true;
                   showSaveError('');
-                  hoagApiRequest('action', { method: 'deleteTbis102aRecord', args: [rid] })
+                  hoagApiRequest('action', { method: 'deleteTbis102aSample', args: [rid, targetAfb] })
                     .then(function (result) {
                       if (!result || result.ok === false || result.deleted !== true) {
-                        throw new Error(result && result.error ? result.error : 'TBIS102A delete was not committed.');
+                        throw new Error(result && result.error ? result.error : 'TBIS102A sample delete was not committed.');
                       }
-                      rows = rows.filter(function (x) { return String(x.id) !== rid; });
+                      if (result.record) {
+                        rows = rows.map(function (x) { return String(x.id) === rid ? result.record : x; });
+                      } else {
+                        rows = rows.filter(function (x) { return String(x.id) !== rid; });
+                      }
                       if (String(editId || '') === rid) clearForm(false);
                       syncCaseMode();
                       renderRows();
                     })
                     .catch(function (error) {
-                      console.error('TBIS102A delete failed:', error);
-                      showSaveError(error && error.message ? error.message : 'Unable to delete TBIS102A record.');
+                      console.error('TBIS102A sample delete failed:', error);
+                      showSaveError(error && error.message ? error.message : 'Unable to delete TBIS102A sample.');
                       button.disabled = !canDeleteRecord(r);
                     });
                 }
