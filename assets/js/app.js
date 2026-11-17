@@ -2640,19 +2640,7 @@
             }
             el.classList.remove('visitor-disabled-control');
           });
-          document.querySelectorAll(
-            '.notification-form input:not([type=hidden]),' +
-            '.notification-form select,' +
-            '.notification-form textarea,' +
-            '.notification-form button,' +
-            '.notification-form .notification-select-trigger,' +
-            '.notification-datetime-wrap .notification-neumorphic-datetime'
-          ).forEach(function(el) {
-            el.disabled = false;
-            el.removeAttribute('aria-disabled');
-            el.classList.remove('visitor-disabled-control', 'is-disabled');
-          });
-          ['notificationDateTimeVisible', 'notificationSex', 'notificationAge', 'inventoryMovementDateVisible', 'inventoryExpiryVisible'].forEach(function(id) {
+          ['notificationDateTimeVisible', 'notificationSex', 'notificationAge', 'inventoryMovementDateVisible', 'inventoryExpiryVisible', 'tbDateVisible', 'tbReleaseDateVisible', 'trDateVisible', 'trSex', 'trAge', 'osSampleDateVisible', 'osDispatchDateVisible', 'osSex', 'osAge'].forEach(function(id) {
             var ro = document.getElementById(id);
             if (ro) ro.readOnly = true;
           });
@@ -2671,10 +2659,7 @@
         }
         document.body.classList.add('visitor-read-only');
 
-        /* Main data-entry forms across Outsource, Inventory, Transfusion and roster. */
-        /* Hide all explicit EDIT/DELETE affordances for Visitor. Visitors are read-only,
-         * so modification controls should not merely be disabled; they must not be rendered
-         * as available actions. CSS also covers dynamically generated rows. */
+        /* Hide all explicit EDIT/DELETE affordances for Visitor. */
         document.querySelectorAll(
           '[data-outsource-action="edit"],[data-outsource-action="delete"],' +
           '[data-inventory-edit-id],[data-inventory-delete-id],' +
@@ -2691,6 +2676,11 @@
           '.outsource-form select,' +
           '.outsource-form textarea,' +
           '.outsource-form button,' +
+          '.tbis102a-form input:not([type=hidden]),' +
+          '.tbis102a-form select,' +
+          '.tbis102a-form textarea,' +
+          '.tbis102a-form button:not(#tbis102aBackBtn),' +
+          '.tbis102a-form .notification-select-trigger,' +
           '.inventory-form input:not([type=hidden]),' +
           '.inventory-form select,' +
           '.inventory-form textarea,' +
@@ -2753,6 +2743,7 @@
 
         document.querySelectorAll(
           '.outsource-form,' +
+          '.tbis102a-form,' +
           '.inventory-form,' +
           '.inventory-entry-form,' +
           '#inventoryMovementForm,' +
@@ -3093,6 +3084,24 @@
         setSessionVerifying_(false);
         setSessionState_(UNAUTHENTICATED);
         closeNoAccessModal();
+        [
+          'tbis102aDetailsModal', 'transfusionDetailModal', 'transfusionRemarksModal',
+          'outsourceDetailModal', 'outsourceResultModal', 'notificationDetailModal',
+          'inventoryModal', 'inventoryRecordModal', 'inventoryAdminItemsModal'
+        ].forEach(function (modalId) {
+          var el = document.getElementById(modalId);
+          if (el) el.hidden = true;
+        });
+        ['appConfirmModal', 'idleWarningModal'].forEach(function (modalId) {
+          var el = document.getElementById(modalId);
+          if (el) el.classList.add('is-hidden');
+        });
+        document.querySelectorAll('.outsource-date-popover, .inventory-date-popover').forEach(function (pop) {
+          pop.hidden = true;
+        });
+        document.querySelectorAll('#notificationSelectMenu, .inventory-month-menu').forEach(function (menu) {
+          menu.remove();
+        });
         document.body.classList.add('auth-locked');
         document.body.classList.remove('auth-ready', 'auth-resolving');
         Theme.suspendForLogin();
@@ -3484,6 +3493,9 @@
         // server can revoke the cookie-backed session.
         stopSessionControls();
         clearStoredSession();
+        ['labAppNotificationV1', 'labAppTransfusionV1', 'labAppOutsourceV1'].forEach(function (key) {
+          safeStorageRemove(key);
+        });
         if (window.LabApp && window.LabApp.Router && typeof window.LabApp.Router.clearLastPage === 'function') {
           window.LabApp.Router.clearLastPage();
         }
@@ -4902,11 +4914,25 @@ hoagApiRequest('logout', {
             var value=String(input.value||'').trim();
             if(save && value!==oldValue){
               row.notes=value; row.updatedAt=new Date().toISOString();
-              if(typeof OutSource!=='undefined'&&OutSource.upsertSample) OutSource.upsertSample(row);
+              delete row._haystack;
+              cell.textContent=value;
               invalidateOutsourceRowsCache();
+              if(typeof OutSource!=='undefined'&&OutSource.upsertSample){
+                Promise.resolve(OutSource.upsertSample(row)).then(function(){
+                  invalidateOutsourceRowsCache();
+                  renderOutsourceRows();
+                }).catch(function(err){
+                  row.notes=oldValue;
+                  invalidateOutsourceRowsCache();
+                  renderOutsourceRows();
+                  alert('Unable to save note: '+(err&&err.message?err.message:'Please try again.'));
+                });
+              }else{
+                renderOutsourceRows();
+              }
+              return;
             }
             cell.textContent=save?value:oldValue;
-            if(save && value!==oldValue) renderOutsourceRows();
           }
           input.addEventListener('keydown',function(ev){
             if(ev.key==='Enter'){ev.preventDefault();finish(true);}
@@ -5175,11 +5201,24 @@ hoagApiRequest('logout', {
         $('outsourceModalResult').value=currentResult;$('outsourceModalResultDate').value=r.resultDate||'';$('outsourceModalResultDateVisible').value='';if($('outsourceModalResultDateVisible')._syncDate)$('outsourceModalResultDateVisible')._syncDate();$('outsourceModalReferenceNo').value=r.referenceNo||'';$('outsourceModalRejectReason').value=r.rejectReason||'';$('outsourceModalRejectReason').disabled=$('outsourceModalResult').value!=='REJECT';$('outsourceModalNotes').value=r.notes||'';$('outsourceResultModal').hidden=false;
       }
       function closeOutsourceResultModal(){var m=$('outsourceResultModal');if(m)m.hidden=true;window.__outsourceResultEditId='';}
-      function saveOutsourceResult(){
+      async function saveOutsourceResult(){
         var id=String(window.__outsourceResultEditId||'');if(!id)return;var rows=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]),r=rows.find(function(x){return String(x.id||'')===id;});if(!r)return;
-        r.result=String($('outsourceModalResult').value||'PENDING');r.resultDate=String($('outsourceModalResultDate').value||'');r.referenceNo=String($('outsourceModalReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String($('outsourceModalRejectReason').value||'').trim():'';r.notes=String($('outsourceModalNotes').value||'').trim();r.updatedAt=new Date().toISOString();
+        var prevSnapshot=Object.assign({},r);
+        r.result=String($('outsourceModalResult').value||'PENDING');r.resultDate=String($('outsourceModalResultDate').value||'');r.referenceNo=String($('outsourceModalReferenceNo').value||'').trim();r.rejectReason=r.result==='REJECT'?String($('outsourceModalRejectReason').value||'').trim():'';r.notes=String($('outsourceModalNotes').value||'').trim();
         delete r._haystack;
-        if(typeof OutSource!=='undefined'&&OutSource.upsertSample)OutSource.upsertSample(r); invalidateOutsourceRowsCache(); closeOutsourceResultModal(); renderOutsourceRows();
+        if(typeof OutSource==='undefined'||typeof OutSource.upsertSample!=='function'){alert('Outsource save function is unavailable.');return;}
+        var btn=$('outsourceResultSave');if(btn){btn.disabled=true;btn.textContent='SAVING...';}
+        try{
+          await OutSource.upsertSample(r);
+          invalidateOutsourceRowsCache();
+          closeOutsourceResultModal();
+          renderOutsourceRows();
+        }catch(error){
+          Object.assign(r,prevSnapshot);
+          alert('Unable to save outsource result: '+(error&&error.message?error.message:'Please try again.'));
+        }finally{
+          if(btn){btn.disabled=false;btn.textContent='SAVE';}
+        }
       }
       function deleteOutsourceSample(id){
         var r=(typeof OutSource!=='undefined'&&OutSource.getSamples?OutSource.getSamples():[]).find(function(x){return String(x.id||'')===String(id||'');});
@@ -5400,21 +5439,76 @@ hoagApiRequest('logout', {
         var rows = [];
         var loadingPromise = null;
         var saving = false;
+        var syncingFormState = false;
+        var lastFocusedBeforeModal = null;
+        var HIST_CREATORS = { 'historical csv migration': true, 'csv migration': true };
 
         function records() { return rows.slice(); }
 
-        function canModifyRecord(record) {
-          /*
-           * TBIS102A rule:
-           * - VISITOR: read-only
-           * - USER: may edit any existing TBIS102A case
-           * - ADMIN: may edit any existing TBIS102A case
-           *
-           * Ownership is intentionally NOT used for edit permission.
-           * Delete permission remains separately enforced by the backend.
-           */
+        function userRoleUpper() {
+          return String(typeof state !== 'undefined' && state && state.authRole || '').trim().toUpperCase();
+        }
+
+        function currentUserIdentityKeys() {
+          if (typeof state === 'undefined' || !state) return [];
+          return [state.authUserId, state.authUsername, state.authUserDisplayName]
+            .map(function (v) { return String(v || '').trim().toLowerCase(); })
+            .filter(Boolean);
+        }
+
+        function canEditRecord(record) {
           if (typeof isVisitorAccessRestricted === 'function' && isVisitorAccessRestricted()) return false;
-          return true;
+          var role = userRoleUpper();
+          if (role === 'VISITOR') return false;
+          return !!record;
+        }
+
+        function canDeleteRecord(record) {
+          if (!record) return false;
+          if (typeof isVisitorAccessRestricted === 'function' && isVisitorAccessRestricted()) return false;
+          var role = userRoleUpper();
+          if (role === 'VISITOR') return false;
+          if (role === 'ADMIN') return true;
+          var ownerKeys = [record.createdBy, record.createdByUserId, record.ownerId, record.ownerUserId]
+            .map(function (v) { return String(v || '').trim().toLowerCase(); })
+            .filter(function (v) { return v && !HIST_CREATORS[v]; });
+          if (!ownerKeys.length) return false;
+          var userKeys = currentUserIdentityKeys();
+          return ownerKeys.some(function (k) { return userKeys.indexOf(k) >= 0; });
+        }
+
+        function canCreateRecord() {
+          if (typeof isVisitorAccessRestricted === 'function' && isVisitorAccessRestricted()) return false;
+          return userRoleUpper() !== 'VISITOR';
+        }
+
+        function normalizeAfbCode(value, fallback) {
+          var v = String(value || '').trim().toUpperCase();
+          if (v === 'X1' || v === 'X2' || v === 'X3') return v;
+          return fallback || '';
+        }
+
+        function findSample(r, targetAfb) {
+          var target = normalizeAfbCode(targetAfb);
+          var source = Array.isArray(r && r.samples) ? r.samples : [];
+          if (!target) return null;
+          return source.find(function (sample) {
+            return normalizeAfbCode(sample && sample.afb) === target;
+          }) || null;
+        }
+
+        function rawResultValue(s) {
+          if (!s || typeof s !== 'object') return '';
+          return String(s.result || s.patientResult || '').trim();
+        }
+
+        function hasSampleContent(s) {
+          if (!s || typeof s !== 'object') return false;
+          return !!(
+            s.date || s.labNo || s.barcode || s.sample || s.quality ||
+            s.result || s.patientResult || s.observation || s.scanty ||
+            s.slideResult || s.slide || s.releaseDate || s.tat || s.staff || s.review || s.notes
+          );
         }
 
         function loadRecords(forceAfterPendingLoad) {
@@ -5422,10 +5516,36 @@ hoagApiRequest('logout', {
             if (!forceAfterPendingLoad) return loadingPromise;
             return loadingPromise.then(function () { return loadRecords(false); }, function () { return loadRecords(false); });
           }
-          var request = hoagApiRequest('action', { method: 'getTbis102aRecords', args: [null, { limit: 1000, offset: 0 }] })
-            .then(function (result) {
-              if (!result || result.ok === false) throw new Error(result && result.error ? result.error : 'Unable to load TBIS102A records.');
-              rows = Array.isArray(result.records) ? result.records.slice() : [];
+          var request = (function () {
+            var collected = [];
+            var limit = 1000;
+            var offset = 0;
+
+            function fetchNextPage() {
+              return hoagApiRequest('action', { method: 'getTbis102aRecords', args: [null, { limit: limit, offset: offset }] })
+                .then(function (result) {
+                  if (!result || result.ok === false) {
+                    throw new Error(result && result.error ? result.error : 'Unable to load TBIS102A records.');
+                  }
+                  var batch = Array.isArray(result.records) ? result.records : [];
+                  collected = collected.concat(batch);
+                  var step = Number(result.rawCount || batch.length || 0);
+                  var nextOffset = Number.isFinite(Number(result.nextOffset))
+                    ? Number(result.nextOffset)
+                    : (offset + step);
+                  if (result.hasMore && nextOffset > offset) {
+                    offset = nextOffset;
+                    return fetchNextPage();
+                  }
+                  return collected;
+                });
+            }
+
+            return fetchNextPage();
+          })()
+            .then(function (allRecords) {
+              rows = allRecords.slice();
+              syncCaseMode();
               renderRows();
               return rows.slice();
             })
@@ -5459,11 +5579,31 @@ hoagApiRequest('logout', {
             var dynamicOpt = document.createElement('option');
             dynamicOpt.value = normalized;
             dynamicOpt.textContent = normalized;
+            dynamicOpt.setAttribute('data-tbis-dynamic', '1');
             el.appendChild(dynamicOpt);
           }
           el.value = normalized;
           if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
           if (el._syncDate) el._syncDate();
+          var visDate = document.getElementById(id + 'Visible');
+          if (visDate && visDate._syncDate) visDate._syncDate();
+        }
+
+        function syncFormRequirements() {
+          var dateEl = document.getElementById('tbDate');
+          var dateVis = document.getElementById('tbDateVisible');
+          var resultEl = document.getElementById('tbResult');
+          var caseMode = String(val('tbCaseMode') || 'NEW').toUpperCase();
+          var targetAfb = normalizeAfbCode(val('tbSputumAfb'), 'X1');
+          var existing = editId ? rows.find(function (x) { return String(x.id) === String(editId); }) : null;
+          var isEditingExisting = !!existing && caseMode !== 'EXISTING';
+          var existingSample = isEditingExisting ? findSample(existing, targetAfb) : null;
+          var dateRequired = !(isEditingExisting && targetAfb !== 'X1');
+          if (dateEl) dateEl.required = dateRequired;
+          if (dateVis) dateVis.required = dateRequired;
+          if (resultEl) {
+            resultEl.required = !(isEditingExisting && existingSample);
+          }
         }
 
         function syncScantyField() {
@@ -5471,6 +5611,10 @@ hoagApiRequest('logout', {
           var wrapper = document.getElementById('tbResultSelectWrap');
           var input = document.getElementById('tbScanty');
           var hint = document.getElementById('tbResultHint');
+          var caseMode = String(val('tbCaseMode') || 'NEW').toUpperCase();
+          var targetAfb = normalizeAfbCode(val('tbSputumAfb'), 'X1');
+          var existing = editId ? rows.find(function (x) { return String(x.id) === String(editId); }) : null;
+          var existingSample = existing && caseMode !== 'EXISTING' ? findSample(existing, targetAfb) : null;
           var isScanty = !!result && String(result.value || '').toUpperCase() === 'SCANTY';
           if (wrapper) {
             wrapper.classList.add('is-qualitative');
@@ -5486,7 +5630,19 @@ hoagApiRequest('logout', {
               input.setCustomValidity('');
             }
           }
-          if (hint) { hint.hidden = !isScanty; hint.textContent = isScanty ? 'Enter the numeric AFB count for SCANTY (minimum 1).' : ''; }
+          if (hint) {
+            if (isScanty) {
+              hint.hidden = false;
+              hint.textContent = 'Enter the numeric AFB count for SCANTY (minimum 1).';
+            } else if (existingSample && !existingSample.result && existingSample.patientResult) {
+              hint.hidden = false;
+              hint.textContent = 'Stored patient result (' + String(existingSample.patientResult) + ') is preserved unless changed.';
+            } else {
+              hint.hidden = true;
+              hint.textContent = '';
+            }
+          }
+          syncFormRequirements();
         }
 
         function showSaveError(message) {
@@ -5496,52 +5652,50 @@ hoagApiRequest('logout', {
           error.hidden = !message;
         }
 
-        function clearForm() {
-          var modeEl = document.getElementById('tbCaseMode');
-          var modeValue = modeEl ? String(modeEl.value || 'NEW') : 'NEW';
-          editId = null;
-          var form = document.getElementById('tbis102aForm');
-          if (form) {
-            form.reset();
-            form.querySelectorAll('select').forEach(function (select) {
-              if (select.id === 'tbCaseMode' || select.id === 'tbExistingCase') return;
-              select.dispatchEvent(new Event('change', { bubbles: true }));
-            });
-          }
-          setVal('tbDate', getAppDateKey());
-          setVal('tbReleaseDate', '');
-          setVal('tbSputumAfb', 'X1');
-          syncScantyField();
-          if (modeEl) modeEl.value = modeValue;
-          syncCaseMode();
-          showSaveError('');
-          var hint = document.getElementById('tbis102aEditHint');
-          if (hint) hint.textContent = modeValue === 'EXISTING' ? 'SELECT EXISTING CASE' : 'NEW CASE';
-          var save = document.getElementById('tbis102aSave');
-          if (save) {
-            save.disabled = false;
-            save.textContent = modeValue === 'EXISTING' ? 'ADD SAMPLE TO CASE' : 'REGISTER TBIS102A';
+        function clearForm(preserveCaseMode) {
+          syncingFormState = true;
+          try {
+            var modeEl = document.getElementById('tbCaseMode');
+            var modeValue = preserveCaseMode && modeEl ? String(modeEl.value || 'NEW').toUpperCase() : 'NEW';
+            editId = null;
+            var form = document.getElementById('tbis102aForm');
+            if (form) {
+              form.querySelectorAll('option[data-tbis-dynamic="1"]').forEach(function (opt) { opt.remove(); });
+              form.reset();
+              if (modeEl) modeEl.value = modeValue;
+              form.querySelectorAll('select').forEach(function (select) {
+                if (select.id === 'tbSputumAfb') return;
+                select.dispatchEvent(new Event('change', { bubbles: false }));
+              });
+            }
+            setVal('tbDate', modeValue === 'EXISTING' ? '' : getAppDateKey());
+            setVal('tbReleaseDate', '');
+            setVal('tbSputumAfb', 'X1');
+            syncScantyField();
+            syncCaseMode();
+            showSaveError('');
+            var hint = document.getElementById('tbis102aEditHint');
+            if (hint) hint.textContent = modeValue === 'EXISTING' ? 'SELECT EXISTING CASE' : 'NEW CASE';
+            var save = document.getElementById('tbis102aSave');
+            if (save) {
+              save.disabled = !canCreateRecord();
+              save.textContent = modeValue === 'EXISTING' ? 'ADD SAMPLE TO CASE' : 'REGISTER TBIS102A';
+            }
+          } finally {
+            syncingFormState = false;
           }
         }
 
         function getSingleSample(r) {
+          var x1 = findSample(r, 'X1');
+          if (x1) return x1;
           if (r && Array.isArray(r.samples) && r.samples.length) return r.samples[0] || {};
           return {};
         }
 
         function fixedSamples(r) {
-          var source = Array.isArray(r && r.samples) ? r.samples : [];
-
-          /*
-           * TBIS102A display rule: render each AFB sample exactly as stored
-           * in Supabase. X1/X2/X3 may legitimately have different date,
-           * labNo, barcode, sample, and quality values, so the table must
-           * never copy X1 values into X2/X3. Missing fields remain blank.
-           */
           return ['X1', 'X2', 'X3'].map(function (afb) {
-            var found = source.find(function (sample) {
-              return String(sample && sample.afb || '').toUpperCase() === afb;
-            });
+            var found = findSample(r, afb);
             return found ? Object.assign({}, found, { afb: afb }) : { afb: afb };
           });
         }
@@ -5564,57 +5718,61 @@ hoagApiRequest('logout', {
           });
           picker.innerHTML = options;
           if (current && rows.some(function (r) { return String(r.id) === current; })) picker.value = current;
+          if (window.LabNotification && typeof window.LabNotification.enhanceSelects === 'function') {
+            window.LabNotification.enhanceSelects(picker.closest('form') || picker.parentElement);
+          }
         }
 
         function prepareExistingCase(caseId) {
           var r = rows.find(function (item) { return String(item.id) === String(caseId); });
           if (!r) return;
-          if (!canModifyRecord(r)) { showSaveError('You can only add samples to TBIS102A cases created by your own account.'); return; }
+          if (!canEditRecord(r)) { showSaveError('You are not authorized to add samples to TBIS102A cases.'); return; }
           var samples = fixedSamples(r);
-          var next = samples.find(function (sample) { return !sample.result && !sample.sample && !sample.quality; });
-          if (!next) { showSaveError('This BIL already has X1, X2 and X3. Create a NEW CASE instead.'); return; }
+          var next = samples.find(function (sample) { return !hasSampleContent(sample); });
+          if (!next) { showSaveError('This BIL already has X1, X2 and X3. Use EDIT on the row instead.'); return; }
           editId = r.id;
-          var x1 = samples.find(function (sample) { return String(sample && sample.afb || '').toUpperCase() === 'X1'; }) || samples[0] || {};
-          setVal('tbDate', x1.date || r.date);
-          setVal('tbLabNo', x1.labNo || r.labNo || '');
-          setVal('tbBarcode', x1.barcode || r.barcode || '');
+          /* X1/X2/X3 are independent specimens: populate patient demographics only and leave specimen fields blank. */
           setVal('tbName', r.name);
           setVal('tbIdNo', r.idNo);
           setVal('tbUnit', r.unit);
           setVal('tbPatient', r.patient);
           setVal('tbSputumAfb', next.afb);
-          setVal('tbSample', x1.sample || ''); setVal('tbQuality', x1.quality || ''); setVal('tbResult', ''); setVal('tbScanty', '');
-          setVal('tbReleaseDate', ''); setVal('tbTat', ''); setVal('tbValidatedBy', ''); setVal('tbReviewedBy', '');
+          setVal('tbDate', '');
+          setVal('tbLabNo', '');
+          setVal('tbBarcode', '');
+          setVal('tbSample', '');
+          setVal('tbQuality', '');
+          setVal('tbResult', '');
+          setVal('tbScanty', '');
+          setVal('tbReleaseDate', '');
+          setVal('tbTat', '');
+          setVal('tbValidatedBy', '');
+          setVal('tbReviewedBy', '');
           syncScantyField();
           var hint = document.getElementById('tbis102aEditHint');
-          if (hint) hint.textContent = 'ADDING TO BIL ' + String(r.bil || '—');
+          if (hint) hint.textContent = 'ADDING ' + next.afb + ' TO BIL ' + String(r.bil || '—');
           var save = document.getElementById('tbis102aSave');
           if (save) save.textContent = 'ADD SAMPLE TO BIL ' + String(r.bil || '');
           showSaveError('');
         }
 
         function formatResultDisplay(s) {
-          var res = String((s && s.result) || '').trim().toUpperCase();
+          var res = rawResultValue(s).toUpperCase();
           var scanty = String((s && s.scanty) || '').trim();
           if (res === 'SCANTY' && scanty) return 'SCANTY (' + scanty + ')';
           return res || '—';
         }
 
         function getResultPillClass(s) {
-          var res = String((s && s.result) || '').trim().toUpperCase();
-          if (res === 'NO AFB SEEN') return 'status-done';
+          var res = rawResultValue(s).toUpperCase();
+          if (res === 'NO AFB SEEN' || res === 'NEGATIVE') return 'status-done';
           if (res === 'SCANTY') return 'status-pending';
-          if (res === '1+' || res === '2+' || res === '3+') return 'status-reject';
+          if (res === '1+' || res === '2+' || res === '3+' || res === 'POSITIVE') return 'status-reject';
           return 'status-pending';
         }
 
-        function resolveSampleMeta(r, s, sampleIndex) {
-          /*
-           * The data table is a Supabase view, not a derived case view.
-           * Read metadata from the selected sample itself. Do not fall back
-           * to r.date/r.labNo/r.barcode because those top-level values are
-           * case-level legacy fields and can differ from X2/X3 sample data.
-           */
+        function resolveSampleMeta(r, s) {
+          /* Strictly read metadata from the specimen itself without cross-sample fallback. */
           return {
             date: String(s && s.date || ''),
             labNo: String(s && s.labNo || ''),
@@ -5622,47 +5780,68 @@ hoagApiRequest('logout', {
           };
         }
 
-        function fillForm(r, preferredAfb) {
-          if (!canModifyRecord(r)) {
+        function fillForm(r, preferredAfb, opts) {
+          if (!canEditRecord(r)) {
             showSaveError('You are not authorized to edit TBIS102A records.');
             return;
           }
-          editId = r.id;
-          var targetAfb = String(preferredAfb || '').trim().toUpperCase();
-          var s = (targetAfb && Array.isArray(r && r.samples)
-            ? r.samples.find(function (item) { return String(item && item.afb || '').toUpperCase() === targetAfb; })
-            : null) || (targetAfb ? { afb: targetAfb } : getSingleSample(r));
-          var afbIndex = { X1: 0, X2: 1, X3: 2 }[String(s.afb || targetAfb || 'X1').toUpperCase()] || 0;
-          var meta = resolveSampleMeta(r, s, afbIndex);
-
-          setVal('tbDate', meta.date || r.date || getAppDateKey());
-          setVal('tbLabNo', meta.labNo);
-          setVal('tbBarcode', meta.barcode);
-          setVal('tbName', r.name);
-          setVal('tbIdNo', r.idNo);
-          setVal('tbUnit', r.unit);
-          setVal('tbPatient', r.patient);
-          setVal('tbSample', s.sample);
-          setVal('tbQuality', s.quality);
-          setVal('tbSputumAfb', String(s.afb || 'X1').toUpperCase());
-          setVal('tbResult', s.result);
-          syncScantyField();
-          if (String(s.result || '').toUpperCase() === 'SCANTY') {
-            setVal('tbScanty', s.scanty);
+          var options = opts || {};
+          var formEl = document.getElementById('tbis102aForm');
+          if (formEl) {
+            formEl.querySelectorAll('option[data-tbis-dynamic="1"]').forEach(function (opt) { opt.remove(); });
           }
-          setVal('tbReleaseDate', s.releaseDate);
-          setVal('tbTat', s.tat);
-          setVal('tbValidatedBy', s.staff || r.validatedBy);
-          setVal('tbReviewedBy', s.review || r.reviewedBy);
-          showSaveError('');
+          var modeEl = document.getElementById('tbCaseMode');
+          syncingFormState = true;
+          try {
+            if (modeEl && modeEl.value !== 'NEW') {
+              modeEl.value = 'NEW';
+              modeEl.dispatchEvent(new Event('change', { bubbles: false }));
+            }
+            editId = r.id;
+            syncCaseMode();
 
-          var hint = document.getElementById('tbis102aEditHint');
-          if (hint) hint.textContent = 'EDITING RECORD';
-          var save = document.getElementById('tbis102aSave');
-          if (save) save.textContent = 'SAVE CHANGES';
+            var targetAfb = normalizeAfbCode(preferredAfb, normalizeAfbCode(getSingleSample(r).afb, 'X1'));
+            var s = findSample(r, targetAfb) || { afb: targetAfb };
+            var meta = resolveSampleMeta(r, s);
+            var dateFallback = targetAfb === 'X1' ? (r.date || '') : '';
+            var staffFallback = targetAfb === 'X1' ? (r.validatedBy || '') : '';
+            var reviewFallback = targetAfb === 'X1' ? (r.reviewedBy || '') : '';
 
-          var form = document.getElementById('tbis102aForm');
-          if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setVal('tbSputumAfb', targetAfb);
+            setVal('tbDate', meta.date || dateFallback);
+            setVal('tbLabNo', meta.labNo);
+            setVal('tbBarcode', meta.barcode);
+            setVal('tbName', r.name);
+            setVal('tbIdNo', r.idNo);
+            setVal('tbUnit', r.unit);
+            setVal('tbPatient', r.patient);
+            setVal('tbSample', s.sample);
+            setVal('tbQuality', s.quality);
+            setVal('tbResult', s.result);
+            if (String(s.result || '').toUpperCase() === 'SCANTY') {
+              setVal('tbScanty', s.scanty);
+            } else {
+              setVal('tbScanty', '');
+            }
+            syncScantyField();
+            setVal('tbReleaseDate', s.releaseDate);
+            setVal('tbTat', s.tat);
+            setVal('tbValidatedBy', s.staff || staffFallback);
+            setVal('tbReviewedBy', s.review || reviewFallback);
+            showSaveError('');
+
+            var hint = document.getElementById('tbis102aEditHint');
+            if (hint) hint.textContent = 'EDITING ' + targetAfb + (r.bil ? ' · BIL ' + r.bil : '');
+            var save = document.getElementById('tbis102aSave');
+            if (save) {
+              save.disabled = false;
+              save.textContent = 'SAVE CHANGES';
+            }
+          } finally {
+            syncingFormState = false;
+          }
+
+          if (!options.skipScroll && formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function buildForm() {
@@ -5676,7 +5855,7 @@ hoagApiRequest('logout', {
             '<div class="notification-field"><label for="tbExistingCase">EXISTING CASE</label><select id="tbExistingCase" aria-label="Existing TBIS102A case" hidden disabled><option value="">Select existing BIL / case</option></select></div>' +
             '</div>' +
             '<div class="notification-grid tbis102a-grid">' +
-            '<div class="notification-field"><label for="tbDate">DATE <span class="required">*</span></label><input id="tbDate" type="date" required></div>' +
+            '<div class="notification-field outsource-date-field"><label for="tbDateVisible">DATE <span class="required">*</span></label><input id="tbDate" type="hidden"><input id="tbDateVisible" type="text" class="outsource-neumorphic-date" readonly required placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Specimen collection date"></div>' +
             '<div class="notification-field"><label for="tbLabNo">LAB NO.</label><input id="tbLabNo" type="text" placeholder="Lab number"></div>' +
             '<div class="notification-field"><label for="tbBarcode">BARCODE</label><input id="tbBarcode" type="text" placeholder="Barcode"></div>' +
             '<div class="notification-field"><label for="tbName">NAME <span class="required">*</span></label><input id="tbName" type="text" required placeholder="Patient name"></div>' +
@@ -5687,7 +5866,7 @@ hoagApiRequest('logout', {
             '<div class="notification-field"><label for="tbQuality">SAMPLE QUALITY</label><select id="tbQuality" aria-label="Sample quality"><option value="">Select sample quality</option><option value="SALIVA">SALIVA</option><option value="SPUTUM">SPUTUM</option></select></div>' +
             '<div class="notification-field"><label for="tbSputumAfb">SPUTUM AFB</label><select id="tbSputumAfb" aria-label="Sputum AFB"><option value="X1">X1</option><option value="X2">X2</option><option value="X3">X3</option></select></div>' +
             '<div class="notification-field"><label for="tbResult">RESULT <span class="required">*</span></label><div id="tbResultSelectWrap" class="notification-result-control tbis102a-result-control is-qualitative"><select id="tbResult" required aria-label="TBIS102A result"><option value="">Select result</option><option value="NO AFB SEEN">NO AFB SEEN</option><option value="SCANTY">SCANTY</option><option value="1+">1+</option><option value="2+">2+</option><option value="3+">3+</option></select><input id="tbScanty" type="number" min="1" step="1" inputmode="numeric" placeholder="Numeric AFB count" aria-label="Numeric result for SCANTY" hidden disabled></div><small id="tbResultHint" class="notification-result-hint">Select result.</small></div>' +
-            '<div class="notification-field"><label for="tbReleaseDate">RELEASE DATE</label><input id="tbReleaseDate" type="date"></div>' +
+            '<div class="notification-field outsource-date-field"><label for="tbReleaseDateVisible">RELEASE DATE</label><input id="tbReleaseDate" type="hidden"><input id="tbReleaseDateVisible" type="text" class="outsource-neumorphic-date" readonly placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Result release date"></div>' +
             '<div class="notification-field"><label for="tbTat">TAT</label><input id="tbTat" type="number" min="0" step="0.1" placeholder="Hours"></div>' +
             '<div class="notification-field"><label for="tbValidatedBy">VALIDATED BY</label><select id="tbValidatedBy" aria-label="Validated by"><option value="">Select staff</option><option value="LIZA">LIZA</option><option value="JAYANTHI">JAYANTHI</option><option value="SURIANI">SURIANI</option><option value="JAPIDI">JAPIDI</option><option value="SHOUNNA">SHOUNNA</option><option value="NAZRAN">NAZRAN</option></select></div>' +
             '<div class="notification-field"><label for="tbReviewedBy">REVIEWED BY</label><select id="tbReviewedBy" aria-label="Reviewed by"><option value="">Select staff</option><option value="LIZA">LIZA</option><option value="JAYANTHI">JAYANTHI</option><option value="SURIANI">SURIANI</option><option value="JAPIDI">JAPIDI</option><option value="SHOUNNA">SHOUNNA</option><option value="NAZRAN">NAZRAN</option></select></div>' +
@@ -5726,9 +5905,19 @@ hoagApiRequest('logout', {
           return true;
         }
 
+        function closeDetailsModal(modal) {
+          if (!modal || modal.hidden) return;
+          modal.hidden = true;
+          if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === 'function' && document.contains(lastFocusedBeforeModal)) {
+            lastFocusedBeforeModal.focus();
+          }
+          lastFocusedBeforeModal = null;
+        }
+
         function openDetails(rid) {
           var r = records().find(function (x) { return String(x.id) === String(rid); });
           if (!r) return;
+          lastFocusedBeforeModal = document.activeElement;
           var modal = document.getElementById('tbis102aDetailsModal');
           if (!modal) {
             modal = document.createElement('div');
@@ -5746,12 +5935,29 @@ hoagApiRequest('logout', {
             document.body.appendChild(modal);
             modal.addEventListener('click', function (e) {
               if (e.target === modal || e.target.closest('#tbis102aDetailsClose')) {
-                modal.hidden = true;
+                closeDetailsModal(modal);
               }
             });
             document.addEventListener('keydown', function (e) {
-              if (e.key === 'Escape' && modal && !modal.hidden) {
-                modal.hidden = true;
+              if (!modal || modal.hidden) return;
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                closeDetailsModal(modal);
+                return;
+              }
+              if (e.key === 'Tab') {
+                var focusables = Array.prototype.slice.call(modal.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(function (el) {
+                  return !el.hidden && el.getClientRects().length > 0;
+                });
+                if (!focusables.length) return;
+                var first = focusables[0], last = focusables[focusables.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                  e.preventDefault();
+                  last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                  e.preventDefault();
+                  first.focus();
+                }
               }
             });
           }
@@ -5768,15 +5974,18 @@ hoagApiRequest('logout', {
           ];
           var samples = fixedSamples(r);
           var samplesHtml = samples.map(function (s, idx) {
-            var afb = String(s.afb || ('X' + (idx + 1))).toUpperCase();
-            var meta = resolveSampleMeta(r, s, idx);
-            var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty || meta.date || meta.labNo || meta.barcode);
+            var afb = normalizeAfbCode(s.afb, 'X' + (idx + 1));
+            var meta = resolveSampleMeta(r, s);
+            var hasData = hasSampleContent(s);
             var sDate = meta.date || '—';
             var sLabNo = meta.labNo || '—';
             var sBarcode = meta.barcode || '—';
             var resText = hasData ? formatResultDisplay(s) : 'Not recorded';
-            return '<div style="margin-top:12px;">' +
-              '<div class="notification-section-title" style="margin-bottom:8px;">SPUTUM AFB ' + outsourceEsc(afb) + '</div>' +
+            var extraPatientResult = (s.patientResult && String(s.patientResult).trim().toUpperCase() !== String(s.result || '').trim().toUpperCase())
+              ? '<div><label>PATIENT RESULT</label><div>' + outsourceEsc(s.patientResult) + '</div></div>'
+              : '';
+            return '<div class="tbis102a-detail-section">' +
+              '<div class="notification-section-title tbis102a-detail-title">SPUTUM AFB ' + outsourceEsc(afb) + '</div>' +
               '<div class="tbis102a-detail-grid">' +
                 '<div><label>DATE</label><div>' + outsourceEsc(sDate) + '</div></div>' +
                 '<div><label>LAB NO.</label><div>' + outsourceEsc(sLabNo) + '</div></div>' +
@@ -5784,11 +5993,12 @@ hoagApiRequest('logout', {
                 '<div><label>SAMPLE</label><div>' + outsourceEsc(s.sample || '—') + '</div></div>' +
                 '<div><label>SAMPLE QUALITY</label><div>' + outsourceEsc(s.quality || '—') + '</div></div>' +
                 '<div><label>RESULT</label><strong>' + outsourceEsc(resText) + '</strong></div>' +
+                extraPatientResult +
                 '<div><label>RELEASE DATE</label><div>' + outsourceEsc(s.releaseDate || '—') + '</div></div>' +
                 '<div><label>TAT (HOURS)</label><div>' + outsourceEsc(s.tat || '—') + '</div></div>' +
                 '<div><label>VALIDATED BY</label><div>' + outsourceEsc(s.staff || '—') + '</div></div>' +
                 '<div><label>REVIEWED BY</label><div>' + outsourceEsc(s.review || '—') + '</div></div>' +
-                '<div style="grid-column: span 2;"><label>NOTES / OBSERVATION</label><div>' + outsourceEsc(s.notes || s.observation || '—') + '</div></div>' +
+                '<div class="tbis102a-detail-span-2"><label>NOTES / OBSERVATION</label><div>' + outsourceEsc(s.notes || s.observation || '—') + '</div></div>' +
               '</div>' +
             '</div>';
           }).join('');
@@ -5802,6 +6012,8 @@ hoagApiRequest('logout', {
               '</div>' + samplesHtml;
           }
           modal.hidden = false;
+          var closeBtn = document.getElementById('tbis102aDetailsClose');
+          if (closeBtn) closeBtn.focus();
         }
 
         function renderRows() {
@@ -5827,10 +6039,10 @@ hoagApiRequest('logout', {
           var positiveCount = 0;
           allRows.forEach(function (r) {
             var samples = Array.isArray(r.samples) && r.samples.length ? r.samples : [getSingleSample(r)];
-            var results = samples.map(function (s) { return String(s && s.result || '').trim().toUpperCase(); });
-            if (results.indexOf('NO AFB SEEN') >= 0) noAfb += 1;
+            var results = samples.map(function (s) { return rawResultValue(s).toUpperCase(); });
+            if (results.some(function (res) { return res === 'NO AFB SEEN' || res === 'NEGATIVE'; })) noAfb += 1;
             if (results.indexOf('SCANTY') >= 0) scantyCount += 1;
-            if (results.some(function (res) { return res === '1+' || res === '2+' || res === '3+'; })) positiveCount += 1;
+            if (results.some(function (res) { return res === '1+' || res === '2+' || res === '3+' || res === 'POSITIVE'; })) positiveCount += 1;
           });
 
           var totalEl = document.getElementById('tbis102aTotal');
@@ -5855,16 +6067,10 @@ hoagApiRequest('logout', {
             }
           }
 
-          /*
-           * TBIS102A deliberately uses the real table for display.
-           * There is no virtual row replacement, spacer row, or scroll-time
-           * DOM rewrite here.  Each case is its own tbody so the existing
-           * 3-row rowspan structure remains intact.  CSS content-visibility
-           * lets the browser skip paint/layout work for off-screen case groups.
-           */
           body.innerHTML = filtered.map(function (r) {
             var samples = fixedSamples(r);
-            var canModify = canModifyRecord(r);
+            var canEdit = canEditRecord(r);
+            var canDelete = canDeleteRecord(r);
             var identityCells = [
               '<td rowspan="3" class="tbis-case-cell tbis-name-cell"><strong>' + outsourceEsc(r.name || '—') + '</strong></td>',
               '<td rowspan="3" class="tbis-case-cell">' + outsourceEsc(r.idNo || '—') + '</td>',
@@ -5874,9 +6080,9 @@ hoagApiRequest('logout', {
 
             var rowsHtml = samples.map(function (sample, sampleIndex) {
               var s = sample || {};
-              var afbDisplay = String(s.afb || ('X' + (sampleIndex + 1))).toUpperCase();
-              var meta = resolveSampleMeta(r, s, sampleIndex);
-              var hasData = !!(s.sample || s.quality || s.result || s.releaseDate || s.tat || s.staff || s.review || s.observation || s.scanty || meta.date || meta.labNo || meta.barcode);
+              var afbDisplay = normalizeAfbCode(s.afb, 'X' + (sampleIndex + 1));
+              var meta = resolveSampleMeta(r, s);
+              var hasData = hasSampleContent(s);
               var resultLabel = hasData ? formatResultDisplay(s) : '';
               var pillClass = hasData ? getResultPillClass(s) : '';
               var dateCell = '<td>' + outsourceEsc(meta.date) + '</td>';
@@ -5884,14 +6090,14 @@ hoagApiRequest('logout', {
               var barcodeCell = '<td>' + outsourceEsc(meta.barcode) + '</td>';
               var actionCell = '<td class="outsource-actions-cell"><div class="outsource-actions">' +
                 '<button type="button" class="outsource-mini icon-only action-view tbis-view" title="View full details" aria-label="View full details" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>' +
-                '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit ' + outsourceEsc(afbDisplay) + '" aria-label="Edit ' + outsourceEsc(afbDisplay) + '" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
-                '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="Delete case" aria-label="Delete case" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canModify ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
+                '<button type="button" class="outsource-mini icon-only action-edit tbis-edit" title="Edit ' + outsourceEsc(afbDisplay) + '" aria-label="Edit ' + outsourceEsc(afbDisplay) + '" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canEdit ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button>' +
+                '<button type="button" class="outsource-mini icon-only action-delete delete tbis-delete" title="' + (canDelete ? 'Delete case' : 'Only creator or Admin can delete') + '" aria-label="Delete case" data-id="' + outsourceEsc(r.id) + '" data-afb="' + outsourceEsc(afbDisplay) + '"' + (canDelete ? '' : ' disabled') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>' +
                 '</div></td>';
               var details = [
                 '<td>' + outsourceEsc(s.sample || '') + '</td>',
                 '<td>' + outsourceEsc(s.quality || '') + '</td>',
                 '<td><strong>' + outsourceEsc(afbDisplay) + '</strong></td>',
-                '<td class="outsource-result">' + (resultLabel ? '<span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span>' : '') + '</td>'
+                '<td class="outsource-result">' + (resultLabel && resultLabel !== '—' ? '<span class="outsource-result-pill ' + pillClass + '">' + outsourceEsc(resultLabel) + '</span>' : '') + '</td>'
               ].join('');
               return '<tr class="outsource-data-row tbis-case-row' + (sampleIndex > 0 ? ' tbis-sample-row' : ' tbis-case-first-row') + '" data-id="' + outsourceEsc(r.id) + '">' +
                 (sampleIndex === 0 ? dateCell + labCell + barcodeCell + identityCells : dateCell + labCell + barcodeCell) +
@@ -5932,7 +6138,7 @@ hoagApiRequest('logout', {
                 return;
               }
               if (!button.classList.contains('tbis-delete')) return;
-              if (!canModifyRecord(r)) {
+              if (!canDeleteRecord(r)) {
                 showSaveError('You can only delete TBIS102A records created by your own account.');
                 return;
               }
@@ -5951,13 +6157,14 @@ hoagApiRequest('logout', {
                         throw new Error(result && result.error ? result.error : 'TBIS102A delete was not committed.');
                       }
                       rows = rows.filter(function (x) { return String(x.id) !== rid; });
-                      if (String(editId || '') === rid) clearForm();
+                      if (String(editId || '') === rid) clearForm(false);
+                      syncCaseMode();
                       renderRows();
                     })
                     .catch(function (error) {
                       console.error('TBIS102A delete failed:', error);
                       showSaveError(error && error.message ? error.message : 'Unable to delete TBIS102A record.');
-                      button.disabled = false;
+                      button.disabled = !canDeleteRecord(r);
                     });
                 }
               );
@@ -5977,14 +6184,19 @@ function submit(e) {
           var caseMode = String(val('tbCaseMode') || 'NEW').toUpperCase();
           var targetId = editId || uid();
           var existing = rows.find(function (x) { return String(x.id) === String(targetId); });
-          var targetAfb = String(val('tbSputumAfb') || 'X1').toUpperCase();
-          var isEditingExistingSample = !!existing && !!editId && caseMode !== 'EXISTING';
+          var targetAfb = normalizeAfbCode(val('tbSputumAfb'), 'X1');
+          var existingSample = existing && caseMode !== 'EXISTING' ? findSample(existing, targetAfb) : null;
+          var isExistingSampleSlot = !!existing && !!editId && caseMode !== 'EXISTING' && !!existingSample;
           var resultValue = val('tbResult');
           var isScanty = resultValue.toUpperCase() === 'SCANTY';
           var scantyValue = isScanty ? val('tbScanty') : '';
           var scantyInput = document.getElementById('tbScanty');
-          if (!date) {
-            var dateEl = document.getElementById('tbDate');
+
+          syncFormRequirements();
+
+          var needsDate = !existing || caseMode === 'EXISTING' || targetAfb === 'X1' || !existingSample;
+          if (needsDate && !date) {
+            var dateEl = document.getElementById('tbDateVisible') || document.getElementById('tbDate');
             if (dateEl) { dateEl.focus(); dateEl.reportValidity(); }
             showSaveError('Date is required.');
             return Promise.resolve(null);
@@ -5995,11 +6207,16 @@ function submit(e) {
             showSaveError('Patient Name is required.');
             return Promise.resolve(null);
           }
-          // A brand-new sample must have a result. When editing an already
-          // existing AFB row, however, an empty result is valid because the
-          // Supabase record may intentionally have X1/X2/X3 still pending.
-          if (!resultValue && !isEditingExistingSample) {
-            var resultTrigger = document.querySelector('#tbResultSelectWrap .notification-select-trigger');
+
+          var sampleHasFormActivity = !!(
+            date || val('tbLabNo') || val('tbBarcode') || val('tbSample') ||
+            val('tbQuality') || resultValue || val('tbReleaseDate') || val('tbTat') ||
+            val('tbValidatedBy') || val('tbReviewedBy')
+          );
+          var hadPrevActivity = hasSampleContent(existingSample);
+          var requiresResult = !isExistingSampleSlot || (!hadPrevActivity && sampleHasFormActivity);
+          if (requiresResult && !resultValue && !(existingSample && existingSample.patientResult)) {
+            var resultTrigger = document.querySelector('#tbResultSelectWrap .notification-select-trigger') || document.getElementById('tbResult');
             if (resultTrigger) resultTrigger.focus();
             showSaveError('Select a Result before registration.');
             return Promise.resolve(null);
@@ -6029,83 +6246,63 @@ function submit(e) {
             showSaveError('Select an existing BIL / case before adding a sample.');
             return Promise.resolve(null);
           }
-          if (existing && !canModifyRecord(existing)) {
+          if (existing && !canEditRecord(existing)) {
             showSaveError('You are not authorized to update TBIS102A records.');
+            return Promise.resolve(null);
+          }
+          if (!existing && !canCreateRecord()) {
+            showSaveError('You are not authorized to register TBIS102A records.');
             return Promise.resolve(null);
           }
           showSaveError('');
 
+          var prevSample = existingSample || findSample(existing, targetAfb) || {};
           var sample = {
-            afb: (val('tbSputumAfb') || 'X1').toUpperCase(),
+            afb: targetAfb,
             date: date,
             labNo: val('tbLabNo'),
             barcode: val('tbBarcode'),
             sample: val('tbSample'),
             quality: val('tbQuality'),
             result: resultValue,
-            observation: '',
+            observation: prevSample.observation || '',
             scanty: isScanty ? scantyValue : '',
-            slideResult: '',
-            patientResult: resultValue,
-            slide: '',
+            slideResult: prevSample.slideResult || '',
+            patientResult: prevSample.patientResult || '',
+            slide: prevSample.slide || '',
             releaseDate: val('tbReleaseDate'),
             tat: val('tbTat'),
             staff: val('tbValidatedBy'),
             review: val('tbReviewedBy'),
-            notes: ''
+            notes: prevSample.notes || ''
           };
 
           var creator = existing && existing.createdBy
             ? String(existing.createdBy)
             : String(state.authUserId || state.authUserDisplayName || '');
 
-          var mergedSamples = existing && Array.isArray(existing.samples)
-            ? existing.samples.slice(0, 3).map(function (item, idx) {
-                var clone = Object.assign({}, item);
-                var itemMeta = resolveSampleMeta(existing, clone, idx);
-                if (clone.date === undefined) clone.date = itemMeta.date;
-                if (clone.labNo === undefined) clone.labNo = itemMeta.labNo;
-                if (clone.barcode === undefined) clone.barcode = itemMeta.barcode;
-                return clone;
-              })
-            : [];
-
-          // Preserve each AFB sample exactly as stored. X1/X2/X3 can have
-          // different date, labNo, barcode, sample, and quality values.
-          // No cross-sample inheritance is performed here.
-          var selectedAfb = String(sample.afb || 'X1').toUpperCase();
-          var selectedIndex = mergedSamples.findIndex(function (item) {
-            return String(item && item.afb || '').toUpperCase() === selectedAfb;
-          });
-          if (selectedIndex >= 0) mergedSamples[selectedIndex] = Object.assign({}, mergedSamples[selectedIndex], sample);
-          else mergedSamples.push(sample);
-          mergedSamples = mergedSamples.slice(0, 3).sort(function (a, b) {
-            return String(a && a.afb || 'X1').localeCompare(String(b && b.afb || 'X1'));
-          });
-
-          var x1Sample = mergedSamples.find(function (item) {
-            return String(item && item.afb || '').toUpperCase() === 'X1';
-          }) || mergedSamples[0] || {};
+          var updateParentIdentity = !existing || targetAfb === 'X1';
           var row = {
             id: targetId,
             bil: existing && existing.bil ? String(existing.bil) : '',
-            date: x1Sample.date || (existing && existing.date) || date,
-            labNo: x1Sample.labNo !== undefined ? x1Sample.labNo : ((existing && existing.labNo) || val('tbLabNo')),
-            barcode: x1Sample.barcode !== undefined ? x1Sample.barcode : ((existing && existing.barcode) || val('tbBarcode')),
+            date: updateParentIdentity ? (date || (existing && existing.date) || '') : String(existing.date || ''),
+            labNo: updateParentIdentity ? val('tbLabNo') : String(existing.labNo || ''),
+            barcode: updateParentIdentity ? val('tbBarcode') : String(existing.barcode || ''),
             name: name,
             idNo: val('tbIdNo'),
             unit: val('tbUnit'),
             patient: val('tbPatient'),
-            samples: mergedSamples,
+            samples: [sample],
             createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString(),
             createdBy: creator
           };
 
           saving = true;
+          var wasEditing = !!editId;
           var saveButton = document.getElementById('tbis102aSave');
           if (saveButton) {
             saveButton.disabled = true;
-            saveButton.textContent = editId ? 'SAVING...' : 'REGISTERING...';
+            saveButton.textContent = wasEditing ? 'SAVING...' : 'REGISTERING...';
           }
 
           var expectedVersion = existing ? Number(existing.version || 1) : undefined;
@@ -6120,7 +6317,8 @@ function submit(e) {
               var index = rows.findIndex(function (x) { return String(x.id) === String(savedRecord.id); });
               if (index >= 0) rows[index] = savedRecord; else rows.unshift(savedRecord);
               saving = false;
-              clearForm();
+              clearForm(false);
+              syncCaseMode();
               renderRows();
               if (typeof setSystemToast === 'function') {
                 setSystemToast('TBIS102A SAVED', 'The record has been saved to Supabase successfully.', 2800);
@@ -6131,12 +6329,14 @@ function submit(e) {
                   if (!rows.some(function (record) { return String(record.id) === String(savedRecord.id); })) {
                     rows.unshift(savedRecord);
                   }
+                  syncCaseMode();
                   renderRows();
                 }
               }).catch(function (refreshError) {
                 console.warn('TBIS102A background refresh deferred:', refreshError);
                 if (!rows.some(function (record) { return String(record.id) === String(savedRecord.id); })) {
                   rows.unshift(savedRecord);
+                  syncCaseMode();
                   renderRows();
                 }
               });
@@ -6151,8 +6351,8 @@ function submit(e) {
               saving = false;
               var liveSaveBtn = document.getElementById('tbis102aSave');
               if (liveSaveBtn) {
-                liveSaveBtn.disabled = false;
-                liveSaveBtn.textContent = editId ? 'SAVE CHANGES' : 'REGISTER TBIS102A';
+                liveSaveBtn.disabled = !canCreateRecord() && !editId;
+                liveSaveBtn.textContent = editId ? 'SAVE CHANGES' : (String(val('tbCaseMode') || 'NEW').toUpperCase() === 'EXISTING' ? 'ADD SAMPLE TO CASE' : 'REGISTER TBIS102A');
               }
             });
         }
@@ -6179,14 +6379,22 @@ function submit(e) {
           }
           var tbCaseMode = document.getElementById('tbCaseMode');
           var tbExistingCase = document.getElementById('tbExistingCase');
+          var tbSputumAfb = document.getElementById('tbSputumAfb');
           if (tbCaseMode) tbCaseMode.addEventListener('change', function () {
+            if (syncingFormState) return;
             editId = null;
-            clearForm();
-            tbCaseMode.value = this.value;
-            syncCaseMode();
+            clearForm(true);
           });
           if (tbExistingCase) tbExistingCase.addEventListener('change', function () {
+            if (syncingFormState) return;
             if (this.value) prepareExistingCase(this.value);
+          });
+          if (tbSputumAfb) tbSputumAfb.addEventListener('change', function () {
+            if (syncingFormState) return;
+            var modeVal = String(val('tbCaseMode') || 'NEW').toUpperCase();
+            if (!editId || modeVal === 'EXISTING') return;
+            var currentRec = rows.find(function (x) { return String(x.id) === String(editId); });
+            if (currentRec) fillForm(currentRec, this.value, { skipScroll: true });
           });
           syncCaseMode();
 
@@ -10663,25 +10871,35 @@ function exportMonthlySchedulePdfs() {
           if (!options.silent) setStatus(envelope && envelope.error ? envelope.error : 'Unable to load admin settings.', 'error');
           return;
         }
-  
-        lastAdminData = envelope;
-        setVisitorAccessCatalog(envelope.visitorPageCatalog);
+
+        var prev = lastAdminData && typeof lastAdminData === 'object' ? lastAdminData : {};
+        var merged = {
+          ok: true,
+          users: Array.isArray(envelope.users) ? envelope.users : (Array.isArray(prev.users) ? prev.users : []),
+          logs: Array.isArray(envelope.logs) ? envelope.logs : (Array.isArray(prev.logs) ? prev.logs : []),
+          visitorPageCatalog: Array.isArray(envelope.visitorPageCatalog) ? envelope.visitorPageCatalog : (Array.isArray(prev.visitorPageCatalog) ? prev.visitorPageCatalog : visitorAccessCatalog),
+          systemLogRetentionDays: envelope.systemLogRetentionDays !== undefined ? envelope.systemLogRetentionDays : prev.systemLogRetentionDays,
+          broadcast: envelope.broadcast !== undefined ? envelope.broadcast : prev.broadcast,
+          maintenance: envelope.maintenance !== undefined ? envelope.maintenance : prev.maintenance
+        };
+        lastAdminData = merged;
+        setVisitorAccessCatalog(merged.visitorPageCatalog);
         if (nodes.systemLogRetentionLabel) {
-          var retentionDays = Number(envelope.systemLogRetentionDays);
+          var retentionDays = Number(merged.systemLogRetentionDays);
           nodes.systemLogRetentionLabel.textContent = 'User logins, session events, access denied attempts, and admin updates' +
             (Number.isFinite(retentionDays) && retentionDays > 0 ? ' · ' + retentionDays + '-day retention' : '');
         }
-        renderResetOptions(envelope.users || []);
-        renderUserList(envelope.users || []);
-        renderVisitorAccessControls(envelope.users || [], envelope.visitorPageCatalog || visitorAccessCatalog);
-        renderAccessOverviewTable(envelope.users || [], envelope.visitorPageCatalog || visitorAccessCatalog);
-        renderLogs(envelope.logs || []);
-  
-        if (nodes.broadcastMessage) nodes.broadcastMessage.value = envelope.broadcast && envelope.broadcast.message ? envelope.broadcast.message : '';
-        if (nodes.maintenanceEnabled) nodes.maintenanceEnabled.checked = !!(envelope.maintenance && envelope.maintenance.enabled);
-        if (nodes.maintenanceMessage) nodes.maintenanceMessage.value = envelope.maintenance && envelope.maintenance.message ? envelope.maintenance.message : '';
-  
-        setNotice(envelope);
+        renderResetOptions(merged.users);
+        renderUserList(merged.users);
+        renderVisitorAccessControls(merged.users, merged.visitorPageCatalog || visitorAccessCatalog);
+        renderAccessOverviewTable(merged.users, merged.visitorPageCatalog || visitorAccessCatalog);
+        renderLogs(merged.logs);
+
+        if (nodes.broadcastMessage) nodes.broadcastMessage.value = merged.broadcast && merged.broadcast.message ? merged.broadcast.message : '';
+        if (nodes.maintenanceEnabled) nodes.maintenanceEnabled.checked = !!(merged.maintenance && merged.maintenance.enabled);
+        if (nodes.maintenanceMessage) nodes.maintenanceMessage.value = merged.maintenance && merged.maintenance.message ? merged.maintenance.message : '';
+
+        setNotice(merged);
         if (!options.silent || okMessage) setStatus(okMessage || 'Admin settings ready.', 'ok');
       }
   
@@ -11265,7 +11483,7 @@ function exportMonthlySchedulePdfs() {
       function upsertSample(row){
         ensureReady(); if(!row||!row.id)return Promise.resolve(null);
         var id=String(row.id), idx=rows.findIndex(function(r){return String(r.id)===id;});
-        var previous=idx>=0?rows[idx]:null;
+        var previous=idx>=0?clone(rows[idx]):null;
         var now=new Date().toISOString();
         var next=Object.assign({},previous||{},clone(row)||{}, {updatedAt:now}); next.lab=canonicalOutsourceLabName(next.lab); next.referral=canonicalOutsourceReferralName(next.referral);
         delete next._haystack; delete next._displaySex; delete next._displayAge;
@@ -11275,11 +11493,23 @@ function exportMonthlySchedulePdfs() {
         var expected=previous?String(previous.updatedAt||''):'';
         return hoagApiRequest('action',{method:'upsertOutsourceSample',args:[clone(next),token(),expected]}).then(function(result){
           if(!result||result.ok===false||!result.record) throw new Error(result&&result.error?result.error:'Outsource save was not confirmed by the server.');
-          var i=rows.findIndex(function(r){return String(r.id)===id;}); if(i>=0)rows[i]=result.record;
+          var i=rows.findIndex(function(r){return String(r.id)===id;}); if(i>=0)rows[i]=result.record; else rows.push(result.record);
           lastUpdatedAt=String(result.updatedAt||lastUpdatedAt); revision+=1; saveLocal();
           if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
           return result.record;
-        }).catch(function(error){console.error('OUTSOURCE save failed:',error&&error.message?error.message:error);throw error;});
+        }).catch(function(error){
+          var rollbackIdx=rows.findIndex(function(r){return String(r.id)===id;});
+          if(previous){
+            if(rollbackIdx>=0)rows[rollbackIdx]=previous;
+            else rows.push(previous);
+          }else if(rollbackIdx>=0){
+            rows.splice(rollbackIdx,1);
+          }
+          revision+=1; saveLocal();
+          if(typeof Modules!=='undefined'&&Modules.refreshOutsourceLive)Modules.refreshOutsourceLive();
+          console.error('OUTSOURCE save failed:',error&&error.message?error.message:error);
+          throw error;
+        });
       }
       function deleteSample(id){
         ensureReady(); var rid=String(id||''); if(!rid)return Promise.resolve(false);
@@ -11489,53 +11719,78 @@ function exportMonthlySchedulePdfs() {
         }).withFailureHandler(function(){ scheduleSharedPoll(); }).getSharedInventoryMeta(token);
       }
       var sharedSavePending = false;
+      var sharedSaveWaiters = [];
+      function settleSharedSaveWaiters(payload){
+        if(!sharedSaveWaiters.length)return;
+        var list=sharedSaveWaiters.slice();
+        sharedSaveWaiters=[];
+        list.forEach(function(fn){try{fn(payload);}catch(e){}});
+      }
       function saveRemote(options){
         options=options||{};
         if(sharedSyncBusy && !options.force){
           sharedSavePending=true;
-          return;
+          return new Promise(function(resolve){ sharedSaveWaiters.push(resolve); });
         }
         var token=(typeof Auth!=='undefined'&&Auth.getToken)?Auth.getToken():'';
-        if(!token || !hasVercelBackend()) return;
+        if(!token || !hasVercelBackend()) return Promise.resolve({ok:true,localOnly:true});
         sharedSyncBusy=true;
         sharedSavePending=false;
-        hoagApi.run.withSuccessHandler(function(result){
-          sharedSyncBusy=false;
-          if(result && result.ok===false && result.conflict){
-            var cloud=result.inventory||{};
-            mergeCloudAuthoritative(cloud);
-            sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
-            saveLocal();
-            render();
-            scheduleSharedPoll();
-            window.alert('Inventory changed on another device. The latest data has been loaded; review it and retry your change.');
-            return;
-          }
-          if(result && result.ok!==false){
-            sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
-            if(!sharedSavePending && result.inventory && typeof result.inventory==='object' && Array.isArray(result.inventory.items)){
+        return new Promise(function(resolve){
+          var settleAll=function(res){ settleSharedSaveWaiters(res); resolve(res); };
+          hoagApi.run.withSuccessHandler(function(result){
+            sharedSyncBusy=false;
+            if(result && result.ok===false && result.conflict){
+              var cloud=result.inventory||{};
+              mergeCloudAuthoritative(cloud);
+              sharedUpdatedAt=String(result.updatedAt||sharedUpdatedAt||'');
+              saveLocal();
+              render();
+              if(sharedSavePending){
+                sharedSavePending=false;
+                saveRemote().then(settleAll);
+                return;
+              }
+              scheduleSharedPoll();
+              settleAll({ok:false,conflict:true,error:result.error||'Inventory changed on another device. The latest data has been loaded; review it and retry your change.'});
+              return;
+            }
+            if(result && result.ok===false){
+              if(sharedSavePending){
+                sharedSavePending=false;
+                saveRemote().then(settleAll);
+                return;
+              }
+              scheduleSharedPoll();
+              settleAll({ok:false,error:result.error||'Shared Inventory save failed.'});
+              return;
+            }
+            sharedUpdatedAt=String(result&&result.updatedAt||sharedUpdatedAt||'');
+            if(!sharedSavePending && result&&result.inventory && typeof result.inventory==='object' && Array.isArray(result.inventory.items)){
               mergeCloudAuthoritative(result.inventory);
               saveLocal();
               render();
             }
-          }
-          if(sharedSavePending){
-            sharedSavePending=false;
-            saveRemote();
-            return;
-          }
-          // The revision poll detects changes from other clients without a read/write loop.
-          scheduleSharedPoll();
-        }).withFailureHandler(function(error){
-          sharedSyncBusy=false;
-          console.warn('Shared Inventory save failed:',error&&error.message?error.message:error);
-          if(sharedSavePending){
-            sharedSavePending=false;
-            saveRemote();
-            return;
-          }
-          scheduleSharedPoll();
-        }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
+            if(sharedSavePending){
+              sharedSavePending=false;
+              saveRemote().then(settleAll);
+              return;
+            }
+            scheduleSharedPoll();
+            settleAll({ok:true,result:result});
+          }).withFailureHandler(function(error){
+            sharedSyncBusy=false;
+            var msg=error&&error.message?error.message:String(error||'Shared Inventory save failed.');
+            console.warn('Shared Inventory save failed:',msg);
+            if(sharedSavePending){
+              sharedSavePending=false;
+              saveRemote().then(settleAll);
+              return;
+            }
+            scheduleSharedPoll();
+            settleAll({ok:false,error:msg});
+          }).saveSharedInventory(cloneData(data), token, sharedUpdatedAt);
+        });
       }
       function mergeCloudAuthoritative(cloud){
         if(!cloud || typeof cloud!=='object' || !Array.isArray(cloud.items)) return false;
@@ -11842,6 +12097,7 @@ function exportMonthlySchedulePdfs() {
         var lot=tx.lotNo||'OPENING / NO LOT';
         requestAppConfirm('DELETE '+movementLabel+'?', 'Delete '+movementLabel+' for '+itemLabel+' · Qty '+qty+' · Lot '+lot+'? This will recalculate the stock balance and cannot be undone.', function(){
           normalize();
+          var snapshot=cloneData(data);
           var idx=data.transactions.findIndex(function(t){return String(t.id)===String(txId);});
           if(idx<0)return;
           var removed=data.transactions[idx];
@@ -11852,12 +12108,16 @@ function exportMonthlySchedulePdfs() {
           if(oldMonth)saveMonthlySnapshot(oldMonth);
           saveMonthlySnapshot(currentMonthKey());
           saveLocal();
-          try { saveRemote(); } catch(remoteErr) { console.warn('Inventory remote delete error:',remoteErr); }
           closeRecordModal();
           render();
-          // Keep the UI responsive locally, then confirm the committed cloud state
-          // without requiring a manual page refresh.
-          setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
+          Promise.resolve(saveRemote()).then(function(remoteRes){
+            if(remoteRes && remoteRes.ok===false){
+              if(!remoteRes.conflict && snapshot){ data=snapshot; normalize(); saveLocal(); render(); }
+              window.alert(remoteRes.error||'Unable to delete movement in cloud storage.');
+              return;
+            }
+            setTimeout(function(){ if(initialized && !sharedSyncBusy) loadRemote(true); }, 350);
+          });
         });
       }
 
@@ -11984,9 +12244,14 @@ function exportMonthlySchedulePdfs() {
         if(!fefo){return lots.length&&lots[0].qty>=qty?[{lotNo:lots[0].lotNo,qty:qty,expiry:lots[0].expiry}]:null;}
         lots.sort(function(a,b){return (a.expiry||'9999').localeCompare(b.expiry||'9999');});var need=qty,out=[];for(var i=0;i<lots.length&&need>0;i++){var take=Math.min(need,lots[i].qty);if(take>0)out.push({lotNo:lots[i].lotNo,qty:take,expiry:lots[i].expiry});need-=take;}return need>0?null:out;
       }
-      function submitMovement(e){
+      var inventorySubmitting=false;
+      async function submitMovement(e){
         e.preventDefault();
+        if(inventorySubmitting)return;
         var msg=$('inventoryFormMessage');if(msg)msg.textContent='';
+        var submitBtn=$('inventorySubmitBtn');
+        var prevLabel=submitBtn?submitBtn.textContent:'';
+        var snapshot=cloneData(data);
         try {
           var type=($('inventoryMovementType')||{}).value||'IN';
           var editingId=cleanText(($('inventoryEditingId')||{}).value);
@@ -12026,12 +12291,23 @@ function exportMonthlySchedulePdfs() {
           tx.forEach(function(t){saveMonthlySnapshot(transactionMonthKey(t));});
           saveMonthlySnapshot(currentMonthKey());
           saveLocal();
-          try { saveRemote(); } catch(remoteErr) { console.warn('Inventory remote save error:',remoteErr); }
+          inventorySubmitting=true;
+          if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='SAVING...';}
+          var remoteRes=await saveRemote();
+          if(remoteRes && remoteRes.ok===false){
+            if(!remoteRes.conflict && snapshot){ data=snapshot; normalize(); saveLocal(); render(); }
+            if(msg)msg.textContent=remoteRes.error||'Unable to save movement to cloud storage.';
+            return;
+          }
           closeModal();
           render();
         } catch(err) {
           console.error('Inventory movement save error:',err);
+          if(snapshot){ data=snapshot; normalize(); saveLocal(); render(); }
           if(msg)msg.textContent='Unable to save movement: '+(err&&err.message?err.message:'Please try again.');
+        } finally {
+          inventorySubmitting=false;
+          if(submitBtn){submitBtn.disabled=false;if(prevLabel)submitBtn.textContent=prevLabel;}
         }
       }
 
@@ -12112,7 +12388,7 @@ function exportMonthlySchedulePdfs() {
 
       function bind(){
         if(initialized)return;initialized=true;
-        document.addEventListener('click',function(e){var edit=e.target.closest('[data-inventory-edit-id]');if(edit){e.preventDefault();e.stopPropagation();closeRecordModal();editMovement(edit.getAttribute('data-inventory-edit-id'));return;}var del=e.target.closest('[data-inventory-delete-id]');if(del){e.preventDefault();e.stopPropagation();deleteMovement(del.getAttribute('data-inventory-delete-id'));}});
+        var recModal=$('inventoryRecordModal');if(recModal)recModal.addEventListener('click',function(e){var edit=e.target.closest('[data-inventory-edit-id]');if(edit){e.preventDefault();e.stopPropagation();closeRecordModal();editMovement(edit.getAttribute('data-inventory-edit-id'));return;}var del=e.target.closest('[data-inventory-delete-id]');if(del){e.preventDefault();e.stopPropagation();deleteMovement(del.getAttribute('data-inventory-delete-id'));}});
         var search=$('inventorySearch');if(search)search.addEventListener('input',render);
         ['inventoryCategoryFilter','inventoryStatusFilter','inventoryViewFilter'].forEach(function(id){var n=$(id);if(n)n.addEventListener('change',function(){if(id==='inventoryViewFilter')currentView=n.value;render();});});
         var adminBtn=$('inventoryAdminItemsBtn');if(adminBtn)adminBtn.addEventListener('click',openAdminItems);var adminForm=$('inventoryAdminItemForm');if(adminForm)adminForm.addEventListener('submit',saveAdminItem);var adminClear=$('inventoryAdminItemClearBtn');if(adminClear)adminClear.addEventListener('click',clearAdminItemForm);var adminList=$('inventoryAdminItemList');if(adminList)adminList.addEventListener('click',function(e){var edit=e.target.closest('[data-admin-item-edit]');if(edit){editAdminItem(edit.getAttribute('data-admin-item-edit'));return;}var del=e.target.closest('[data-admin-item-delete]');if(del){deleteAdminItem(del.getAttribute('data-admin-item-delete'));return;}});document.querySelectorAll('[data-inventory-admin-close]').forEach(function(n){n.addEventListener('click',closeAdminItems);});var inBtn=$('inventoryStockInBtn');if(inBtn)inBtn.addEventListener('click',function(){showModal('IN');});var outBtn=$('inventoryStockOutBtn');if(outBtn)outBtn.addEventListener('click',function(){showModal('OUT');});
@@ -12253,27 +12529,55 @@ function exportMonthlySchedulePdfs() {
         if(stReject)stReject.textContent=String(rejectCount);
         var q=String(search&&search.value||'').trim().toLowerCase(), y=String(yf&&yf.value||'ALL'), m=String(mf&&mf.value||'ALL'), statusFilter=String(sf&&sf.value||'ALL').toUpperCase();
         var rows=all.filter(function(r){var date=String(r.date||'');var st=String(r.remarks||'PENDING').trim().toUpperCase()||'PENDING';return (!q||[r.name,r.idIc,r.packNo,r.staff,r.bloodGroup,r.remarks,r.notes].join(' ').toLowerCase().indexOf(q)>=0) && (y==='ALL'||date.slice(0,4)===y) && (m==='ALL'||date.slice(5,7)===m) && (statusFilter==='ALL'||st===statusFilter);}).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))||String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});
-        body.innerHTML=rows.map(function(r,i){var st=String(r.remarks||'PENDING').trim().toUpperCase()||'PENDING';var pill=st==='COMPLETED'?'<span class="outsource-result-pill done status-done">COMPLETED</span>':st==='REJECT'?'<span class="outsource-result-pill reject status-reject">REJECT</span>':'<span class="outsource-result-pill pending status-pending">'+esc(st)+'</span>';return '<tr class="outsource-data-row transfusion-data-row" data-transfusion-row-id="'+esc(r.id)+'"><td>'+esc(displayDate(r.date))+'</td><td><strong>'+esc(r.name)+'</strong></td><td>'+esc(r.idIc)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.bloodGroup)+'</td><td>'+esc(r.packNo)+'</td><td>'+pill+'</td><td class="outsource-actions-cell"><div class="outsource-actions"><button type="button" class="outsource-mini icon-only tr-view action-view" data-id="'+esc(r.id)+'" title="View full details" aria-label="View full details"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button><button type="button" class="outsource-mini icon-only tr-edit action-edit" data-id="'+esc(r.id)+'" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button><button type="button" class="outsource-mini icon-only tr-delete action-delete delete" data-id="'+esc(r.id)+'" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button></div></td></tr>';}).join('');
+        var isVisitor=(typeof isVisitorAccessRestricted==='function'&&isVisitorAccessRestricted())||String(typeof state!=='undefined'&&state&&state.authRole||'').toUpperCase()==='VISITOR';
+        body.innerHTML=rows.map(function(r,i){var st=String(r.remarks||'PENDING').trim().toUpperCase()||'PENDING';var pill=st==='COMPLETED'?'<span class="outsource-result-pill done status-done">COMPLETED</span>':st==='REJECT'?'<span class="outsource-result-pill reject status-reject">REJECT</span>':'<span class="outsource-result-pill pending status-pending">'+esc(st)+'</span>';return '<tr class="outsource-data-row transfusion-data-row" data-transfusion-row-id="'+esc(r.id)+'"><td>'+esc(displayDate(r.date))+'</td><td><strong>'+esc(r.name)+'</strong></td><td>'+esc(r.idIc)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.bloodGroup)+'</td><td>'+esc(r.packNo)+'</td><td>'+pill+'</td><td class="outsource-actions-cell"><div class="outsource-actions"><button type="button" class="outsource-mini icon-only tr-view action-view" data-id="'+esc(r.id)+'" title="View full details" aria-label="View full details"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button>'+(!isVisitor?'<button type="button" class="outsource-mini icon-only tr-edit action-edit" data-id="'+esc(r.id)+'" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Z"/><path d="m13.8 6.2 3.5 3.5"/><path d="M20 4a2.1 2.1 0 0 1 0 3l-1 1-3.5-3.5 1-1a2.1 2.1 0 0 1 3 0Z"/></svg></button><button type="button" class="outsource-mini icon-only tr-delete action-delete delete" data-id="'+esc(r.id)+'" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg></button>':'')+'</div></td></tr>';}).join('');
         if(empty)empty.hidden=rows.length>0;
         var n=document.getElementById('trTotal');if(n)n.textContent=totalCount+' TOTAL';
         var pager=document.getElementById('trPager');if(pager)pager.textContent=rows.length?('Showing 1–'+rows.length+' of '+rows.length):'Showing 0–0 of 0';
-        if(!body._trViewDelegated){body._trViewDelegated=true;body.addEventListener('click',function(e){var view=e.target.closest('.tr-view');if(!view||!body.contains(view))return;e.preventDefault();e.stopPropagation();openTransfusionDetailModal(view.getAttribute('data-id'));});}
-        body.querySelectorAll('.tr-view').forEach(function(b){b.onclick=function(e){e.preventDefault();e.stopPropagation();openTransfusionDetailModal(b.dataset.id);};});
-        body.querySelectorAll('.tr-edit').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();edit(b.dataset.id);});});
-        body.querySelectorAll('.tr-delete').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();if(!window.confirm('Delete this transfusion record?'))return;var row=records().find(function(item){return String(item.id)===String(b.dataset.id);});if(!row)return;requestTransfusion('DELETE',{recordId:row.id,expectedVersion:Number(row.version||1)}).then(function(){transfusionRows=transfusionRows.filter(function(item){return String(item.id)!==String(row.id);});saveTransfusionCache();renderRows();}).catch(function(error){window.alert(error&&error.message?error.message:'Unable to delete transfusion record.');});});});
-        /* Row clicks intentionally do nothing; full details open only from the Eye action. */
-        body.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(e){e.stopPropagation();});});
+        if(!body._trDelegated){
+          body._trDelegated=true;
+          body.addEventListener('click',function(e){
+            var link=e.target&&e.target.closest?e.target.closest('a'):null;
+            if(link){e.stopPropagation();return;}
+            var viewBtn=e.target&&e.target.closest?e.target.closest('.tr-view'):null;
+            if(viewBtn&&body.contains(viewBtn)){e.preventDefault();e.stopPropagation();openTransfusionDetailModal(viewBtn.getAttribute('data-id'));return;}
+            var editBtn=e.target&&e.target.closest?e.target.closest('.tr-edit'):null;
+            if(editBtn&&body.contains(editBtn)){e.stopPropagation();edit(editBtn.getAttribute('data-id'));return;}
+            var delBtn=e.target&&e.target.closest?e.target.closest('.tr-delete'):null;
+            if(!delBtn||!body.contains(delBtn))return;
+            e.stopPropagation();
+            var row=records().find(function(item){return String(item.id)===String(delBtn.getAttribute('data-id'));});
+            if(!row)return;
+            requestAppConfirm(
+              'DELETE TRANSFUSION RECORD?',
+              'Delete transfusion record for '+String(row.name||'this patient')+(row.date?' · '+displayDate(row.date):'')+'? This cannot be undone.',
+              function(){
+                delBtn.disabled=true;
+                requestTransfusion('DELETE',{recordId:row.id,expectedVersion:Number(row.version||1)}).then(function(){
+                  transfusionRows=transfusionRows.filter(function(item){return String(item.id)!==String(row.id);});
+                  saveTransfusionCache();
+                  renderRows();
+                  if(typeof setSystemToast==='function')setSystemToast('TRANSFUSION DELETED','The transfusion record was deleted.',2400);
+                }).catch(function(error){
+                  delBtn.disabled=false;
+                  window.alert(error&&error.message?error.message:'Unable to delete transfusion record.');
+                });
+              }
+            );
+          });
+        }
       }
-      if(!document._hoagTransfusionEyeDelegated){document._hoagTransfusionEyeDelegated=true;document.addEventListener('click',function(e){var view=e.target&&e.target.closest?e.target.closest('#trTableBody .tr-view'):null;if(!view)return;e.preventDefault();e.stopPropagation();openTransfusionDetailModal(view.getAttribute('data-id'));},true);}
       function openTransfusionDetailModal(rid){
         var sourceRows=records();var r=sourceRows.find(function(x){return String(x.id)===String(rid);})||transfusionRows.find(function(x){return String(x.id)===String(rid);});if(!r){console.warn('Transfusion detail record not found for Eye action:',rid);return;}
+        var isVisitor=(typeof isVisitorAccessRestricted==='function'&&isVisitorAccessRestricted())||String(typeof state!=='undefined'&&state&&state.authRole||'').toUpperCase()==='VISITOR';
         var modal=document.getElementById('transfusionDetailModal');
         if(!modal){
-          modal=document.createElement('div');modal.id='transfusionDetailModal';modal.className='outsource-result-modal';
-          modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog transfusion-detail-dialog"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2>FULL RECORD DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="transfusionDetailClose">CLOSE</button><button type="button" class="outsource-btn primary" id="transfusionDetailSave">SAVE CHANGES</button></div></div>';
-          (document.getElementById('moduleYearGrid')||document.body).appendChild(modal);
+          modal=document.createElement('div');modal.id='transfusionDetailModal';modal.className='outsource-result-modal';modal.hidden=true;
+          modal.innerHTML='<div class="outsource-result-dialog outsource-detail-dialog transfusion-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="transfusionDetailTitle"><button type="button" class="outsource-result-close" aria-label="Close">×</button><div class="outsource-modal-kicker">TRANSFUSION RECORD</div><h2 id="transfusionDetailTitle">FULL RECORD DETAILS</h2><div class="outsource-detail-grid"></div><div class="outsource-modal-actions"><button type="button" class="outsource-btn secondary" id="transfusionDetailClose">CLOSE</button><button type="button" class="outsource-btn primary" id="transfusionDetailSave">SAVE CHANGES</button></div></div>';
+          document.body.appendChild(modal);
           modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('.outsource-result-close')||e.target.closest('#transfusionDetailClose'))modal.hidden=true;});
           modal.querySelector('#transfusionDetailSave').addEventListener('click',saveTransfusionDetailFields);
+          document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!modal.hidden)modal.hidden=true;});
         }
         modal.dataset.recordId=String(r.id);modal.dataset.expectedVersion=String(Number(r.version||1));
         var items=[
@@ -12285,12 +12589,16 @@ function exportMonthlySchedulePdfs() {
         ];
         modal.querySelector('.outsource-detail-grid').innerHTML=items.map(function(f){var raw=String(f[1]||'').trim();var html=(f[0]==='Remarks / Status'||f[0]==='Notes'||f[0]==='Google Drive')?raw:esc(raw||'—');return '<div class="outsource-detail-item"><label>'+esc(f[0])+'</label><div>'+html+'</div></div>';}).join('');
         var transfusionStatusSelect=modal.querySelector('#transfusionDetailStatus');
-        transfusionStatusSelect.value=String(r.remarks||'PENDING').toUpperCase();
-        transfusionStatusSelect.style.cssText='display:block;width:100%;box-sizing:border-box;min-height:40px;padding:9px 34px 9px 12px;border:1px solid rgba(148,163,184,.25);border-radius:14px;background-color:#eef2f8;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364788f%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;box-shadow:inset 2px 2px 5px rgba(148,163,184,.14),inset -2px -2px 5px rgba(255,255,255,.82),0 3px 9px rgba(76,94,122,.06);color:#172033;font:inherit;font-size:10px;appearance:none;-webkit-appearance:none;cursor:pointer;';
-        modal.querySelector('#transfusionDetailNotes').value=String(r.notes||'');
-        modal.hidden=false;modal.style.display='flex';modal.style.visibility='visible';modal.style.opacity='1';modal.style.zIndex='2147483640';
+        var transfusionNotesField=modal.querySelector('#transfusionDetailNotes');
+        var transfusionSaveBtn=modal.querySelector('#transfusionDetailSave');
+        if(transfusionStatusSelect){transfusionStatusSelect.value=String(r.remarks||'PENDING').toUpperCase();transfusionStatusSelect.disabled=isVisitor;}
+        if(transfusionNotesField){transfusionNotesField.value=String(r.notes||'');transfusionNotesField.disabled=isVisitor;}
+        if(transfusionSaveBtn)transfusionSaveBtn.hidden=isVisitor;
+        modal.hidden=false;
+        var closeBtn=modal.querySelector('.outsource-result-close');if(closeBtn)closeBtn.focus();
       }
       async function saveTransfusionDetailFields(){
+        if(typeof isVisitorAccessRestricted==='function'&&isVisitorAccessRestricted())return;
         var modal=document.getElementById('transfusionDetailModal');if(!modal)return;
         var r=records().find(function(x){return String(x.id)===String(modal.dataset.recordId||'');});if(!r)return;
         var row=transfusionRecordPayload(r,{remarks:String(modal.querySelector('#transfusionDetailStatus').value||'PENDING'),notes:String(modal.querySelector('#transfusionDetailNotes').value||'').trim()});
@@ -12313,11 +12621,9 @@ function exportMonthlySchedulePdfs() {
         modal.dataset.recordId=String(r.id);
         var title=document.getElementById('transfusionRemarksTitle');
         var sub=document.getElementById('transfusionRemarksSub');
-        var remark=document.getElementById('transfusionRemarksText');
         var note=document.getElementById('transfusionNotesText');
         if(title)title.textContent='REMARKS & NOTES';
         if(sub)sub.textContent=(String(r.name||'')||'TRANSFUSION RECORD')+' • '+displayDate(r.date);
-        if(remark)remark.value=String(r.remarks||'');
         if(note)note.value=String(r.notes||'');
         var status=String(r.remarks||'').trim().toUpperCase();
         var remarkSelect=document.getElementById('transfusionRemarksStatus');
@@ -12473,7 +12779,7 @@ function exportMonthlySchedulePdfs() {
         console.error('LabApp auth startup error:', error);
         var warning = document.createElement('div');
         warning.className = 'noscript-warning';
-        warning.innerHTML = '<strong>LabApp startup error.</strong><br/>Please reload the app. If this repeats, check the browser console or redeploy Code.gs and Index.html.';
+        warning.innerHTML = '<strong>LabApp startup error.</strong><br/>Please reload the app or contact your administrator if this persists.';
         document.body.insertBefore(warning, document.body.firstChild);
       }
     }
@@ -12685,7 +12991,7 @@ if ("serviceWorker" in navigator) {
   document.addEventListener('mousedown',onDocMouseDown);window.addEventListener('resize',onWindowReflow);window.addEventListener('scroll',onWindowReflow,true);
   v._syncDate=function(){if(!isNativeDate)v.value=fmt(h.value);};
  }
- window.initOutsourceNeumorphicDates=function(){[['osSampleDate','osSampleDateVisible'],['osDispatchDate','osDispatchDateVisible'],['outsourceModalResultDate','outsourceModalResultDateVisible'],['outsourceDetailResultDate','outsourceDetailResultDateVisible'],['trDate','trDateVisible'],['tbDate','tbDate'],['tbReleaseDate','tbReleaseDate']].forEach(function(x){setup(x[0],x[1]);});['osSampleDate','osDispatchDate','outsourceModalResultDate','outsourceDetailResultDate','trDate'].forEach(function(id){var h=document.getElementById(id),v=document.getElementById(id+'Visible');if(h&&v&&v._syncDate)v._syncDate();});};
+ window.initOutsourceNeumorphicDates=function(){[['osSampleDate','osSampleDateVisible'],['osDispatchDate','osDispatchDateVisible'],['outsourceModalResultDate','outsourceModalResultDateVisible'],['outsourceDetailResultDate','outsourceDetailResultDateVisible'],['trDate','trDateVisible'],['tbDate','tbDateVisible'],['tbReleaseDate','tbReleaseDateVisible']].forEach(function(x){setup(x[0],x[1]);});['osSampleDate','osDispatchDate','outsourceModalResultDate','outsourceDetailResultDate','trDate','tbDate','tbReleaseDate'].forEach(function(id){var h=document.getElementById(id),v=document.getElementById(id+'Visible');if(h&&v&&v._syncDate)v._syncDate();});};
 })();
 
 

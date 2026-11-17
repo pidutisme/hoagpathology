@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase-admin.js';
 import { sessionFor, appendSystemLog } from '../lib/session.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
-import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue } from '../lib/request-security.js';
 import { parseRequest, boundedText } from '../lib/schemas/common.js';
 import {
   consumeTotpCode,
@@ -24,20 +24,6 @@ const schema = z.object({
   code: z.string().max(32).optional(),
   recoveryCode: z.string().regex(/^[A-Z0-9-]{8,32}$/i).optional()
 }).strict();
-
-const cookieValue = (req, name) => {
-  const raw = String(req.headers?.cookie || '')
-    .split(';')
-    .map(v => v.trim())
-    .find(v => v.startsWith(name + '='))
-    ?.slice(name.length + 1) || '';
-  if (!raw) return '';
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return '';
-  }
-};
 
 const ipFor = req =>
   (
@@ -187,7 +173,7 @@ async function authenticateAdmin(username, password) {
 
   return user &&
     user.active !== false &&
-    normalizeUserId(user.role) === 'ADMIN' &&
+    (normalizeUserId(user.role) === 'ADMIN' || user.is_super_admin === true) &&
     verifyPassword(normalizeUserPasswordFields(user), normalizePassword(password))
     ? user
     : null;
@@ -361,7 +347,7 @@ export default async function handler(req, res) {
 
     const session = await sessionFor(null, sessionToken);
 
-    if (!session || session.role !== 'ADMIN') {
+    if (!session || (session.role !== 'ADMIN' && session.user?.is_super_admin !== true)) {
       return res.status(403).json({
         ok: false,
         error: 'Administrator session is required.',

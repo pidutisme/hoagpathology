@@ -1,21 +1,10 @@
 import { issueSignedToken, presignUrl } from '@vercel/blob';
 import { handleUploadPresigned } from '@vercel/blob/client';
 import { sessionFor, requireModuleAccess } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { transfusionBlobRequestSchema } from '../lib/schemas/files.js';
 import { hasPermission } from '../lib/permissions.js';
-
-const cookieValue = (req, name) => {
-  const raw = String(req.headers?.cookie || '');
-  const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '='));
-  if (!hit) return '';
-  try {
-    return decodeURIComponent(hit.slice(name.length + 1));
-  } catch {
-    return '';
-  }
-};
 
 const clean = (v, max = 300) => String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max);
 

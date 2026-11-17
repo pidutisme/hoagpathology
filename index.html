@@ -11,9 +11,10 @@
        + HEAD AND PRE-AUTH BOOTSTRAP      +
        +----------------------------------+ -->
 <link href="/favicon.ico?v=3" rel="icon" type="image/x-icon"/>
+<link href="/icon-192.png" rel="apple-touch-icon"/>
 <title>LabPortal - Laboratory Management System</title>
-<meta name="labportal-release-version" content="3.0.1"/>
-<meta name="labportal-build-id" content="CA92E050A65D"/>
+<meta name="labportal-release-version" content="3.0.2"/>
+<meta name="labportal-build-id" content="6F9A61BA1E1A"/>
 <base target="_top"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -32,10 +33,10 @@
 <meta content="no-referrer-when-downgrade" name="referrer"/>
 <meta content="telephone=no,email=no,address=no" name="format-detection"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800;900&family=Poppins:wght@700;800;900&display=swap"/>
-<link rel="stylesheet" href="/assets/css/app.css?v=tbis102a-v38"/>
-<link rel="stylesheet" href="/assets/css/notification.css?v=notification-tbis-v31"/>
-<link rel="stylesheet" href="/assets/css/responsive-tables.css?v=responsive-tables-v25"/>
-<link rel="stylesheet" href="/assets/css/auth-redesign.css?v=auth-v19"/>
+<link rel="stylesheet" href="/assets/css/app.css?v=phase2-v1"/>
+<link rel="stylesheet" href="/assets/css/notification.css?v=phase2-v1"/>
+<link rel="stylesheet" href="/assets/css/responsive-tables.css?v=phase2-v1"/>
+<link rel="stylesheet" href="/assets/css/auth-redesign.css?v=phase2-v1"/>
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked auth-resolving" data-auth-status="AUTH_RESOLVING">
@@ -527,11 +528,11 @@
 </div>
 <div class="notification-toolbar">
 <input id="notificationSearch" type="search" placeholder="Search patient / IC / barcode / test..." aria-label="Search notification records">
-<select id="notificationYearFilter"><option value="ALL">All years</option></select>
-<select id="notificationMonthFilter"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>
-<select id="notificationDisciplineFilter"><option value="ALL">All discipline</option><option value="BIOCHEMISTRY">Biochemistry</option><option value="HAEMATOLOGY">Haematology</option><option value="MICROBIOLOGY">Microbiology</option></select>
-<select id="notificationFlagFilter"><option value="ALL">All flag</option><option value="LOW CRITICAL">Low critical</option><option value="HIGH CRITICAL">High critical</option><option value="POSITIVE">Positive</option><option value="REACTIVE">Reactive</option><option value="DETECTED">Detected</option><option value="ABNORMAL">Abnormal</option></select>
-<select id="notificationStatusFilter"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="INFORMED">Informed</option><option value="COMPLETED">Completed</option></select>
+<select id="notificationYearFilter" aria-label="Filter notifications by year"><option value="ALL">All years</option></select>
+<select id="notificationMonthFilter" aria-label="Filter notifications by month"><option value="ALL">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>
+<select id="notificationDisciplineFilter" aria-label="Filter notifications by discipline"><option value="ALL">All discipline</option><option value="BIOCHEMISTRY">Biochemistry</option><option value="HAEMATOLOGY">Haematology</option><option value="MICROBIOLOGY">Microbiology</option></select>
+<select id="notificationFlagFilter" aria-label="Filter notifications by flag"><option value="ALL">All flag</option><option value="LOW CRITICAL">Low critical</option><option value="HIGH CRITICAL">High critical</option><option value="POSITIVE">Positive</option><option value="REACTIVE">Reactive</option><option value="DETECTED">Detected</option><option value="ABNORMAL">Abnormal</option></select>
+<select id="notificationStatusFilter" aria-label="Filter notifications by status"><option value="ALL">All status</option><option value="PENDING">Pending</option><option value="INFORMED">Informed</option><option value="COMPLETED">Completed</option></select>
 </div>
 <div class="notification-table-wrap">
 <table class="notification-table"><thead><tr><th>Date / Time</th><th>Patient</th><th>ID / IC</th><th>Unit</th><th>Discipline</th><th>Test</th><th>Result</th><th>Flag</th><th>Status</th><th>Actions</th></tr></thead><tbody id="notificationTableBody"></tbody></table>
@@ -566,9 +567,9 @@
 <div class="inventory-kpis" id="inventoryKpis"></div>
 <div class="inventory-toolbar">
 <div class="inventory-search-wrap">
-<span>⌕</span><input autocomplete="off" id="inventorySearch" placeholder="Search item, lot no., category..." type="search"/>
+<span aria-hidden="true">⌕</span><input aria-label="Search inventory item, lot number, or category" autocomplete="off" id="inventorySearch" placeholder="Search item, lot no., category..." type="search"/>
 </div>
-<select class="inventory-select" id="inventoryCategoryFilter">
+<select aria-label="Filter inventory by category" class="inventory-select" id="inventoryCategoryFilter">
 <option value="ALL">ALL CATEGORIES</option>
 <option value="BIOCHEMISTRY">BIOCHEMISTRY</option>
 <option value="HAEMATOLOGY">HAEMATOLOGY</option>
@@ -578,14 +579,14 @@
 <option value="CONSUMABLES">CONSUMABLES</option>
 <option value="OUTSOURCE INDENT">OUTSOURCE INDENT</option>
 </select>
-<select class="inventory-select" id="inventoryStatusFilter">
+<select aria-label="Filter inventory by stock status" class="inventory-select" id="inventoryStatusFilter">
 <option value="ALL">ALL STATUS</option>
 <option value="LOW">LOW STOCK</option>
 <option value="OUT">OUT OF STOCK</option>
 <option value="EXPIRING">EXPIRING ≤ 60 DAYS</option>
 <option value="EXPIRED">EXPIRED</option>
 </select>
-<select class="inventory-select" id="inventoryViewFilter">
+<select aria-label="Select inventory table view" class="inventory-select" id="inventoryViewFilter">
 <option value="ITEMS">ITEM SUMMARY</option>
 <option value="LOTS">LOT STOCK</option>
 <option value="HISTORY">MOVEMENT HISTORY</option>
@@ -606,16 +607,16 @@
 <form autocomplete="off" class="inventory-form" id="inventoryAdminItemForm">
 <input id="inventoryAdminEditingId" type="hidden" value=""/>
 <div class="inventory-form-grid">
-<label>ITEM NAME<input id="inventoryAdminName" maxlength="160" placeholder="e.g. New Reagent" required="" type="text"/></label>
-<label>CATEGORY<select id="inventoryAdminCategory" required=""><option value="BIOCHEMISTRY">BIOCHEMISTRY</option><option value="HAEMATOLOGY">HAEMATOLOGY</option><option value="MICROBIOLOGY">MICROBIOLOGY</option><option value="URINE/STOOL ANALYSIS">URINE / STOOL ANALYSIS</option><option value="ETC">ETC</option><option value="CONSUMABLES">CONSUMABLES</option><option value="OUTSOURCE INDENT">OUTSOURCE INDENT</option></select></label>
+<label for="inventoryAdminName">ITEM NAME<input aria-label="Inventory item name" id="inventoryAdminName" maxlength="160" placeholder="e.g. New Reagent" required="" type="text"/></label>
+<label for="inventoryAdminCategory">CATEGORY<select aria-label="Inventory item category" id="inventoryAdminCategory" required=""><option value="BIOCHEMISTRY">BIOCHEMISTRY</option><option value="HAEMATOLOGY">HAEMATOLOGY</option><option value="MICROBIOLOGY">MICROBIOLOGY</option><option value="URINE/STOOL ANALYSIS">URINE / STOOL ANALYSIS</option><option value="ETC">ETC</option><option value="CONSUMABLES">CONSUMABLES</option><option value="OUTSOURCE INDENT">OUTSOURCE INDENT</option></select></label>
 </div>
 <div class="inventory-form-grid">
-<label>TYPE<input id="inventoryAdminType" maxlength="80" placeholder="REAGENT / CONSUMABLE" type="text"/></label>
-<label>PRICE / UNIT<input id="inventoryAdminPrice" min="0" placeholder="0.00" required="" step="0.01" type="number"/></label>
+<label for="inventoryAdminType">TYPE<input aria-label="Inventory item type" id="inventoryAdminType" maxlength="80" placeholder="REAGENT / CONSUMABLE" type="text"/></label>
+<label for="inventoryAdminPrice">PRICE / UNIT<input aria-label="Inventory item price per unit" id="inventoryAdminPrice" min="0" placeholder="0.00" required="" step="0.01" type="number"/></label>
 </div>
 <div class="inventory-form-grid">
-<label>OPENING STOCK<input id="inventoryAdminOpening" min="0" placeholder="0" required="" step="1" type="number" value="0"/></label>
-<label>MINIMUM STOCK<input id="inventoryAdminMin" min="0" placeholder="1" required="" step="1" type="number" value="1"/></label>
+<label for="inventoryAdminOpening">OPENING STOCK<input aria-label="Inventory opening stock" id="inventoryAdminOpening" min="0" placeholder="0" required="" step="1" type="number" value="0"/></label>
+<label for="inventoryAdminMin">MINIMUM STOCK<input aria-label="Inventory minimum stock" id="inventoryAdminMin" min="0" placeholder="1" required="" step="1" type="number" value="1"/></label>
 </div>
 <div class="inventory-form-message" id="inventoryAdminItemMessage"></div>
 <div class="inventory-form-actions"><button class="inventory-action-btn" id="inventoryAdminItemClearBtn" type="button">CLEAR</button><button class="inventory-action-btn primary" id="inventoryAdminItemSaveBtn" type="submit">ADD ITEM</button></div>
@@ -636,24 +637,24 @@
 <form autocomplete="off" class="inventory-form" id="inventoryMovementForm">
 <input id="inventoryMovementType" type="hidden" value="IN"/>
 <input id="inventoryEditingId" type="hidden" value=""/>
-<label>ITEM<div class="inventory-custom-select" id="inventoryItemCustomWrap">
-<select aria-hidden="true" id="inventoryItemInput" tabindex="-1"></select>
-<button aria-expanded="false" aria-haspopup="listbox" class="inventory-custom-trigger" id="inventoryItemTrigger" type="button"><span id="inventoryItemTriggerText">Select item...</span><span class="inventory-custom-chevron">⌄</span></button>
+<label for="inventoryItemTrigger">ITEM<div class="inventory-custom-select" id="inventoryItemCustomWrap">
+<select aria-hidden="true" aria-label="Inventory movement item" id="inventoryItemInput" tabindex="-1"></select>
+<button aria-expanded="false" aria-haspopup="listbox" aria-label="Select inventory item" class="inventory-custom-trigger" id="inventoryItemTrigger" type="button"><span id="inventoryItemTriggerText">Select item...</span><span class="inventory-custom-chevron" aria-hidden="true">⌄</span></button>
 <div class="inventory-custom-menu" id="inventoryItemMenu" role="listbox" tabindex="-1"></div>
 </div></label>
 <div class="inventory-form-grid">
-<label>QUANTITY<input id="inventoryQtyInput" min="1" placeholder="e.g. 10" required="" step="1" type="number"/></label>
-<label>LOT NO.<input id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/><select id="inventoryLotSelect" hidden aria-label="Stock Out lot number"></select></label>
+<label for="inventoryQtyInput">QUANTITY<input aria-label="Movement quantity" id="inventoryQtyInput" min="1" placeholder="e.g. 10" required="" step="1" type="number"/></label>
+<label for="inventoryLotInput">LOT NO.<input aria-label="Stock In lot number" id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/><select id="inventoryLotSelect" hidden aria-label="Stock Out lot number"></select></label>
 </div>
 <div class="inventory-form-grid">
-<label class="inventory-date-field">MOVEMENT DATE<input id="inventoryMovementDateInput" type="hidden"/><input aria-label="Movement date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryMovementDateVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" required="" type="text"/></label>
-<label class="inventory-date-field">EXPIRY<input id="inventoryExpiryInput" type="hidden"/><input aria-label="Expiry date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryExpiryVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" type="text"/></label>
+<label class="inventory-date-field" for="inventoryMovementDateVisible">MOVEMENT DATE<input id="inventoryMovementDateInput" type="hidden"/><input aria-label="Movement date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryMovementDateVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" required="" type="text"/></label>
+<label class="inventory-date-field" for="inventoryExpiryVisible">EXPIRY<input id="inventoryExpiryInput" type="hidden"/><input aria-label="Expiry date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryExpiryVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" type="text"/></label>
 </div>
 <div class="inventory-form-grid">
-<label>STAFF<select id="inventoryStaffInput"></select></label>
+<label for="inventoryStaffInput">STAFF<select aria-label="Movement staff" id="inventoryStaffInput"></select></label>
 </div>
 <label class="inventory-check" id="inventoryFefoWrap" hidden><input aria-label="Auto FEFO (First Expired, First Out)" id="inventoryFefoInput" type="checkbox"/> AUTO FEFO — use earliest-expiry lot first</label>
-<label>NOTES<textarea id="inventoryNotesInput" maxlength="500" placeholder="Optional movement note..." rows="3"></textarea></label>
+<label for="inventoryNotesInput">NOTES<textarea aria-label="Movement notes" id="inventoryNotesInput" maxlength="500" placeholder="Optional movement note..." rows="3"></textarea></label>
 <div aria-live="polite" class="inventory-form-message" id="inventoryFormMessage"></div>
 <div class="inventory-form-actions"><button class="inventory-action-btn" data-inventory-close="" type="button">CANCEL</button><button class="inventory-action-btn primary" id="inventorySubmitBtn" type="submit">SAVE STOCK IN</button></div>
 </form>
@@ -686,7 +687,7 @@
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 8h8v8H8z"></path></svg></div><div><strong>App Type</strong><span>Single Page Application</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="10" cy="18" r="1"></circle></svg></div><div><strong>Department</strong><span>HOAG Pathology</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="14" rx="2" width="18" x="3" y="5"></rect><path d="M8 21h8M12 19v2"></path></svg></div><div><strong>Platform</strong><span>Android + Web + Windows</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">3.0.1</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">3.0.2</span></div></div>
 <div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M8 12h8M12 8v8"></path></svg></div><div><strong>Build</strong><span id="aboutAppBuild">—</span></div></div>
 </div>
 <div class="settings-extra-grid">
@@ -709,6 +710,7 @@
 </div>
 <div class="admin-head-actions">
 <button aria-label="Run system check" class="admin-view-tab admin-system-check-button" hidden="" id="settingsSystemCheckButton" type="button"><span> SYSTEM CHECK </span></button>
+<span aria-live="polite" class="settings-system-check-summary" id="settingsSystemCheckSummary"></span>
 <div class="admin-view-switcher" role="tablist" aria-label="Admin workspace mode">
 <button class="admin-view-tab is-active" id="adminTabSettingsBtn" role="tab" aria-selected="true" type="button">ADMIN SETTINGS</button>
 <button class="admin-view-tab" id="adminTabLogsBtn" role="tab" aria-selected="false" type="button">SYSTEM LOG</button>
@@ -779,10 +781,10 @@
 <form autocomplete="off" class="admin-control-card" id="adminAddUserForm">
 <div class="admin-card-title"><strong>Create User Account</strong><span>Add Admin, Normal User, or Visitor</span></div>
 <div class="admin-form-grid">
-<input autocapitalize="characters" class="admin-input" id="adminAddUsername" maxlength="60" placeholder="USERNAME" spellcheck="false" type="text"/>
-<input class="admin-input" id="adminAddDisplayName" maxlength="80" placeholder="DISPLAY NAME" type="text"/>
-<select class="admin-select" id="adminAddRole"><option value="USER">NORMAL USER</option><option value="VISITOR">VISITOR (ASSIGNED PAGES)</option><option value="ADMIN">ADMIN</option></select>
-<input autocomplete="new-password" class="admin-input" id="adminAddPassword" maxlength="200" placeholder="PASSWORD" type="password"/>
+<input aria-label="New user username" autocapitalize="characters" class="admin-input" id="adminAddUsername" maxlength="60" placeholder="USERNAME" spellcheck="false" type="text"/>
+<input aria-label="New user display name" class="admin-input" id="adminAddDisplayName" maxlength="80" placeholder="DISPLAY NAME" type="text"/>
+<select aria-label="New user role" class="admin-select" id="adminAddRole"><option value="USER">NORMAL USER</option><option value="VISITOR">VISITOR (ASSIGNED PAGES)</option><option value="ADMIN">ADMIN</option></select>
+<input aria-label="New user password" autocomplete="new-password" class="admin-input" id="adminAddPassword" maxlength="200" placeholder="PASSWORD" type="password"/>
 </div>
 <button class="admin-action-btn" type="submit">Add User</button>
 </form>
@@ -790,7 +792,7 @@
 <div class="admin-card-title"><strong>Password Reset</strong><span>Reset credentials for any user</span></div>
 <div class="admin-form-grid">
 <select aria-label="Select user to reset" class="admin-select is-full" id="adminResetUser"></select>
-<input autocomplete="new-password" class="admin-input is-full" id="adminResetPassword" maxlength="200" placeholder="NEW PASSWORD" type="password"/>
+<input aria-label="New password for selected user" autocomplete="new-password" class="admin-input is-full" id="adminResetPassword" maxlength="200" placeholder="NEW PASSWORD" type="password"/>
 </div>
 <button class="admin-action-btn" type="submit">Reset Password</button>
 </form>
@@ -818,7 +820,7 @@
 <div class="admin-card-title">
 <strong>Broadcast Announcement</strong><span>Displayed across active sessions</span>
 </div>
-<textarea class="admin-textarea" id="adminBroadcastMessage" maxlength="600" placeholder="Type announcement. Leave blank to clear broadcast."></textarea>
+<textarea aria-label="Broadcast announcement message" class="admin-textarea" id="adminBroadcastMessage" maxlength="600" placeholder="Type announcement. Leave blank to clear broadcast."></textarea>
 <button class="admin-action-btn" type="submit">Save Broadcast</button>
 </form>
 <form autocomplete="off" class="admin-control-card" id="adminMaintenanceForm">
@@ -826,7 +828,7 @@
 <strong>Maintenance Mode</strong><span>Restricts non-admin access during maintenance</span>
 </div>
 <label class="admin-toggle-row"><input aria-label="Enable maintenance mode" id="adminMaintenanceEnabled" type="checkbox"/> Enable maintenance mode</label>
-<textarea class="admin-textarea" id="adminMaintenanceMessage" maxlength="300" placeholder="Maintenance message for users"></textarea>
+<textarea aria-label="Maintenance mode message" class="admin-textarea" id="adminMaintenanceMessage" maxlength="300" placeholder="Maintenance message for users"></textarea>
 <button class="admin-action-btn" type="submit">Save Maintenance</button>
 </form>
 </div>
@@ -903,22 +905,6 @@
 </div>
 </div>
 </div>
-<div class="live-chat-message-menu" hidden="" id="liveChatMessageMenu">
-<div aria-label="React to message" class="live-chat-menu-reactions">
-<button data-chat-reaction="❤️" type="button">❤️</button>
-<button data-chat-reaction="👍" type="button">👍</button>
-<button data-chat-reaction="👎" type="button">👎</button>
-<button data-chat-reaction="🔥" type="button">🔥</button>
-<button data-chat-reaction="🥰" type="button">🥰</button>
-<button data-chat-reaction="👏" type="button">👏</button>
-<button data-chat-reaction="😁" type="button">😁</button>
-</div>
-<div class="live-chat-menu-action-group">
-<button class="live-chat-menu-action" id="liveChatReplyMessageBtn" type="button">Reply message</button>
-<button class="live-chat-menu-action" id="liveChatCopyMessageBtn" type="button">Copy message</button>
-<button class="live-chat-menu-action is-danger" id="liveChatDeleteMessageBtn" type="button">Delete message</button>
-</div>
-</div>
 <!-- +----------------------------------+
        + CLIENT JAVASCRIPT RUNTIME        +
        +----------------------------------+ -->
@@ -926,8 +912,8 @@
      + CLIENT SCRIPT - ASSET LOADING    +
      +----------------------------------+ -->
 <script src="/assets/js/timezone.js?v=timezone-v1"></script>
-<script src="/assets/js/notification.js?v=notification-tbis-v30"></script>
-<script src="/assets/js/app.js?v=tbis102a-v43"></script>
+<script src="/assets/js/notification.js?v=phase2-v1"></script>
+<script src="/assets/js/app.js?v=phase2-v1"></script>
 <script src="/assets/js/outsource-import.js?v=outsource-import-v38"></script>
 <script src="/assets/js/responsive-tables.js?v=responsive-tables-v23"></script>
 

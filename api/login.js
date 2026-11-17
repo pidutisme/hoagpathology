@@ -3,7 +3,8 @@ import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
 import { appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, isHttpsRequest } from '../lib/request-security.js';
+import { consumeTotpCode, consumeRecoveryCode } from '../lib/mfa.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { loginRequestSchema } from '../lib/schemas/api.js';
 
@@ -28,17 +29,6 @@ const getIp = req =>
     String(req.headers?.['x-real-ip'] || '') ||
     'unknown'
   ).slice(0, 120);
-
-const isHttpsRequest = req =>
-  String(req.headers?.['x-forwarded-proto'] || '')
-    .split(',')[0]
-    .trim()
-    .toLowerCase() === 'https' ||
-  Boolean(req.socket?.encrypted) ||
-  String(req.headers?.origin || req.headers?.referer || '')
-    .trim()
-    .toLowerCase()
-    .startsWith('https://');
 
 const sessionCookie = (token, secure = true) =>
   `labapp_session=${encodeURIComponent(token)}; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`;
@@ -182,6 +172,7 @@ async function findUser(username) {
     .from('app_users')
     .select('*')
     .eq('user_id', username)
+    .eq('deleted', false)
     .maybeSingle();
 
   if (error) throw error;
@@ -197,16 +188,28 @@ async function findUser(username) {
 
   if (usersError) throw usersError;
 
-  return (
-    users || []
-  ).find(user => matchesLoginUser(user, username)) || null;
+  const activeUsers = (users || []).filter(user => user && user.deleted !== true);
+  const idMatch = activeUsers.find(user =>
+    [user.user_id, user.userId, user.id, user.username].some(v => v && normalizeUserId(v) === username)
+  );
+  if (idMatch) return idMatch;
+
+  const displayMatches = activeUsers.filter(user =>
+    [user.display_name, user.displayName, user.name].some(v => v && normalizeUserId(v) === username)
+  );
+  return displayMatches.length === 1 ? displayMatches[0] : null;
 }
 
-async function getMfaRecord(_canonicalUserId) {
-  /*
-   * Keep the existing MFA flow isolated until its data source is migrated.
-   */
-  return null;
+async function getMfaRecord(canonicalUserId) {
+  if (!canonicalUserId) return null;
+  const { data, error } = await supabase
+    .from('user_mfa')
+    .select('*')
+    .eq('user_id', canonicalUserId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
 }
 
 export async function loginWithPassword(_db, credentials, requestInfo = {}) {
@@ -312,17 +315,23 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
         };
       }
 
-      /*
-       * MFA verification remains disabled until the migrated
-       * MFA data source is available.
-       */
-      return {
-        ok: false,
-        authenticated: false,
-        mfaRequired: true,
-        error: 'Authenticator verification is not configured.',
-        httpStatus: 401
-      };
+      const verified = credentials.mfaCode
+        ? await consumeTotpCode(canonicalUserId, credentials.mfaCode)
+        : await consumeRecoveryCode(canonicalUserId, credentials.recoveryCode);
+
+      if (!verified) {
+        await recordLoginFailures(settings, [
+          { key: userKey, kind: 'user', lockAfter: 5 },
+          { key: ipKey, kind: 'ip', lockAfter: 20 }
+        ]);
+        return {
+          ok: false,
+          authenticated: false,
+          mfaRequired: true,
+          error: 'Invalid authenticator or recovery code.',
+          httpStatus: 401
+        };
+      }
     }
   }
 

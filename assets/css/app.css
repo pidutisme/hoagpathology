@@ -12,11 +12,21 @@
       --apk-vh: 100svh;
       --card: #e9eff8;
       --card-soft: #f1f5fb;
+      --surface-soft: rgba(255, 255, 255, 0.56);
       --surface-inset: linear-gradient(145deg, #dde5f0 0%, #edf2fa 100%);
       --neo-surface-light: linear-gradient(145deg, #f4f7fc 0%, #e2e9f3 100%);
       --neo-surface-soft: linear-gradient(145deg, #f8fafe 0%, #e7eef7 100%);
       --neo-surface-elevated: linear-gradient(145deg, #ffffff 0%, #ecf2fa 100%);
       --neo-surface: var(--neo-surface-light);
+
+      /* Z-index Scale */
+      --z-base: 1;
+      --z-sticky: 20;
+      --z-header: 400;
+      --z-drawer: 1000;
+      --z-modal: 11500;
+      --z-popover: 12500;
+      --z-toast: 13000;
 
       /* Typography & Hierarchy Colors */
       --text: #172236;
@@ -41,6 +51,7 @@
 
       /* Borders, Dividers & Focus */
       --line: rgba(100, 116, 145, 0.22);
+      --line-soft: rgba(100, 116, 145, 0.16);
       --glass: rgba(255, 255, 255, 0.32);
       --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.20);
 
@@ -126,6 +137,7 @@
       --apk-vh: 100svh;
       --card: #162133;
       --card-soft: #1b283d;
+      --surface-soft: rgba(255, 255, 255, 0.055);
       --surface-inset: linear-gradient(145deg, #0c131f 0%, #152032 100%);
       --neo-surface-light: linear-gradient(145deg, #1b273b 0%, #121b2a 100%);
       --neo-surface-soft: linear-gradient(145deg, #1f2d44 0%, #152031 100%);
@@ -155,6 +167,7 @@
 
       /* Borders, Dividers & Focus */
       --line: rgba(148, 172, 210, 0.15);
+      --line-soft: rgba(148, 172, 210, 0.14);
       --glass: rgba(255, 255, 255, 0.05);
       --focus-ring: 0 0 0 3px rgba(110, 162, 255, 0.24);
 
@@ -192,8 +205,35 @@
       margin: 0;
       padding: 0;
       border: 0;
-      min-width: 0;
       font-family: "Nunito Sans", Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    :where(
+      .layout > *,
+      .main,
+      .page-scroll,
+      .panel,
+      .panel-grid > *,
+      .setting-grid > *,
+      .settings-extra-grid > *,
+      .outsource-grid > *,
+      .notification-grid > *,
+      .tbis102a-grid-layout > *,
+      .tbis102a-grid > *,
+      .admin-user-mgmt-grid > *,
+      .admin-app-control-grid > *,
+      .admin-access-layout > *,
+      .inventory-toolbar > *,
+      .notification-toolbar > *,
+      .tbis102a-toolbar > *
+    ) {
+      min-width: 0;
+    }
+
+    :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+      box-shadow: var(--focus-ring);
     }
 
     html,
@@ -4646,19 +4686,35 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
 
       html,
       body {
         animation: none;
       }
+    }
 
-      .page.active>.page-scroll>*>*,
-      .page.active .calendar-roster-head,
-      .page.active .calendar-month-panel,
-      .page.active .daily-roster-panel,
-      .page.active .module-years-header,
-      .page.active .module-year-grid {
-        animation: none;
+    @media (forced-colors: active) {
+      .panel,
+      .outsource-card,
+      .notification-card,
+      .setting-box,
+      .outsource-mini,
+      .notification-btn,
+      .outsource-btn,
+      .admin-action-btn {
+        border: 1px solid ButtonText;
+      }
+
+      :focus-visible {
+        outline: 2px solid Highlight;
       }
     }
 
@@ -8307,12 +8363,13 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   align-items: center;
   justify-content: center;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: 5px;
 }
 
 .outsource-mini {
-  min-height: 26px;
-  padding: 0 8px;
+  position: relative;
+  min-height: 30px;
+  padding: 0 9px;
   border-radius: 999px;
   border: 1px solid var(--year-page-card-border);
   background: var(--neo-surface-soft);
@@ -8324,9 +8381,17 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.16s ease, border-color 0.16s ease;
+  transition: transform 0.16s var(--ease-spring), border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
+.outsource-mini::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+}
+
+.outsource-mini.icon-only,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-mini.tr-view,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-mini.tbis-view,
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) [data-outsource-action="view"] {
@@ -8335,24 +8400,64 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   justify-content: center;
   width: 30px;
   min-width: 30px;
-  height: 26px;
-  min-height: 26px;
+  height: 30px;
+  min-height: 30px;
   padding: 0;
-  font-size: 16px;
   line-height: 1;
 }
 
-.outsource-mini:hover {
+.outsource-mini.action-view {
+  color: var(--text-secondary);
+}
+
+.outsource-mini.action-edit {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: rgba(37, 99, 235, 0.24);
+}
+
+.outsource-mini:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: var(--primary);
 }
 
+.outsource-mini:active:not(:disabled) {
+  transform: translateY(0) scale(0.96);
+  box-shadow: var(--shadow-inset);
+}
+
 .outsource-mini.delete,
 .outsource-mini.tr-delete,
-.outsource-mini.tbis-delete {
+.outsource-mini.tbis-delete,
+.outsource-mini.action-delete {
   color: var(--danger);
   background: var(--danger-bg);
   border-color: var(--danger-border);
+}
+
+.outsource-mini.delete:hover:not(:disabled),
+.outsource-mini.tr-delete:hover:not(:disabled),
+.outsource-mini.tbis-delete:hover:not(:disabled),
+.outsource-mini.action-delete:hover:not(:disabled) {
+  border-color: var(--danger);
+}
+
+.outsource-mini:disabled,
+.outsource-mini[aria-disabled="true"] {
+  opacity: 0.42;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (pointer: coarse) {
+  .outsource-mini.icon-only {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
 }
 
 /* Pager & Empty State */
@@ -10349,116 +10454,45 @@ body.visitor-read-only .inventory-history-edit-cell {
   border-color: var(--primary);
 }
 
-.live-chat-emoji-popover {
-  position: fixed;
-  z-index: 12070;
-  width: min(352px, calc(100vw - 24px));
-  padding: 10px;
-  border-radius: 20px;
-  border: 1px solid var(--year-page-card-border);
-  background: var(--neo-surface-elevated);
-  box-shadow: var(--modal-shadow);
+#transfusionDetailModal.outsource-result-modal {
+  z-index: var(--z-modal);
+  display: flex;
 }
 
-.live-chat-emoji-popover[hidden] {
-  display: none !important;
-}
-
-.live-chat-emoji-fallback {
+#transfusionDetailModal.outsource-result-modal[hidden] {
   display: none;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.live-chat-emoji-fallback.is-visible {
-  display: grid;
-}
-
-.live-chat-emoji-fallback button {
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: var(--neo-surface-soft);
-  font-size: 18px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
-.live-chat-emoji-fallback button:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
 }
 
 #transfusionDetailStatus:not(.outsource-native-select) {
-  min-height: 40px !important;
-  height: 40px !important;
-  padding: 0 34px 0 12px !important;
-  border-radius: 12px !important;
-  border: 1px solid var(--year-page-card-border) !important;
-  background-color: var(--surface-inset) !important;
-  box-shadow: var(--shadow-inset) !important;
-  color: var(--text) !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 34px 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--year-page-card-border);
+  background-color: var(--card-soft);
+  box-shadow: var(--shadow-inset);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 #transfusionDetailStatus:not(.outsource-native-select):focus {
-  border-color: var(--primary) !important;
-  box-shadow: var(--shadow-inset), var(--focus-ring) !important;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-inset), var(--focus-ring);
 }
 
-#liveChatMessageMenu.live-chat-message-menu {
-  position: fixed;
-  z-index: 12080;
-  min-width: 156px;
-  padding: 6px;
-  border-radius: 16px;
-  border: 1px solid var(--year-page-card-border);
-  background: var(--neo-surface-elevated);
-  box-shadow: var(--modal-shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-#liveChatMessageMenu.live-chat-message-menu[hidden] {
-  display: none !important;
-}
-
-#liveChatMessageMenu .live-chat-message-menu-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 100%;
-  min-height: 34px;
-  padding: 7px 11px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 800;
-  text-align: left;
-  display: flex;
+.settings-system-check-summary {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
-#liveChatMessageMenu .live-chat-message-menu-btn:hover {
-  background: var(--primary-soft);
-  color: var(--primary);
-}
-
-#liveChatMessageMenu .live-chat-message-menu-btn.is-danger {
-  color: var(--danger);
-}
-
-#liveChatMessageMenu .live-chat-message-menu-btn.is-danger:hover {
-  background: var(--danger-bg);
-  color: var(--danger);
+.settings-system-check-summary:empty {
+  display: none;
 }
 
 
@@ -11339,9 +11373,9 @@ body.auth-resolving #authResolvingPanel {
   position: sticky !important;
   right: 0 !important;
   z-index: 4 !important;
-  width: 90px !important;
-  min-width: 90px !important;
-  max-width: 90px !important;
+  width: 106px !important;
+  min-width: 106px !important;
+  max-width: 106px !important;
   padding: 5px 4px !important;
   vertical-align: middle !important;
   white-space: nowrap !important;

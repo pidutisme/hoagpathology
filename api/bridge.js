@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, buildPasswordRecord, verifyPassword } from '../lib/auth.js';
 import { sessionFor, appendSystemLog, applySystemLogRetention, SYSTEM_LOG_RETENTION_DAYS, VISITOR_PAGE_CATALOG, visitorPageAccessForUser, normalizeVisitorPageAccess, requireModuleAccess, clearSessionCache } from '../lib/session.js';
 import { inventoryView } from '../lib/inventory-view.js';
-import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue, isHttpsRequest } from '../lib/request-security.js';
+import { normalizeTbis102aRecord, requireTbis102aUpdatePermission, requireTbis102aDeletePermission } from '../lib/tbis102a.js';
 import { assertSafePayload, parseRequest } from '../lib/schemas/common.js';
 import { bridgeRequestSchema, loginRequestSchema, outsourceRecordSchema } from '../lib/schemas/api.js';
 import { inventoryMovementSchema } from '../lib/schemas/inventory.js';
@@ -20,22 +21,6 @@ const clean = (v, max = 3000) => String(v ?? '').replace(/[\u0000-\u0008\u000B\u
 const tokenHash = token => createHash('sha256').update(`token\n${String(token || '')}`, 'utf8').digest('hex');
 const fail = (message, status = 400) => { const e = new Error(message); e.status = status; throw e; };
 const getClientIp = req => { const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim(); return (forwarded || String(req.headers['x-real-ip'] || '') || 'unknown').slice(0, 120); };
-
-const isHttpsRequest = req =>
-  String(req.headers?.['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase() === 'https' ||
-  Boolean(req.socket?.encrypted) ||
-  String(req.headers?.origin || req.headers?.referer || '').trim().toLowerCase().startsWith('https://');
-
-const cookieValue = (req, name) => {
-  const raw = String(req.headers?.cookie || '');
-  const hit = raw.split(';').map(x => x.trim()).find(x => x.startsWith(name + '='));
-  if (!hit) return '';
-  try {
-    return decodeURIComponent(hit.slice(name.length + 1));
-  } catch {
-    return '';
-  }
-};
 
 const clearSessionCookie = (res, secure = true) =>
   res.setHeader('Set-Cookie', `labapp_session=; Max-Age=0; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`);
@@ -168,29 +153,57 @@ async function saveInventoryRoot(inventory, userId, expectedUpdatedAt, prefetche
   delete cleanInv.deletedOutsourceSampleIds;
   delete cleanInv.outsourceMigrationFlags;
   const next = { id: true, version: Number(current.version || 0) + 1 || 1, scope: 'team', updated_by: clean(userId, 60), updated_at: iso(), inventory: cleanInv };
+  if (current.updated_at) {
+    const { data: updatedRow, error } = await supabase
+      .from('app_inventory')
+      .update(next)
+      .eq('id', true)
+      .eq('updated_at', current.updated_at)
+      .select('updated_at')
+      .maybeSingle();
+    if (error) throw error;
+    if (!updatedRow) {
+      const latest = await getInventoryRoot();
+      return { committed: false, current: latest };
+    }
+    return { committed: true, current: next };
+  }
   const { error } = await supabase.from('app_inventory').upsert(next, { onConflict: 'id' });
   if (error) throw error;
   return { committed: true, current: next };
 }
 
+function mapSupabaseJsonRow(row) {
+  const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
+  if (!item.id) item.id = row.id;
+  if (!item.createdAt) item.createdAt = row.created_at;
+  item.updatedAt = row.updated_at || item.updatedAt || '';
+  return item;
+}
+
 async function getOutsourceRows(limit = null, offset = 0) {
-  const pageSize = Math.min(Math.max(Number(limit) || 1000, 1), 1000);
-  const from = Math.max(Number(offset) || 0, 0);
-  const to = from + pageSize - 1;
-  const { data, error } = await supabase
-    .from('outsource_records')
-    .select('id, data, created_at, updated_at')
-    .order('created_at', { ascending: false })
-    .range(from, to);
-  if (error) throw error;
-  const rows = data || [];
-  return rows.map(row => {
-    const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
-    if (!item.id) item.id = row.id;
-    if (!item.createdAt) item.createdAt = row.created_at;
-    item.updatedAt = row.updated_at || item.updatedAt || '';
-    return item;
-  });
+  const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
+  const pageSize = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
+  const start = Math.max(Number(offset) || 0, 0);
+  const collected = [];
+
+  for (let from = start; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('outsource_records')
+      .select('id, data, created_at, updated_at')
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const batch = data || [];
+    collected.push(...batch);
+    if (hasPaging || batch.length < pageSize) break;
+  }
+
+  return {
+    rows: collected.map(mapSupabaseJsonRow),
+    rawCount: collected.length,
+    hasMore: hasPaging ? collected.length >= pageSize : false
+  };
 }
 
 async function getTransfusionRows(limit = null, offset = 0) {
@@ -220,13 +233,38 @@ async function getTransfusionRows(limit = null, offset = 0) {
   });
 }
 
-async function upsertOutsourceRow(record, existing = null) {
+async function upsertOutsourceRow(record, existing = null, expectedDbUpdatedAt = undefined) {
   const now = iso();
   const createdAt = existing?.createdAt || record.createdAt || now;
   const version = Number(existing?.version || record.version || 0) + 1 || 1;
   const row = { ...existing, ...record, id: record.id, version, createdAt, updatedAt: now };
-  const { error } = await supabase.from('outsource_records').upsert({ id: record.id, data: row, created_at: createdAt, updated_at: now }, { onConflict: 'id' });
-  if (error) throw error;
+  if (existing) {
+    let query = supabase
+      .from('outsource_records')
+      .update({ data: row, updated_at: now })
+      .eq('id', record.id);
+    if (expectedDbUpdatedAt !== undefined) {
+      query = expectedDbUpdatedAt === null || expectedDbUpdatedAt === ''
+        ? query.is('updated_at', null)
+        : query.eq('updated_at', expectedDbUpdatedAt);
+    }
+    const { data: updatedRow, error } = await query.select('id').maybeSingle();
+    if (error) throw error;
+    if (!updatedRow) {
+      const conflictError = new Error('Outsource record changed on another device. Reload before saving.');
+      conflictError.status = 409;
+      conflictError.conflict = true;
+      throw conflictError;
+    }
+    return row;
+  }
+  const { error } = await supabase
+    .from('outsource_records')
+    .insert({ id: record.id, data: row, created_at: createdAt, updated_at: now });
+  if (error) {
+    if (error.code === '23505') fail('Outsource record already exists. Please reload before editing.', 409);
+    throw error;
+  }
   return row;
 }
 
@@ -283,147 +321,29 @@ async function upsertNotificationRow(input, existing = null, _userId = '') {
 
 async function getTbis102aRows(limit = null, offset = 0) {
   const hasPaging = Number.isFinite(Number(limit)) && Number(limit) > 0;
-  const requested = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
-  const from = Math.max(Number(offset) || 0, 0);
-  const { data, error } = await supabase
-    .from('tbis102a_records')
-    .select('id, data, created_at, updated_at')
-    .order('created_at', { ascending: false })
-    .range(from, from + requested - 1);
-  if (error) throw error;
-  const rows = (data || []).map(row => {
-    const item = row?.data && typeof row.data === 'object' ? { ...row.data } : {};
-    if (!item.id) item.id = row.id;
-    if (!item.createdAt) item.createdAt = row.created_at;
-    item.updatedAt = row.updated_at || item.updatedAt || '';
-    return item;
-  }).filter(row => !row.deletedAt);
-  return { rows, hasMore: rows.length >= requested };
-}
+  const pageSize = hasPaging ? Math.min(Math.max(Math.floor(Number(limit)), 1), 1000) : 1000;
+  const start = Math.max(Number(offset) || 0, 0);
+  const collected = [];
 
-function tbis102aOwnerMatches(session, record) {
-  const ownerKeys = [record?.createdBy, record?.createdByUserId, record?.ownerId, record?.ownerUserId]
-    .map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
-  if (!ownerKeys.length) return true;
-  const userKeys = [session.userId, session.user?.userId, session.user?.id, session.user?.username, session.user?.displayName, session.user?.name]
-    .map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
-  return ownerKeys.some(v => userKeys.includes(v));
-}
-
-function requireTbis102aUpdatePermission(session, record) {
-  /*
-   * TBIS102A editing is available to all authenticated normal users and admins.
-   * Ownership restrictions apply to DELETE, not UPDATE.
-   */
-  if (session.role === 'VISITOR') {
-    fail('Visitor accounts have read-only access to TBIS102A records.', 403);
+  for (let from = start; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('tbis102a_records')
+      .select('id, data, created_at, updated_at')
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const batch = data || [];
+    collected.push(...batch);
+    if (hasPaging || batch.length < pageSize) break;
   }
-  if (!hasPermission(session, 'tbis102a.read')) {
-    fail('You are not authorized to edit TBIS102A records.', 403);
-  }
-  return session;
-}
 
-function requireTbis102aDeletePermission(session, record) {
-  if (session.role === 'ADMIN' && hasPermission(session, 'tbis102a.delete.all')) return session;
-  if (!hasPermission(session, 'tbis102a.delete.own') || !tbis102aOwnerMatches(session, record)) {
-    fail('You can only delete TBIS102A records created by your own account.', 403);
-  }
-  return session;
-}
-
-function normalizeTbis102aRecord(raw, existing, userId) {
-  const source = raw && typeof raw === 'object' ? raw : {};
-  const previous = existing && typeof existing === 'object' ? existing : {};
-  const id = clean(source.id || previous.id, 160);
-  if (!id) fail('TBIS102A record ID is required.');
-
-  const incomingSamples = Array.isArray(source.samples) ? source.samples : [];
-  const previousSamples = Array.isArray(previous.samples) ? previous.samples : [];
-  const mergedSamples = previousSamples.map(sample => ({ ...(sample || {}) }));
-
-  incomingSamples.slice(0, 3).forEach(incoming => {
-    if (!incoming || typeof incoming !== 'object') return;
-    const afb = clean(incoming.afb || 'x1', 20).toLowerCase();
-    const index = mergedSamples.findIndex(sample => clean(sample && sample.afb || '', 20).toLowerCase() === afb);
-    if (index >= 0) mergedSamples[index] = { ...mergedSamples[index], ...incoming };
-    else mergedSamples.push({ ...incoming, afb });
-  });
-
-  const samples = mergedSamples.slice(0, 3).sort((a, b) => {
-    const order = { x1: 1, x2: 2, x3: 3 };
-    return (order[clean(a?.afb || '', 20).toLowerCase()] || 99) - (order[clean(b?.afb || '', 20).toLowerCase()] || 99);
-  });
-  const now = iso();
-  const createdAt = previous.createdAt || source.createdAt || now;
-  const resultSamples = samples.map(sample => {
-    const resultVal = clean(sample && sample.result, 40);
-    const isScanty = resultVal.toUpperCase() === 'SCANTY';
-    const scantyVal = isScanty ? clean(sample && sample.scanty, 40) : '';
-    return {
-      afb: clean(sample && sample.afb || 'x1', 20).toUpperCase(),
-      date: clean(sample && sample.date, 20),
-      labNo: clean(sample && sample.labNo, 100),
-      barcode: clean(sample && sample.barcode, 160),
-      sample: clean(sample && sample.sample, 40),
-      quality: clean(sample && sample.quality, 40),
-      result: resultVal,
-      observation: clean(sample && sample.observation, 200),
-      scanty: scantyVal,
-      slideResult: clean(sample && sample.slideResult, 100),
-      patientResult: resultVal,
-      slide: clean(sample && sample.slide, 100),
-      releaseDate: clean(sample && sample.releaseDate, 20),
-      tat: clean(sample && sample.tat, 40),
-      staff: clean(sample && sample.staff, 120),
-      review: clean(sample && sample.review, 120),
-      notes: clean(sample && sample.notes, 1000)
-    };
-  });
-
-  // TBIS102A: preserve each X1/X2/X3 sample exactly as supplied.
-  // Date, labNo, barcode, sample, and quality are sample-level values and
-  // must not be overwritten from X1 when X2/X3 already have their own data.
-
-  const allowedAfb = new Set(['X1', 'X2', 'X3']);
-  const seenAfb = new Set();
-  resultSamples.forEach(s => {
-    if (!allowedAfb.has(s.afb)) fail('SPUTUM AFB must be X1, X2, or X3.');
-    if (seenAfb.has(s.afb)) fail('Duplicate SPUTUM AFB sample: ' + s.afb + '.');
-    seenAfb.add(s.afb);
-  });
-
-  const x1RecordSample = resultSamples.find(sample => sample.afb === 'X1') || resultSamples[0] || null;
-  const record = {
-    id,
-    bil: clean(previous.bil || source.bil, 20),
-    date: clean((x1RecordSample && x1RecordSample.date) || source.date || previous.date, 20),
-    labNo: clean((x1RecordSample && x1RecordSample.labNo) || source.labNo || previous.labNo, 100),
-    barcode: clean((x1RecordSample && x1RecordSample.barcode) || source.barcode || previous.barcode, 160),
-    name: clean(source.name || previous.name, 200),
-    idNo: clean(source.idNo || previous.idNo, 100),
-    unit: clean(source.unit || previous.unit, 120),
-    patient: clean(source.patient || previous.patient, 60),
-    samples: resultSamples,
-    createdAt,
-    createdBy: previous.createdBy || source.createdBy || userId,
-    updatedAt: now,
-    updatedBy: userId,
-    version: Number(previous.version || source.version || 0) + 1 || 1,
-    deletedAt: ''
+  const rows = collected.map(mapSupabaseJsonRow).filter(row => !row.deletedAt);
+  return {
+    rows,
+    rawCount: collected.length,
+    nextOffset: start + collected.length,
+    hasMore: hasPaging ? collected.length >= pageSize : false
   };
-
-  if (!record.date || !record.name) fail('Date and Name are required.');
-  if (!record.samples.length) fail('At least one SPUTUM AFB sample is required.');
-
-  record.samples.forEach(s => {
-    if (!s.result) fail('Result is required for ' + s.afb + '.');
-    if (s.result.toUpperCase() === 'SCANTY' && (!s.scanty || !/^[1-9]\d*$/.test(s.scanty))) {
-      fail('A positive integer numeric AFB count is required when Result is SCANTY.');
-    }
-  });
-
-  return record;
 }
 
 async function getNotificationRows(limit = null, offset = 0) {
@@ -655,15 +575,13 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Vercel API action failed:', req.requestId, error?.message || 'Unknown error');
     const status = Number(error?.status) || 500;
-    const actionMethod = envelopeMethod(req.body);
-    const isTbis102aAction = ['getTbis102aRecords', 'upsertTbis102aRecord', 'deleteTbis102aRecord'].includes(actionMethod);
     const safe = status >= 500
-      ? (isTbis102aAction ? clean(error?.message || 'Unknown TBIS102A backend error.', 300) : 'Unable to process the request right now. Please try again.')
+      ? 'Unable to process the request right now. Please try again.'
       : clean(error?.message || 'Unable to process request', 300);
     return res.status(status).json({
       ok: false,
+      ...(error?.conflict ? { conflict: true } : {}),
       error: safe,
-      ...(isTbis102aAction && error?.code ? { errorCode: clean(error.code, 40) } : {}),
       version: VERSION,
       requestId: req.requestId
     });
@@ -771,8 +689,8 @@ async function dispatch(db, method, a, req) {
       const hasPaging = Number.isFinite(requestedLimit) && requestedLimit > 0;
       const limit = hasPaging ? Math.min(Math.max(Math.floor(requestedLimit), 1), 1000) : null;
       const offset = hasPaging ? Math.max(Math.floor(Number(opts.offset) || 0), 0) : 0;
-      const rows = await getOutsourceRows(limit, offset);
-      const activeRows = rows.filter(x => !x.deletedAt);
+      const result = await getOutsourceRows(limit, offset);
+      const activeRows = result.rows.filter(x => !x.deletedAt);
       const latestUpdatedAt = activeRows.reduce((max, x) => {
         const stamp = clean(x?.updatedAt || x?.createdAt || '');
         return stamp > max ? stamp : max;
@@ -783,7 +701,8 @@ async function dispatch(db, method, a, req) {
         updatedAt: latestUpdatedAt,
         offset,
         limit: limit || activeRows.length,
-        hasMore: hasPaging ? rows.length >= limit : false,
+        rawCount: result.rawCount,
+        hasMore: result.hasMore,
         version: VERSION,
         userId: s.userId,
         storageSource: 'supabase'
@@ -849,7 +768,7 @@ async function dispatch(db, method, a, req) {
     }
 
     case 'upsertOutsourceSample': {
-      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'OUTSOURCE', 'outsource.create');
+      const s = requireModuleAccess(await requireSession(db, tokenAt(1)), 'OUTSOURCE', ['outsource.create', 'outsource.update']);
       const input = a[0];
       if (!input || typeof input !== 'object' || Array.isArray(input)) fail('Invalid outsource record.');
       const fields = Object.keys(outsourceRecordSchema.shape);
@@ -871,12 +790,13 @@ async function dispatch(db, method, a, req) {
       const { data: existingRow, error: existingError } = await supabase.from('outsource_records').select('*').eq('id', record.id).maybeSingle();
       if (existingError) throw existingError;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
+      if (!existing && !hasPermission(s, 'outsource.create')) fail('You are not authorized to create outsource records.', 403);
       if (existing?.deletedAt && s.role !== 'ADMIN') fail('Administrator access is required to update an outsource record.', 403);
       if (existing && expectedUpdatedAt && String(existing.updatedAt || '') !== expectedUpdatedAt) return { ok: false, conflict: true, error: 'Outsource record changed. Reload before saving.', version: VERSION };
       const payloadToSave = existing
         ? { ...existing, ...record, createdBy: existing.createdBy || s.userId, updatedBy: s.userId }
         : { ...record, createdBy: s.userId, updatedBy: s.userId };
-      const changedRecord = await upsertOutsourceRow(payloadToSave, existing);
+      const changedRecord = await upsertOutsourceRow(payloadToSave, existing, existing ? existingRow.updated_at : undefined);
       await log(db, s.userId, existing ? 'OUTSOURCE_RECORD_UPDATED' : 'OUTSOURCE_RECORD_CREATED', `${existing ? 'Updated' : 'Created'} outsource record ${record.id}.`);
       return { ok: true, record: changedRecord, updatedAt: changedRecord.updatedAt, version: VERSION, userId: s.userId, storageSource: 'supabase' };
     }
@@ -901,10 +821,21 @@ async function dispatch(db, method, a, req) {
       const opts = a[1] && typeof a[1] === 'object' ? a[1] : {};
       const requestedLimit = Number(opts.limit);
       const hasPaging = Number.isFinite(requestedLimit) && requestedLimit > 0;
-      const limit = hasPaging ? Math.min(Math.max(Math.floor(requestedLimit), 1), 1000) : 1000;
+      const limit = hasPaging ? Math.min(Math.max(Math.floor(requestedLimit), 1), 1000) : null;
       const offset = hasPaging ? Math.max(Math.floor(Number(opts.offset) || 0), 0) : 0;
       const result = await getTbis102aRows(limit, offset);
-      return { ok: true, records: result.rows, offset, limit, hasMore: hasPaging ? result.hasMore : false, version: VERSION, userId: s.userId, storageSource: 'supabase' };
+      return {
+        ok: true,
+        records: result.rows,
+        offset,
+        limit: hasPaging ? limit : result.rows.length,
+        rawCount: result.rawCount,
+        nextOffset: result.nextOffset,
+        hasMore: result.hasMore,
+        version: VERSION,
+        userId: s.userId,
+        storageSource: 'supabase'
+      };
     }
 
     case 'upsertTbis102aRecord': {
@@ -917,6 +848,7 @@ async function dispatch(db, method, a, req) {
       const existing = existingRow?.data && typeof existingRow.data === 'object'
         ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at }
         : null;
+      if (existing?.deletedAt) fail('TBIS102A record was deleted. Reload before editing.', 409);
       if (existing) requireTbis102aUpdatePermission(s, existing);
       else if (!hasPermission(s, 'tbis102a.create')) fail('You are not authorized to create TBIS102A records.', 403);
       if (existing && input.expectedVersion !== undefined && Number(existing.version || 1) !== Number(input.expectedVersion)) {
@@ -927,13 +859,19 @@ async function dispatch(db, method, a, req) {
       const existingMonth = clean(existing?.date || '', 10).slice(0, 7);
       const needsBil = !existing || !existing.bil || (inputMonth && existingMonth && inputMonth !== existingMonth);
       if (needsBil && /^\d{4}-\d{2}$/.test(inputMonth)) {
-        const { data: monthRows, error: monthError } = await supabase
-          .from('tbis102a_records')
-          .select('id, data')
-          .like('data->>date', `${inputMonth}%`)
-          .limit(1000);
-        if (monthError) throw monthError;
-        const usedBils = (monthRows || [])
+        const monthRows = [];
+        for (let from = 0; ; from += 1000) {
+          const { data: monthPage, error: monthError } = await supabase
+            .from('tbis102a_records')
+            .select('id, data')
+            .like('data->>date', `${inputMonth}%`)
+            .range(from, from + 999);
+          if (monthError) throw monthError;
+          const batch = monthPage || [];
+          monthRows.push(...batch);
+          if (batch.length < 1000) break;
+        }
+        const usedBils = monthRows
           .filter(row => String(row?.id || '') !== rid)
           .filter(row => !row?.data?.deletedAt)
           .filter(row => String(row?.data?.date || '').slice(0, 7) === inputMonth)
@@ -947,17 +885,23 @@ async function dispatch(db, method, a, req) {
       const record = normalizeTbis102aRecord(inputForSave, existing, s.userId);
 
       if (existing) {
-        const { data: updatedRow, error: updateError } = await supabase
+        let updateQuery = supabase
           .from('tbis102a_records')
           .update({
             data: record,
             updated_at: record.updatedAt
           })
-          .eq('id', record.id)
+          .eq('id', record.id);
+        updateQuery = existingRow.updated_at === null || existingRow.updated_at === undefined
+          ? updateQuery.is('updated_at', null)
+          : updateQuery.eq('updated_at', existingRow.updated_at);
+        const { data: updatedRow, error: updateError } = await updateQuery
           .select('id')
           .maybeSingle();
         if (updateError) throw updateError;
-        if (!updatedRow || String(updatedRow.id) !== record.id) fail('TBIS102A update was not persisted.', 500);
+        if (!updatedRow || String(updatedRow.id) !== record.id) {
+          fail('TBIS102A record changed on another device. Reload before editing.', 409);
+        }
       } else {
         const { data: insertedRow, error: insertError } = await supabase
           .from('tbis102a_records')
@@ -994,16 +938,21 @@ async function dispatch(db, method, a, req) {
       if (existingError) throw existingError;
       if (!existingRow) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId, storageSource: 'supabase' };
       const current = existingRow.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id } : { id: rid };
+      if (current.deletedAt) return { ok: true, deleted: false, alreadyDeleted: true, version: VERSION, userId: s.userId, storageSource: 'supabase' };
       requireTbis102aDeletePermission(s, current);
       const now = iso();
       const deleted = { ...current, deletedAt: now, deletedBy: s.userId, updatedAt: now, updatedBy: s.userId, version: Number(current.version || 0) + 1 || 1 };
-      const { data: deletedRow, error: deleteError } = await supabase.from('tbis102a_records')
+      let deleteQuery = supabase.from('tbis102a_records')
         .update({ data: deleted, updated_at: now })
-        .eq('id', rid)
+        .eq('id', rid);
+      deleteQuery = existingRow.updated_at === null || existingRow.updated_at === undefined
+        ? deleteQuery.is('updated_at', null)
+        : deleteQuery.eq('updated_at', existingRow.updated_at);
+      const { data: deletedRow, error: deleteError } = await deleteQuery
         .select('id')
         .maybeSingle();
       if (deleteError) throw deleteError;
-      if (!deletedRow || String(deletedRow.id) !== rid) fail('TBIS102A delete was not persisted.', 500);
+      if (!deletedRow || String(deletedRow.id) !== rid) fail('TBIS102A record changed on another device. Reload and try again.', 409);
       log(db, s.userId, 'TBIS102A_RECORD_DELETED', `Deleted TBIS102A record ${rid}.`, { page: 'Microbiology', role: s.role })
         .catch(error => console.error('TBIS102A delete audit log failed:', error?.message || error));
       return { ok: true, deleted: true, recordId: rid, deletedAt: now, version: VERSION, userId: s.userId, storageSource: 'supabase' };
@@ -1101,6 +1050,7 @@ async function dispatch(db, method, a, req) {
       const { data: existingRow, error: existingErr } = await supabase.from('transfusion_records').select('*').eq('id', rid).maybeSingle();
       if (existingErr) throw existingErr;
       const existing = existingRow?.data && typeof existingRow.data === 'object' ? { ...existingRow.data, id: existingRow.id, createdAt: existingRow.created_at, updatedAt: existingRow.updated_at } : null;
+      if (existing?.deletedAt) fail('Transfusion record was deleted. Reload before editing.', 409);
       if (!existing && !hasPermission(s, 'transfusion.create')) fail('You are not authorized to save this transfusion record.', 403);
       if (existing && !canWriteTransfusionRecord(s, existing) && !canWriteLegacyTransfusionRecord(s, existing)) fail('You cannot update this transfusion record.', 403);
       if (existing && rawPayload.expectedVersion !== undefined && Number(existing.version || 1) !== Number(rawPayload.expectedVersion)) {
@@ -1132,13 +1082,30 @@ async function dispatch(db, method, a, req) {
         deletedAt: '',
         version: nextVersion
       };
-      const { error: upsertErr } = await supabase.from('transfusion_records').upsert({
-        id: rid,
-        data: record,
-        created_at: createdAt,
-        updated_at: now
-      }, { onConflict: 'id' });
-      if (upsertErr) throw upsertErr;
+      if (!record.date || !record.name) fail('Date and Name are required.');
+      if (existing) {
+        let updateQuery = supabase
+          .from('transfusion_records')
+          .update({ data: record, updated_at: now })
+          .eq('id', rid);
+        updateQuery = existingRow.updated_at === null || existingRow.updated_at === undefined
+          ? updateQuery.is('updated_at', null)
+          : updateQuery.eq('updated_at', existingRow.updated_at);
+        const { data: updatedRow, error: upsertErr } = await updateQuery.select('id').maybeSingle();
+        if (upsertErr) throw upsertErr;
+        if (!updatedRow) fail('Transfusion record changed or was not found. Reload before editing.', 409);
+      } else {
+        const { error: insertErr } = await supabase.from('transfusion_records').insert({
+          id: rid,
+          data: record,
+          created_at: createdAt,
+          updated_at: now
+        });
+        if (insertErr) {
+          if (insertErr.code === '23505') fail('A transfusion record with this ID already exists.', 409);
+          throw insertErr;
+        }
+      }
       await log(db, s.userId, existing ? 'TRANSFUSION_RECORD_UPDATED' : 'TRANSFUSION_RECORD_CREATED', `${existing ? 'Updated' : 'Created'} transfusion record ${rid}.`);
       return { ok: true, record, updatedAt: now, version: VERSION, userId: s.userId };
     }
@@ -1162,8 +1129,16 @@ async function dispatch(db, method, a, req) {
         updatedBy: s.userId,
         version: Math.max(Number(current.version || 0) + 1, 2)
       };
-      const { error: delErr } = await supabase.from('transfusion_records').update({ data: deleted, updated_at: now }).eq('id', rid);
+      let delQuery = supabase
+        .from('transfusion_records')
+        .update({ data: deleted, updated_at: now })
+        .eq('id', rid);
+      delQuery = existingRow.updated_at === null || existingRow.updated_at === undefined
+        ? delQuery.is('updated_at', null)
+        : delQuery.eq('updated_at', existingRow.updated_at);
+      const { data: deletedRow, error: delErr } = await delQuery.select('id').maybeSingle();
       if (delErr) throw delErr;
+      if (!deletedRow) fail('Transfusion record changed, was not found, or was already deleted.', 409);
       await log(db, s.userId, 'TRANSFUSION_RECORD_DELETED', `Deleted transfusion record ${rid}.`);
       return { ok: true, deleted: true, recordId: rid, deletedAt: now, version: VERSION, userId: s.userId };
     }

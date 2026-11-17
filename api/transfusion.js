@@ -1,23 +1,9 @@
 import { supabase } from '../lib/supabase-admin.js';
 import { sessionFor, appendSystemLog, requireModuleAccess } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { transfusionDeleteQuerySchema, transfusionPatchSchema, transfusionQuerySchema, transfusionRecordSchema } from '../lib/schemas/transfusion.js';
 import { canDeleteTransfusionRecord, canReadLegacyTransfusionRecord, canReadTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
-
-const cookieValue = req => {
-  const raw = String(req.headers?.cookie || '')
-    .split(';')
-    .map(v => v.trim())
-    .find(v => v.startsWith('labapp_session='))
-    ?.slice('labapp_session='.length) || '';
-  if (!raw) return '';
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return '';
-  }
-};
 
 const audit = (db, actorId, action, requestId) =>
   appendSystemLog(db, { at: new Date().toISOString(), actorId, action, details: '', result: 'SUCCESS', requestId, metadata: {} });
@@ -44,7 +30,7 @@ async function getTransfusionRows() {
 }
 
 async function authorizedSession(req, res) {
-  const token = cookieValue(req).slice(0, 300);
+  const token = cookieValue(req, 'labapp_session').slice(0, 300);
   const session = await sessionFor(null, token);
   if (!session) res.status(401).json({ ok: false, error: 'Your secure session has expired. Please sign in again.', requestId: req.requestId });
   return session;
@@ -160,11 +146,14 @@ export default async function handler(req, res) {
         deletedAt: ''
       };
 
-      const { data: updatedRow, error: updateError } = await supabase
+      let updateQuery = supabase
         .from('transfusion_records')
         .update({ data: updated, updated_at: at })
-        .eq('id', input.record.id)
-        .eq('updated_at', row.updated_at)
+        .eq('id', input.record.id);
+      updateQuery = row.updated_at === null || row.updated_at === undefined
+        ? updateQuery.is('updated_at', null)
+        : updateQuery.eq('updated_at', row.updated_at);
+      const { data: updatedRow, error: updateError } = await updateQuery
         .select('*')
         .maybeSingle();
 
@@ -204,11 +193,14 @@ export default async function handler(req, res) {
         version: Math.max(Number(current.version || 0) + 1, 2)
       };
 
-      const { data: deletedRow, error: deleteError } = await supabase
+      let deleteQuery = supabase
         .from('transfusion_records')
         .update({ data: deleted, updated_at: at })
-        .eq('id', query.recordId)
-        .eq('updated_at', row.updated_at)
+        .eq('id', query.recordId);
+      deleteQuery = row.updated_at === null || row.updated_at === undefined
+        ? deleteQuery.is('updated_at', null)
+        : deleteQuery.eq('updated_at', row.updated_at);
+      const { data: deletedRow, error: deleteError } = await deleteQuery
         .select('*')
         .maybeSingle();
 

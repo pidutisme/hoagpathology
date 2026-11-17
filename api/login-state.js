@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { sessionFor, clearSessionCache, VISITOR_PAGE_CATALOG } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue, isHttpsRequest } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { loginStateRequestSchema } from '../lib/schemas/api.js';
 
@@ -9,33 +9,6 @@ const require = createRequire(import.meta.url);
 const VERSION = require('../package.json').version;
 
 const COOKIE_NAME = 'labapp_session';
-
-const isHttpsRequest = req =>
-  String(req.headers?.['x-forwarded-proto'] || '')
-    .split(',')[0]
-    .trim()
-    .toLowerCase() === 'https' ||
-  Boolean(req.socket?.encrypted) ||
-  String(req.headers?.origin || req.headers?.referer || '')
-    .trim()
-    .toLowerCase()
-    .startsWith('https://');
-
-const cookieValue = (req, name) => {
-  const raw = String(req.headers?.cookie || '');
-  const hit = raw
-    .split(';')
-    .map(value => value.trim())
-    .find(value => value.startsWith(name + '='));
-
-  if (!hit) return '';
-
-  try {
-    return decodeURIComponent(hit.slice(name.length + 1));
-  } catch {
-    return '';
-  }
-};
 
 const clearSessionCookie = (res, secure = true) =>
   res.setHeader(

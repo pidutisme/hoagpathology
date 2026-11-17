@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { supabase } from '../lib/supabase-admin.js';
 import { sessionFor, appendSystemLog, clearSessionCache } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue, isHttpsRequest } from '../lib/request-security.js';
 import { z } from 'zod';
 import { parseRequest, assertSafePayload } from '../lib/schemas/common.js';
 
@@ -10,24 +10,6 @@ const bodySchema = z
     clientInfo: z.record(z.string(), z.unknown()).optional()
   })
   .strict();
-
-const isHttpsRequest = req =>
-  String(req.headers?.['x-forwarded-proto'] || '')
-    .split(',')[0]
-    .trim()
-    .toLowerCase() === 'https' ||
-  Boolean(req.socket?.encrypted) ||
-  String(req.headers?.origin || req.headers?.referer || '')
-    .trim()
-    .toLowerCase()
-    .startsWith('https://');
-
-const cookieValue = (req, name) =>
-  String(req.headers?.cookie || '')
-    .split(';')
-    .map(v => v.trim())
-    .find(v => v.startsWith(name + '='))
-    ?.slice(name.length + 1) || '';
 
 const clearCookie = (res, secure = true) =>
   res.setHeader(
@@ -80,19 +62,7 @@ export default async function handler(req, res) {
       assertSafePayload(body.clientInfo);
     }
 
-    const rawToken = cookieValue(
-      req,
-      'labapp_session'
-    );
-
-    let token = '';
-
-    try {
-      token = decodeURIComponent(rawToken)
-        .slice(0, 300);
-    } catch {
-      token = '';
-    }
+    const token = cookieValue(req, 'labapp_session').slice(0, 300);
 
     if (token) {
       const session = await sessionFor(null, token);

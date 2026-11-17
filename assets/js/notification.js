@@ -7,7 +7,7 @@
   'use strict';
 
   var records = [];
-  var pageSize = 1000;
+  var pageSize = 200;
   var cacheKey = 'labAppNotificationV1';
   var currentPage = 1;
   var editingId = null;
@@ -1038,16 +1038,28 @@
     return notificationApi('upsertNotificationRecord', [payload])
       .then(function (result) { return normalizeNotificationRecord(result.record || item); })
       .then(function (saved) {
-        return notificationApi('getNotificationRecords', [])
+        if (requestLocalDateTime && String(saved.notification_datetime || '').slice(0,16) !== requestLocalDateTime.slice(0,16)) {
+          throw new Error('Notification Date / Time was not persisted. Requested local time ' + requestLocalDateTime + ' but database returned local time ' + String(saved.notification_datetime || 'empty') + '.');
+        }
+        var existingIdx = records.findIndex(function (r) { return String(r.id) === String(saved.id); });
+        if (existingIdx >= 0) records[existingIdx] = saved;
+        else records.unshift(saved);
+        saveLocalRecords();
+        return notificationApi('getNotificationRecords', [null, { limit: 1000, offset: 0 }])
           .then(function (result) {
-            records = (result.records || []).map(normalizeNotificationRecord);
-            var fresh = records.find(function (r) { return String(r.id) === String(saved.id); });
-            if (!fresh) throw new Error('Saved notification record could not be reloaded.');
-            if (requestLocalDateTime && String(fresh.notification_datetime || '').slice(0,16) !== requestLocalDateTime.slice(0,16)) {
-              throw new Error('Notification Date / Time was not persisted. Requested local time ' + requestLocalDateTime + ' but database returned local time ' + String(fresh.notification_datetime || 'empty') + '.');
-            }
+            var firstPage = Array.isArray(result.records) ? result.records.map(normalizeNotificationRecord) : [];
+            var map = {};
+            records.forEach(function (r) { if (r && r.id) map[String(r.id)] = r; });
+            firstPage.forEach(function (r) { if (r && r.id) map[String(r.id)] = r; });
+            map[String(saved.id)] = saved;
+            records = Object.keys(map).map(function (k) { return map[k]; }).sort(function (a, b) {
+              return String(b.notification_datetime || '').localeCompare(String(a.notification_datetime || ''));
+            });
             saveLocalRecords();
-            return fresh;
+            return saved;
+          })
+          .catch(function () {
+            return saved;
           });
       })
       .finally(function () { notificationSaving = false; });
@@ -1682,7 +1694,7 @@
     if (body) body.innerHTML = rows.map(function (r) {
       var cls = r.discipline === 'BIOCHEMISTRY' ? 'bio' : r.discipline === 'HAEMATOLOGY' ? 'hema' : 'micro';
       var statusCls = String(r.status).toLowerCase();
-      return '<tr><td>' + fmtDate(r.updated_at || r.created_at || r.notification_datetime) + '</td>' +
+      return '<tr><td>' + fmtDate(r.notification_datetime || r.updated_at || r.created_at) + '</td>' +
         '<td class="patient">' + esc(r.patient_name) + '</td>' +
         '<td>' + esc(r.patient_id) + '</td>' +
         '<td>' + esc(r.unit) + '</td>' +
@@ -1700,7 +1712,19 @@
     if (empty) empty.hidden = rows.length > 0;
     var shownStart = filtered.length ? start + 1 : 0;
     var shownEnd = Math.min(start + pageSize, filtered.length);
-    var pager = $('notificationPager'); if (pager) pager.textContent = 'Showing ' + shownStart + '–' + shownEnd + ' of ' + filtered.length;
+    var pager = $('notificationPager');
+    if (pager) {
+      if (totalPages > 1) {
+        pager.innerHTML =
+          '<span class="notification-pager-summary">Showing ' + shownStart + '–' + shownEnd + ' of ' + filtered.length + ' (Page ' + currentPage + ' / ' + totalPages + ')</span>' +
+          '<span class="notification-pager-controls">' +
+            '<button type="button" class="notification-pager-btn" data-notif-page="prev"' + (currentPage <= 1 ? ' disabled' : '') + ' aria-label="Previous page">‹ Prev</button>' +
+            '<button type="button" class="notification-pager-btn" data-notif-page="next"' + (currentPage >= totalPages ? ' disabled' : '') + ' aria-label="Next page">Next ›</button>' +
+          '</span>';
+      } else {
+        pager.textContent = 'Showing ' + shownStart + '–' + shownEnd + ' of ' + filtered.length;
+      }
+    }
     updateStats();
   }
   function updateStats() {
@@ -1711,18 +1735,30 @@
     set('notificationStatHema', records.filter(function (r) { return r.discipline === 'HAEMATOLOGY'; }).length);
     set('notificationStatMicro', records.filter(function (r) { return r.discipline === 'MICROBIOLOGY'; }).length);
   }
+  var lastNotificationTrigger = null;
   function showDetail(record) {
+    lastNotificationTrigger = document.activeElement;
     var modal = $('notificationDetailModal');
     if (!modal) {
       modal = document.createElement('div'); modal.id = 'notificationDetailModal'; modal.className = 'notification-modal'; modal.hidden = true;
-      modal.innerHTML = '<div class="notification-modal-dialog"><div class="notification-modal-head"><h3>CRITICAL VALUE RECORD</h3><button class="notification-modal-close" type="button" data-notification-close>×</button></div><div class="notification-modal-body"><div class="notification-detail-grid" id="notificationDetailGrid"></div></div></div>';
+      modal.innerHTML = '<div class="notification-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="notificationDetailTitle"><div class="notification-modal-head"><h3 id="notificationDetailTitle">CRITICAL VALUE RECORD</h3><button class="notification-modal-close" type="button" data-notification-close aria-label="Close">×</button></div><div class="notification-modal-body"><div class="notification-detail-grid" id="notificationDetailGrid"></div></div></div>';
       document.body.appendChild(modal);
-      modal.addEventListener('click', function (e) { if (e.target === modal || e.target.closest('[data-notification-close]')) modal.hidden = true; });
+      var closeModal = function () {
+        modal.hidden = true;
+        if (lastNotificationTrigger && typeof lastNotificationTrigger.focus === 'function' && document.contains(lastNotificationTrigger)) {
+          lastNotificationTrigger.focus();
+        }
+        lastNotificationTrigger = null;
+      };
+      modal.addEventListener('click', function (e) { if (e.target === modal || e.target.closest('[data-notification-close]')) closeModal(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) { e.preventDefault(); closeModal(); } });
     }
     var grid = $('notificationDetailGrid');
-    var fields = [['Date / Time', fmtDate(record.updated_at || record.created_at || record.notification_datetime)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(record.result)],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
+    var fields = [['Date / Time', fmtDate(record.notification_datetime || record.updated_at || record.created_at)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(record.result)],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
     if (grid) grid.innerHTML = fields.map(function (f) { return '<div class="notification-detail"><small>' + f[0] + '</small><strong>' + f[1] + '</strong></div>'; }).join('');
     modal.hidden = false;
+    var closeBtn = modal.querySelector('[data-notification-close]');
+    if (closeBtn) closeBtn.focus();
   }
   function ensureNotificationSelectValue(id, value, fallbackLabel) {
     var el = $(id);
@@ -1866,6 +1902,18 @@
     var result = $('notificationResult'); if (result) result.addEventListener('input', updateRuleAndFlag);
     var resultSelect = $('notificationResultSelect'); if (resultSelect) resultSelect.addEventListener('change', updateRuleAndFlag);
     ['notificationSearch','notificationYearFilter','notificationMonthFilter','notificationDisciplineFilter','notificationFlagFilter','notificationStatusFilter'].forEach(function (id) { var el = $(id); if (el) { ['input','change'].forEach(function (evt) { el.addEventListener(evt, function () { currentPage = 1; render(); }); }); } });
+    var pagerEl = $('notificationPager');
+    if (pagerEl) pagerEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-notif-page]');
+      if (!btn || btn.disabled) return;
+      if (btn.dataset.notifPage === 'prev' && currentPage > 1) {
+        currentPage -= 1;
+        render();
+      } else if (btn.dataset.notifPage === 'next') {
+        currentPage += 1;
+        render();
+      }
+    });
     var body = $('notificationTableBody'); if (body) body.addEventListener('click', function (e) {
       var view = e.target.closest('[data-notification-view]'); if (view) { var r = records.find(function (x) { return String(x.id) === String(view.dataset.notificationView); }); if (r) showDetail(r); return; }
       var edit = e.target.closest('[data-notification-edit]'); if (edit) { editRecord(edit.dataset.notificationEdit); return; }

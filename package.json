@@ -19,6 +19,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "test": "node --test tests/phase2.test.mjs",
     "desktop:dist": "electron-builder --win nsis --publish never"
   },
   "main": "desktop/main.cjs",
