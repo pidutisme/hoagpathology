@@ -171,7 +171,7 @@
       'POCT': 'Annual point-of-care testing records for monitoring device management, quality control, competency, and operational compliance across POCT services.',
       'CHEMICAL PATHOLOGY': 'Annual Chemical Pathology records for documenting service activities, quality indicators, reagent monitoring, and operational reference information.',
       'HEMATOLOGY': 'Annual Hematology records for documenting service activities, quality indicators, analyzer monitoring, and operational reference information.',
-      'MICROBIOLOGY': 'Annual Microbiology records for documenting service activities, culture-related records, quality monitoring, and operational reference information.',
+      'MICROBIOLOGY': 'Select a year to open Microbiology records. The 2026 folder is available; other future years remain locked until they become available.',
       'URINE/STOOL ANALYSIS': 'Annual Urine and Stool Analysis records for documenting examination activities, quality monitoring, workload tracking, and operational reference information.',
     };
   
@@ -188,7 +188,7 @@
         '2026': 'https://drive.google.com/drive/folders/1AEZyThQlY3EOUadPnj-2nuNMbuAqASDF?usp=sharing'
       },
       'MICROBIOLOGY': {
-        '2026': 'https://drive.google.com/drive/folders/1ad1VDY4Oi0VNIwLibanz-oQnoZmPMuOH?usp=sharing'
+        '2026': 'https://drive.google.com/drive/u/0/folders/1ad1VDY4Oi0VNIwLibanz-oQnoZmPMuOH'
       },
       'MICROBIOLOGY EXTERNAL QUALITY ASSURANCE': {
         '2026': 'https://drive.google.com/drive/folders/19IO9DxPJekBfOz7l7b7rgSmszu4WoNB9?usp=sharing'
@@ -6403,10 +6403,10 @@ function submit(e) {
         if (!grid || !title || !desc) return;
   
         var displayName = normalizeModuleName(moduleName);
-        if (displayName === 'MICROBIOLOGY') {
-          renderMicrobiologyHome();
-          return;
-        }
+        /* MICROBIOLOGY is a direct Year Cards module.
+           Do not show the legacy Microbiology section/submodule workspace here.
+           The only entry point is the yearly selector, with the configured
+           2026 external Drive folder and locked future years. */
         updateMicrobiologySubBackButton('', null);
         /* Modules with dedicated workspaces never render Year Cards. */
         if(displayName==='INVENTORY' && typeof Inventory!=='undefined' && Inventory.open){ Inventory.open(); return; }
