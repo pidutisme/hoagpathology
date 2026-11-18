@@ -151,7 +151,7 @@
   	    Object.freeze({ input: 'Sabah', regions: Object.freeze(['Sabah']) })
   	  ]);
 
-      var holidayClientCacheVersion = 'v12-target-regions-only';
+      var holidayClientCacheVersion = 'v13-api-state-codes';
       var holidayClientCacheMaxAgeMs = 12 * 60 * 60 * 1000;
 
       var officialHolidaySupplementalRows = Object.freeze([
@@ -7376,7 +7376,15 @@ function submit(e) {
           if (!holiday || !isHolidayDateInYear(holiday.date, targetYear)) return;
           var cleanName = cleanText(holiday.name);
           if (!cleanName) return;
+          /* The Malaysia Holiday API returns state_codes when no state filter is
+           * supplied. Older calendar code only looked at `regions`, so valid
+           * API holidays (including December and future-year records) were
+           * silently discarded. Normalize the API state_codes into the same
+           * region model used by the calendar before filtering. */
           var regions = filterAllowedHolidayRegions(holiday.regions);
+          if (!regions.length) {
+            regions = filterAllowedHolidayRegions(getBrowserHolidayRegions(holiday, cleanName));
+          }
           // CALENDAR ONLY: National + Kuala Lumpur + Selangor.
           // Holidays belonging exclusively to other states are ignored.
           if (!regions.length) return;
