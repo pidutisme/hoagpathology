@@ -7978,10 +7978,10 @@ function submit(e) {
           var expected = staffState.isChanged
             ? [
                 ['calendar-mini-day-staff-original', staffState.originalStaff || ''],
-                ['calendar-mini-day-staff-assigned ' + getCalendarStaffColorClass(staffState.assignedStaff, isHoliday), staffState.assignedStaff || '']
+                ['calendar-mini-day-staff-assigned', staffState.assignedStaff || '']
               ]
             : [[
-                'calendar-mini-day-staff-current ' + getCalendarStaffColorClass(staffState.assignedStaff || staffState.originalStaff, isHoliday),
+                'calendar-mini-day-staff-current',
                 staffState.assignedStaff || staffState.originalStaff || ''
               ]];
           var current = staffName.children;
@@ -8002,7 +8002,7 @@ function submit(e) {
           var classStateMatches =
             staffName.classList.contains('has-assigned-staff') === isChanged &&
             cell.classList.contains('has-assigned-staff') === isChanged &&
-            staffName.classList.contains(staffColorClass);
+            cell.classList.contains(staffColorClass);
 
           if (!sameContent || !classStateMatches) {
             var nextContent = document.createDocumentFragment();
@@ -8026,9 +8026,9 @@ function submit(e) {
             'calendar-staff-color-japidi',
             'calendar-staff-color-holiday'
           ].forEach(function (className) {
-            staffName.classList.remove(className);
+            cell.classList.remove(className);
           });
-          staffName.classList.add(staffColorClass);
+          cell.classList.add(staffColorClass);
 
           var holidayLabel = cell.dataset.holidayLabel || '';
           var ariaLabel = dateObj.getDate() + ' ' + config.fullMonthNames[dateObj.getMonth()] + ' ' + dateObj.getFullYear() +
@@ -8808,19 +8808,21 @@ function exportMonthlySchedulePdfs() {
             cell.classList.add('has-assigned-staff');
             originalLine.className = 'calendar-mini-day-staff-original';
             originalLine.textContent = staffState.originalStaff;
-            assignedLine.className = 'calendar-mini-day-staff-assigned ' +
-              getCalendarStaffColorClass(staffState.assignedStaff, isHoliday);
+            assignedLine.className = 'calendar-mini-day-staff-assigned';
             assignedLine.textContent = staffState.assignedStaff;
             staffName.appendChild(originalLine);
             staffName.appendChild(assignedLine);
           } else {
             var currentLine = document.createElement('span');
-            currentLine.className = 'calendar-mini-day-staff-current ' +
-              getCalendarStaffColorClass(staffState.assignedStaff || staffState.originalStaff, isHoliday);
+            currentLine.className = 'calendar-mini-day-staff-current';
             currentLine.textContent = staffState.assignedStaff || staffState.originalStaff || '';
             staffName.appendChild(currentLine);
           }
           cell.appendChild(staffName);
+          cell.classList.add(getCalendarStaffColorClass(
+            staffState.isChanged ? staffState.assignedStaff : (staffState.assignedStaff || staffState.originalStaff),
+            isHoliday
+          ));
   
           if (holidayEntries.length) {
             cell.classList.add('is-holiday');
