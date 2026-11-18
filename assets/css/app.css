@@ -11418,106 +11418,131 @@ body.auth-resolving #authResolvingPanel {
 
 /* Calendar staff box colours - visual only.
    The staff name text stays neutral; only the date box receives a soft tint.
-   Public holidays use a separate soft colour and always take priority. */
+   Public holidays use a separate neutral grey and always take priority. */
 #calendar .calendar-mini-day.calendar-staff-color-liza {
-  background: linear-gradient(145deg, rgba(250, 245, 255, .98), rgba(241, 232, 255, .94)) !important;
-  border-color: rgba(124, 58, 237, .20) !important;
+  background: linear-gradient(145deg, #f1e7ff 0%, #e2d0ff 100%) !important;
+  border-color: #c9a9f5 !important;
 }
 #calendar .calendar-mini-day.calendar-staff-color-shounna {
-  background: linear-gradient(145deg, rgba(255, 247, 252, .98), rgba(255, 234, 245, .94)) !important;
-  border-color: rgba(219, 39, 119, .20) !important;
+  background: linear-gradient(145deg, #ffe8f2 0%, #ffcfe1 100%) !important;
+  border-color: #f2a9c8 !important;
 }
 #calendar .calendar-mini-day.calendar-staff-color-nazran {
-  background: linear-gradient(145deg, rgba(255, 248, 248, .98), rgba(255, 235, 235, .94)) !important;
-  border-color: rgba(220, 38, 38, .20) !important;
+  background: linear-gradient(145deg, #ffe4e4 0%, #ffcaca 100%) !important;
+  border-color: #f0a1a1 !important;
 }
 #calendar .calendar-mini-day.calendar-staff-color-jayanthi {
-  background: linear-gradient(145deg, rgba(247, 253, 249, .98), rgba(231, 247, 237, .94)) !important;
-  border-color: rgba(21, 128, 61, .20) !important;
+  background: linear-gradient(145deg, #e3f6ea 0%, #ccebd8 100%) !important;
+  border-color: #a9d9bb !important;
 }
 #calendar .calendar-mini-day.calendar-staff-color-suriani {
-  background: linear-gradient(145deg, rgba(246, 250, 255, .98), rgba(229, 239, 255, .94)) !important;
-  border-color: rgba(37, 99, 235, .20) !important;
+  background: linear-gradient(145deg, #e3efff 0%, #cbdfff 100%) !important;
+  border-color: #a9c7f5 !important;
 }
 #calendar .calendar-mini-day.calendar-staff-color-japidi {
-  background: linear-gradient(145deg, rgba(255, 252, 244, .98), rgba(255, 244, 214, .94)) !important;
-  border-color: rgba(161, 98, 7, .20) !important;
+  background: linear-gradient(145deg, #fff3cf 0%, #ffe4a3 100%) !important;
+  border-color: #e7c879 !important;
 }
-#calendar .calendar-mini-day.calendar-staff-color-holiday {
-  background: linear-gradient(145deg, rgba(255, 249, 242, .98), rgba(255, 237, 220, .95)) !important;
-  border-color: rgba(194, 65, 12, .24) !important;
+
+/* Holiday: neutral grey, intentionally distinct from every staff colour.
+   These selectors are deliberately more specific so older holiday/today/selected
+   calendar styling cannot turn a holiday box pink, orange, blue, etc. */
+#calendar .calendar-mini-day.is-holiday,
+#calendar .calendar-mini-day.is-holiday.is-today,
+#calendar .calendar-mini-day.is-holiday.is-selected,
+#calendar .calendar-mini-day.is-holiday.is-selected.is-today {
+  background: linear-gradient(145deg, #e7eaee 0%, #cfd5dc 100%) !important;
+  border-color: #aeb7c2 !important;
+  outline-color: rgba(71, 85, 105, .16) !important;
 }
 
 /* Keep staff labels neutral: the colour is carried by the date box, not the font. */
 #calendar .calendar-mini-day .calendar-mini-day-staff,
 #calendar .calendar-mini-day .calendar-mini-day-staff-current,
 #calendar .calendar-mini-day .calendar-mini-day-staff-assigned {
-  color: #5d6c82 !important;
+  color: #4f5f76 !important;
 }
 #calendar .calendar-mini-day .calendar-mini-day-staff-original {
-  color: #728097 !important;
+  color: #6b7890 !important;
 }
 
-/* Preserve the normal selected/today interaction cues while retaining the soft staff tint. */
-#calendar .calendar-mini-day.calendar-staff-color-liza.is-selected {
-  background: linear-gradient(145deg, rgba(250, 245, 255, .99), rgba(238, 229, 255, .96)) !important;
+/* Keep the normal selected/today interaction cues visible without replacing the
+   staff colour with the generic selected/today background. */
+#calendar .calendar-mini-day.calendar-staff-color-liza.is-selected,
+#calendar .calendar-mini-day.calendar-staff-color-liza.is-today {
+  background: linear-gradient(145deg, #f1e7ff 0%, #e0ccff 100%) !important;
 }
-#calendar .calendar-mini-day.calendar-staff-color-shounna.is-selected {
-  background: linear-gradient(145deg, rgba(255, 247, 252, .99), rgba(255, 231, 244, .96)) !important;
+#calendar .calendar-mini-day.calendar-staff-color-shounna.is-selected,
+#calendar .calendar-mini-day.calendar-staff-color-shounna.is-today {
+  background: linear-gradient(145deg, #ffe8f2 0%, #ffc9de 100%) !important;
 }
-#calendar .calendar-mini-day.calendar-staff-color-nazran.is-selected {
-  background: linear-gradient(145deg, rgba(255, 248, 248, .99), rgba(255, 232, 232, .96)) !important;
+#calendar .calendar-mini-day.calendar-staff-color-nazran.is-selected,
+#calendar .calendar-mini-day.calendar-staff-color-nazran.is-today {
+  background: linear-gradient(145deg, #ffe4e4 0%, #ffc5c5 100%) !important;
 }
-#calendar .calendar-mini-day.calendar-staff-color-jayanthi.is-selected {
-  background: linear-gradient(145deg, rgba(247, 253, 249, .99), rgba(228, 246, 235, .96)) !important;
+#calendar .calendar-mini-day.calendar-staff-color-jayanthi.is-selected,
+#calendar .calendar-mini-day.calendar-staff-color-jayanthi.is-today {
+  background: linear-gradient(145deg, #e3f6ea 0%, #c7e8d3 100%) !important;
 }
-#calendar .calendar-mini-day.calendar-staff-color-suriani.is-selected {
-  background: linear-gradient(145deg, rgba(246, 250, 255, .99), rgba(227, 238, 255, .96)) !important;
+#calendar .calendar-mini-day.calendar-staff-color-suriani.is-selected,
+#calendar .calendar-mini-day.calendar-staff-color-suriani.is-today {
+  background: linear-gradient(145deg, #e3efff 0%, #c7dbff 100%) !important;
 }
-#calendar .calendar-mini-day.calendar-staff-color-japidi.is-selected {
-  background: linear-gradient(145deg, rgba(255, 252, 244, .99), rgba(255, 243, 211, .96)) !important;
+#calendar .calendar-mini-day.calendar-staff-color-japidi.is-selected,
+#calendar .calendar-mini-day.calendar-staff-color-japidi.is-today {
+  background: linear-gradient(145deg, #fff3cf 0%, #ffdf98 100%) !important;
 }
 
-/* Holiday wins over staff colour, including on selected/today dates. */
-#calendar .calendar-mini-day.is-holiday {
-  background: linear-gradient(145deg, rgba(255, 249, 242, .99), rgba(255, 237, 220, .96)) !important;
-  border-color: rgba(194, 65, 12, .24) !important;
+/* Holiday always wins, including selected/today states. */
+#calendar .calendar-mini-day.is-holiday,
+#calendar .calendar-mini-day.is-holiday.is-today,
+#calendar .calendar-mini-day.is-holiday.is-selected,
+#calendar .calendar-mini-day.is-holiday.is-selected.is-today {
+  background: linear-gradient(145deg, #e7eaee 0%, #cfd5dc 100%) !important;
+  border-color: #aeb7c2 !important;
+  outline-color: rgba(71, 85, 105, .16) !important;
 }
 
 body.dark-mode #calendar .calendar-mini-day.calendar-staff-color-liza {
-  background: linear-gradient(145deg, rgba(76, 57, 108, .44), rgba(46, 36, 67, .72)) !important;
-  border-color: rgba(196, 181, 253, .22) !important;
+  background: linear-gradient(145deg, #5b477c 0%, #3d2f57 100%) !important;
+  border-color: #8d6bb8 !important;
 }
 body.dark-mode #calendar .calendar-mini-day.calendar-staff-color-shounna {
-  background: linear-gradient(145deg, rgba(112, 53, 82, .42), rgba(67, 35, 54, .72)) !important;
-  border-color: rgba(249, 168, 212, .22) !important;
+  background: linear-gradient(145deg, #70435a 0%, #4d2d3e 100%) !important;
+  border-color: #b96d8e !important;
 }
 body.dark-mode #calendar .calendar-mini-day.calendar-staff-color-nazran {
-  background: linear-gradient(145deg, rgba(112, 48, 48, .42), rgba(68, 34, 34, .72)) !important;
-  border-color: rgba(252, 165, 165, .22) !important;
+  background: linear-gradient(145deg, #704242 0%, #4d2d2d 100%) !important;
+  border-color: #b96b6b !important;
 }
 body.dark-mode #calendar .calendar-mini-day.calendar-staff-color-jayanthi {
-  background: linear-gradient(145deg, rgba(43, 89, 60, .42), rgba(29, 57, 40, .72)) !important;
-  border-color: rgba(134, 239, 172, .22) !important;
+  background: linear-gradient(145deg, #3f6950 0%, #2c4938 100%) !important;
+  border-color: #70a988 !important;
 }
 body.dark-mode #calendar .calendar-mini-day.calendar-staff-color-suriani {
-  background: linear-gradient(145deg, rgba(48, 75, 122, .42), rgba(30, 47, 78, .72)) !important;
-  border-color: rgba(147, 197, 253, .22) !important;
+  background: linear-gradient(145deg, #405f92 0%, #2d4267 100%) !important;
+  border-color: #7095d0 !important;
 }
 body.dark-mode #calendar .calendar-mini-day.calendar-staff-color-japidi {
-  background: linear-gradient(145deg, rgba(104, 82, 35, .42), rgba(68, 55, 25, .72)) !important;
-  border-color: rgba(252, 211, 77, .22) !important;
+  background: linear-gradient(145deg, #76602d 0%, #50421f 100%) !important;
+  border-color: #b79a50 !important;
 }
-body.dark-mode #calendar .calendar-mini-day.is-holiday {
-  background: linear-gradient(145deg, rgba(105, 67, 42, .46), rgba(62, 42, 30, .74)) !important;
-  border-color: rgba(253, 186, 116, .24) !important;
+
+body.dark-mode #calendar .calendar-mini-day.is-holiday,
+body.dark-mode #calendar .calendar-mini-day.is-holiday.is-today,
+body.dark-mode #calendar .calendar-mini-day.is-holiday.is-selected,
+body.dark-mode #calendar .calendar-mini-day.is-holiday.is-selected.is-today {
+  background: linear-gradient(145deg, #4b535e 0%, #343b45 100%) !important;
+  border-color: #737e8d !important;
+  outline-color: rgba(203, 213, 225, .12) !important;
 }
 
 body.dark-mode #calendar .calendar-mini-day .calendar-mini-day-staff,
 body.dark-mode #calendar .calendar-mini-day .calendar-mini-day-staff-current,
 body.dark-mode #calendar .calendar-mini-day .calendar-mini-day-staff-assigned {
-  color: #c6d1e2 !important;
+  color: #d5deeb !important;
 }
 body.dark-mode #calendar .calendar-mini-day .calendar-mini-day-staff-original {
-  color: #9aa8ba !important;
+  color: #aeb9c8 !important;
 }
+
