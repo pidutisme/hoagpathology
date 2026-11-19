@@ -96,8 +96,10 @@
       --gap: clamp(8px, 0.9vw, 18px);
       --page-title-description-gap: clamp(8px, 0.65vw, 10px);
       --sidebar-w: clamp(202px, 14.8vw, 276px);
-      --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
-      --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1);
+      --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
+      --hover-fast: 0.11s;
+      --hover-card: 0.13s;
 
       /* Shared Card Surface Tokens */
       --year-page-card-bg: linear-gradient(145deg, #f4f7fc 0%, #e2e9f3 100%);
@@ -432,7 +434,7 @@
       color: var(--text);
       background: var(--year-page-card-bg);
       box-shadow: var(--calendar-edge-shadow-sm);
-      transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .2s var(--ease-smooth);
+      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease;
     }
 
     #calendar .calendar-mini-empty {
@@ -465,10 +467,8 @@
     .clickable-card,
     .stat-card,
     .bottom-card,
-    .profile-card,
     .profile-info-box,
     .setting-box,
-    .panel,
     .calendar-toolbar-btn,
     .calendar-roster-nav-btn,
     .calendar-roster-month-btn,
@@ -476,7 +476,7 @@
     .page-back-dashboard-btn,
     .year-card,
     .leave-course-mini-year {
-      transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth), background 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth), opacity 0.2s var(--ease-smooth);
+      transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
     }
 
     .app {
@@ -604,7 +604,7 @@
       background: linear-gradient(145deg, rgba(248, 249, 252, .62), rgba(224, 229, 239, .48));
       border: 1px solid var(--year-page-card-border);
       box-shadow: var(--shadow-soft);
-      transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth), background 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
+      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease, color 0.12s ease;
     }
 
     body.dark-mode .nav button {
@@ -667,7 +667,7 @@
       place-items: center;
       background: var(--card-soft);
       box-shadow: var(--shadow-soft);
-      transition: left 0.3s var(--ease-spring);
+      transition: left 0.18s var(--ease-spring);
     }
 
     .main,
@@ -815,8 +815,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       overflow-wrap: anywhere;
-      transition: transform .42s var(--ease-spring), filter .34s var(--ease-smooth), text-shadow .34s var(--ease-smooth);
-      will-change: transform;
+      transition: transform 0.16s var(--ease-spring);
     }
 
     .display-accent-line {
@@ -892,7 +891,7 @@
       position: relative;
       overflow: hidden;
       border-radius: var(--radius-lg);
-      transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth), border-color 0.2s var(--ease-smooth);
+      transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease;
     }
 
     .stat-card {
@@ -1309,12 +1308,11 @@
       border-radius: 22px;
       background: var(--year-page-card-bg);
       box-shadow: var(--year-page-card-shadow);
-      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+      transition: transform 0.13s var(--ease-spring), border-color 0.12s ease, box-shadow 0.13s ease;
     }
 
     .settings-extra-card:hover {
-      transform: translate3d(0, -3px, 0);
-      z-index: 2;
+      transform: translate3d(0, -2px, 0);
       border-color: rgba(95, 126, 255, .34);
       box-shadow: var(--year-page-card-hover-shadow);
     }
@@ -1632,7 +1630,7 @@
       font: inherit;
       font-size: 12px;
       font-weight: 750;
-      transition: border-color .18s var(--ease-smooth), box-shadow .18s var(--ease-smooth);
+      transition: border-color 0.11s ease, box-shadow 0.11s ease;
     }
 
     #settings .admin-select {
@@ -1713,7 +1711,7 @@
       text-align: center;
       box-shadow: var(--shadow-soft);
       cursor: pointer;
-      transition: transform .2s var(--ease-spring), box-shadow .2s var(--ease-smooth), border-color .2s ease, opacity .2s var(--ease-smooth);
+      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
     }
 
     .admin-action-btn {
@@ -2036,9 +2034,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background: rgba(15, 23, 42, 0.48);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.56);
     }
 
     .app-modal-overlay.is-hidden {
@@ -2096,7 +2092,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform .2s var(--ease-spring), box-shadow .2s var(--ease-smooth), border-color .2s ease;
+      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease;
     }
 
     .app-modal-action:hover {
@@ -2301,7 +2297,7 @@
       box-shadow: var(--shadow-soft);
       font-weight: 900;
       font-size: clamp(11px, .8vw, 13px);
-      transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth), background 0.2s var(--ease-smooth);
+      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease;
     }
 
     .calendar-roster-nav-btn {
@@ -2447,7 +2443,7 @@
       font-family: inherit;
       font-size: 12px;
       font-weight: 750;
-      transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+      transition: border-color 0.11s ease, box-shadow 0.11s ease;
     }
 
     #calendar .daily-roster-row select {
@@ -2487,7 +2483,7 @@
       background: var(--danger-bg);
       border: 1px solid var(--danger-border);
       box-shadow: var(--shadow-soft);
-      transition: transform 0.16s var(--ease-spring), border-color 0.16s ease, box-shadow 0.16s ease;
+      transition: transform 0.11s var(--ease-spring), border-color 0.11s ease, box-shadow 0.11s ease;
     }
 
     #calendar .roster-delete-btn:hover:not(:disabled) {
@@ -2608,7 +2604,7 @@
       text-decoration: none;
       cursor: pointer;
       overflow: hidden;
-      transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth), border-color 0.2s var(--ease-smooth), opacity 0.2s var(--ease-smooth);
+      transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease, opacity 0.12s ease;
     }
 
     .year-card.locked,
@@ -3090,9 +3086,8 @@
       top: -72%;
       border-radius: 999px;
       background: radial-gradient(circle, rgba(35, 103, 242, .12), rgba(47, 208, 222, .06) 48%, transparent 72%);
-      filter: blur(1px);
       opacity: .70;
-      transition: transform .55s var(--ease-smooth), opacity .35s var(--ease-smooth);
+      transition: transform 0.2s var(--ease-smooth), opacity 0.16s ease;
     }
 
     #dashboard .display-board::after {
@@ -3145,7 +3140,7 @@
       position: absolute;
       inset: 0;
       pointer-events: none;
-      transition: transform .62s var(--ease-smooth), opacity .34s var(--ease-smooth);
+      transition: transform 0.2s var(--ease-smooth), opacity 0.16s ease;
     }
 
     #dashboard .display-clock-wrap::before {
@@ -3174,7 +3169,7 @@
       background-clip: text;
       -webkit-text-fill-color: transparent;
       text-shadow: none;
-      transition: transform .48s var(--ease-spring), filter .34s var(--ease-smooth), letter-spacing .34s var(--ease-smooth), background-position .58s var(--ease-smooth);
+      transition: transform 0.16s var(--ease-spring);
     }
 
     body.dark-mode #dashboard .display-board {
@@ -3421,7 +3416,7 @@
       background: rgba(239, 68, 68, .11);
       border: 1px solid rgba(239, 68, 68, .20);
       box-shadow: 0 8px 18px rgba(239, 68, 68, .12), inset 1px 1px 0 rgba(255, 255, 255, .58);
-      transition: opacity .18s var(--ease-smooth), transform .22s var(--ease-spring), border-color .18s var(--ease-smooth), background .18s var(--ease-smooth);
+      transition: opacity 0.12s ease, transform 0.14s var(--ease-spring);
       z-index: 3;
     }
 
@@ -3534,7 +3529,7 @@
       position: absolute;
       pointer-events: none;
       opacity: 0;
-      transition: opacity .2s var(--ease-smooth), transform .24s var(--ease-spring), background .2s var(--ease-smooth), box-shadow .2s var(--ease-smooth);
+      transition: opacity 0.12s ease, transform 0.14s var(--ease-spring);
       z-index: 2;
     }
 
@@ -3682,7 +3677,7 @@
       opacity: 0;
       transform: translate3d(-50%, 6px, 0) scale(.98);
       pointer-events: none;
-      transition: opacity .18s var(--ease-smooth), transform .18s var(--ease-smooth);
+      transition: opacity 0.12s ease, transform 0.12s var(--ease-smooth);
     }
 
     #calendar .calendar-holiday-popover.is-visible {
@@ -3816,18 +3811,16 @@
       padding: 9px 12px 8px;
       overflow: hidden;
       color: var(--text);
-      background: linear-gradient(145deg, rgba(255, 255, 255, .82), rgba(226, 235, 248, .82));
-      border: 1px solid rgba(118, 134, 160, .22);
+      background: linear-gradient(145deg, #f6f9fe, #e4ecf7);
+      border: 1px solid rgba(118, 134, 160, .24);
       border-radius: 18px;
       box-shadow: 0 18px 42px rgba(35, 103, 242, .14), inset 4px 4px 12px rgba(126, 140, 166, .12), inset -4px -4px 12px rgba(255, 255, 255, .70), inset 0 0 0 1px rgba(255, 255, 255, .54);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
       cursor: grab;
       pointer-events: auto;
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
-      transition: transform .24s var(--ease-spring), box-shadow .24s var(--ease-smooth), opacity .2s var(--ease-smooth);
+      transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, opacity 0.12s ease;
     }
 
     .today-floating-card::before {
@@ -3926,8 +3919,8 @@
 
     body.dark-mode .today-floating-card {
       color: var(--text);
-      background: linear-gradient(145deg, rgba(37, 49, 67, .88), rgba(18, 26, 39, .88));
-      border-color: rgba(176, 190, 211, .14);
+      background: linear-gradient(145deg, #232f42, #151e2d);
+      border-color: rgba(176, 190, 211, .16);
       box-shadow: 0 18px 44px rgba(0, 0, 0, .30), inset 4px 4px 12px rgba(0, 0, 0, .30), inset -4px -4px 12px rgba(255, 255, 255, .035), inset 0 0 0 1px rgba(255, 255, 255, .045);
     }
 
@@ -4269,7 +4262,7 @@
       font-weight: 900;
       letter-spacing: .05em;
       text-transform: uppercase;
-      transition: transform 0.25s var(--ease-spring), box-shadow 0.25s var(--ease-smooth), background 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth);
+      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, color 0.12s ease, border-color 0.12s ease;
     }
 
     #calendar .daily-roster-assign-btn:hover {
@@ -4459,70 +4452,47 @@
     @media (hover: hover) and (pointer: fine) {
       .nav button:not(.active):not([aria-current="page"]):hover {
         transform: translate3d(0, -1px, 0);
-        z-index: 2;
         color: var(--primary);
-        border-color: rgba(79, 114, 255, .18);
-        background: linear-gradient(145deg, rgba(248, 249, 252, .68), rgba(224, 229, 239, .52));
+        border-color: rgba(79, 114, 255, .24);
         box-shadow: var(--shadow-soft);
       }
 
       body.dark-mode .nav button:not(.active):not([aria-current="page"]):hover {
-        border-color: rgba(143, 176, 255, .14);
-        background: linear-gradient(145deg, rgba(37, 49, 67, .64), rgba(18, 26, 39, .54));
+        border-color: rgba(143, 176, 255, .20);
         box-shadow: var(--shadow-soft);
       }
 
       #dashboard .display-board:hover::before {
-        opacity: 1;
-        transform: translate3d(-4%, 7%, 0) scale(1.08);
+        opacity: 0.9;
+        transform: translate3d(-2%, 4%, 0) scale(1.03);
       }
 
       #dashboard .display-clock-wrap:hover {
-        transform: translate3d(0, -3px, 0) scale(1.004);
-        z-index: 2;
+        transform: translate3d(0, -1.5px, 0);
         border-color: rgba(79, 114, 255, .36);
-        box-shadow:
-          inset 6px 6px 16px rgba(126, 140, 166, .18),
-          inset -6px -6px 16px rgba(255, 255, 255, .76),
-          inset 0 0 0 1px rgba(255, 255, 255, .86),
-          inset 0 0 34px rgba(79, 114, 255, .12);
       }
 
       #dashboard .display-clock-wrap:hover::before {
-        opacity: .92;
-        transform: translateX(62%) skewX(-12deg);
+        opacity: .72;
+        transform: translateX(48%) skewX(-12deg);
       }
 
       #dashboard .display-clock-wrap:hover::after {
-        opacity: .72;
-        transform: scale(1.035);
+        opacity: .62;
       }
 
       #dashboard .display-clock-wrap:hover .display-hero-title {
-        transform: scale(1.035);
-        letter-spacing: .055em;
-        background-position: 100% 50%;
-        filter: drop-shadow(0 14px 22px rgba(79, 114, 255, .22));
+        transform: scale(1.018);
       }
 
       body.dark-mode #dashboard .display-clock-wrap:hover {
         border-color: rgba(120, 145, 255, .28);
-        box-shadow:
-          inset 6px 6px 16px rgba(0, 0, 0, .38),
-          inset -6px -6px 16px rgba(255, 255, 255, .040),
-          inset 0 0 0 1px rgba(120, 145, 255, .18),
-          inset 0 0 34px rgba(120, 145, 255, .12);
-      }
-
-      body.dark-mode #dashboard .display-clock-wrap:hover .display-hero-title {
-        filter: drop-shadow(0 14px 24px rgba(120, 145, 255, .30));
       }
 
       #dashboard .stat-card.clickable-card:hover,
       #dashboard .bottom-card.clickable-card:hover {
-        transform: translate3d(0, -3px, 0);
-        z-index: 2;
-        border-color: var(--utility-card-border);
+        transform: translate3d(0, -2px, 0);
+        border-color: rgba(95, 126, 255, .34);
       }
 
       #dashboard .stat-card.clickable-card:hover {
@@ -4535,24 +4505,20 @@
 
       :is(#profile, #access, #quickLinks) .profile-info-box:hover,
       :is(#notification, #settings) .setting-box:hover {
-        transform: translate3d(0, -3px, 0);
-        z-index: 2;
+        transform: translate3d(0, -2px, 0);
         border-color: rgba(95, 126, 255, .34);
-        outline-color: rgba(95, 126, 255, .20);
         box-shadow: var(--year-page-card-hover-shadow);
       }
 
       .year-card:not(.locked):hover,
       .leave-course-mini-year:not(.locked):hover {
-        transform: translate3d(0, -3px, 0);
-        z-index: 2;
+        transform: translate3d(0, -2px, 0);
         border-color: rgba(95, 126, 255, .34);
         box-shadow: var(--year-page-card-hover-shadow);
       }
 
       #calendar .calendar-mini-day:hover {
-        transform: translate3d(0, -2px, 0);
-        z-index: 1;
+        transform: translate3d(0, -1.5px, 0);
         border-color: rgba(95, 126, 255, .34);
         box-shadow: var(--calendar-edge-subcard-hover-shadow);
       }
@@ -6383,7 +6349,7 @@
       font-weight: 950;
       letter-spacing: .10em;
       text-transform: uppercase;
-      transition: transform .2s var(--ease-spring), box-shadow .2s var(--ease-smooth), border-color .2s ease;
+      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease;
     }
 
     .logout-btn:hover {
@@ -6826,7 +6792,7 @@
   text-align: left;
   text-decoration: none;
   overflow: hidden;
-  transition: transform 0.24s var(--ease-spring), box-shadow 0.24s var(--ease-smooth), border-color 0.2s var(--ease-smooth);
+  transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease;
 }
 
 #moduleYears .module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid):not(.tbis102a-active-grid) .year-card > div:nth-child(3),
@@ -7118,7 +7084,7 @@
   font-size: 12px;
   font-weight: 750;
   outline: none;
-  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+  transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-field textarea {
@@ -7174,7 +7140,7 @@
   border: 1px solid var(--year-page-card-border);
   box-shadow: var(--shadow-soft);
   cursor: pointer;
-  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), border-color 0.2s ease;
+  transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
 .outsource-btn:hover {
@@ -7266,7 +7232,7 @@ select.outsource-native-select,
   cursor: pointer;
   pointer-events: auto;
   outline: none;
-  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+  transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
 :is(.outsource-result-modal, .outsource-admin-modal, .outsource-report-download-modal, .inventory-modal, #adminAccessModal) .outsource-select-trigger {
@@ -7305,7 +7271,7 @@ select.outsource-native-select,
   justify-content: center;
   color: var(--muted);
   font-size: 12px;
-  transition: transform 0.18s var(--ease-smooth);
+  transition: transform 0.12s var(--ease-smooth);
 }
 
 .outsource-select-chevron svg,
@@ -7358,7 +7324,7 @@ select.outsource-native-select,
   font-size: 12px;
   font-weight: 750;
   outline: none;
-  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+  transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select:not(.outsource-filter-neo-native):not(.outsource-native-select) {
@@ -7389,7 +7355,7 @@ select.outsource-native-select,
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
-  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+  transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
 body.dark-mode :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid) .outsource-search select:not(.outsource-filter-neo-native):not(.outsource-native-select),
@@ -7586,7 +7552,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   max-height: 36px;
   box-sizing: border-box;
   cursor: default;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.07s ease;
 }
 
 :is(#moduleYearGrid.outsource-active-grid, #moduleYearGrid.transfusion-active-grid, #moduleYearGrid.tbis102a-active-grid) .outsource-table tbody tr.outsource-data-row:hover,
@@ -7712,7 +7678,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.16s var(--ease-spring), border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, color 0.16s ease;
+  transition: transform 0.11s var(--ease-spring), border-color 0.11s ease, box-shadow 0.11s ease, color 0.11s ease;
 }
 
 .outsource-mini::after {
@@ -7928,7 +7894,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   justify-content: space-between;
   gap: 8px;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.08s ease, color 0.08s ease;
 }
 
 .outsource-select-menu button:hover,
@@ -8104,9 +8070,7 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
   justify-content: center;
   place-items: center;
   padding: 18px;
-  background: rgba(15, 23, 42, 0.48);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.56);
 }
 
 .outsource-result-modal[hidden],
@@ -8396,7 +8360,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: transform 0.18s var(--ease-spring), border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.12s var(--ease-spring), border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .outsource-post-save-option:hover {
@@ -8492,7 +8456,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   font-size: 12px;
   font-weight: 750;
   outline: none;
-  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+  transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
 .outsource-admin-section input::placeholder,
@@ -8787,7 +8751,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   gap: 6px;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), border-color 0.2s ease;
+  transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
 .inventory-action-btn:hover {
@@ -9039,7 +9003,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
 
 #inventory .inventory-table tbody tr.inventory-item-row {
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.07s ease;
 }
 
 #inventory .inventory-table tbody tr.inventory-item-row:hover {
@@ -9203,9 +9167,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
 .inventory-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.48);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.56);
 }
 
 .inventory-modal-card,
@@ -9316,7 +9278,7 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   font-size: 12.5px;
   font-weight: 800;
   outline: none;
-  transition: border-color 0.18s var(--ease-smooth), box-shadow 0.18s var(--ease-smooth);
+  transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
 .inventory-form select:not(.outsource-native-select) {
@@ -9407,7 +9369,7 @@ html.dark-mode-preload .inventory-form select:not(.outsource-native-select) {
   font-size: 13px;
   line-height: 1;
   color: var(--muted);
-  transition: transform 0.16s ease;
+  transition: transform 0.11s ease;
 }
 
 .inventory-custom-trigger.is-open .inventory-custom-chevron {
@@ -9573,7 +9535,7 @@ html.dark-mode-preload .inventory-form select:not(.outsource-native-select) {
   font-size: 0;
   line-height: 0;
   cursor: pointer;
-  transition: transform 0.16s var(--ease-spring), border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+  transition: transform 0.11s var(--ease-spring), border-color 0.11s ease, box-shadow 0.11s ease, color 0.11s ease;
 }
 
 .inventory-history-edit-btn::before,
@@ -10092,7 +10054,7 @@ body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] 
   padding: 7px 14px;
   border-radius: 11px;
   cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, transform 0.16s var(--ease-spring);
+  transition: color 0.11s ease, box-shadow 0.11s ease, border-color 0.11s ease, transform 0.11s var(--ease-spring);
 }
 
 .admin-view-tab:hover:not(.is-active) {
@@ -10214,7 +10176,7 @@ body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] 
   padding: 5px 12px;
   border-radius: 10px;
   cursor: pointer;
-  transition: transform 0.15s var(--ease-spring), border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.11s var(--ease-spring), border-color 0.11s ease, color 0.11s ease, box-shadow 0.11s ease;
 }
 
 .admin-mini-btn:hover {
@@ -10252,7 +10214,7 @@ body.visitor-page-access-restricted [data-dashboard-module][aria-hidden="true"] 
   color: var(--text);
   cursor: pointer;
   user-select: none;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
 .admin-visitor-checkbox-item:hover {
@@ -10511,11 +10473,11 @@ body.auth-resolving #authResolvingPanel {
   font-family: var(--font-body);
   color: var(--text);
   cursor: pointer;
-  transition: transform .3s var(--ease-spring), box-shadow .3s var(--ease-smooth), border-color .2s var(--ease-smooth);
+  transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease;
 }
 
 .microbiology-structure-card:hover {
-  transform: translateY(-3px);
+  transform: translate3d(0, -2px, 0);
   box-shadow: var(--year-page-card-hover-shadow);
   border-color: var(--primary);
 }
@@ -10582,7 +10544,7 @@ body.auth-resolving #authResolvingPanel {
   font-weight: 900;
   line-height: 1;
   color: var(--primary);
-  transition: transform 0.2s var(--ease-smooth), background-color 0.2s var(--ease-smooth), color 0.2s var(--ease-smooth);
+  transition: transform 0.12s var(--ease-smooth), background-color 0.12s ease, color 0.12s ease;
 }
 
 .microbiology-structure-card:hover .microbiology-structure-arrow {
@@ -10616,7 +10578,7 @@ body.auth-resolving #authResolvingPanel {
   box-shadow: var(--shadow-soft);
   cursor: pointer;
   user-select: none;
-  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), border-color 0.2s ease, color 0.2s ease;
+  transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .module-years-sub-back {
