@@ -434,7 +434,7 @@
       color: var(--text);
       background: var(--year-page-card-bg);
       box-shadow: var(--calendar-edge-shadow-sm);
-      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease;
+      transition: transform 0.12s var(--ease-spring);
     }
 
     #calendar .calendar-mini-empty {
@@ -476,7 +476,7 @@
     .page-back-dashboard-btn,
     .year-card,
     .leave-course-mini-year {
-      transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+      transition: transform 0.12s var(--ease-spring), color 0.1s ease, opacity 0.1s ease;
     }
 
     .app {
@@ -604,7 +604,7 @@
       background: linear-gradient(145deg, rgba(248, 249, 252, .62), rgba(224, 229, 239, .48));
       border: 1px solid var(--year-page-card-border);
       box-shadow: var(--shadow-soft);
-      transition: transform 0.12s var(--ease-spring), box-shadow 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+      transition: transform 0.12s var(--ease-spring), color 0.1s ease;
     }
 
     body.dark-mode .nav button {
@@ -891,7 +891,7 @@
       position: relative;
       overflow: hidden;
       border-radius: var(--radius-lg);
-      transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease;
+      transition: transform 0.12s var(--ease-spring);
     }
 
     .stat-card {
@@ -1308,7 +1308,7 @@
       border-radius: 22px;
       background: var(--year-page-card-bg);
       box-shadow: var(--year-page-card-shadow);
-      transition: transform 0.13s var(--ease-spring), border-color 0.12s ease, box-shadow 0.13s ease;
+      transition: transform 0.12s var(--ease-spring);
     }
 
     .settings-extra-card:hover {
@@ -2604,7 +2604,7 @@
       text-decoration: none;
       cursor: pointer;
       overflow: hidden;
-      transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease, opacity 0.12s ease;
+      transition: transform 0.12s var(--ease-spring), opacity 0.1s ease;
     }
 
     .year-card.locked,
@@ -4450,6 +4450,22 @@
     /* --- Media Queries (Consolidated & Cascading) --- */
 
     @media (hover: hover) and (pointer: fine) {
+      /* Hover performance: keep every hoverable card on its own GPU layer so the
+       * lift is a pure compositor transform. Shadow/border swap in a single paint
+       * instead of repainting large multi-layer neumorphic shadows every frame. */
+      .nav button,
+      .stat-card.clickable-card,
+      .bottom-card.clickable-card,
+      .profile-info-box,
+      .setting-box,
+      .settings-extra-card,
+      .year-card,
+      .leave-course-mini-year,
+      .microbiology-structure-card,
+      #calendar .calendar-mini-day {
+        will-change: transform;
+      }
+
       .nav button:not(.active):not([aria-current="page"]):hover {
         transform: translate3d(0, -1px, 0);
         color: var(--primary);
@@ -6792,7 +6808,7 @@
   text-align: left;
   text-decoration: none;
   overflow: hidden;
-  transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease;
+  transition: transform 0.12s var(--ease-spring);
 }
 
 #moduleYears .module-year-grid:not(.outsource-active-grid):not(.transfusion-active-grid):not(.tbis102a-active-grid) .year-card > div:nth-child(3),
@@ -10473,7 +10489,7 @@ body.auth-resolving #authResolvingPanel {
   font-family: var(--font-body);
   color: var(--text);
   cursor: pointer;
-  transition: transform 0.13s var(--ease-spring), box-shadow 0.13s ease, border-color 0.12s ease;
+  transition: transform 0.12s var(--ease-spring);
 }
 
 .microbiology-structure-card:hover {

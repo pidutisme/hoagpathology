@@ -54,7 +54,7 @@
 
         cells.forEach(function (cell, index) {
           var label = headers[index] || ('Column ' + (index + 1));
-          cell.setAttribute('data-label', label);
+          if (cell.getAttribute('data-label') !== label) cell.setAttribute('data-label', label);
         });
       });
     });
@@ -80,8 +80,17 @@
 
     if (window.MutationObserver) {
       new MutationObserver(function (mutations) {
+        /* Only rescan when element nodes are added or table text changes.
+         * Text-only updates elsewhere (e.g. the dashboard clock ticking every
+         * second) must not trigger a full-document table rescan. */
         var relevant = mutations.some(function (mutation) {
-          return mutation.addedNodes && mutation.addedNodes.length;
+          var added = mutation.addedNodes;
+          if (!added || !added.length) return false;
+          for (var i = 0; i < added.length; i++) {
+            if (added[i].nodeType === 1) return true;
+          }
+          var target = mutation.target;
+          return !!(target && target.closest && target.closest('table'));
         });
         if (relevant) scheduleScan();
       }).observe(document.body, { childList: true, subtree: true });

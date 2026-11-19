@@ -2675,7 +2675,15 @@
       }
       function startVisitorReadOnlyObserver_() {
         if (visitorReadOnlyObserver_ || !window.MutationObserver || !document.body) return;
-        visitorReadOnlyObserver_ = new MutationObserver(function() { queueVisitorReadOnly_(); });
+        visitorReadOnlyObserver_ = new MutationObserver(function(mutations) {
+          /* Text-only updates (e.g. the per-second dashboard clock) cannot add controls. */
+          for (var i = 0; i < mutations.length; i++) {
+            var added = mutations[i].addedNodes;
+            for (var j = 0; added && j < added.length; j++) {
+              if (added[j].nodeType === 1) { queueVisitorReadOnly_(); return; }
+            }
+          }
+        });
         visitorReadOnlyObserver_.observe(document.body, { childList: true, subtree: true });
       }
 
@@ -13059,9 +13067,16 @@ if ("serviceWorker" in navigator) {
         var m=mutations[i];
         var t=m.target;
         if(t && (t.id==='outsourceTableBody' || t.id==='trTableBody' || t.id==='tbisTableBody' || (t.closest && t.closest('#outsourceTableBody, #trTableBody, #tbisTableBody')))) continue;
-        if((m.addedNodes && m.addedNodes.length) || m.type==='attributes'){
+        if(m.type==='attributes'){
           relevant=true;
           break;
+        }
+        if(m.addedNodes && m.addedNodes.length){
+          /* Ignore text-only updates (e.g. the per-second dashboard clock); selects arrive as element nodes. */
+          for(var j=0;j<m.addedNodes.length;j++){
+            if(m.addedNodes[j].nodeType===1){relevant=true;break;}
+          }
+          if(relevant)break;
         }
       }
       if(!relevant || pending)return;
