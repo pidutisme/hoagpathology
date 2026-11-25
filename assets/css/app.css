@@ -26,6 +26,7 @@
       --z-drawer: 1000;
       --z-modal: 11500;
       --z-popover: 12500;
+      --z-confirm: 12800;
       --z-toast: 13000;
 
       /* Typography & Hierarchy Colors */
@@ -2029,7 +2030,7 @@
     .app-modal-overlay {
       position: fixed;
       inset: 0;
-      z-index: 11000;
+      z-index: var(--z-confirm, 12800);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -6138,6 +6139,41 @@
       }
     }
 
+    @media (max-width: 520px) {
+      .nav {
+        grid-template-columns: 1fr;
+      }
+
+      #calendar .calendar-month-panel {
+        --calendar-grid-gap: 5px;
+        --calendar-grid-pad-x: 4px;
+      }
+
+      .calendar-roster-month-btn {
+        min-width: 0;
+        flex: 1;
+      }
+
+      #calendar .calendar-full-grid {
+        padding-top: 2px;
+        padding-bottom: 6px;
+      }
+
+      #calendar .calendar-mini-day {
+        min-height: 48px;
+        padding: 5px 2px;
+        border-radius: 16px;
+      }
+
+      #calendar .calendar-mini-day-staff,
+      #calendar .calendar-mini-day-staff-original,
+      #calendar .calendar-mini-day-staff-assigned {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
     @media (max-width: 420px) {
       :root {
         --gap: 6px;
@@ -6273,41 +6309,6 @@
       }
     }
 
-    @media (max-width: 520px) {
-      .nav {
-        grid-template-columns: 1fr;
-      }
-
-      #calendar .calendar-month-panel {
-        --calendar-grid-gap: 5px;
-        --calendar-grid-pad-x: 4px;
-      }
-
-      .calendar-roster-month-btn {
-        min-width: 0;
-        flex: 1;
-      }
-
-      #calendar .calendar-full-grid {
-        padding-top: 2px;
-        padding-bottom: 6px;
-      }
-
-      #calendar .calendar-mini-day {
-        min-height: 48px;
-        padding: 5px 2px;
-        border-radius: 16px;
-      }
-
-      #calendar .calendar-mini-day-staff,
-      #calendar .calendar-mini-day-staff-original,
-      #calendar .calendar-mini-day-staff-assigned {
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
-
 
     /* +--------------------------------------------------+
      * + SECURE LOGIN, PASSWORD CHANGE & LOCKED APP STATE +
@@ -6432,8 +6433,8 @@
 
 
 
-    /* MOBILE SCROLL FIX: keep page scrolling on the document instead of
-       trapping touch gestures inside nested, fixed-height containers. */
+    /* MOBILE SCROLL & NAVIGATION DRAWER: keep page scrolling on the document
+       instead of trapping touch gestures inside nested, fixed-height containers. */
     @media (max-width: 980px) {
       html,
       body {
@@ -6451,12 +6452,72 @@
       }
 
       .app {
+        display: block !important;
         height: auto !important;
         min-height: 100vh !important;
         min-height: 100svh !important;
         overflow: visible !important;
         overflow-x: hidden !important;
+        padding: 8px !important;
         touch-action: pan-y pinch-zoom;
+      }
+
+      .sidebar {
+        position: fixed !important;
+        z-index: 10050 !important;
+        top: max(8px, env(safe-area-inset-top)) !important;
+        bottom: max(8px, env(safe-area-inset-bottom)) !important;
+        left: 8px !important;
+        width: min(88vw, 360px) !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: auto !important;
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        transform: translateX(calc(-100% - 20px));
+        transition: transform .22s ease;
+        box-shadow: 0 12px 40px rgba(0,0,0,.22) !important;
+      }
+
+      body.mobile-nav-open .sidebar { transform: translateX(0); }
+      body.mobile-nav-open .mobile-nav-toggle { display: none !important; }
+      body.mobile-nav-open::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 10040;
+        background: rgba(15, 23, 42, .36);
+      }
+
+      .nav {
+        overflow: auto !important;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+      }
+
+      .mobile-nav-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        position: absolute;
+        z-index: 10060;
+        top: max(6px, env(safe-area-inset-top));
+        left: 8px;
+        min-height: 34px;
+        padding: 0 10px;
+        font-size: 13px;
+        border: 1px solid var(--year-page-card-border);
+        border-radius: 999px;
+        color: var(--text);
+        background: var(--year-page-card-bg);
+        box-shadow: 0 4px 16px rgba(20,40,80,.18);
+        font-weight: 800;
+      }
+
+      .main {
+        width: 100% !important;
+        padding-top: 48px !important;
       }
 
       .main,
@@ -6477,7 +6538,12 @@
         touch-action: pan-y pinch-zoom;
       }
 
-      .page-scroll {
+      .page.active { display: block !important; }
+
+      .page-scroll,
+      .dashboard-scroll,
+      #calendar .page-scroll {
+        flex: none !important;
         padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
       }
 
@@ -6492,225 +6558,124 @@
         touch-action: pan-y;
       }
     }
-
-    /* Mobile-only navigation drawer; let the document scroll naturally. */
-    @media (max-width: 980px) {
-      html, body { height: auto !important; min-height: 100% !important; overflow-x: hidden !important; overflow-y: auto !important; }
-      .app {
-        display: block !important;
-        height: auto !important;
-        min-height: 100svh !important;
-        overflow: visible !important;
-        padding: 8px !important;
-      }
-      .sidebar {
-        position: fixed !important;
-        z-index: 10050 !important;
-        top: max(8px, env(safe-area-inset-top)) !important;
-        bottom: max(8px, env(safe-area-inset-bottom)) !important;
-        left: 8px !important;
-        width: min(88vw, 360px) !important;
-        height: auto !important;
-        max-height: none !important;
-        overflow: auto !important;
-        display: grid !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        transform: translateX(calc(-100% - 20px));
-        transition: transform .22s ease;
-        box-shadow: 0 12px 40px rgba(0,0,0,.22) !important;
-      }
-      body.mobile-nav-open .sidebar { transform: translateX(0); }
-      /* Hide the floating MENU button while the sidebar is open.
-         It reappears automatically when the sidebar closes. */
-      body.mobile-nav-open .mobile-nav-toggle {
-        display: none !important;
-      }
-      body.mobile-nav-open::after {
-        content: ""; position: fixed; inset: 0; z-index: 10040;
-        background: rgba(15, 23, 42, .36);
-      }
-      .nav { overflow: auto !important; display: grid !important; grid-template-columns: 1fr !important; }
-      .mobile-nav-toggle {
-        display: flex; align-items: center; justify-content: center; gap: 8px;
-        position: absolute; z-index: 10060; top: max(6px, env(safe-area-inset-top)); left: 8px;
-        min-height: 34px; padding: 0 10px; font-size: 13px; border: 1px solid var(--year-page-card-border);
-        border-radius: 999px; color: var(--text); background: var(--year-page-card-bg);
-        box-shadow: 0 4px 16px rgba(20,40,80,.18); font-weight: 800;
-      }
-      .main { width: 100% !important; height: auto !important; min-height: 0 !important; overflow: visible !important; padding-top: 48px !important; }
-      .pages, .page { height: auto !important; min-height: 0 !important; overflow: visible !important; }
-      .page.active { display: block !important; }
-      .page-scroll, .dashboard-scroll, #calendar .page-scroll {
-        flex: none !important; min-height: 0 !important; height: auto !important; max-height: none !important;
-        overflow: visible !important; overflow-x: hidden !important; overflow-y: visible !important;
-        -webkit-overflow-scrolling: touch; overscroll-behavior: auto;
-        padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
-      }
-    }
     body.auth-locked .mobile-nav-toggle { display: none !important; }
     @media (min-width: 981px) { .mobile-nav-toggle { display: none !important; } }
 
-    /* Mobile calendar: make staff names readable and allow wrapping instead of clipping. */
+    /* Consolidated mobile layout, calendar staff labels, and roster editor fixes. */
     @media (max-width: 760px) {
-      #calendar .calendar-mini-day-staff,
-      #calendar .calendar-mini-day-staff-original,
-      #calendar .calendar-mini-day-staff-assigned,
-      #calendar .calendar-mini-day-staff-current {
-        font-size: clamp(9px, 2.7vw, 11px) !important;
-        line-height: 1.15 !important;
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        overflow-wrap: anywhere !important;
-        word-break: normal !important;
+      #dashboard .display-board-left,
+      #dashboard .display-time-block,
+      #dashboard .display-clock-wrap {
+        text-align: center;
+        align-items: center;
+        justify-content: center;
       }
+      #dashboard .display-date,
+      #dashboard .display-greeting,
+      #dashboard .display-title-clock {
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+      }
+      #dashboard .display-accent-line { margin-left: auto; margin-right: auto; }
+
+      .profile-info-box strong { text-align: center; }
+      .profile-info-box { min-width: 0; }
+
+      #calendar .calendar-roster-export-btn {
+        min-width: 100px;
+        width: 100px;
+        flex: 0 0 100px;
+        padding-left: 12px;
+        padding-right: 12px;
+        white-space: nowrap;
+        text-align: center;
+      }
+
       #calendar .calendar-mini-day { min-width: 0 !important; }
-      #calendar .calendar-full-grid { grid-template-rows: repeat(6, minmax(66px, auto)) !important; grid-auto-rows: minmax(66px, auto) !important; }
-    }
+      #calendar .calendar-full-grid {
+        grid-template-rows: repeat(6, minmax(66px, auto)) !important;
+        grid-auto-rows: minmax(66px, auto) !important;
+      }
 
-
-/* Mobile-only refinements requested 2026-10-11; desktop styles remain untouched. */
-@media (max-width: 760px) {
-  /* Center the dashboard clock, date and greeting. */
-  #dashboard .display-board-left,
-  #dashboard .display-time-block,
-  #dashboard .display-clock-wrap {
-    text-align: center;
-    align-items: center;
-    justify-content: center;
-  }
-  #dashboard .display-date,
-  #dashboard .display-greeting,
-  #dashboard .display-title-clock {
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
-  }
-  #dashboard .display-accent-line { margin-left: auto; margin-right: auto; }
-
-  /* Keep document-card titles, including Work Procedure Manual, centered in their cards. */
-  .profile-info-box strong { text-align: center; }
-  .profile-info-box { min-width: 0; }
-
-  /* Give EXPORT enough width for its full label. */
-  #calendar .calendar-roster-export-btn {
-    min-width: 100px;
-    width: 100px;
-    flex: 0 0 100px;
-    padding-left: 12px;
-    padding-right: 12px;
-    white-space: nowrap;
-    text-align: center;
-  }
-
-  /* Calendar staff names stay on one line inside each date cell. */
-  #calendar .calendar-mini-day-staff,
-  #calendar .calendar-mini-day-staff-current,
-  #calendar .calendar-mini-day-staff-original {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    font-size: 8px;
-    line-height: 1.15;
-    letter-spacing: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: clip;
-    overflow-wrap: normal;
-    word-break: normal;
-  }
-}
-
-/* Mobile calendar and roster editor overflow fix; desktop unchanged. */
-@media (max-width: 760px) {
-  #calendar .calendar-mini-day-staff,
-  #calendar .calendar-mini-day-staff *,
-  #calendar .calendar-mini-day-staff-current,
-  #calendar .calendar-mini-day-staff-original,
-  #calendar .calendar-mini-day-staff-assigned {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-    white-space: nowrap !important;
-    word-break: keep-all !important;
-    overflow-wrap: normal !important;
-    line-height: 1.15 !important;
-    font-size: 7px !important;
-    letter-spacing: -0.02em !important;
-    text-align: center !important;
-    overflow: hidden !important;
-    text-overflow: clip !important;
-  }
-  #calendar .daily-roster-list {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box !important;
-  }
-  #calendar .daily-roster-row,
-  #calendar .daily-roster-row.is-assigned,
-  #calendar .daily-roster-row.is-editing-assignment {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    gap: 8px !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-  }
-  #calendar .daily-roster-row > *,
-  #calendar .daily-roster-row input,
-  #calendar .daily-roster-row select,
-  #calendar .daily-roster-row textarea,
-  #calendar .daily-roster-row .daily-roster-staff-pair,
-  #calendar .daily-roster-row .daily-roster-assign-btn,
-  #calendar .daily-roster-row .roster-delete-btn {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-  #calendar .daily-roster-row input,
-  #calendar .daily-roster-row select,
-  #calendar .daily-roster-row textarea,
-  #calendar .daily-roster-row button {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-    /* FINAL MOBILE FIX - fit full staff names inside date cards */
-    @media (max-width: 760px) {
+      #calendar .calendar-mini-day-staff,
+      #calendar .calendar-mini-day-staff *,
+      #calendar .calendar-mini-day-staff-current,
+      #calendar .calendar-mini-day-staff-original,
+      #calendar .calendar-mini-day-staff-assigned {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        text-align: center !important;
+        text-overflow: clip !important;
+      }
       #calendar .calendar-mini-day-staff {
         padding: 0 2px !important;
         gap: 1px !important;
+        font-size: 7px !important;
+        line-height: 1.15 !important;
+        letter-spacing: -0.02em !important;
+        overflow: hidden !important;
+        word-break: keep-all !important;
       }
-
       #calendar .calendar-mini-day-staff-current,
       #calendar .calendar-mini-day-staff-assigned {
         font-size: 7px !important;
         line-height: 1.05 !important;
         letter-spacing: -0.18px !important;
         font-weight: 950 !important;
-        white-space: nowrap !important;
         overflow: visible !important;
-        text-overflow: clip !important;
         word-break: normal !important;
       }
-
       #calendar .calendar-mini-day-staff-original {
         font-size: 7px !important;
         line-height: 1 !important;
         letter-spacing: -0.15px !important;
-        white-space: nowrap !important;
         overflow: visible !important;
-        text-overflow: clip !important;
         word-break: normal !important;
+      }
+
+      #calendar .daily-roster-list {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+      }
+      #calendar .daily-roster-row,
+      #calendar .daily-roster-row.is-assigned,
+      #calendar .daily-roster-row.is-editing-assignment {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      #calendar .daily-roster-row > *,
+      #calendar .daily-roster-row input,
+      #calendar .daily-roster-row select,
+      #calendar .daily-roster-row textarea,
+      #calendar .daily-roster-row .daily-roster-staff-pair,
+      #calendar .daily-roster-row .daily-roster-assign-btn,
+      #calendar .daily-roster-row .roster-delete-btn {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      #calendar .daily-roster-row input,
+      #calendar .daily-roster-row select,
+      #calendar .daily-roster-row textarea,
+      #calendar .daily-roster-row button {
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
 
@@ -7251,7 +7216,7 @@ select.outsource-native-select,
   transition: border-color 0.11s ease, box-shadow 0.11s ease;
 }
 
-:is(.outsource-result-modal, .outsource-admin-modal, .outsource-report-download-modal, .inventory-modal, #adminAccessModal) .outsource-select-trigger {
+:is(.outsource-result-modal, .outsource-admin-modal, .outsource-report-download-modal, .inventory-modal) .outsource-select-trigger {
   min-height: 40px;
   height: 40px;
   padding: 0 12px;
@@ -8080,11 +8045,10 @@ html.dark-mode-preload :is(#moduleYearGrid.outsource-active-grid, #moduleYearGri
 .outsource-import-modal {
   position: fixed;
   inset: 0;
-  z-index: 11500;
+  z-index: var(--z-modal, 11500);
   display: flex;
   align-items: center;
   justify-content: center;
-  place-items: center;
   padding: 18px;
   background: rgba(15, 23, 42, 0.56);
 }
@@ -9167,11 +9131,10 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
 .inventory-record-modal {
   position: fixed;
   inset: 0;
-  z-index: 11500;
+  z-index: var(--z-modal, 11500);
   display: flex;
   align-items: center;
   justify-content: center;
-  place-items: center;
   padding: 18px;
 }
 
@@ -9273,6 +9236,57 @@ body.dark-mode #transfusionStatusSelect:not(.outsource-native-select) {
   font-weight: 900;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  color: var(--muted);
+}
+
+.inventory-form .inventory-lot-field {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.inventory-form .inventory-lot-field > label {
+  display: block;
+}
+
+.inventory-form [hidden] {
+  display: none !important;
+}
+
+.inventory-admin-master-section {
+  margin-top: 16px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+
+.inventory-admin-master-kicker {
+  margin-bottom: 8px;
+}
+
+.inventory-admin-item-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.inventory-admin-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 7px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.inventory-admin-item-name {
+  display: block;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.inventory-admin-item-meta {
+  font-size: 9px;
   color: var(--muted);
 }
 
@@ -9398,7 +9412,7 @@ html.dark-mode-preload .inventory-form select:not(.outsource-native-select) {
   left: 0;
   right: 0;
   top: calc(100% + 6px);
-  z-index: 12050;
+  z-index: var(--z-popover, 12500);
   display: none;
   max-height: 280px;
   overflow-y: auto;
@@ -9856,7 +9870,6 @@ body.visitor-read-only .tbis-edit,
 body.visitor-read-only .tbis-delete,
 body.visitor-read-only [data-notification-edit],
 body.visitor-read-only [data-notification-delete],
-body.visitor-read-only .notification-form .notification-select-trigger,
 body.visitor-read-only .inventory-history-edit-head,
 body.visitor-read-only .inventory-history-edit-cell {
   display: none !important;
@@ -10921,18 +10934,6 @@ body.auth-resolving #authResolvingPanel {
 #calendar .calendar-mini-day.calendar-staff-color-japidi {
   background: linear-gradient(145deg, #fff3cf 0%, #ffe4a3 100%) !important;
   border-color: #e7c879 !important;
-}
-
-/* Holiday: neutral grey, intentionally distinct from every staff colour.
-   These selectors are deliberately more specific so older holiday/today/selected
-   calendar styling cannot turn a holiday box pink, orange, blue, etc. */
-#calendar .calendar-mini-day.is-holiday,
-#calendar .calendar-mini-day.is-holiday.is-today,
-#calendar .calendar-mini-day.is-holiday.is-selected,
-#calendar .calendar-mini-day.is-holiday.is-selected.is-today {
-  background: linear-gradient(145deg, #e7eaee 0%, #cfd5dc 100%) !important;
-  border-color: #aeb7c2 !important;
-  outline-color: rgba(71, 85, 105, .16) !important;
 }
 
 /* Keep staff labels neutral: the colour is carried by the date box, not the font. */

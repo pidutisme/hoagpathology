@@ -1,10 +1,15 @@
-import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase-admin.js';
 import { sessionFor, appendSystemLog } from '../lib/session.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
-import { isSameOriginRequest, ensureRequestId, cookieValue } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue, SESSION_COOKIE_NAME } from '../lib/request-security.js';
+import {
+  throttleKeys,
+  isLoginThrottled as throttled,
+  recordLoginFailures as recordFailure,
+  clearLoginFailures as clearFailures
+} from '../lib/login-throttle.js';
 import { parseRequest, boundedText } from '../lib/schemas/common.js';
 import {
   consumeTotpCode,
@@ -25,119 +30,6 @@ const schema = z.object({
   recoveryCode: z.string().regex(/^[A-Z0-9-]{8,32}$/i).optional()
 }).strict();
 
-const ipFor = req =>
-  (
-    String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
-    String(req.headers['x-real-ip'] || '') ||
-    'unknown'
-  ).slice(0, 120);
-
-function throttleKeys(username, req) {
-  const userKey = createHash('sha256')
-    .update('login-user\n' + normalizeUserId(username))
-    .digest('hex')
-    .slice(0, 32);
-
-  const ipKey = createHash('sha256')
-    .update('login-ip\n' + ipFor(req))
-    .digest('hex')
-    .slice(0, 32);
-
-  return { userKey, ipKey };
-}
-
-async function getSettings() {
-  const { data, error } = await supabase
-    .from('app_settings')
-    .select('data,settings')
-    .eq('id', 'true')
-    .maybeSingle();
-
-  if (error) throw error;
-
-  return {
-    ...(data?.data || {}),
-    ...(data?.settings || {})
-  };
-}
-
-async function saveSettings(settings) {
-  const { error } = await supabase
-    .from('app_settings')
-    .upsert({
-      id: 'true',
-      data: settings,
-      settings,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'id' });
-
-  if (error) throw error;
-}
-
-function pruneFailures(rawFailures, nowMs) {
-  const next = {};
-  if (!rawFailures || typeof rawFailures !== 'object') return next;
-  const staleCutoff = nowMs - 60 * 60 * 1000;
-  for (const [k, v] of Object.entries(rawFailures)) {
-    if (!v || typeof v !== 'object') continue;
-    const until = Number(v.until || 0);
-    const updatedMs = Date.parse(String(v.updatedAt || '')) || 0;
-    if (until > nowMs || updatedMs > staleCutoff) {
-      next[k] = v;
-    }
-  }
-  return next;
-}
-
-async function throttled(keys) {
-  const settings = await getSettings();
-  const failures = settings.loginFailures || {};
-
-  return (
-    Number(failures[keys.userKey]?.until || 0) > Date.now() ||
-    Number(failures[keys.ipKey]?.until || 0) > Date.now()
-  );
-}
-
-async function recordFailure(keys, kind) {
-  const settings = await getSettings();
-  const nowMs = Date.now();
-  const failures = pruneFailures(settings.loginFailures, nowMs);
-
-  for (const [key, scope, lockAfter] of [
-    [keys.userKey, 'user', 5],
-    [keys.ipKey, 'ip', 20]
-  ]) {
-    const current = failures[key] || {};
-    const count = Number(current.count || 0) + 1;
-
-    failures[key] = {
-      count,
-      until: count >= lockAfter ? nowMs + 300000 : 0,
-      kind: `${kind}-${scope}`,
-      updatedAt: new Date(nowMs).toISOString()
-    };
-  }
-
-  await saveSettings({
-    ...settings,
-    loginFailures: failures
-  });
-}
-
-async function clearFailures(keys) {
-  const settings = await getSettings();
-  const failures = { ...(settings.loginFailures || {}) };
-
-  delete failures[keys.userKey];
-  delete failures[keys.ipKey];
-
-  await saveSettings({
-    ...settings,
-    loginFailures: failures
-  });
-}
-
 const audit = (actorId, action, requestId) =>
   appendSystemLog(null, {
     at: new Date().toISOString(),
@@ -148,14 +40,6 @@ const audit = (actorId, action, requestId) =>
     requestId,
     metadata: {}
   });
-
-const normalizeUserPasswordFields = user => ({
-  ...user,
-  passwordHash: user.passwordHash || user.password_hash,
-  passwordIterations: user.passwordIterations || user.password_iterations,
-  passwordSalt: user.passwordSalt || user.password_salt || user.salt,
-  salt: user.salt || user.passwordSalt || user.password_salt
-});
 
 async function authenticateAdmin(username, password) {
   const normalized = normalizeUserId(username);
@@ -174,7 +58,7 @@ async function authenticateAdmin(username, password) {
   return user &&
     user.active !== false &&
     (normalizeUserId(user.role) === 'ADMIN' || user.is_super_admin === true) &&
-    verifyPassword(normalizeUserPasswordFields(user), normalizePassword(password))
+    verifyPassword(user, normalizePassword(password))
     ? user
     : null;
 }
@@ -305,7 +189,16 @@ export default async function handler(req, res) {
         });
       }
 
-      const secret = decryptTotpSecret(pending.encrypted_secret);
+      let secret;
+      try {
+        secret = decryptTotpSecret(pending.encrypted_secret);
+      } catch {
+        return res.status(400).json({
+          ok: false,
+          error: 'MFA setup is invalid or expired. Start setup again.',
+          requestId: req.requestId
+        });
+      }
       const counter = matchingTotpCounter(secret, body.code);
 
       if (counter === null) {
@@ -343,7 +236,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const sessionToken = cookieValue(req, 'labapp_session').slice(0, 300);
+    const sessionToken = cookieValue(req, SESSION_COOKIE_NAME).slice(0, 300);
 
     const session = await sessionFor(null, sessionToken);
 
@@ -375,16 +268,29 @@ export default async function handler(req, res) {
       });
     }
 
-    const user = normalizeUserPasswordFields(session.user || {});
+    const passwordValid = Boolean(body.password) && verifyPassword(session.user || {}, normalizePassword(body.password));
+    const hasFactor = Boolean(body.code || body.recoveryCode);
+
+    if (!passwordValid || !hasFactor) {
+      await recordFailure(keys, 'mfa-management');
+      await audit(
+        session.userId,
+        'MFA_MANAGEMENT_FAILURE',
+        req.requestId
+      );
+
+      return res.status(401).json({
+        ok: false,
+        error: 'Current password or authenticator code is invalid.',
+        requestId: req.requestId
+      });
+    }
 
     const factorVerified = body.code
       ? await consumeTotpCode(session.userId, body.code)
       : await consumeRecoveryCode(session.userId, body.recoveryCode);
 
-    if (
-      !verifyPassword(user, normalizePassword(body.password)) ||
-      !factorVerified
-    ) {
+    if (!factorVerified) {
       await recordFailure(keys, 'mfa-management');
       await audit(
         session.userId,
@@ -419,13 +325,20 @@ export default async function handler(req, res) {
     }
 
     const codes = generateRecoveryCodes();
+    const nowIso = new Date().toISOString();
 
-    await saveMfa(session.userId, {
-      recovery_hashes: Object.fromEntries(
-        codes.map(code => [recoveryCodeHash(code), true])
-      ),
-      recovery_codes_generated_at: new Date().toISOString()
-    });
+    const { error: rotateError } = await supabase
+      .from('user_mfa')
+      .update({
+        recovery_hashes: Object.fromEntries(
+          codes.map(code => [recoveryCodeHash(code), true])
+        ),
+        recovery_codes_generated_at: nowIso,
+        updated_at: nowIso
+      })
+      .eq('user_id', session.userId);
+
+    if (rotateError) throw rotateError;
 
     await audit(
       session.userId,

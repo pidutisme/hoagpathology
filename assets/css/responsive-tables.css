@@ -168,27 +168,13 @@ table.rt-responsive-table td > *,
 
 /* --------------------------------------------------------------------------
    3. Notification 10-Column Proportions
+      Canonical column widths are defined in assets/css/notification.css.
    -------------------------------------------------------------------------- */
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(1),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(1) { width: 9.5% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(2),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(2) { width: 13.5% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(3),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(3) { width: 11% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(4),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(4) { width: 6% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(5),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(5) { width: 10.5% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(6),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(6) { width: 10.5% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(7),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(7) { width: 9% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(8),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(8) { width: 8.5% !important; }
-#notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(9),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(9) { width: 8% !important; }
 #notification .notification-record-card .notification-table.rt-responsive-table th:nth-child(10),
-#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(10) { width: 13.5% !important; text-align: center !important; overflow: visible !important; }
+#notification .notification-record-card .notification-table.rt-responsive-table td:nth-child(10) {
+  text-align: center !important;
+  overflow: visible !important;
+}
 
 /* --------------------------------------------------------------------------
    4. Semantic Table Status / Result Typography

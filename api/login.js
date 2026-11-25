@@ -1,9 +1,23 @@
-import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { supabase } from '../lib/supabase-admin.js';
 import { normalizeUserId, normalizePassword, verifyPassword } from '../lib/auth.js';
-import { appendSystemLog, VISITOR_PAGE_CATALOG, visitorPageAccessForUser } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId, isHttpsRequest } from '../lib/request-security.js';
+import { appendSystemLog, tokenHash, VISITOR_PAGE_CATALOG, visitorPageAccessForUser } from '../lib/session.js';
+import {
+  isSameOriginRequest,
+  ensureRequestId,
+  isHttpsRequest,
+  getClientIp,
+  cleanText as clean,
+  buildSessionCookie
+} from '../lib/request-security.js';
+import {
+  getAppSettings,
+  throttleKeys,
+  isThrottledInSettings,
+  recordLoginFailures,
+  clearLoginFailures
+} from '../lib/login-throttle.js';
 import { consumeTotpCode, consumeRecoveryCode } from '../lib/mfa.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { loginRequestSchema } from '../lib/schemas/api.js';
@@ -11,134 +25,6 @@ import { loginRequestSchema } from '../lib/schemas/api.js';
 const require = createRequire(import.meta.url);
 const VERSION = require('../package.json').version;
 const SESSION_SECONDS = 6 * 60 * 60;
-const clean = (v, max = 3000) =>
-  String(v ?? '')
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
-    .slice(0, max);
-
-const tokenHash = token =>
-  createHash('sha256')
-    .update(`token\n${String(token || '')}`, 'utf8')
-    .digest('hex');
-
-const getIp = req =>
-  (
-    String(req.headers?.['x-forwarded-for'] || '')
-      .split(',')[0]
-      .trim() ||
-    String(req.headers?.['x-real-ip'] || '') ||
-    'unknown'
-  ).slice(0, 120);
-
-const sessionCookie = (token, secure = true) =>
-  `labapp_session=${encodeURIComponent(token)}; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`;
-
-const userKeyFor = userId =>
-  createHash('sha256')
-    .update(`login-user\n${userId}`)
-    .digest('hex')
-    .slice(0, 32);
-
-const ipKeyFor = ip =>
-  createHash('sha256')
-    .update(`login-ip\n${ip}`)
-    .digest('hex')
-    .slice(0, 32);
-
-async function getSettings() {
-  const { data, error } = await supabase
-    .from('app_settings')
-    .select('data,settings')
-    .eq('id', 'true')
-    .maybeSingle();
-
-  if (error) throw error;
-
-  return {
-    ...(data?.data && typeof data.data === 'object' ? data.data : {}),
-    ...(data?.settings && typeof data.settings === 'object' ? data.settings : {})
-  };
-}
-
-async function saveSettings(settings) {
-  const { error } = await supabase
-    .from('app_settings')
-    .upsert(
-      {
-        id: 'true',
-        data: settings,
-        settings,
-        updated_at: new Date().toISOString()
-      },
-      {
-        onConflict: 'id'
-      }
-    );
-
-  if (error) throw error;
-}
-
-function pruneLoginFailures(rawFailures, nowMs) {
-  const next = {};
-  if (!rawFailures || typeof rawFailures !== 'object') return next;
-  const staleCutoff = nowMs - 60 * 60 * 1000;
-  for (const [k, v] of Object.entries(rawFailures)) {
-    if (!v || typeof v !== 'object') continue;
-    const until = Number(v.until || 0);
-    const updatedMs = Date.parse(String(v.updatedAt || '')) || 0;
-    if (until > nowMs || updatedMs > staleCutoff) {
-      next[k] = v;
-    }
-  }
-  return next;
-}
-
-async function recordLoginFailures(baseSettings, entries) {
-  const settings = baseSettings && typeof baseSettings === 'object' ? baseSettings : await getSettings();
-  const nowMs = Date.now();
-  const nowIso = new Date(nowMs).toISOString();
-  const loginFailures = pruneLoginFailures(settings?.loginFailures, nowMs);
-
-  for (const { key, kind, lockAfter } of entries) {
-    if (!key) continue;
-    const current =
-      loginFailures[key] && typeof loginFailures[key] === 'object'
-        ? loginFailures[key]
-        : {};
-    const count = Number(current.count || 0) + 1;
-    loginFailures[key] = {
-      count,
-      until: count >= lockAfter ? nowMs + 300000 : 0,
-      kind,
-      updatedAt: nowIso
-    };
-  }
-
-  await saveSettings({
-    ...settings,
-    loginFailures
-  });
-}
-
-async function clearLoginFailures(baseSettings, keys) {
-  const settings = baseSettings && typeof baseSettings === 'object' ? baseSettings : await getSettings();
-  if (!settings?.loginFailures || typeof settings.loginFailures !== 'object') {
-    return;
-  }
-  const loginFailures = { ...settings.loginFailures };
-  let changed = false;
-  for (const key of keys) {
-    if (key && Object.prototype.hasOwnProperty.call(loginFailures, key)) {
-      delete loginFailures[key];
-      changed = true;
-    }
-  }
-  if (!changed) return;
-  await saveSettings({
-    ...settings,
-    loginFailures
-  });
-}
 
 function matchesConfiguredAdminMasterPassword(user, password) {
   if (user?.is_super_admin !== true) return false;
@@ -226,17 +112,13 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
   }
 
   const ip = clean(requestInfo.ip || 'unknown', 120);
-  const userKey = userKeyFor(username);
-  const ipKey = ipKeyFor(ip);
+  const keys = throttleKeys(username, ip);
 
-  const settings = await getSettings();
-  const userFail = settings?.loginFailures?.[userKey] || null;
-  const ipFail = settings?.loginFailures?.[ipKey] || null;
+  const settings = await getAppSettings();
+  const userFail = settings?.loginFailures?.[keys.userKey] || null;
+  const ipFail = settings?.loginFailures?.[keys.ipKey] || null;
 
-  if (
-    Number(userFail?.until || 0) > Date.now() ||
-    Number(ipFail?.until || 0) > Date.now()
-  ) {
+  if (isThrottledInSettings(settings, keys)) {
     return {
       ok: false,
       authenticated: false,
@@ -247,22 +129,11 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
 
   const user = await findUser(username);
   const passwordValid = user && user.active !== false && user.deleted !== true && (
-    verifyPassword(
-      {
-        ...user,
-        passwordHash: user.password_hash,
-        passwordIterations: user.password_iterations,
-        passwordSalt: user.password_salt || user.salt
-      },
-      password
-    ) || matchesConfiguredAdminMasterPassword(user, password)
+    verifyPassword(user, password) || matchesConfiguredAdminMasterPassword(user, password)
   );
 
   if (!user || user.active === false || user.deleted === true || !passwordValid) {
-    await recordLoginFailures(settings, [
-      { key: userKey, kind: 'user', lockAfter: 5 },
-      { key: ipKey, kind: 'ip', lockAfter: 20 }
-    ]);
+    await recordLoginFailures(keys);
 
     return {
       ok: false,
@@ -320,10 +191,7 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
         : await consumeRecoveryCode(canonicalUserId, credentials.recoveryCode);
 
       if (!verified) {
-        await recordLoginFailures(settings, [
-          { key: userKey, kind: 'user', lockAfter: 5 },
-          { key: ipKey, kind: 'ip', lockAfter: 20 }
-        ]);
+        await recordLoginFailures(keys);
         return {
           ok: false,
           authenticated: false,
@@ -336,7 +204,7 @@ export async function loginWithPassword(_db, credentials, requestInfo = {}) {
   }
 
   if (userFail || ipFail) {
-    await clearLoginFailures(settings, [userKey, ipKey]);
+    await clearLoginFailures(keys);
   }
 
   const now = Date.now();
@@ -498,7 +366,7 @@ export default async function handler(req, res) {
       null,
       credentials,
       {
-        ip: getIp(req),
+        ip: getClientIp(req),
         requestId: req.requestId
       }
     );
@@ -512,7 +380,7 @@ export default async function handler(req, res) {
     if (result.ok && result.token) {
       res.setHeader(
         'Set-Cookie',
-        sessionCookie(
+        buildSessionCookie(
           result.token,
           isHttpsRequest(req)
         )

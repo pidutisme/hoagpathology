@@ -17,11 +17,14 @@ const include = [
 ];
 const files = [];
 
+const SKIP_DIRS = new Set(['node_modules', '.git', '.vercel', 'dist', 'dist-desktop']);
+
 function walk(p) {
   if (!fs.existsSync(p)) return;
   const s = fs.statSync(p);
   if (s.isDirectory()) {
     for (const n of fs.readdirSync(p).sort()) {
+      if (SKIP_DIRS.has(n)) continue;
       walk(path.join(p, n));
     }
   } else {
@@ -36,12 +39,16 @@ for (const p of include) {
 const h = crypto.createHash('sha256');
 const rx = /(<meta\s+name="labportal-build-id"\s+content=")[A-F0-9]{12}(")/i;
 
-for (const f of files.sort()) {
+const sortedFiles = files
+  .map((f) => ({ abs: f, rel: path.relative(root, f).replaceAll(path.sep, '/') }))
+  .sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
+
+for (const { abs: f, rel } of sortedFiles) {
   let b = fs.readFileSync(f);
-  if (path.basename(f) === 'index.html') {
+  if (rel === 'index.html') {
     b = Buffer.from(b.toString('utf8').replace(rx, '$1BUILD_ID$2'));
   }
-  h.update(path.relative(root, f).replaceAll(path.sep, '/'));
+  h.update(rel);
   h.update('\0');
   h.update(b);
   h.update('\0');

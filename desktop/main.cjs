@@ -21,16 +21,20 @@ function getProductionUrl() {
 
 function createWindow() {
   let url;
+  let allowedOrigin;
   try {
     url = getProductionUrl();
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+      throw new Error('Desktop production URL must use https:// or http://. Check desktop/config.json.');
+    }
+    allowedOrigin = parsedUrl.origin;
   } catch (error) {
     const { dialog } = require('electron');
     dialog.showErrorBox('LabPortal - Laboratory Management System', error.message);
     app.quit();
     return;
   }
-
-  const allowedOrigin = new URL(url).origin;
 
   const win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1000, minHeight: 700,

@@ -23,7 +23,21 @@ export default async function handler(req, res) {
   if (!process.env.BLOB_READ_WRITE_TOKEN || !process.env.BACKUP_ENCRYPTION_KEY) return res.status(503).json({ ok: false, error: 'Backup storage is not configured.', requestId: req.requestId });
   try {
     const tables = {};
-    const readAll = async table => {
+    const TABLE_ORDER_COLUMNS = [
+      ['app_users', 'user_id'],
+      ['app_sessions', 'token_hash'],
+      ['app_settings', 'id'],
+      ['app_roster', 'id'],
+      ['inventory_items', 'id'],
+      ['app_inventory', 'id'],
+      ['outsource_records', 'id'],
+      ['transfusion_records', 'id'],
+      ['notification_records', 'id'],
+      ['tbis102a_records', 'id'],
+      ['system_logs', 'id'],
+      ['user_mfa', 'user_id']
+    ];
+    const readAll = async (table, orderColumn) => {
       const pageSize = 1000;
       const rows = [];
 
@@ -31,6 +45,7 @@ export default async function handler(req, res) {
         const { data, error } = await supabase
           .from(table)
           .select('*')
+          .order(orderColumn, { ascending: true })
           .range(from, from + pageSize - 1);
 
         if (error) throw error;
@@ -43,21 +58,8 @@ export default async function handler(req, res) {
       return rows;
     };
 
-    for (const table of [
-      'app_users',
-      'app_sessions',
-      'app_settings',
-      'app_roster',
-      'inventory_items',
-      'app_inventory',
-      'outsource_records',
-      'transfusion_records',
-      'notification_records',
-      'tbis102a_records',
-      'system_logs',
-      'user_mfa'
-    ]) {
-      tables[table] = await readAll(table);
+    for (const [table, orderColumn] of TABLE_ORDER_COLUMNS) {
+      tables[table] = await readAll(table, orderColumn);
     }
 
     const raw = Buffer.from(JSON.stringify({ version: 1, source: 'supabase', tables }), 'utf8');

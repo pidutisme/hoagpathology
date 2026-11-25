@@ -11,15 +11,13 @@
        + HEAD AND PRE-AUTH BOOTSTRAP      +
        +----------------------------------+ -->
 <link href="/favicon.ico?v=3" rel="icon" type="image/x-icon"/>
-<link href="/icon-192.png" rel="apple-touch-icon"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon"/>
 <title>LabPortal - Laboratory Management System</title>
 <meta name="labportal-release-version" content="3.0.2"/>
-<meta name="labportal-build-id" content="A6B6174E1449"/>
+<meta name="labportal-build-id" content="72494E08E821"/>
 <base target="_top"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com" rel="dns-prefetch">
-<link href="https://fonts.gstatic.com" rel="dns-prefetch"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <meta content="#e6edf6" name="theme-color"/>
 <meta content="light dark" name="color-scheme"/>
@@ -28,13 +26,13 @@
 <meta content="LabPortal - Laboratory Management System" name="application-name"/>
 <meta content="LabPortal - Laboratory Management System" name="apple-mobile-web-app-title"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
-<meta content="no-referrer-when-downgrade" name="referrer"/>
+<meta content="strict-origin-when-cross-origin" name="referrer"/>
 <meta content="telephone=no,email=no,address=no" name="format-detection"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800;900&family=Poppins:wght@700;800;900&display=swap"/>
-<link rel="stylesheet" href="/assets/css/app.css?v=phase2-v1"/>
-<link rel="stylesheet" href="/assets/css/notification.css?v=phase2-v1"/>
-<link rel="stylesheet" href="/assets/css/responsive-tables.css?v=phase2-v1"/>
-<link rel="stylesheet" href="/assets/css/auth-redesign.css?v=phase2-v1"/>
+<link rel="stylesheet" href="/assets/css/app.css?v=phase2-v2"/>
+<link rel="stylesheet" href="/assets/css/notification.css?v=phase2-v2"/>
+<link rel="stylesheet" href="/assets/css/responsive-tables.css?v=phase2-v2"/>
+<link rel="stylesheet" href="/assets/css/auth-redesign.css?v=phase2-v2"/>
 </head>
 <!-- OUTSOURCE FILTER PATCHED V2: native selects + cached DOM filtering -->
 <body class="auth-locked auth-resolving" data-auth-status="AUTH_RESOLVING">
@@ -91,7 +89,7 @@
 <span class="auth-input-wrap">
 <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span>
 <input autocomplete="off" class="auth-input" data-1p-ignore="true" data-lpignore="true" id="loginPassword" maxlength="200" name="labapp_login_password" placeholder="PASSWORD" type="password"/>
-<button aria-label="Show password" class="auth-password-toggle" id="loginPasswordToggle" type="button"><svg aria-hidden="true" class="eye-on" viewbox="0 0 24 24"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg aria-hidden="true" class="eye-off" viewbox="0 0 24 24"><path d="M3 3l18 18"></path><path d="M10.6 10.6A2 2 0 0012 14a2 2 0 001.4-.6"></path><path d="M7.5 7.8C4.4 9.5 2.5 12 2.5 12s3.5 6.5 9.5 6.5c1.6 0 3-.4 4.2-1"></path><path d="M14.1 5.8c4.7.9 7.4 6.2 7.4 6.2s-.9 1.6-2.5 3.1"></path></svg></button>
+<button aria-label="Show password" class="auth-password-toggle" id="loginPasswordToggle" type="button"><svg aria-hidden="true" class="eye-on" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg aria-hidden="true" class="eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18"></path><path d="M10.6 10.6A2 2 0 0012 14a2 2 0 001.4-.6"></path><path d="M7.5 7.8C4.4 9.5 2.5 12 2.5 12s3.5 6.5 9.5 6.5c1.6 0 3-.4 4.2-1"></path><path d="M14.1 5.8c4.7.9 7.4 6.2 7.4 6.2s-.9 1.6-2.5 3.1"></path></svg></button>
 </span>
 </label>
 <label class="auth-field" for="loginMfaCode" hidden="">
@@ -336,9 +334,9 @@
 </div>
 <div class="calendar-month-actions">
 <div aria-label="Calendar month navigation" class="calendar-roster-nav">
-<button aria-label="Previous month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<button aria-label="Previous month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></svg></button>
 <button aria-label="Back to current date" class="calendar-roster-month-btn" id="calendarCurrentMonthBtn"  title="Back to current date" type="button">JUNE 2026</button>
-<button aria-label="Next month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg></button>
+<button aria-label="Next month" class="calendar-roster-nav-btn"  type="button"><svg aria-hidden="true" class="calendar-control-icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg></button>
 <button aria-label="Download monthly on-call schedule PDFs" class="calendar-roster-month-btn calendar-roster-export-btn"  title="Download before and after assign PDFs" type="button">EXPORT</button>
 </div>
 </div>
@@ -361,7 +359,7 @@
 <div class="calendar-selected-sub" id="calendarSelectedDateSub">Daily roster editor</div>
 </div>
 <div class="daily-roster-actions">
-<button aria-label="Add roster row" class="calendar-toolbar-btn" type="button"><svg aria-hidden="true" class="calendar-control-icon" viewbox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button aria-label="Add roster row" class="calendar-toolbar-btn" type="button"><svg aria-hidden="true" class="calendar-control-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
 </div>
 </div>
 <div class="daily-roster-card">
@@ -534,7 +532,7 @@
 </div>
 <div class="notification-table-wrap">
 <table class="notification-table"><thead><tr><th>Date / Time</th><th>Patient</th><th>ID / IC</th><th>Unit</th><th>Discipline</th><th>Test</th><th>Result</th><th>Flag</th><th>Status</th><th>Actions</th></tr></thead><tbody id="notificationTableBody"></tbody></table>
-<div class="notification-empty" id="notificationEmpty"><strong>No critical value notification records yet.</strong><span>Existing 2026 CSV data has intentionally not been imported. Use the registration form to create a new record.</span></div>
+<div class="notification-empty" id="notificationEmpty"><strong>No critical value notification records yet.</strong><span>Use the registration form to create a new critical value notification record.</span></div>
 </div>
 <div class="notification-pager" id="notificationPager">Showing 0–0 of 0</div>
 </section>
@@ -619,8 +617,8 @@
 <div class="inventory-form-message" id="inventoryAdminItemMessage"></div>
 <div class="inventory-form-actions"><button class="inventory-action-btn" id="inventoryAdminItemClearBtn" type="button">CLEAR</button><button class="inventory-action-btn primary" id="inventoryAdminItemSaveBtn" type="submit">ADD ITEM</button></div>
 </form>
-<div style="margin-top:16px;border-top:1px solid rgba(120,135,160,.14);padding-top:14px">
-<div class="inventory-modal-kicker" style="margin-bottom:8px">ITEM MASTER</div>
+<div class="inventory-admin-master-section">
+<div class="inventory-modal-kicker inventory-admin-master-kicker">ITEM MASTER</div>
 <div id="inventoryAdminItemList"></div>
 </div>
 </div>
@@ -642,7 +640,7 @@
 </div></div>
 <div class="inventory-form-grid">
 <label for="inventoryQtyInput">QUANTITY<input aria-label="Movement quantity" id="inventoryQtyInput" min="1" placeholder="e.g. 10" required="" step="1" type="number"/></label>
-<label for="inventoryLotInput">LOT NO.<input aria-label="Stock In lot number" id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/><select id="inventoryLotSelect" hidden aria-label="Stock Out lot number"></select></label>
+<div class="inventory-lot-field"><label for="inventoryLotInput" id="inventoryLotLabel">LOT NO.</label><input aria-label="Stock In lot number" id="inventoryLotInput" maxlength="80" placeholder="e.g. 2804" type="text"/><select id="inventoryLotSelect" hidden aria-label="Stock Out lot number"></select></div>
 </div>
 <div class="inventory-form-grid">
 <label class="inventory-date-field" for="inventoryMovementDateVisible">MOVEMENT DATE<input id="inventoryMovementDateInput" type="hidden"/><input aria-label="Movement date" autocomplete="off" class="inventory-neumorphic-date" id="inventoryMovementDateVisible" inputmode="numeric" placeholder="dd/mm/yyyy" readonly="" required="" type="text"/></label>
@@ -681,20 +679,20 @@
                       and operational controls.</p>
 <div class="settings-content-grid">
 <div class="setting-grid">
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"></path><path d="M16 9h3a2 2 0 0 1 2 2v10"></path><path d="M9 7h2M9 11h2M9 15h2M18 13h1M18 17h1"></path></svg></div><div><strong>App Name</strong><span>LabPortal - Laboratory Management System</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 8h8v8H8z"></path></svg></div><div><strong>App Type</strong><span>Single Page Application</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="10" cy="18" r="1"></circle></svg></div><div><strong>Department</strong><span>HOAG Pathology</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><rect height="14" rx="2" width="18" x="3" y="5"></rect><path d="M8 21h8M12 19v2"></path></svg></div><div><strong>Platform</strong><span>Android + Web + Windows</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">3.0.2</span></div></div>
-<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M8 12h8M12 8v8"></path></svg></div><div><strong>Build</strong><span id="aboutAppBuild">—</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"></path><path d="M16 9h3a2 2 0 0 1 2 2v10"></path><path d="M9 7h2M9 11h2M9 15h2M18 13h1M18 17h1"></path></svg></div><div><strong>App Name</strong><span>LabPortal - Laboratory Management System</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewBox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 8h8v8H8z"></path></svg></div><div><strong>App Type</strong><span>Single Page Application</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="10" cy="18" r="1"></circle></svg></div><div><strong>Department</strong><span>HOAG Pathology</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewBox="0 0 24 24"><rect height="14" rx="2" width="18" x="3" y="5"></rect><path d="M8 21h8M12 19v2"></path></svg></div><div><strong>Platform</strong><span>Android + Web + Windows</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10l2 4-7 13L5 8l2-4z"></path><path d="M7 4h10M5 8h14"></path></svg></div><div><strong>Version</strong><span id="aboutAppVersion">3.0.2</span></div></div>
+<div class="setting-box"><div aria-hidden="true" class="settings-card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M8 12h8M12 8v8"></path></svg></div><div><strong>Build</strong><span id="aboutAppBuild">—</span></div></div>
 </div>
 <div class="settings-extra-grid">
 <div class="settings-extra-card">
-<div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"></path></svg></div>
+<div aria-hidden="true" class="settings-extra-icon"><svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 8.5 4.5 4.5 0 0 0 7 18z"></path></svg></div>
 <div class="settings-extra-copy"><strong>Data &amp; Sync</strong><span>Supabase + Vercel</span></div>
 </div>
 <div class="settings-extra-card">
-<div aria-hidden="true" class="settings-extra-icon"><svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path></svg></div>
+<div aria-hidden="true" class="settings-extra-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path></svg></div>
 <div class="settings-extra-copy"><strong>About</strong><span>LabPortal - Laboratory Management System</span></div>
 </div>
 </div>
@@ -909,11 +907,12 @@
 <!-- +----------------------------------+
      + CLIENT SCRIPT - ASSET LOADING    +
      +----------------------------------+ -->
-<script src="/assets/js/timezone.js?v=timezone-v1"></script>
-<script src="/assets/js/notification.js?v=phase2-v1"></script>
-<script src="/assets/js/app.js?v=phase2-v1"></script>
-<script src="/assets/js/outsource-import.js?v=outsource-import-v38"></script>
-<script src="/assets/js/responsive-tables.js?v=responsive-tables-v23"></script>
+<script src="/assets/js/timezone.js?v=phase2-v2"></script>
+<script src="/assets/js/shared-utils.js?v=phase2-v2"></script>
+<script src="/assets/js/notification.js?v=phase2-v2"></script>
+<script src="/assets/js/app.js?v=phase2-v2"></script>
+<script src="/assets/js/outsource-import.js?v=phase2-v2"></script>
+<script src="/assets/js/responsive-tables.js?v=phase2-v2"></script>
 
 </body>
 </html>

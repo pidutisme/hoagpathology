@@ -735,12 +735,14 @@
 };
   function $(id) { return document.getElementById(id); }
   function esc(value) {
+    if (window.LabAppUtils && typeof window.LabAppUtils.escapeHtml === 'function') {
+      return window.LabAppUtils.escapeHtml(value);
+    }
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function nowLocalInput() { return window.LabAppTime.localInputNow(); }
-  function timeNow() { return window.LabAppTime.timeNow(); }
 
   function fmtDate(value) {
     if (!value) return '—';
@@ -801,7 +803,7 @@
     if (item.unit) return String(item.unit).trim();
 
     // Prefer a unit already present in the stored result.
-    var existing = rawResult.match(/(?:^|\s)(X\s*10\^?3\s*\/\s*µ?L|mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%|ratio)(?:\s|$)/i);
+    var existing = rawResult.match(/(?:^|\s)(X\s*10\^?3\s*\/\s*[µμ]?L|mmol\/L|mmol\/kg|[µμ]mol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%|ratio)(?:\s|$)/i);
     if (existing) return existing[1].replace(/\s+/g, ' ').trim();
 
     // Derive the unit from the test itself for numeric tests whose critical
@@ -826,7 +828,7 @@
 
     // Otherwise derive the unit from the critical-limit rule in the catalogue.
     var rule = String((item && item.rule) || (r && r.critical_limit) || '');
-    var match = rule.match(/(X\s*10\^?3\s*\/\s*µ?L|mmol\/L|mmol\/kg|µmol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|s|%|ratio)/i);
+    var match = rule.match(/(?:^|[\s\d])(X\s*10\^?3\s*\/\s*[µμ]?L|mmol\/L|mmol\/kg|[µμ]mol\/L|mol\/L|mg\/dL|g\/dL|g\/L|U\/L|kPa|sec|%|ratio)(?=[\s,;.)]|$)/i);
     return match ? match[1].replace(/\s+/g, ' ').trim() : '';
   }
 
@@ -842,32 +844,51 @@
     return unitPattern.test(raw) ? raw : raw + ' ' + unit;
   }
 
-  function calculateRecordFlag(r) {
-    var item = getCatalogueItemForRecord(r);
-    if (!item) return String(r && r.flag || '');
-    var raw = String(r && r.result || '').trim();
-    if (!raw) return 'Awaiting result';
+  function parseNumericToken(value) {
+    var m = String(value == null ? '' : value).replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/);
+    return m ? Number(m[0]) : NaN;
+  }
+
+  function parseAgeNumber(value) {
+    var m = String(value == null ? '' : value).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+    return m ? Number(m[0]) : NaN;
+  }
+
+  function evaluateFlagResult(item, rawResult, age) {
+    var raw = String(rawResult || '').trim();
+    if (!raw) return { text: 'Awaiting result', tone: '' };
+    if (!item) return { text: 'REVIEW', tone: 'critical' };
 
     if (item.type === 'qualitative') {
       var hit = (item.alerts || []).some(function (x) {
         return String(x).toLowerCase() === raw.toLowerCase();
       });
-      return hit ? raw.toUpperCase() : 'REVIEW';
+      if (hit) {
+        var up = raw.toUpperCase();
+        var tone = /DETECTED|POSITIVE|REACTIVE|ABNORMAL|SEEN|GROWTH|MALARIA/.test(up) ? 'critical' : 'normal';
+        return { text: up, tone: tone };
+      }
+      return { text: 'REVIEW', tone: 'normal' };
     }
 
     var itemName = String(item.name || '').trim().toLowerCase();
-    // PT/APTT require a patient/reference-range comparison that is not stored
-    // in this record. Do not falsely flag against an absolute number.
-    if (itemName === 'pt' || itemName === 'aptt') return 'REVIEW';
+    var n = parseNumericToken(raw);
+    if (isNaN(n)) return { text: 'REVIEW', tone: 'normal' };
 
-    var match = raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/);
-    var n = match ? Number(match[0]) : NaN;
+    // PT limits are relative to the laboratory reference range.
+    if (itemName === 'pt') {
+      return { text: 'REVIEW', tone: 'normal' };
+    }
+    if (itemName === 'aptt') {
+      return n >= 80 ? { text: 'HIGH CRITICAL', tone: 'critical' } : { text: 'REVIEW', tone: 'normal' };
+    }
 
     // Bilirubin Paeds: neonate >513 µmol/L; children >428 µmol/L.
     if (itemName === 'bilirubin paeds') {
-      var ageNum = Number(String(r.age || '').match(/\d+(?:\.\d+)?/)?.[0] || '');
-      if (isNaN(ageNum)) return 'REVIEW';
-      return n > (ageNum < 1 ? 513 : 428) ? 'HIGH CRITICAL' : 'REVIEW';
+      var years = parseAgeNumber(age);
+      if (isNaN(years)) return { text: 'REVIEW', tone: 'normal' };
+      var bilirubinLimit = years < 1 ? 513 : 428;
+      return n > bilirubinLimit ? { text: 'HIGH CRITICAL', tone: 'critical' } : { text: 'REVIEW', tone: 'normal' };
     }
 
     // Haematocrit supports both fraction (0.20/0.60) and percentage (20/60)
@@ -875,14 +896,20 @@
     if (itemName === 'haematocrit' || itemName === 'haematocrit paeds' || itemName === 'haematocrit neonate') {
       var hLow = Number(item.low), hHigh = Number(item.high);
       if (Math.abs(n) > 1) { hLow *= 100; hHigh *= 100; }
-      if (!isNaN(n) && n < hLow) return 'LOW CRITICAL';
-      if (!isNaN(n) && n > hHigh) return 'HIGH CRITICAL';
-      return 'REVIEW';
+      if (n < hLow) return { text: 'LOW CRITICAL', tone: 'critical' };
+      if (n > hHigh) return { text: 'HIGH CRITICAL', tone: 'critical' };
+      return { text: 'REVIEW', tone: 'normal' };
     }
 
-    if (item.low != null && !isNaN(n) && n < Number(item.low)) return 'LOW CRITICAL';
-    if (item.high != null && !isNaN(n) && n > Number(item.high)) return 'HIGH CRITICAL';
-    return 'REVIEW';
+    if (item.low != null && n < Number(item.low)) return { text: 'LOW CRITICAL', tone: 'critical' };
+    if (item.high != null && n > Number(item.high)) return { text: 'HIGH CRITICAL', tone: 'critical' };
+    return { text: 'REVIEW', tone: 'normal' };
+  }
+
+  function calculateRecordFlag(r) {
+    var item = getCatalogueItemForRecord(r);
+    if (!item) return String(r && r.flag || '');
+    return evaluateFlagResult(item, r && r.result, r && r.age).text;
   }
 
   function normalizeNotificationRecord(r) {
@@ -910,7 +937,6 @@
     var testName = catalogueItem ? String(catalogueItem.name || rawTestName) : rawTestName;
     var rawResult = String(r.result || '').trim();
     var unit = String(r.unit || '').trim();
-    if (!unit && catalogueItem && rawResult) unit = getResultUnit({ result: rawResult, test_name: testName, discipline: discipline, critical_limit: r.critical_limit }, catalogueItem);
 
     var normalized = {
       id: String(r.id || ''),
@@ -1159,19 +1185,44 @@
     el.className = 'notification-flag' + (tone ? ' ' + tone : '');
   }
   function parseIc(value) {
-    var s = String(value || '').replace(/[^0-9]/g, '');
-    if (s.length < 6) return;
-    var yy = Number(s.slice(0,2)), mm = Number(s.slice(2,4)), dd = Number(s.slice(4,6));
+    var trimmed = String(value || '').trim();
+    var ageEl = $('notificationAge');
+    var sexEl = $('notificationSex');
+    if (!trimmed || /^M\d{12}(?:-\d+)?$/i.test(trimmed.replace(/\s+/g, ''))) {
+      if (!trimmed) {
+        if (ageEl) ageEl.value = '';
+        if (sexEl) sexEl.value = '';
+        updateRuleAndFlag();
+      }
+      return;
+    }
+    var digits = trimmed.replace(/[^0-9]/g, '');
+    if (digits.length < 6) {
+      if (ageEl) ageEl.value = '';
+      if (sexEl) sexEl.value = '';
+      updateRuleAndFlag();
+      return;
+    }
+    if (digits.length === 12 && window.LabAppUtils && typeof window.LabAppUtils.parseMalaysianIc === 'function') {
+      var parsed = window.LabAppUtils.parseMalaysianIc(digits);
+      if (parsed.valid) {
+        if (ageEl) ageEl.value = parsed.age;
+        if (sexEl) sexEl.value = parsed.sex === 'L' ? 'M' : (parsed.sex === 'P' ? 'F' : '');
+        updateRuleAndFlag();
+      }
+      return;
+    }
+    var yy = Number(digits.slice(0, 2)), mm = Number(digits.slice(2, 4)), dd = Number(digits.slice(4, 6));
     var nowParts = window.LabAppTime.nowParts(), currentYY = nowParts.year % 100;
     var year = yy <= currentYY ? 2000 + yy : 1900 + yy;
-    var dob = new Date(year, mm - 1, dd);
-    if (dob.getFullYear() !== year || dob.getMonth() !== mm - 1 || dob.getDate() !== dd) return;
+    var check = new Date(Date.UTC(year, mm - 1, dd));
+    if (check.getUTCFullYear() !== year || check.getUTCMonth() !== mm - 1 || check.getUTCDate() !== dd) return;
     var age = nowParts.year - year;
     if (nowParts.month < mm || (nowParts.month === mm && nowParts.day < dd)) age--;
-    var sex = '';
-    if (s.length >= 12) sex = Number(s.slice(-1)) % 2 ? 'M' : 'F';
-    if ($('notificationAge')) $('notificationAge').value = Math.max(0, age);
-    if ($('notificationSex')) $('notificationSex').value = sex;
+    if (age < 0 || age > 130) return;
+    if (ageEl) ageEl.value = String(age);
+    if (sexEl) sexEl.value = digits.length >= 12 ? (Number(digits.slice(-1)) % 2 ? 'M' : 'F') : '';
+    updateRuleAndFlag();
   }
   var qualitativeResultOptions = {
     'Cerebrospinal Fluid Culture and Sensitivity': ['No Growth'],
@@ -1279,7 +1330,7 @@
     var item = list.find(function (x) { return String(x.name) === String(test.value); });
     if (!item) {
       box.className = 'notification-critical-box is-empty';
-      box.innerHTML = '<strong>Reference</strong><span>Critical-value catalogue will be connected in the next step.</span>';
+      box.innerHTML = '<strong>Reference</strong><span>Select a test to load the critical value rule.</span>';
       setFlag(resultValue ? 'REVIEW' : 'Awaiting result', resultValue ? 'critical' : '');
       return;
     }
@@ -1288,64 +1339,10 @@
     syncResultControl(item, resultValue);
     evaluateResult(item, resultValue, $('notificationAge') ? $('notificationAge').value : '');
   }
-  function evaluateAgeSensitiveResult(item, value, age) {
-    var name = String(item && item.name || '').trim().toLowerCase();
-    var raw = String(value || '').trim();
-    var n = Number(raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/)?.[0] || '');
-    var years = Number(String(age == null ? '' : age).replace(/,/g, '').match(/\d+(?:\.\d+)?/)?.[0] || '');
-    if (!raw || isNaN(n)) return false;
-
-    // PT/APTT limits are relative to the laboratory reference range.
-    // A patient result alone cannot calculate these limits.
-    if (name === 'pt') {
-      setFlag('REVIEW', 'normal');
-      return true;
-    }
-    if (name === 'aptt') {
-      if (n >= 80) setFlag('HIGH CRITICAL', 'critical');
-      else setFlag('REVIEW', 'normal');
-      return true;
-    }
-
-    // Bilirubin Paeds: neonate >513 µmol/L; children >428 µmol/L.
-    if (name === 'bilirubin paeds') {
-      if (isNaN(years)) { setFlag('REVIEW', 'normal'); return true; }
-      var bilirubinLimit = years < 1 ? 513 : 428;
-      if (n > bilirubinLimit) setFlag('HIGH CRITICAL', 'critical');
-      else setFlag('REVIEW', 'normal');
-      return true;
-    }
-
-    // Haematocrit is shown as a fraction (0.20/0.60), but some reports store
-    // it as a percentage (20/60). Support both representations.
-    if (name === 'haematocrit' || name === 'haematocrit paeds' || name === 'haematocrit neonate') {
-      var low = Number(item.low), high = Number(item.high);
-      if (Math.abs(n) > 1) { low *= 100; high *= 100; }
-      if (n < low) setFlag('LOW CRITICAL', 'critical');
-      else if (n > high) setFlag('HIGH CRITICAL', 'critical');
-      else setFlag('REVIEW', 'normal');
-      return true;
-    }
-    return false;
-  }
 
   function evaluateResult(item, value, age) {
-    if (evaluateAgeSensitiveResult(item, value, age)) return;
-    var raw = String(value || '').trim();
-    var n = Number(raw.replace(/,/g, '').match(/-?[0-9]+(?:\.[0-9]+)?/)?.[0] || '');
-    if (!raw) { setFlag('Awaiting result', ''); return; }
-    if (item && item.type === 'qualitative') {
-      var hit = (item.alerts || []).some(function (x) { return String(x).toLowerCase() === raw.toLowerCase(); });
-      if (hit) {
-        var up = raw.toUpperCase();
-        var tone = /DETECTED|POSITIVE|REACTIVE|ABNORMAL|SEEN|GROWTH|MALARIA/.test(up) ? 'critical' : 'normal';
-        setFlag(up, tone);
-      } else setFlag('REVIEW', 'normal');
-      return;
-    }
-    if (item && item.low != null && !isNaN(n) && n < Number(item.low)) { setFlag('LOW CRITICAL', 'critical'); return; }
-    if (item && item.high != null && !isNaN(n) && n > Number(item.high)) { setFlag('HIGH CRITICAL', 'critical'); return; }
-    setFlag('REVIEW', 'normal');
+    var outcome = evaluateFlagResult(item, value, age);
+    setFlag(outcome.text, outcome.tone);
   }
 
   function initNotificationNeumorphicDateTime() {
@@ -1417,10 +1414,6 @@
       if (top + h > window.innerHeight - 10) top = Math.max(10, r.top - h - 8);
       pop.style.left = left + 'px'; pop.style.top = top + 'px';
     }
-    function chooseDate(date) {
-      view.year=date.getFullYear(); view.month=date.getMonth(); view.day=date.getDate();
-      setValue(view); render();
-    }
     function renderTime() {
       var parts = currentParts();
       var hours = pop.querySelector('[data-hours]'), mins = pop.querySelector('[data-minutes]'), periods = pop.querySelector('[data-period]');
@@ -1469,7 +1462,6 @@
     function chooseTime(hour12, minute, period) {
       var parts=currentParts(), h=Number(hour12)%12;
       parts.hour = period==='PM' ? h+12 : h;
-      if (parts.hour === 24) parts.hour = 12;
       parts.minute = Number(minute);
       setValue(parts); renderTime();
     }
@@ -1487,7 +1479,7 @@
       else if(b.dataset.minute) { var p2=currentParts(); chooseTime(p2.hour%12||12,Number(b.dataset.minute),p2.hour>=12?'PM':'AM'); }
       else if(b.dataset.period) { var p3=currentParts(); chooseTime(p3.hour%12||12,p3.minute,b.dataset.period); }
       else if(b.hasAttribute('data-now')) { var nowParts=window.LabAppTime.nowParts(); setValue({year:nowParts.year,month:nowParts.month-1,day:nowParts.day,hour:nowParts.hour,minute:nowParts.minute}); render(); }
-      else if(b.hasAttribute('data-clear')) { hidden.value=''; visible.value=''; hidden.dispatchEvent(new Event('change',{bubbles:true})); visible.focus(); close(); }
+      else if(b.hasAttribute('data-clear')) { notificationDateTimeState=''; hidden.value=''; visible.value=''; hidden.dispatchEvent(new Event('change',{bubbles:true})); visible.focus(); close(); }
     });
     document.addEventListener('mousedown',function(e){if(!pop.hidden&&!pop.contains(e.target)&&e.target!==visible)close();});
     document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!pop.hidden)close();});
@@ -1647,7 +1639,20 @@
     return notificationDateTimeState;
   }
 
+  function matchesFlagFilter(recordFlag, selectedFlag) {
+    if (!selectedFlag || selectedFlag === 'ALL') return true;
+    var rf = String(recordFlag || '').trim().toUpperCase();
+    var sf = String(selectedFlag).trim().toUpperCase();
+    if (rf === sf) return true;
+    if (sf === 'DETECTED') return /\bDETECTED\b/.test(rf) && !/\bNOT DETECTED\b/.test(rf);
+    if (sf === 'POSITIVE') return /\bPOSITIVE\b/.test(rf);
+    if (sf === 'REACTIVE') return /\bREACTIVE\b/.test(rf) && !/\bNON-?REACTIVE\b/.test(rf);
+    return false;
+  }
+
   function collectForm() {
+    var limitBox = $('notificationCriticalLimit');
+    var limitSpan = limitBox && !limitBox.classList.contains('is-empty') ? limitBox.querySelector('span') : null;
     return {
       id: editingId || ('N' + Date.now()),
       notification_datetime: syncNotificationDateTimeBeforeSave(),
@@ -1659,7 +1664,7 @@
       unit: $('notificationUnit').value,
       discipline: $('notificationDiscipline').value,
       test_name: $('notificationTest').value,
-      critical_limit: $('notificationCriticalLimit').innerText.replace(/^Reference\s*/i, '').trim(),
+      critical_limit: limitSpan ? limitSpan.textContent.trim() : '',
       result: getResultValue(),
       flag: $('notificationFlag').textContent.trim(),
       staff: $('notificationStaff').value.trim(),
@@ -1681,7 +1686,7 @@
       if (year !== 'ALL' && String(r.notification_datetime || '').slice(0,4) !== year) return false;
       if (month !== 'ALL' && String(r.notification_datetime || '').slice(5,7) !== month) return false;
       if (discipline !== 'ALL' && r.discipline !== discipline) return false;
-      if (flag !== 'ALL' && r.flag !== flag) return false;
+      if (!matchesFlagFilter(r.flag, flag)) return false;
       if (status !== 'ALL' && r.status !== status) return false;
       return true;
     });
@@ -1693,7 +1698,8 @@
     var visitorOnly = isNotificationVisitor();
     if (body) body.innerHTML = rows.map(function (r) {
       var cls = r.discipline === 'BIOCHEMISTRY' ? 'bio' : r.discipline === 'HAEMATOLOGY' ? 'hema' : 'micro';
-      var statusCls = String(r.status).toLowerCase();
+      var rawStatus = String(r.status || '').trim().toLowerCase();
+      var statusCls = (rawStatus === 'completed' || rawStatus === 'informed') ? 'completed' : (rawStatus === 'pending' ? 'pending' : rawStatus.replace(/[^a-z0-9-]/g, ''));
       return '<tr><td>' + fmtDate(r.notification_datetime || r.updated_at || r.created_at) + '</td>' +
         '<td class="patient">' + esc(r.patient_name) + '</td>' +
         '<td>' + esc(r.patient_id) + '</td>' +
@@ -1754,7 +1760,7 @@
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) { e.preventDefault(); closeModal(); } });
     }
     var grid = $('notificationDetailGrid');
-    var fields = [['Date / Time', fmtDate(record.notification_datetime || record.updated_at || record.created_at)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(record.result)],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
+    var fields = [['Date / Time', fmtDate(record.notification_datetime || record.updated_at || record.created_at)],['Barcode',esc(record.barcode)],['Patient',esc(record.patient_name)],['ID / IC',esc(record.patient_id)],['Sex',esc(record.sex)],['Age',esc(record.age)],['Unit',esc(record.unit)],['Discipline',esc(record.discipline)],['Test',esc(record.test_name)],['Critical Limit',esc(record.critical_limit)],['Result',esc(formatNotificationResult(record))],['Flag',esc(record.flag)],['Staff',esc(record.staff)],['Inform To',esc(record.inform_to)],['Status',esc(record.status)],['Notes',esc(record.notes || '—')]];
     if (grid) grid.innerHTML = fields.map(function (f) { return '<div class="notification-detail"><small>' + f[0] + '</small><strong>' + f[1] + '</strong></div>'; }).join('');
     modal.hidden = false;
     var closeBtn = modal.querySelector('[data-notification-close]');

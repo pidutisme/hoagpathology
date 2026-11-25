@@ -21,6 +21,32 @@
   }
 
   function parts(value) {
+    if (typeof value === 'string') {
+      var trimmed = value.trim();
+      var wallMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?$/);
+      if (wallMatch) {
+        return {
+          year: Number(wallMatch[1]),
+          month: Number(wallMatch[2]),
+          day: Number(wallMatch[3]),
+          hour: Number(wallMatch[4]),
+          minute: Number(wallMatch[5]),
+          second: wallMatch[6] ? Number(wallMatch[6]) : 0
+        };
+      }
+      var dateOnlyMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateOnlyMatch) {
+        return {
+          year: Number(dateOnlyMatch[1]),
+          month: Number(dateOnlyMatch[2]),
+          day: Number(dateOnlyMatch[3]),
+          hour: 0,
+          minute: 0,
+          second: 0
+        };
+      }
+    }
+
     var date = value instanceof Date ? value : new Date(value == null || value === '' ? Date.now() : value);
     if (isNaN(date.getTime())) return null;
 
@@ -104,14 +130,15 @@
 
   function localWallClockToUtc(value) {
     var raw = String(value || '').trim();
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return raw;
-    var date = new Date(raw + ':00' + MALAYSIA_OFFSET);
+    var match = raw.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::(\d{2}))?$/);
+    if (!match) return raw;
+    var date = new Date(match[1] + ':' + (match[2] || '00') + MALAYSIA_OFFSET);
     return isNaN(date.getTime()) ? raw : date.toISOString();
   }
 
   function localWallClockParts(value) {
     var raw = String(value || '').trim();
-    var match = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    var match = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
     if (!match) return parts(raw);
     return {
       year: Number(match[1]),
@@ -119,7 +146,7 @@
       day: Number(match[3]),
       hour: Number(match[4]),
       minute: Number(match[5]),
-      second: 0
+      second: match[6] ? Number(match[6]) : 0
     };
   }
 

@@ -1,9 +1,16 @@
 import { supabase } from '../lib/supabase-admin.js';
 import { sessionFor, appendSystemLog, requireModuleAccess } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId, cookieValue } from '../lib/request-security.js';
+import { isSameOriginRequest, ensureRequestId, cookieValue, SESSION_COOKIE_NAME } from '../lib/request-security.js';
 import { parseRequest } from '../lib/schemas/common.js';
 import { transfusionDeleteQuerySchema, transfusionPatchSchema, transfusionQuerySchema, transfusionRecordSchema } from '../lib/schemas/transfusion.js';
-import { canDeleteTransfusionRecord, canReadLegacyTransfusionRecord, canReadTransfusionRecord, canWriteLegacyTransfusionRecord, canWriteTransfusionRecord } from '../lib/transfusion-access.js';
+import {
+  canDeleteLegacyTransfusionRecord,
+  canDeleteTransfusionRecord,
+  canReadLegacyTransfusionRecord,
+  canReadTransfusionRecord,
+  canWriteLegacyTransfusionRecord,
+  canWriteTransfusionRecord
+} from '../lib/transfusion-access.js';
 
 const audit = (db, actorId, action, requestId) =>
   appendSystemLog(db, { at: new Date().toISOString(), actorId, action, details: '', result: 'SUCCESS', requestId, metadata: {} });
@@ -16,21 +23,25 @@ async function getTransfusionRows() {
       .from('transfusion_records')
       .select('id, data, created_at, updated_at')
       .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .range(from, from + pageSize - 1);
     if (error) throw error;
     rows.push(...(data || []));
     if (!data || data.length < pageSize) break;
   }
-  return rows.map(row => ({
-    ...(row.data && typeof row.data === 'object' ? row.data : {}),
-    id: row.id,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }));
+  return rows.map(row => {
+    const payload = row.data && typeof row.data === 'object' ? row.data : {};
+    return {
+      ...payload,
+      id: row.id,
+      createdAt: payload.createdAt || row.created_at || '',
+      updatedAt: payload.updatedAt || row.updated_at || ''
+    };
+  });
 }
 
 async function authorizedSession(req, res) {
-  const token = cookieValue(req, 'labapp_session').slice(0, 300);
+  const token = cookieValue(req, SESSION_COOKIE_NAME).slice(0, 300);
   const session = await sessionFor(null, token);
   if (!session) res.status(401).json({ ok: false, error: 'Your secure session has expired. Please sign in again.', requestId: req.requestId });
   return session;
@@ -80,11 +91,13 @@ export default async function handler(req, res) {
         deletedAt: ''
       };
 
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('transfusion_records')
         .select('id')
         .eq('id', record.id)
         .maybeSingle();
+
+      if (existingError) throw existingError;
 
       if (existing) {
         return res.status(409).json({
@@ -175,7 +188,7 @@ export default async function handler(req, res) {
         return res.status(409).json({ ok: false, error: 'Transfusion record changed, was not found, or was already deleted.', requestId: req.requestId });
       }
 
-      if (!canDeleteTransfusionRecord(session, current) && !canWriteLegacyTransfusionRecord(session, current)) {
+      if (!canDeleteTransfusionRecord(session, current) && !canDeleteLegacyTransfusionRecord(session, current)) {
         return res.status(403).json({ ok: false, error: 'You cannot delete this transfusion record.', requestId: req.requestId });
       }
 

@@ -19,33 +19,40 @@
     'reject reason (if rejected)':'rejectReason','reject reason':'rejectReason',
     'catatan/nota':'notes','catatan / nota':'notes','notes':'notes','remarks':'notes'
   };
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function esc(v){
+    if(window.LabAppUtils&&typeof window.LabAppUtils.escapeHtml==='function')return window.LabAppUtils.escapeHtml(v);
+    return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+  }
   function normHeader(v){return String(v||'').replace(/^\uFEFF/,'').replace(/\s+/g,' ').trim().toLowerCase();}
+  function isValidDateParts(y,m,d){
+    if(window.LabAppUtils&&typeof window.LabAppUtils.isValidCalendarDate==='function')return window.LabAppUtils.isValidCalendarDate(y,m,d);
+    var dt=new Date(Date.UTC(y,m-1,d));
+    return dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d;
+  }
   function calculateMalaysianIcDetails(rawIc, referenceDate){
-    var original=String(rawIc||'').trim();
-    if(/^M\d{12}(?:-\d+)?$/i.test(original)) return {sex:'TBC',age:'NB/NO IC',special:true};
-    var raw=original.replace(/[^0-9]/g,'');
-    if(!/^\d{12}$/.test(raw)) return null;
-    var yy=Number(raw.slice(0,2)), mm=Number(raw.slice(2,4)), dd=Number(raw.slice(4,6));
-    var now=referenceDate instanceof Date?referenceDate:new Date();
-    var currentYY=Number(String(now.getFullYear()).slice(-2));
-    var year=yy<=currentYY?2000+yy:1900+yy;
-    var dob=new Date(year,mm-1,dd);
-    if(dob.getFullYear()!==year||dob.getMonth()!==mm-1||dob.getDate()!==dd) return null;
-    var genderDigit=Number(raw.charAt(11));
-    var sex=(genderDigit%2===1)?'L':'P';
-    var age=now.getFullYear()-year;
-    if(now.getMonth()<(mm-1)||(now.getMonth()===(mm-1)&&now.getDate()<dd)) age--;
-    if(age<0||age>130) return null;
-    return {sex:sex,age:age,dob:year+'-'+String(mm).padStart(2,'0')+'-'+String(dd).padStart(2,'0')};
+    if(window.LabAppUtils&&typeof window.LabAppUtils.parseMalaysianIc==='function'){
+      var refStr=typeof referenceDate==='string'?referenceDate:'';
+      var parsed=window.LabAppUtils.parseMalaysianIc(rawIc,refStr);
+      if(parsed.isNewbornCode)return {sex:'TBC',age:'NB/NO IC',special:true};
+      if(parsed.valid)return {sex:parsed.sex,age:Number(parsed.age),dob:parsed.birthYear+'-'+String(parsed.birthMonth).padStart(2,'0')+'-'+String(parsed.birthDay).padStart(2,'0')};
+      return null;
+    }
+    return null;
   }
   function normDate(v){
     var s=String(v||'').trim(); if(!s)return '';
+    var y,mo,d;
     var m=/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/.exec(s);
-    if(m){return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');}
-    m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
-    return m?m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0'):null;
+    if(m){ y=Number(m[3]); mo=Number(m[2]); d=Number(m[1]); }
+    else {
+      m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+      if(!m)return null;
+      y=Number(m[1]); mo=Number(m[2]); d=Number(m[3]);
+    }
+    if(!isValidDateParts(y,mo,d))return null;
+    return String(y).padStart(4,'0')+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
   }
+  var VALID_IMPORT_RESULTS={PENDING:true,COMPLETED:true,REJECT:true,ADA:true};
   function parseCsv(text){
     var rows=[],row=[],cell='',quoted=false;
     text=String(text||'').replace(/^\uFEFF/,'');
@@ -99,12 +106,13 @@
       // or other trailing cells. A real record must have at least one core
       // Outsource field before validation is applied.
       if(!String(r.sampleDate||'').trim() && !String(r.barCode||'').trim() && !String(r.name||'').trim() && !String(r.test||'').trim()) continue;
+      var rawDispatch=r.dispatchDate, rawResultDate=r.resultDate;
       r.sampleDate=normDate(r.sampleDate); r.dispatchDate=normDate(r.dispatchDate); r.resultDate=normDate(r.resultDate);
       // If the historical file leaves Sex/Age blank, derive them from the
       // Malaysian NRIC using the sample date as the age reference date.
       // Existing non-empty source values always win.
       if((!r.sex||!String(r.sex).trim()) || (!r.age||!String(r.age).trim())){
-        var icDetails=calculateMalaysianIcDetails(r.idIc,r.sampleDate?new Date(r.sampleDate+'T12:00:00'):new Date());
+        var icDetails=calculateMalaysianIcDetails(r.idIc,r.sampleDate||'');
         if(icDetails){
           if(!String(r.sex||'').trim())r.sex=icDetails.sex;
           if(!String(r.age||'').trim())r.age=String(icDetails.age);
@@ -113,15 +121,22 @@
       // Historical Google Sheet uses ADA for a completed/available result.
       // Normalize only imported historical rows so the existing Outsource UI
       // consistently shows COMPLETED without changing existing records.
-      if(String(r.result||'').trim().toUpperCase()==='ADA')r.result='COMPLETED';
+      var normalizedRes=String(r.result||'').trim().toUpperCase();
+      if(normalizedRes==='ADA'||normalizedRes==='COMPLETE'||normalizedRes==='DONE')r.result='COMPLETED';
+      else if(normalizedRes==='REJECTED')r.result='REJECT';
+      else if(normalizedRes==='')r.result='PENDING';
+      else if(VALID_IMPORT_RESULTS[normalizedRes])r.result=normalizedRes;
+      else r.result='PENDING';
       var rowValid=true;
       if(!r.sampleDate){errors.push('Row '+(i+1)+': invalid/missing Sample Date.');rowValid=false;}
+      if(rawDispatch && r.dispatchDate===null){errors.push('Row '+(i+1)+': invalid Dispatch Date (cleared).');}
+      if(rawResultDate && r.resultDate===null){errors.push('Row '+(i+1)+': invalid Result Date (cleared).');}
       if(!r.name){errors.push('Row '+(i+1)+': missing Name.');rowValid=false;}
       // Preserve historical rows exactly as supplied. Some source rows have
       // an empty Test field; do not invent a value just to make validation pass.
       // The row can still be imported because the historical data itself is valid.
       if(!r.test)errors.push('Row '+(i+1)+': Test is blank in source (kept blank).');
-      if(r.result==='')r.result='PENDING';
+      if(!r.dispatchDate)r.dispatchDate='';
       if(!r.resultDate)r.resultDate='';
       if(rowValid){
         r.id=stableId(r); r.createdAt=r.sampleDate+'T12:00:00.000Z'; r.updatedAt=r.createdAt; r.createdBy='CSV MIGRATION';
@@ -156,7 +171,7 @@
   async function handleFiles(files){
     selectedRows=[];selectedFiles=Array.from(files||[]);var preview=document.getElementById('outsourceImportPreview');
     if(!selectedFiles.length){if(preview)preview.innerHTML='<div class="outsource-import-empty">No CSV selected.</div>';return;}
-    preview.innerHTML='<div class="outsource-import-loading">Reading '+selectedFiles.length+' CSV file(s)…</div>';
+    if(preview)preview.innerHTML='<div class="outsource-import-loading">Reading '+selectedFiles.length+' CSV file(s)…</div>';
     for(var i=0;i<selectedFiles.length;i++){
       var f=selectedFiles[i], text=await f.text(); selectedRows.push(parseFile(f.name,text));
     }
@@ -186,10 +201,16 @@
   }
   function ensureModal(){
     if(document.getElementById('outsourceImportModal'))return;
-    document.body.insertAdjacentHTML('beforeend','<div class="outsource-import-modal" id="outsourceImportModal" hidden><div class="outsource-import-backdrop" data-outsource-import-close></div><div class="outsource-import-dialog" role="dialog" aria-modal="true" aria-labelledby="outsourceImportTitle"><div class="outsource-import-head"><div><div class="outsource-import-kicker">ONE-TIME MIGRATION</div><h2 id="outsourceImportTitle">IMPORT OUTSOURCE CSV</h2><p>Pull historical CSV records into the existing Outsource database. No live Google Sheet sync.</p></div><button type="button" class="outsource-import-close" data-outsource-import-close>×</button></div><div class="outsource-import-body"><label class="outsource-import-file"><span>Select January–October CSV files</span><input id="outsourceImportFiles" type="file" accept=".csv,text/csv" multiple></label><div id="outsourceImportPreview" class="outsource-import-preview"><div class="outsource-import-empty">Select the January–October CSV files to preview.</div></div></div><div class="outsource-import-actions"><button type="button" class="outsource-btn secondary" data-outsource-import-close>CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceImportRun" disabled>IMPORT NEW RECORDS</button></div></div></div>');
+    document.body.insertAdjacentHTML('beforeend','<div class="outsource-import-modal" id="outsourceImportModal" hidden><div class="outsource-import-backdrop" data-outsource-import-close></div><div class="outsource-import-dialog" role="dialog" aria-modal="true" aria-labelledby="outsourceImportTitle"><div class="outsource-import-head"><div><div class="outsource-import-kicker">ONE-TIME MIGRATION</div><h2 id="outsourceImportTitle">IMPORT OUTSOURCE CSV</h2><p>Pull historical CSV records into the existing Outsource database. No live Google Sheet sync.</p></div><button type="button" class="outsource-import-close" aria-label="Close" data-outsource-import-close>×</button></div><div class="outsource-import-body"><label class="outsource-import-file"><span>Select January–October CSV files</span><input id="outsourceImportFiles" type="file" accept=".csv,text/csv" multiple></label><div id="outsourceImportPreview" class="outsource-import-preview"><div class="outsource-import-empty">Select the January–October CSV files to preview.</div></div></div><div class="outsource-import-actions"><button type="button" class="outsource-btn secondary" data-outsource-import-close>CANCEL</button><button type="button" class="outsource-btn primary" id="outsourceImportRun" disabled>IMPORT NEW RECORDS</button></div></div></div>');
     document.querySelectorAll('[data-outsource-import-close]').forEach(function(el){el.addEventListener('click',closeModal);});
     var input=document.getElementById('outsourceImportFiles');if(input)input.addEventListener('change',function(){handleFiles(input.files);});
     var run=document.getElementById('outsourceImportRun');if(run)run.addEventListener('click',runImport);
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape'){
+        var m=document.getElementById('outsourceImportModal');
+        if(m&&!m.hidden)closeModal();
+      }
+    });
   }
   function mount(){ ensureModal(); }
   document.addEventListener('click',function(e){

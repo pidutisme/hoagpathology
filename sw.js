@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hoagpathology-phase2-v8';
+const CACHE_NAME = 'hoagpathology-phase2-v9';
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -22,7 +22,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
   // Never cache the SPA document. This prevents old deployments from surviving
-  // a Vercel rollout. Fingerprinted/static assets can still use stale-while-revalidate.
+  // a Vercel rollout. Fingerprinted/static assets use network-first with cache fallback.
   if (request.mode === "navigate" || url.pathname === "/" || url.pathname.endsWith("/index.html")) {
     event.respondWith(fetch(request));
     return;
@@ -32,7 +32,9 @@ self.addEventListener("fetch", (event) => {
     fetch(request).then((response) => {
       if (response.ok) {
         const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        caches.open(CACHE_NAME)
+          .then((cache) => cache.put(request, clone))
+          .catch(() => {});
       }
       return response;
     }).catch(() => caches.match(request))

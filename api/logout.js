@@ -1,26 +1,21 @@
-import { createHash } from 'node:crypto';
 import { supabase } from '../lib/supabase-admin.js';
-import { sessionFor, appendSystemLog, clearSessionCache } from '../lib/session.js';
-import { isSameOriginRequest, ensureRequestId, cookieValue, isHttpsRequest } from '../lib/request-security.js';
+import { sessionFor, appendSystemLog, clearSessionCache, tokenHash } from '../lib/session.js';
+import {
+  isSameOriginRequest,
+  ensureRequestId,
+  cookieValue,
+  isHttpsRequest,
+  SESSION_COOKIE_NAME,
+  clearSessionCookie
+} from '../lib/request-security.js';
 import { z } from 'zod';
-import { parseRequest, assertSafePayload } from '../lib/schemas/common.js';
+import { parseRequest } from '../lib/schemas/common.js';
 
 const bodySchema = z
   .object({
     clientInfo: z.record(z.string(), z.unknown()).optional()
   })
   .strict();
-
-const clearCookie = (res, secure = true) =>
-  res.setHeader(
-    'Set-Cookie',
-    `labapp_session=; Max-Age=0; Path=/; HttpOnly;${secure ? ' Secure;' : ''} SameSite=Lax`
-  );
-
-const tokenHash = token =>
-  createHash('sha256')
-    .update(`token\n${String(token || '')}`, 'utf8')
-    .digest('hex');
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -53,16 +48,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = parseRequest(
+    parseRequest(
       bodySchema,
       req.body || {}
     );
 
-    if (body.clientInfo) {
-      assertSafePayload(body.clientInfo);
-    }
-
-    const token = cookieValue(req, 'labapp_session').slice(0, 300);
+    const token = cookieValue(req, SESSION_COOKIE_NAME).slice(0, 300);
 
     if (token) {
       const session = await sessionFor(null, token);
@@ -93,7 +84,7 @@ export default async function handler(req, res) {
       }
     }
 
-    clearCookie(res, isHttps);
+    clearSessionCookie(res, isHttps);
 
     return res.status(200).json({
       ok: true,
@@ -110,7 +101,7 @@ export default async function handler(req, res) {
       error?.message || 'Unknown error'
     );
 
-    clearCookie(res, isHttps);
+    clearSessionCookie(res, isHttps);
 
     return res.status(status).json({
       ok: false,

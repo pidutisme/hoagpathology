@@ -35,14 +35,12 @@
   --auth-blue: #2563eb;
   --auth-blue-deep: #1d4ed8;
   --auth-cyan: #0ea5e9;
-  --auth-navy: #071936;
   --auth-ink: #152338;
   --auth-ink-secondary: #334460;
   --auth-muted: #5d6f8c;
-  --auth-divider-bg: #ecf2fa;
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 10500;
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -110,6 +108,7 @@
 #authScreen .auth-card {
   position: relative;
   width: min(100%, 1340px);
+  height: min(740px, calc(100vh - 40px));
   height: min(740px, calc(100svh - 40px));
   min-height: 0;
   padding: 14px;
